@@ -1,4 +1,7 @@
 import { dayPart, describeGap, gapBucket } from "@/core/time";
+import type { CapacityReport } from "@/core/domain/capacity";
+import { isStale } from "@/core/domain/intentions";
+import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
 
 export type ContextInput = {
   displayName: string;
@@ -6,7 +9,15 @@ export type ContextInput = {
   /** Previous visit; undefined on the first ever turn. */
   lastSeenAt?: Date;
   now?: Date;
+  lists?: readonly string[];
+  openIntentions?: Intention[];
+  recentlyDone?: Intention[];
+  beliefs?: MemoryNote[];
+  capacity?: CapacityReport;
+  plan?: DayPlanJson;
 };
+
+const MAX_INTENTIONS = 25;
 
 /**
  * The volatile context block: everything about *this* user and *this* moment.
@@ -42,5 +53,51 @@ export function buildContextBlock(input: ContextInput): string {
       }
     }
   }
+
+  if (input.capacity) {
+    const flags = input.capacity.flags?.length ? ` (${input.capacity.flags.join(", ")})` : "";
+    lines.push(`- Capacity today: ${input.capacity.level}${flags}${input.capacity.note ? ` — "${input.capacity.note}"` : ""}.`);
+  }
+
+  if (input.lists?.length) lines.push(`- Their lists: ${input.lists.join(" · ")}.`);
+
+  if (input.plan) {
+    const rn = input.plan.rightNow ? input.openIntentions?.find((i) => i.id === input.plan!.rightNow!.intentionId) : undefined;
+    lines.push(`- Today's path: ${rn ? `right now → "${rn.title}"` : "nothing queued"}; ${input.plan.afterThat.length} after that. Day line: "${input.plan.dayLine}"`);
+  }
+
+  const open = input.openIntentions ?? [];
+  if (open.length) {
+    lines.push("", "## Open intentions (id · title · list · ~min · due · flags)");
+    for (const i of open.slice(0, MAX_INTENTIONS)) {
+      const bits = [i.id, `"${i.title}"`, i.list ?? "—", i.estimateMinutes ? `~${i.estimateMinutes}m` : "—", i.dueAt ? `due ${fmtDue(i.dueAt, input.timezone)}` : "—"];
+      const flags: string[] = [];
+      if (isStale(i, now)) flags.push("stale");
+      if (i.nextAction) flags.push(`next: ${i.nextAction}`);
+      lines.push(`- ${bits.join(" · ")}${flags.length ? ` · ${flags.join("; ")}` : ""}`);
+    }
+    if (open.length > MAX_INTENTIONS) lines.push(`- (…and more; ask if you need the rest)`);
+  } else {
+    lines.push("", "## Open intentions", "- None saved yet.");
+  }
+
+  if (input.recentlyDone?.length) {
+    lines.push("", "## Recently done", ...input.recentlyDone.slice(0, 5).map((i) => `- "${i.title}"`));
+  }
+
+  const beliefs = input.beliefs ?? [];
+  if (beliefs.length) {
+    lines.push("", "## What you know about them (id · kind · belief · confidence)");
+    for (const b of beliefs) {
+      const tentative = b.confidence < 0.5 ? " · tentative — test gently, don't assert" : "";
+      const evidence = b.kind === "strategy" || b.kind === "anti_pattern" ? ` · helped ${b.evidenceFor}/${b.evidenceFor + b.evidenceAgainst}` : "";
+      lines.push(`- ${b.id} · ${b.kind} · ${b.content} · ${b.confidence.toFixed(2)}${evidence}${tentative}`);
+    }
+  }
+
   return lines.join("\n");
+}
+
+function fmtDue(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(d);
 }

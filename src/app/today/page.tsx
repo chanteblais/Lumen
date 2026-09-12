@@ -1,14 +1,44 @@
-import { Divider, Tailpiece } from "@/components/ui/Ornament";
+import { Suspense } from "react";
+import { PlanSection } from "@/components/today/PlanSection";
+import { LumiAvatar } from "@/components/chat/LumiAvatar";
+import { dayPart } from "@/core/time";
 import { requireUser } from "@/lib/auth";
 
-export default async function Page() {
-  await requireUser();
+export const dynamic = "force-dynamic";
+
+/** What should I be doing right now? One thing, then a short path. docs/today.md */
+export default async function TodayPage() {
+  const user = await requireUser();
+  const part = dayPart(new Date(), user.timezone);
+  const hello = part === "morning" ? "Good morning" : part === "afternoon" ? "Good afternoon" : part === "evening" ? "Good evening" : "Still up";
+
   return (
-    <div className="mx-auto w-full max-w-[1080px] px-1 pb-10">
-      <p className="label">Today</p>
-      <div className="my-4"><Divider /></div>
-      <p className="font-display text-[26px] leading-[1.35] text-ink-soft">Nothing here yet. When we&rsquo;ve talked, what&rsquo;s open will live here — quietly.</p>
-      <Tailpiece className="mt-14" />
+    <div className="mx-auto w-full max-w-[880px] px-1 pb-14">
+      <div className="mb-8 flex items-start gap-6">
+        <LumiAvatar size={48} className="mt-1" />
+        <div className="min-w-0">
+          <h1 className="font-display text-[34px] leading-[1.2] text-ink sm:text-[40px]">
+            {hello}, {user.displayName}.
+          </h1>
+          <Suspense fallback={<p className="mt-2 font-display text-[20px] text-ink-mute">Working out the shape of today…</p>}>
+            <PlanSection user={user} part="dayline" />
+          </Suspense>
+        </div>
+      </div>
+
+      <Suspense fallback={<PlanSkeleton />}>
+        <PlanSection user={user} part="path" />
+      </Suspense>
     </div>
+  );
+}
+
+function PlanSkeleton() {
+  return (
+    <section className="card px-8 py-8 sm:px-10">
+      <p className="label">Right now</p>
+      <div className="mt-6 h-9 w-2/3 rounded bg-paper-deep" />
+      <div className="mt-4 h-5 w-1/3 rounded bg-paper-deep" />
+    </section>
   );
 }

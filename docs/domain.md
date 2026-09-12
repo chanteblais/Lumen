@@ -117,8 +117,21 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
 
-## Proposed for M3 (see `today.md` → Domain additions)
-`intentions.list`, `intentions.estimate_minutes`, a `day_plans` table (one persisted `DayPlan` per user per local date, with the reason it was cut), and events `plan.generated`, `plan.advanced`, `intention.declined {reason}`, `capacity.asked`. Migration `0001` lands with M3.
+## Added in M3 (migration `0001`)
+`intentions.list` (free label from the user's lists; `users.preferences.lists` holds the ordered names, default School · Work · Personal · Later), `intentions.estimate_minutes`, and:
+
+### `day_plans`
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk | |
+| local_date | text | `YYYY-MM-DD` in the user's timezone |
+| capacity | text null | level the plan was cut for |
+| plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
+| reason | text | `new_day | capacity | declined | asked | advanced` |
+| generated_at | timestamptz | newest row for a date is the current plan |
+
+Events added: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
 
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration).
@@ -132,4 +145,5 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **pending** — `npm run db:migrate` from the checkout, or paste in the SQL editor then journal it |
 | `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | **Yes** — 2026-09-11, run by hand in the Supabase SQL editor; recorded in `drizzle.__drizzle_migrations` afterwards so `npm run db:migrate` is a no-op. Future migrations: `npm run db:migrate` only |

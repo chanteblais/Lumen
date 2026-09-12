@@ -25,7 +25,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 
 > **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions.
 
-## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days)
+## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days) — **built 2026-09-12 on `feat/m3-intentions`; migration `0001` pending; review pending**
 - Tools: `create_intention`, `update_intention`, `complete_intention`, `drop_intention`; every call writes an `events` row.
 - Belief tools from the same day: `remember`, `confirm`, `contradict`, `revise`, `forget`, applied through `core/domain/memory.ts` (the same op-applier reflection will use). Beliefs injected into the context block with confidence and evidence.
 - Ledger lines under assistant messages rendered from tool parts (✦ Noted · … / ✦ Done · …), with undo for complete → reopen.

@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { Conversation } from "@/components/chat/Conversation";
+import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
 import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
@@ -11,7 +13,8 @@ export default async function Home() {
   const user = await requireUser();
   const lastSeenAt = await recordVisit(user);
   const conversation = await ensureMainConversation(db(), user.id);
-  const initialMessages = await loadRecentMessages(db(), conversation.id);
+  const [initialMessages, open] = await Promise.all([loadRecentMessages(db(), conversation.id), listOpenIntentions(db(), user.id)]);
+  const intentionTitles = Object.fromEntries(open.map((i) => [i.id, i.title]));
   const lines = greeting({ displayName: user.displayName, lastSeenAt });
 
   const kicker = (
@@ -27,12 +30,15 @@ export default async function Home() {
   );
 
   return (
-    <Conversation
-      conversationId={conversation.id}
-      initialMessages={initialMessages}
-      greetingLines={lines}
-      kicker={kicker}
-      initialInSitting={isInSitting(initialMessages)}
-    />
+    <Suspense>
+      <Conversation
+        conversationId={conversation.id}
+        initialMessages={initialMessages}
+        greetingLines={lines}
+        kicker={kicker}
+        initialInSitting={isInSitting(initialMessages)}
+        intentionTitles={intentionTitles}
+      />
+    </Suspense>
   );
 }

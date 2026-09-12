@@ -1,24 +1,27 @@
 import { randomUUID } from "node:crypto";
-import { convertToModelMessages, streamText } from "ai";
+import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock } from "@/core/ai/context";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { buildTools } from "@/core/ai/tools";
 import {
   ensureMainConversation,
   loadRecentMessages,
   saveMessage,
   type LumenUIMessage,
 } from "@/core/domain/conversations";
+import { loadSnapshot } from "@/core/domain/snapshot";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
 
 export const maxDuration = 60;
 
-const RALI_ERROR = "I lost the thread for a second. Say that again?";
+const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 
 /**
  * One streamed turn. The client sends only the new user message; history
  * comes from the database so the transcript can't drift between tabs.
+ * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
  */
 export async function POST(req: Request) {
   const user = await requireUser();
@@ -33,16 +36,20 @@ export async function POST(req: Request) {
     id: isUuid(incoming.id) ? incoming.id : randomUUID(),
     role: "user",
     parts: incoming.parts,
-    metadata: { createdAt: new Date().toISOString() },
+    metadata: { createdAt: new Date().toISOString(), ...(incoming.metadata ?? {}) },
   };
 
   const conversation = await ensureMainConversation(db(), user.id);
-  const history = await loadRecentMessages(db(), conversation.id);
+  const [history, snap] = await Promise.all([loadRecentMessages(db(), conversation.id), loadSnapshot(db(), user)]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
 
+  const tools = buildTools({ db: db(), userId: user.id, timezone: user.timezone });
+
   const result = streamText({
     model: chatModel(),
+    tools,
+    stopWhen: stepCountIs(5),
     instructions: [
       { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
       {
@@ -51,15 +58,22 @@ export async function POST(req: Request) {
           displayName: user.displayName,
           timezone: user.timezone,
           lastSeenAt: lastSeenAt.getTime() === user.lastSeenAt.getTime() ? undefined : lastSeenAt,
+          lists: snap.lists,
+          openIntentions: snap.openIntentions,
+          recentlyDone: snap.recentlyDone,
+          beliefs: snap.beliefs,
+          capacity: snap.capacity,
+          plan: snap.plan,
         }),
       },
     ],
-    messages: await convertToModelMessages(all),
+    messages: await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }),
     providerOptions: chatProviderOptions,
-    onEnd: ({ totalUsage }) => {
+    onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0}`);
+        const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}`);
       }
     },
   });
@@ -69,7 +83,7 @@ export async function POST(req: Request) {
     generateMessageId: () => randomUUID(),
     sendReasoning: false,
     messageMetadata: ({ part }) => (part.type === "start" ? { createdAt: new Date().toISOString() } : undefined),
-    onError: () => RALI_ERROR,
+    onError: () => LUMI_ERROR,
     onEnd: async ({ responseMessage, isAborted }) => {
       if (isAborted && responseMessage.parts.length === 0) return;
       await saveMessage(db(), conversation.id, responseMessage);

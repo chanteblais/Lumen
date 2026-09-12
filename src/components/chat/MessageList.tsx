@@ -5,6 +5,7 @@ import type { LumenUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
 import { LumiAvatar } from "./LumiAvatar";
+import { Ledger } from "./Ledger";
 
 type Props = { messages: LumenUIMessage[]; thinking?: boolean; error?: string };
 
@@ -32,7 +33,8 @@ export function MessageList({ messages, thinking, error }: Props) {
       .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
       .map((p) => p.text)
       .join("");
-    if (!text) continue;
+    const hasTools = m.role === "assistant" && m.parts.some((p) => p.type.startsWith("tool-"));
+    if (!text && !hasTools) continue;
     items.push(
       m.role === "user" ? (
         <div key={m.id} className="msg msg-user">
@@ -42,9 +44,10 @@ export function MessageList({ messages, thinking, error }: Props) {
         <div key={m.id} className="msg msg-lumi">
           <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body">
-            {text.split(/\n{2,}/).map((para, i) => (
+            {text.split(/\n{2,}/).filter(Boolean).map((para, i) => (
               <p key={i}>{para}</p>
             ))}
+            <Ledger message={m} />
           </div>
         </div>
       ),

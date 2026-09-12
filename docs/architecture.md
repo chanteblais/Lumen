@@ -49,7 +49,8 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
    - `preferences` (tone hint, default session length, check-in interval)
    The block is small on purpose. If a list outgrows its cap, we add a read tool (`search_intentions`) rather than growing the block.
 
-### Tools (server-executed, Zod-typed, in `src/core/ai/tools.ts`)
+### Tools (server-executed, Zod-typed, in `src/core/ai/tools.ts`) — built in M3
+Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `complete_intention`, `drop_intention`, `report_capacity`, `remember`, `confirm_belief`, `contradict_belief`, `revise_belief`, `forget_belief`. The chat route runs `stopWhen: stepCountIs(5)` so Lumi can act, then speak. Completing/dropping through a tool also advances today's plan. The UI renders **ledger lines** (`components/chat/Ledger.tsx`) from tool parts — never from prose.
 | Tool | Effect |
 |---|---|
 | `create_intention {title, next_action?, note?, due_at?, effort_hint?}` | insert; event `intention.created` |
@@ -181,7 +182,9 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 |---|---|---|---|---|
 | `/api/chat` | POST | `requireUser()` | One streamed turn. Body `{ id, message }` — the new user `UIMessage` only; the server loads the last 30 from the database, persists the user message, streams `claude-opus-5` with `instructions: [persona (cache_control ephemeral), context block]` at `effort: low` with server-side refusal fallbacks, and persists the assistant message in `onEnd`. `maxDuration = 60`. Dev logs a `[chat] tokens …` line with cache read/write counts | M2 |
 
-Planned: `POST /api/session` check-in ticks (M5) · `PATCH /api/intentions` complete/reopen from Today (M3) · `GET/DELETE /api/beliefs` (M6).
+| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Lists. Complete also advances today's plan (`reflectClosedInPlan`) | M3 |
+
+Planned: `POST /api/session` check-in ticks (M5) · `GET/DELETE /api/beliefs` (M6).
 
 ## 6. Key conventions
 
@@ -198,7 +201,10 @@ Planned: `POST /api/session` check-in ticks (M5) · `PATCH /api/intentions` comp
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
 - **EF-burden log** (`docs/ef-burden-log.md`) gets a row for every new user-maintained state, in the same commit.
 
-## 7. Data access
+## 7. The day plan (M3)
+`core/ai/plan.ts → buildDayPlan()` asks the model for `{ dayLine, rightNow, afterThat, closingLine }` via structured output (`Output.object`) with the persona + planner rules + a compact inputs block (candidates with flags, fixed-time items, capacity, declined reasons, how-they-work beliefs). `clampPlan()` (pure, tested) enforces: ids must exist, no repeats, ≤3 after-that (≤1 on a low day), fixed-time items only in `later`, counts stripped from lines. Persisted per local date (`day_plans`); the Today page generates it once on first open (streamed in under Suspense, `react.cache` dedupes the two halves), then reads it. Closing an intention anywhere advances the path in code (`plan-sync.ts`); regeneration triggers arrive in M4.
+
+## 8. Data access
 
 - `src/db/schema.ts` is the single source of truth for tables and their TS types (`User`, `Intention`, …). `docs/domain.md` is its prose twin — update both in the same commit.
 - `db()` (`src/db/client.ts`) is a lazy singleton over `postgres` with `prepare: false` (Supabase transaction pooler, port 6543) and a small pool. Import only from server code.
