@@ -17,7 +17,7 @@ Lumi   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
 - Decided 2026-09-12: V1 nav is **Chat · Today · Lists · Settings**; Chat stays the homepage (`today.md` → Decisions). Library and Insights leave the nav when Lists lands (M3).
 
-**Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then a slow sway or a playful scuff of the foot — one pose, small movements. Decorative only — no clicks, no state. Still under reduced-motion. In development only, a strip of small buttons above her (sway · foot · blink) cues each variation on demand so it can be checked without waiting for the schedule; it never ships.
+**Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then a slow sway or a playful scuff of the foot — one pose, small movements. Decorative only — no clicks, no state. Still under reduced-motion. In development only, a strip of small buttons above her (sway · foot · blink) cues each variation on demand so it can be checked without waiting for the schedule, and folds away behind a small handle when not wanted; it never ships.
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { LUMI_LOOP_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
 const HEIGHT = 150;
@@ -133,18 +133,58 @@ export function LumiCompanion() {
 
 /**
  * Dev-only buttons above the companion: play each variation (or a blink) on
- * demand instead of waiting for the schedule. Not a control in the product —
- * it never ships (`NODE_ENV === "development"` only).
+ * demand instead of waiting for the schedule. A handle at the right end folds
+ * them away (remembered per browser). Not a control in the product — it never
+ * ships (`NODE_ENV === "development"` only).
  */
+const FOLD_KEY = "lumi-debug-folded";
+const foldListeners = new Set<() => void>();
+const readFolded = () => {
+  try {
+    return localStorage.getItem(FOLD_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const writeFolded = (v: boolean) => {
+  try {
+    localStorage.setItem(FOLD_KEY, v ? "1" : "0");
+  } catch {}
+  foldListeners.forEach((fn) => fn());
+};
+const subscribeFolded = (fn: () => void) => {
+  foldListeners.add(fn);
+  return () => foldListeners.delete(fn);
+};
+
+let toggled = false; // animate the fold only once a click has asked for it, not on load
+
 function DebugStrip() {
   const cues: Cue[] = [...VARIATIONS, "blink"];
+  // Read through a store so the server renders it open and the client catches up without a state-in-effect.
+  const folded = useSyncExternalStore(subscribeFolded, readFolded, () => false);
+  const toggle = () => {
+    toggled = true;
+    writeFolded(!folded);
+  };
   return (
-    <div className="companion-debug">
-      {cues.map((what) => (
-        <button key={what} type="button" className="companion-debug-btn" onClick={() => cue(what)}>
-          {what}
-        </button>
-      ))}
+    <div className={`companion-debug ${folded ? "is-folded" : ""} ${toggled ? "is-animated" : ""}`}>
+      <div className="companion-debug-cues">
+        {cues.map((what) => (
+          <button key={what} type="button" className="companion-debug-btn" onClick={() => cue(what)} tabIndex={folded ? -1 : 0}>
+            {what}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="companion-debug-btn companion-debug-fold"
+        onClick={toggle}
+        aria-label={folded ? "Show Lumi cues" : "Hide Lumi cues"}
+        aria-expanded={!folded}
+      >
+        {folded ? "‹" : "›"}
+      </button>
     </div>
   );
 }

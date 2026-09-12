@@ -259,15 +259,28 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .companion-frame { animation: none; }
 }
-/* Dev-only cue buttons, sitting just above her head. */
+/* Dev-only cue buttons, sitting just above her head; the handle at the right
+   end folds them away toward itself. */
 .companion-debug {
   position: fixed;
   right: 56px;
   bottom: 200px;
   z-index: 3;
   display: flex;
+  align-items: center;
   gap: 4px;
 }
+.companion-debug-cues {
+  display: flex;
+  gap: 4px;
+  max-width: 320px;
+  overflow: hidden;
+}
+.companion-debug.is-animated .companion-debug-cues { transition: max-width 220ms ease, opacity 180ms ease; }
+.companion-debug.is-folded .companion-debug-cues { max-width: 0; opacity: 0; }
+.companion-debug-fold { padding: 4px 8px; font-size: 14px; line-height: 12px; }
+.companion-debug.is-folded .companion-debug-fold { opacity: 0.55; }
+.companion-debug.is-folded .companion-debug-fold:hover { opacity: 1; }
 .companion-debug-btn {
   font-family: var(--font-body);
   font-size: 12px;
