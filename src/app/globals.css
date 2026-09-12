@@ -161,7 +161,7 @@ body::after {
 .nav-item {
   display: flex;
   align-items: baseline;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 26px; /* the name sits a step in from the highlight's edge */
   margin: 0 -16px;
   border-radius: 3px;
   color: var(--ink);
