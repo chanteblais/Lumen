@@ -22,6 +22,8 @@ function line(p: ToolPart): string | null {
       return `Let go · ${out.title ?? ""}`;
     case "tool-report_capacity":
       return `Today · ${out.level === "low" ? "not much" : out.level === "high" ? "lots" : "normal-ish"}`;
+    case "tool-reshape_today":
+      return `Reshaped Today · ${String(out.ask ?? inp.ask ?? "").slice(0, 60)}`;
     case "tool-remember":
       return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
     case "tool-confirm_belief":

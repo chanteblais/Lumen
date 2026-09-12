@@ -73,7 +73,9 @@ Persisted in `day_plans` so the path is **stable across reloads** — the one th
 
 **Cut before it's needed.** Generation is primed in the background when the app is opened (home page) and after every chat turn, so Today normally finds the plan already there instead of waiting several seconds on the model. If the day's plan was cut with nothing to choose from (or everything on it has been ticked off) and intentions have since arrived — brain-dump in chat, then Today — it is re-cut once (`reason: first_items`). A plan with a Right now is never touched by this.
 
-**Re-cut only on purpose (M4).** The one thing moves on three triggers and no others: a capacity answer (`capacity`; skipped when it matches what the plan assumed), a *Not this* answer (`declined`), and letting things go during the coming-back pass (`reentry`). Chat-side triggers are applied once after the reply streams. "Replan" in chat (`asked`) is not wired yet.
+**Re-cut only on purpose (M4).** The one thing moves on three triggers and no others: a capacity answer (`capacity`; skipped when it matches what the plan assumed), a *Not this* answer (`declined`), and letting things go during the coming-back pass (`reentry`). Chat-side triggers are applied once after the reply streams.
+
+**Asked in chat (`asked`, 2026-09-12).** "I need an easy task", "what should I do now", "quick wins", a replan: Lumi picks the thing in her reply and calls `reshape_today` with the ask in the user's words and the id (and first step) of what she picked. After the reply, the path is re-cut with the ask as a planner input — the ask outranks the default order, the day line may answer it in a few words — and `clampPlan` pins Lumi's pick as Right now so Today shows what she just said. The pin wins over a decline earlier today (the ask is the user's later word). If she names nothing, the planner chooses within the ask. In the same turn an ask wins over a capacity or decline re-cut; both still reach the planner from the snapshot. The ask is kept on the `plan.generated` event, not on the row. Nothing on Today asks for or shows the ask.
 
 ## Domain additions (proposed; migration when built)
 | Change | Why |
