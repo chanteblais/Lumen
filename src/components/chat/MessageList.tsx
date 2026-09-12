@@ -7,20 +7,67 @@ import { Diamond } from "@/components/ui/Ornament";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
 
-type Props = { messages: LumenUIMessage[]; thinking?: boolean; error?: string };
+type Props = {
+  messages: LumenUIMessage[];
+  /** Index where this sitting's messages begin (`sittingStartIndex`). */
+  sittingStart: number;
+  /** The greeting card — rendered at `sittingStart`, between earlier visits and this one. */
+  card: React.ReactNode;
+  thinking?: boolean;
+  error?: string;
+};
 
 const SIX_HOURS = 6 * 3_600_000;
 
-export function MessageList({ messages, thinking, error }: Props) {
+/**
+ * The transcript in chapters: everything from earlier visits, then the
+ * greeting card, then this sitting. A fresh visit opens on the card — the
+ * chat feels new, and the old conversation is one scroll up. Once there is
+ * something from this sitting, the page opens at the end as any chat does.
+ */
+export function MessageList({ messages, sittingStart, card, thinking, error }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const firstScroll = useRef(true);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
+    const fresh = firstScroll.current && messages.length <= sittingStart && !thinking;
+    if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+    else endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
     firstScroll.current = false;
-  }, [messages, thinking]);
+  }, [messages, sittingStart, thinking]);
 
-  if (messages.length === 0 && !thinking && !error) return null;
+  const earlier = render(messages.slice(0, sittingStart));
+  const current = render(messages.slice(sittingStart));
 
+  return (
+    <section aria-label="Conversation">
+      {earlier.length > 0 && (
+        <div className="mb-10 flex flex-col gap-7" aria-label="Earlier">
+          {earlier}
+        </div>
+      )}
+      <div ref={cardRef}>{card}</div>
+      <div className="mt-10 flex flex-col gap-7" aria-live="polite">
+        {current}
+        {thinking && (
+          <div className="msg msg-lumi" aria-label="Lumi is thinking">
+            <LumiAvatar size={36} className="msg-avatar" />
+            <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
+          </div>
+        )}
+        {error && (
+          <div className="msg msg-lumi">
+            <LumiAvatar size={36} className="msg-avatar" />
+            <div className="msg-body"><p className="text-ink-soft">{error}</p></div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+    </section>
+  );
+}
+
+function render(messages: LumenUIMessage[]): React.ReactNode[] {
   const items: React.ReactNode[] = [];
   let prevAt: Date | undefined;
   for (const m of messages) {
@@ -53,25 +100,7 @@ export function MessageList({ messages, thinking, error }: Props) {
       ),
     );
   }
-
-  return (
-    <section className="mt-10 flex flex-col gap-7" aria-live="polite" aria-label="Conversation">
-      {items}
-      {thinking && (
-        <div className="msg msg-lumi" aria-label="Lumi is thinking">
-          <LumiAvatar size={36} className="msg-avatar" />
-          <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
-        </div>
-      )}
-      {error && (
-        <div className="msg msg-lumi">
-          <LumiAvatar size={36} className="msg-avatar" />
-          <div className="msg-body"><p className="text-ink-soft">{error}</p></div>
-        </div>
-      )}
-      <div ref={endRef} />
-    </section>
-  );
+  return items;
 }
 
 function VisitRule({ at }: { at: Date }) {

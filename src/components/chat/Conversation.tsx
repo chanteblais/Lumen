@@ -18,6 +18,8 @@ type Props = {
   kicker?: React.ReactNode;
   /** Whether the last message is from this sitting (computed on the server). */
   initialInSitting: boolean;
+  /** Index in initialMessages where this sitting begins; the greeting card sits there. */
+  sittingStart: number;
   /** Titles for handoff messages (id → title), from the server. */
   intentionTitles?: Record<string, string>;
 };
@@ -45,7 +47,7 @@ export function handoffMessage(params: URLSearchParams, titles: Record<string, s
   return null;
 }
 
-export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {} }: Props) {
+export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, sittingStart, intentionTitles = {} }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
   // A link from Today/Lists (?start=<id> …) becomes the first message of this sitting.
@@ -101,8 +103,14 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     <div className="chat-page">
       <div className="chat-scroll">
         {kicker}
-        <GreetingCard lines={greetingLines} onQuickStart={send} compact={inSitting} />
-        <MessageList messages={messages} thinking={status === "submitted"} error={error ? "I lost the thread for a second. Say that again?" : undefined} />
+        {/* The greeting card marks where this sitting begins: earlier messages above it (scroll up), this visit below. */}
+        <MessageList
+          messages={messages}
+          sittingStart={sittingStart}
+          card={<GreetingCard lines={greetingLines} onQuickStart={send} compact={inSitting} />}
+          thinking={status === "submitted"}
+          error={error ? "I lost the thread for a second. Say that again?" : undefined}
+        />
       </div>
       <Composer onSend={send} busy={busy} initialValue={prefill} />
     </div>

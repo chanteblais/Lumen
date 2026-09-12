@@ -5,7 +5,7 @@ import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
 import { primeTodaysPlan } from "@/core/ai/today-plan";
-import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
+import { ensureMainConversation, isInSitting, loadRecentMessages, sittingStartIndex } from "@/core/domain/conversations";
 import { currentSitting, visitBeforeSitting } from "@/core/domain/users";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
@@ -53,6 +53,7 @@ export default async function Home() {
         greetingLines={lines}
         kicker={kicker}
         initialInSitting={inSitting}
+        sittingStart={sittingStartIndex(initialMessages)}
         intentionTitles={intentionTitles}
       />
     </Suspense>
