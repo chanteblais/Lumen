@@ -6,6 +6,21 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (3) — Voice stops on its own (`fix/voice-silent-stop`, port 3005)
+
+### Fixed
+- **Voice button switched itself off with no message.** `useVoiceInput` swallowed two recognition errors — `no-speech` and `aborted` — and every `end` dropped the listening state. Measured in Chrome 152 with a fake microphone: ~8s of initial silence fires `no-speech` then `end`; starting recognition in a second tab (or another app) fires `aborted` on the first. Both now surface one line in Lumi's voice; a plain `end` while the user still wants to listen restarts the session and keeps the transcript; two instant ends in a row give up with the generic line. Our own `stop()` still ends quietly. Verified through the real UI with an injected fake recognizer for every path (plain end → restart, result accumulates, no-speech, foreign abort, own stop, double quick end, not-allowed).
+
+### Known and deliberate
+- Chrome allows one recognition session per browser: tapping Voice in a second tab takes the mic from the first, which now says so. The first tab does not reclaim it.
+- After `no-speech` Lumi stops rather than restarting forever: a mic that hears nothing should be noticed, not masked by a breathing icon.
+- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error.
+
+### Highest-value manual tests
+- Allow the mic, tap Voice, say nothing for ten seconds → "I didn't hear anything…" line, button off.
+- Tap Voice, talk for a minute or two with pauses → stays listening; text keeps accumulating.
+- Tap Voice in two tabs → the first shows the "another tab" line.
+
 ## Sweep 2026-09-13 — M3 (`feat/m3-intentions`, worktree, port 3007)
 
 ### Verified (live, against the real database, test rows removed afterwards)
