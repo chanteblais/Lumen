@@ -240,22 +240,60 @@ body::after {
   pointer-events: none;
   user-select: none;
 }
-/* Idle life. The nine loop frames are stacked; the current one fades in ON TOP
-   of the previous (which stays opaque until covered), so she never turns
-   translucent mid-step. */
+/* Idle life. Two frames are mounted: the current one fades in ON TOP of the
+   previous (which stays opaque until covered), so she never turns translucent
+   mid-step — across a hand-over between loops as much as within one. */
 /* Mirrored so she looks in toward the page, not off the edge. */
 .companion-figure { position: relative; transform: scaleX(-1); }
 .companion-frame {
   position: absolute;
   inset: 0;
-  opacity: 0;
-  z-index: 0;
+  opacity: 1;
+  z-index: 1;
 }
-.companion-frame.prev { opacity: 1; z-index: 1; }
-.companion-frame.on { opacity: 1; z-index: 2; transition: opacity 260ms ease-in-out; }
+.companion-frame.on { z-index: 2; animation: companion-fade 260ms ease-in-out; }
+@keyframes companion-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .companion-frame { transition: none; }
+  .companion-frame { animation: none; }
 }
+/* Dev-only cue buttons, sitting just above her head; the handle at the right
+   end folds them away toward itself. */
+.companion-debug {
+  position: fixed;
+  right: 56px;
+  bottom: 200px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.companion-debug-cues {
+  display: flex;
+  gap: 4px;
+  max-width: 320px;
+  overflow: hidden;
+}
+.companion-debug.is-animated .companion-debug-cues { transition: max-width 220ms ease, opacity 180ms ease; }
+.companion-debug.is-folded .companion-debug-cues { max-width: 0; opacity: 0; }
+.companion-debug-fold { padding: 4px 8px; font-size: 14px; line-height: 12px; }
+.companion-debug.is-folded .companion-debug-fold { opacity: 0.55; }
+.companion-debug.is-folded .companion-debug-fold:hover { opacity: 1; }
+.companion-debug-btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 4px 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.companion-debug-btn:hover { color: var(--ink); border-color: var(--rule-strong); }
 
 /* ---------- Chat surfaces ---------- */
 .card {
@@ -479,7 +517,7 @@ body::after {
   .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
-  .companion { display: none; } /* would sit on the docked composer's send button */
+  .companion, .companion-debug { display: none; } /* would sit on the docked composer's send button */
   .chat-page { --companion-lane: 0px; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
