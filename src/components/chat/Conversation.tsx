@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 import { Composer } from "./Composer";
@@ -34,7 +34,6 @@ export function handoffMessage(params: URLSearchParams, titles: Record<string, s
 }
 
 export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {} }: Props) {
-  const router = useRouter();
   const params = useSearchParams();
   const handled = useRef(false);
   // A link from Today/Lists (?start=<id> …) becomes the first message of this sitting.
@@ -67,19 +66,21 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     void sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString(), ...(extra ?? {}) } });
   };
 
-  // Send the handoff once, then clean the URL.
+  // Send the handoff once, then clean the URL without a navigation (a router
+  // navigation would re-render the page and remount the chat mid-request).
   const prefill = params.get("prefill") ?? "";
   useEffect(() => {
-    if (handled.current) return;
-    if (initialHandoff) {
+    if (handled.current || (!initialHandoff && !prefill)) return;
+    // Deferred so React's dev double-mount (which aborts in-flight chat requests) settles first.
+    const t = setTimeout(() => {
       handled.current = true;
-      void sendMessage({ text: initialHandoff.text, metadata: { createdAt: new Date().toISOString(), kind: initialHandoff.kind, intentionId: initialHandoff.intentionId } });
-      router.replace("/");
-    } else if (prefill) {
-      handled.current = true;
-      router.replace("/");
-    }
-  }, [initialHandoff, prefill, router, sendMessage]);
+      if (initialHandoff) {
+        void sendMessage({ text: initialHandoff.text, metadata: { createdAt: new Date().toISOString(), kind: initialHandoff.kind, intentionId: initialHandoff.intentionId } });
+      }
+      window.history.replaceState(null, "", "/");
+    }, 50);
+    return () => clearTimeout(t);
+  }, [initialHandoff, prefill, sendMessage]);
 
   return (
     <div className="chat-page">

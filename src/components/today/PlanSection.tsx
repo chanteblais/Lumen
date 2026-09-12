@@ -47,7 +47,7 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
         {rightNow ? (
           <>
             <div className="mt-5 flex items-start gap-5">
-              <CompleteCircle id={rightNow.id} label={rightNow.title} size={34} />
+              <CompleteCircle key={rightNow.id} id={rightNow.id} label={rightNow.title} size={34} />
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-[32px] leading-[1.15] text-ink sm:text-[40px]">{rightNow.title}</h2>
                 <div className="mt-3 flex flex-wrap items-center gap-3">

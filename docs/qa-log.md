@@ -6,6 +6,25 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 — M3 (`feat/m3-intentions`, worktree, port 3007)
+
+### Verified (live, against the real database, test rows removed afterwards)
+- Brain dump of four items + a stated preference: one reply in voice, four `create_intention` calls with lists and estimates, one `remember`, one `report_capacity` (inferred from the earlier "20%" in history), ledger lines rendered. Turn took ~17s at effort low with two steps.
+- Today: first open generated and persisted the plan (low capacity → one After-that), reload showed the same task; ticking Right now promoted the next item without regenerating.
+- Lists: items grouped under Lumi's chosen lists with estimates and next actions.
+- Start with Lumi: lands in Chat with the visible handoff message sent and Lumi in initiation mode.
+
+### Fixed
+- Promoted Right-now task rendered as already ticked: the circle kept local state across a prop change → keyed by intention id.
+- Handoff from Today never sent: `router.replace` re-rendered the page mid-request, and dev StrictMode's double mount aborted the first attempt while a ref blocked the second → `history.replaceState` + a deferred send with cleanup.
+
+### Known and deliberate
+- "Practicum paperwork due today at 5pm" just after midnight: Lumi asked which day rather than guessing a due date; no `due_at` set until answered.
+- Plan generation takes several seconds the first time each day; the page streams a skeleton meanwhile.
+
+### Open
+- Dev console: one React "unique key" warning attributed to `Conversation` ("passed a child from Home"). Every `.map` in the chat components is keyed; source not found yet. Dev-only, no visible effect.
+
 ## Sweep 2026-09-12 (2) — M2 review findings (`feat/m2-voice-layout`, worktree)
 
 ### Fixed
