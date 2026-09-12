@@ -129,4 +129,4 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
-| `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | pending — apply with `npm run db:migrate` once `DATABASE_URL` is set |
+| `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | **Yes** — 2026-09-11, run by hand in the Supabase SQL editor; recorded in `drizzle.__drizzle_migrations` afterwards so `npm run db:migrate` is a no-op. Future migrations: `npm run db:migrate` only |
