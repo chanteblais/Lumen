@@ -135,7 +135,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 
 ## 4. Repository layout
 ```
-rali/
+lumen/
 ├── CLAUDE.md                     session brief (short; points here)
 ├── docs/
 │   ├── product.md                brief, voice guide, visual direction

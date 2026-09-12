@@ -104,7 +104,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `session.started` | `{ goal, first_step, planned_minutes }` |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` |
 | `session.ended` | `{ outcome, actual_minutes }` |
-| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'rali'|'reflection' }` |
+| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }` |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` |
 
 ## Derived (never stored)

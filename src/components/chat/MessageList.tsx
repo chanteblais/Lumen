@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
+import { Diamond } from "@/components/ui/Ornament";
 import { LumiAvatar } from "./LumiAvatar";
 
 type Props = { messages: LumenUIMessage[]; thinking?: boolean; error?: string };
@@ -82,7 +83,9 @@ function VisitRule({ at }: { at: Date }) {
   return (
     <div className="flex items-center gap-4 py-2" role="separator">
       <div className="rule flex-1" />
+      <Diamond size={8} />
       <span className="label label-mute">{label}</span>
+      <Diamond size={8} />
       <div className="rule flex-1" />
     </div>
   );

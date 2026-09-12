@@ -1,3 +1,4 @@
+import { Divider, Tailpiece } from "@/components/ui/Ornament";
 import { requireUser } from "@/lib/auth";
 
 export default async function Page() {
@@ -5,8 +6,9 @@ export default async function Page() {
   return (
     <div className="mx-auto w-full max-w-[1080px] px-1 pb-10">
       <p className="label">Settings</p>
-      <div className="rule-short my-4 !w-[18px]" />
+      <div className="my-4"><Divider /></div>
       <p className="font-display text-[26px] leading-[1.35] text-ink-soft">Your name, your timezone, and what Lumi knows about you. Soon.</p>
+      <Tailpiece className="mt-14" />
     </div>
   );
 }
