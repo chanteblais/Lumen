@@ -10,8 +10,10 @@ import { z } from "zod";
 import { type Db } from "@/db/client";
 import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
+import { dismissLead, keepLead } from "@/core/domain/leads";
 import { applyBeliefOps } from "@/core/domain/memory";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
+import type { EmailReader } from "@/core/email/types";
 
 /** A write that means today's path should be re-cut once the turn has streamed. */
 export type PlanInvalidation = "capacity" | "reentry";
@@ -24,6 +26,8 @@ export type ToolContext = {
   reentry?: boolean;
   /** Called (at most once per reason) when a write invalidates today's path; the route re-cuts in `after()`. */
   onPlanChange?: (reason: PlanInvalidation) => void;
+  /** Their mail, resolved only if Lumi actually looks (undefined = not connected). */
+  mail?: () => Promise<EmailReader | undefined>;
 };
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
@@ -33,7 +37,10 @@ function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
   return fn().catch((e: unknown) => ({ error: e instanceof Error ? e.message : "failed" }));
 }
 
-export function buildTools({ db, userId, timezone, reentry = false, onPlanChange }: ToolContext) {
+const MAIL_LOOK_MAX = 15;
+const MAIL_GIST_CHARS = 280;
+
+export function buildTools({ db, userId, timezone, reentry = false, onPlanChange, mail }: ToolContext) {
   const me = { id: userId, timezone };
   return {
     create_intention: tool({
@@ -177,6 +184,43 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
       description: "Retire a belief because the user asked you to forget it.",
       inputSchema: z.object({ id: z.string().uuid() }),
       execute: (input) => safe(async () => summarize(await applyBeliefOps(db, userId, [{ op: "retire", id: input.id, reason: "user" }], "user"))),
+    }),
+
+    look_at_email: tool({
+      description:
+        "Read the user's recent mail (Gmail, read-only) when they ask about it or about something that would be in it — 'did the landlord reply?', 'anything in my inbox I need to deal with?'. Optional search in Gmail syntax (from:priya, invoice) and days back (default 7). Returns sender, subject, when and the gist of each. Say what you found in a few lines — never read the inbox back. If it returns not_connected, say the Insights page has a Connect Google chip.",
+      inputSchema: z.object({
+        search: z.string().max(120).optional(),
+        days: z.number().int().min(1).max(30).optional(),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const reader = await mail?.();
+          if (!reader) return { error: "not_connected" };
+          const since = new Date(Date.now() - (input.days ?? 7) * 86_400_000);
+          const msgs = await reader.recent({ since, max: MAIL_LOOK_MAX, search: input.search });
+          return { messages: msgs.map((m) => ({ from: m.fromName, subject: m.subject, when: m.receivedAt.toISOString(), gist: m.text.slice(0, MAIL_GIST_CHARS) })) };
+        }),
+    }),
+
+    keep_lead: tool({
+      description: "Something you noticed in their mail (Their mail in the context) still needs doing: it becomes an intention. Use the lead id — not create_intention, which would make a copy.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const r = await keepLead(db, userId, input.id, "chat");
+          return r ? { id: r.lead.id, title: r.lead.title, intention_id: r.intention.id } : { error: "not found" };
+        }),
+    }),
+
+    dismiss_lead: tool({
+      description: "Something you noticed in their mail is handled, or isn't a thing: let it go. Use the lead id.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await dismissLead(db, userId, input.id, "chat");
+          return row ? { id: row.id, title: row.title } : { error: "not found" };
+        }),
     }),
   };
 }

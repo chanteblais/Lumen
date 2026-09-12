@@ -15,6 +15,13 @@
       "when": 1789197837288,
       "tag": "0001_lists_estimates_day_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789211354561,
+      "tag": "0002_leads",
+      "breakpoints": true
     }
   ]
 }

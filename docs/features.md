@@ -15,7 +15,7 @@ Lumi   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 - Active route highlighted via `aria-current="page"`.
 - Mobile (<768px): sidebar collapses to a top strip with the wordmark and nav names.
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
-- Decided 2026-09-12: V1 nav is **Chat · Today · Lists · Settings**; Chat stays the homepage (`today.md` → Decisions). Library and Insights leave the nav when Lists lands (M3).
+- Decided 2026-09-12: V1 nav is **Chat · Today · Lists · Settings**; Chat stays the homepage (`today.md` → Decisions). Library and Insights leave the nav when Lists lands (M3). **Insights returns the same day** with a real job — what Lumi noticed in the mail — so the nav is **Chat · Today · Lists · Insights · Settings**.
 
 **Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then a slow sway or a playful scuff of the foot — one pose, small movements. Still under reduced-motion. **Tap her and a speech bubble opens** (`CompanionBubble.tsx`): one text box (*Tell Lumi…*), Enter sends, so you can say "add take out compost" from Today or Lists without leaving the page. The message goes through `/api/chat` like any other, so it lands in the main conversation; what you said slides in as a bubble of its own, Lumi blinks, and the box reads *Lumi's on it…* until her reply and the ledger of what she did show beneath; the page underneath refreshes once the turn has landed. Escape, a click elsewhere or a tap on her closes it; nothing is kept. On Chat, tapping her just focuses the composer. Hidden with her under 768px. In development only, a strip of small buttons above her (sway · foot · blink) cues each variation on demand so it can be checked without waiting for the schedule, and folds away behind a small handle when not wanted; it never ships.
 
@@ -59,6 +59,16 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 **Who:** Signed-in.
 **What:** The pile. Open intentions grouped by list (School · Work · Personal · Later by default; `users.preferences.lists`), two columns; each row is a complete circle, the title, the next action if any, and estimate/due pills. No per-list counts. One **Add something** chip → Chat with the composer prefilled ("Add to my list: "). Moving between lists and renaming lists happen in conversation for now; drag/reorder later.
 
+### Insights (`/insights`) — **built 2026-09-12** (`feat/email-insights`, migration `0002`)
+
+**Who:** Signed-in, with Google connected.
+**What:** Lumi has looked through your recent mail and asks one question: **Do any of these still need doing?** Each thing she noticed is a card — what might need doing in your terms ("Reply to Priya about the draft"), her one line on why ("Priya asked for it by Friday"), and a quiet label with sender · subject · when (and the date, if the mail named one). Two answers: **Still needs doing** (it lands on your list, with the mail's subject in the note, in the list Lumi guessed) and **Let it go**. Answered cards show *On your list.* / *Let go.* and are gone on the next open. When there is nothing: "Nothing in your recent mail that needs you." and a tailpiece. Under the question, one label: *Just looked.* / *Last looked 20 minutes ago.* — never how many messages, never how many things.
+
+- **Connecting** — without Google: "I can look through your recent mail for things that might need doing." + "Read-only. I keep a line per thing I notice — never the mail itself." + **Connect Google** (`lib/auth-mail.tsx`: Clerk's Google connection asking for the read-only Gmail scope, back here after). Google connected without the mail scope: "Google's connected, but not the mail part yet." + **Allow mail**. Connection let go by Google: the chip again, with a line saying so. Disconnecting is the account button → Connected accounts (Clerk's panel).
+- **Looking** happens on open, only when the last look is older than 30 minutes, streamed under Suspense ("Having a look through your recent mail…"); a few seconds the first time (up to 30 messages, one model call), usually nothing after. The first look covers the last 7 days; later looks pick up where the last one stopped. Promotions and social are skipped. Nothing is stored but the cards.
+- **In chat**, the same things are in Lumi's context (*Their mail*), so "anything in my email I need to handle?" gets an answer from what she noticed, and "did Priya reply?" makes her look (`look_at_email`). Keeping or letting go in chat is the same as on the page (ledger: *Noted · …* / *Let go · …*).
+- Not here, by design: the mail itself, unread counts, a "needs reply" list, a refresh button (open the page again after half an hour), snooze, categories.
+
 ### Settings (`/settings`)
 
 Placeholder. M1: name, timezone. M6: session defaults. **"What Lumi knows"** (`/knows`, M6) — beliefs grouped by kind, confidence as words, correct/delete inline.
@@ -75,6 +85,9 @@ Placeholder. M1: name, timezone. M6: session defaults. **"What Lumi knows"** (`/
 
 ### Capacity (M3 tool; Today prompt M4)
 `report_capacity` when the user says how much they've got, or the prompt on Today (once a day, skippable). Today's capacity is the latest report in the local day; it shapes the plan (≤1 after-that on a low day) and either source re-cuts the path once — from chat, after the reply, in the route's `after()`. The persona is told not to ask when a capacity is already in the context.
+
+### Leads — what Lumi noticed (2026-09-12)
+A lead is something Lumi noticed that might need doing (in the mail, for now) that the user hasn't confirmed — see `docs/domain.md` → `leads`. Model proposes, `clampLeads` guards (`core/ai/leads.ts`), the user answers once on Insights or in chat. Kept → an intention with the lead's title, why, list and due; let go → resolved, no reason asked. A message never produces a lead twice; a title already on the list, or kept/let go in the last month, is never suggested again. `docs/architecture.md` → §9.
 
 ### Re-entry (M4)
 A sitting that begins after ≥ 7 days away (derived from `app.opened`, `core/domain/users.ts`) is a re-entry: greeting offer on Chat, the coming-back pass in conversation (persona → Coming back), stale intentions flagged in the context block and in the planner's inputs, the planner told to keep the path short and fresh, and a re-cut when the pass lets things go. Nothing on any page shows how long it's been or how much is undone.

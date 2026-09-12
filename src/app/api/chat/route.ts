@@ -16,10 +16,12 @@ import {
 } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { declineIntention } from "@/core/domain/intentions";
+import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
+import { lazyMailReader } from "@/lib/email";
 
 export const maxDuration = 60;
 
@@ -68,10 +70,12 @@ export async function POST(req: Request) {
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick on Lists a minute ago is in Lumi's context before she reads the message.
-  const [history, snap, recentActivity] = await Promise.all([
+  const [history, snap, recentActivity, leads, mailScan] = await Promise.all([
     loadRecentMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
+    listSuggestedLeads(db(), user.id, 8),
+    latestMailScan(db(), user.id),
   ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
@@ -84,6 +88,7 @@ export async function POST(req: Request) {
     onPlanChange: (reason) => {
       recut ??= reason;
     },
+    mail: lazyMailReader(user),
   });
 
   const result = streamText({
@@ -109,6 +114,8 @@ export async function POST(req: Request) {
           plan: snap.plan,
           declinedNow,
           declinedToday: snap.declinedToday,
+          mailScan: mailScan ? { at: mailScan.at } : null,
+          leads,
         }),
       },
     ],

@@ -1,6 +1,6 @@
 /**
  * Lumen schema — the domain model as code. See docs/domain.md for the prose.
- * Seven tables. Everything is keyed by users.id (internal UUID), never by the
+ * Eight tables. Everything is keyed by users.id (internal UUID), never by the
  * auth provider's id. Derived judgements (stale, avoided, gap, today's
  * capacity) are computed at read time and never stored.
  */
@@ -188,6 +188,45 @@ export const dayPlans = pgTable(
   (t) => [index("day_plans_user_date_idx").on(t.userId, t.localDate, t.generatedAt)],
 );
 
+/* ---------------------------------------------------------------- leads */
+
+/**
+ * Something Lumi noticed that might need doing — for now, in the user's recent
+ * mail — that they haven't confirmed. `suggested` until they keep it (it becomes
+ * an intention) or let it go. Never a count anywhere; never an inbox to clear.
+ * See docs/domain.md → leads.
+ */
+export type LeadStatus = "suggested" | "kept" | "dismissed";
+export type LeadSource = "email";
+
+export const leads = pgTable(
+  "leads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    source: text("source").$type<LeadSource>().notNull().default("email"),
+    /** The provider's id for the message this came from (Gmail message id). */
+    sourceRef: text("source_ref").notNull(),
+    /** What might need doing, in plain words. */
+    title: text("title").notNull(),
+    /** Lumi's one line on where it came from: "Priya asked for the draft by Friday." */
+    why: text("why"),
+    /** The one list it would land in if kept — Lumi's guess. */
+    list: text("list"),
+    dueAt: ts("due_at"),
+    /** The email's identifying line — sender and subject only; the body is never stored. */
+    fromName: text("from_name"),
+    subject: text("subject"),
+    receivedAt: ts("received_at"),
+    status: text("status").$type<LeadStatus>().notNull().default("suggested"),
+    /** Set when kept. */
+    intentionId: uuid("intention_id").references(() => intentions.id, { onDelete: "set null" }),
+    suggestedAt: ts("suggested_at").notNull().defaultNow(),
+    resolvedAt: ts("resolved_at"),
+  },
+  (t) => [index("leads_user_status_idx").on(t.userId, t.status, t.suggestedAt), index("leads_user_ref_idx").on(t.userId, t.sourceRef)],
+);
+
 /* --------------------------------------------------------------- events */
 
 export const events = pgTable(
@@ -213,3 +252,4 @@ export type FocusSession = typeof focusSessions.$inferSelect;
 export type MemoryNote = typeof memoryNotes.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type DayPlanRow = typeof dayPlans.$inferSelect;
+export type Lead = typeof leads.$inferSelect;

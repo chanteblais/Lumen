@@ -4,7 +4,7 @@ import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
 import { isReentry, type Sitting } from "@/core/domain/users";
-import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
+import type { DayPlanJson, Intention, Lead, MemoryNote } from "@/db/schema";
 
 export type ContextInput = {
   displayName: string;
@@ -26,10 +26,15 @@ export type ContextInput = {
   declinedNow?: { title: string; reason?: string | null };
   /** Everything declined today, so nothing gets re-proposed. */
   declinedToday?: { intentionId: string; reason: string | null }[];
+  /** When the mail was last looked through; null = never (chat passes one or the other; pages omit). */
+  mailScan?: { at: Date } | null;
+  /** What Lumi noticed in the mail that might need doing — unconfirmed. */
+  leads?: Lead[];
 };
 
 const MAX_INTENTIONS = 25;
 const MAX_ACTIVITY = 12;
+const MAX_LEADS = 8;
 
 /**
  * The volatile context block: everything about *this* user and *this* moment.
@@ -133,6 +138,22 @@ export function buildContextBlock(input: ContextInput): string {
       "## Recently done (id · title · when) — reopen_intention puts one back",
       ...input.recentlyDone.slice(0, 5).map((i) => `- ${i.id} · "${i.title}"${i.completedAt ? ` · ${describeGap(i.completedAt, now)}` : ""}`),
     );
+  }
+
+  if (input.mailScan !== undefined) {
+    lines.push("", "## Their mail");
+    if (!input.mailScan) {
+      lines.push("- Never looked yet — they may not have connected Google (the Insights page has the chip). look_at_email will say so if it can't read.");
+    } else {
+      lines.push(`- Last looked ${describeGap(input.mailScan.at, now)}. look_at_email reads it fresh when they ask about their mail or something that would be in it.`);
+    }
+    if (input.leads?.length) {
+      lines.push("Things you noticed there that might need doing — unconfirmed; Insights asks them which still do (id · what · why · from · when):");
+      for (const l of input.leads.slice(0, MAX_LEADS)) {
+        lines.push(`- ${l.id} · "${l.title}" · ${l.why ?? "—"} · ${l.fromName ?? "—"} · ${l.receivedAt ? describeGap(l.receivedAt, now) : "—"}`);
+      }
+      lines.push("If they ask whether anything in their mail needs handling, go from these. keep_lead when it still does; dismiss_lead when it doesn't. Never count them back.");
+    }
   }
 
   const beliefs = input.beliefs ?? [];
