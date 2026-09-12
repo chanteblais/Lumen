@@ -17,7 +17,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Brass | `#9c7e4e` | `text-brass` | Accent — sparingly (one flourish per surface) |
 | Brass soft | `#c9b58c` | `text-brass-soft` | Accent on dark fills |
 | Forest | `#2a342e` | `bg-forest` | Avatar circle, send button — the only dark fills |
-| Glow | `#f1d8a0` | `text-glow` | Rali's eyes (reserved) |
+| Glow | `#f1d8a0` | `text-glow` | Lumi's eyes (reserved) |
 | Rule | `rgba(27,26,23,.16)` | — | Fine rules, borders |
 | Rule strong | `rgba(27,26,23,.34)` | — | Short rules, composer border |
 
@@ -73,8 +73,14 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 ### Greeting card (`components/chat/GreetingCard.tsx`)
 Avatar left, display lines right, quick-start chips below. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component.
 
-### Rali avatar (`components/chat/RaliAvatar.tsx`)
-Forest circle with the hooded figure from the character sheet (`mockups/rali.png`), matching the sheet's icon. Sprites live in `public/rali-sprites.png`: one row of eight 176px cells — neutral · happy · thinking · excited · curious · focused · supportive · playful — keyed off the sheet's cream ground. Props: `size` (default 68) and `expression` (default `neutral`); the figure is placed with `background-position`, so a new state is a new cell, never a new component. Never larger than the text it accompanies; never decorative on its own.
+### Lumi sprites (`components/chat/LumiSprite.tsx`)
+The single source of Lumi's drawings, cut from the character sheet (`mockups/lumi.png`, checkerboard keyed out). `public/lumi-heads.png`: one row of 176px square cells — neutral · blink · happy · curious · excited · sleepy. `public/lumi-body.png`: one row of 208×288 cells — `stand`, `stand-blink-half`, `stand-blink` (eyes painted out of `stand`), then the idle moments `perk` · `tilt` · `wave` · `lean` from the sheet's idle row, scaled so their faces match the standing figure. `LumiSprite` draws one cell at a height via `background-position`; a new state is a new cell, never a new component.
+
+### Lumi avatar (`components/chat/LumiAvatar.tsx`)
+Forest circle with the hooded head. Props: `size` (default 68) and `expression` (default `neutral`). Never larger than the text it accompanies; never decorative on its own.
+
+### Lumi companion (`components/shell/LumiCompanion.tsx`)
+Lumi, full figure, standing on the bottom-right edge of every page (`.companion`, fixed, 150px tall). Idle life: a slow breathing bob (`@keyframes breathe`, 4s), a blink every 3–7 s with an occasional double, and a moment (perk / tilt / wave / lean) cross-faded over the standing pose for 2–3 s — the first 3–6 s after arriving, then every 8–18 s. All of it stops under `prefers-reduced-motion`. `.main` reserves a bottom band (168px desktop, 110px mobile where she is scaled to 62%) so she never sits on the composer row. `pointer-events: none`, `aria-hidden` — she is company, not a control.
 
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.

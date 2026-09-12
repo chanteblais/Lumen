@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-ui";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
+import { LumiCompanion } from "@/components/shell/LumiCompanion";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               {children}
             </main>
           </div>
+          <LumiCompanion />
         </AuthProvider>
       </body>
     </html>

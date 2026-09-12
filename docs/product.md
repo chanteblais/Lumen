@@ -47,7 +47,7 @@ Examples:
 
 Tone should eventually adapt per user (warmth / humour / directness / quiet companionship / active coaching). V1: a single `preferences.tone` hint in the system prompt; adaptation UI later.
 
-## Rali the character
+## Lumi the character (the companion is named Lumi; the product is still Rali)
 A tiny hooded figure: oversized ivory cloak, dark face, two warm glowing eyes, antique brass fastener. Mysterious, calm, endearing, slightly mischievous — not childish. **Used sparingly:** a small circular avatar beside his messages. Later: subtle eye/posture states (thinking, focused, amused, curious, waiting, celebrating, sleepy). He must never dominate the interface.
 
 ## Visual direction
@@ -62,7 +62,7 @@ Rejected: cute, "teenage girl", wellness-app, live-laugh-love, cluttered, over-i
 
           [Help me choose] [Break it down] [Body double] [Just talk]
 
-          ( Message Rali…                                          ↑ )
+          ( Message Lumi…                                          ↑ )
 ```
 That's it.
 

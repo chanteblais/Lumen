@@ -17,6 +17,8 @@ Rali   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
 - Open question (2026-09-11): the Lists mockup shows an icon nav with **Focus** in place of Library. Decide before M5.
 
+**Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then perking up, tilting, waving or leaning. Decorative only — no clicks, no state. Still under reduced-motion.
+
 ---
 
 ## Auth
@@ -35,7 +37,7 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 - **Conversation** (`components/chat/Conversation.tsx`, `useChat`) — the transcript below the greeting card. User lines right-aligned on paper-deep; Rali lines with a 36px avatar. A fine rule with "Yesterday" / "3 days ago" separates messages more than six hours apart. While Rali is thinking, three slow dots. Errors render as one line in Rali's voice ("I lost the thread for a second. Say that again?"). The last 30 messages load on page open; the client sends only the new message and the server holds the transcript.
 - **Composer** — auto-growing textarea, `+`, send. Enter sends, Shift+Enter newlines; disabled while a turn streams.
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
-- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Rali says so if asked to remember or track something. Avatar is the hooded Rali sprite (neutral) as of 2026-09-11.
+- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Rali says so if asked to remember or track something. Avatar is Lumi's head (neutral) from `mockups/lumi.png` as of 2026-09-11.
 
 ### Today (`/today`)
 
