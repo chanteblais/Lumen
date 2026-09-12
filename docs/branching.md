@@ -45,7 +45,7 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 - **Approval first.** Merge + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
 - **Docs ride along — verify before pushing.** Every outgoing commit must have its docs folded in (the standing docs-before-commit sweep: `docs/domain.md` incl. migrations reference, `docs/features.md`, `docs/architecture.md` incl. API routes, the relevant spec, `docs/ef-burden-log.md`, `docs/decisions.md` if a decision moved). Stale docs → land the docs fix first, then push.
-- **Migrations deploy with their code.** Apply as part of the same merge+push; if it can't be applied right then, hold the push and say why.
+- **Migrations deploy with their code.** Claude applies additive migrations itself (`npm run db:migrate`) on the branch, before review; destructive ones wait for Chanté's explicit go. If a migration can't be applied, hold the push and say why.
 - **When in doubt, don't.** Leave the push to Chanté.
 
 ## Day-to-day cheat sheet
