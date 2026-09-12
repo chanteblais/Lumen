@@ -2,7 +2,7 @@
 
 Small milestones, each shippable to Vercel. Every milestone ends with the question: **did this reduce executive-function burden or add to it?** Estimates assume AI-assisted sessions.
 
-## M0 — Shell (½ day)
+## M0 — Shell (½ day) — **built 2026-09-11, branch `feat/m0-shell`, pending review**
 - `create-next-app` (TS, App Router, Tailwind 4, `src/`), Vitest, ESLint rule forbidding `next`/`react` imports inside `src/core`.
 - Design tokens + paper texture + serif fonts via `next/font`; the landing page **static**, matching the mockup: sidebar (Chat / Today / Library / Insights / Settings — Library and Insights are placeholders), greeting card, quick-start chips, composer.
 - Deploy to Vercel (empty env).

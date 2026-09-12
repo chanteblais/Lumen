@@ -119,3 +119,14 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking.
+
+## Storage
+None in V1. (Voice audio never leaves the browser; file attachments are post-V1.)
+
+## Migrations Reference
+
+Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → review → `npm run db:migrate`). Every migration is listed here with its prod status; whenever a migration is created or changed, its full SQL is also printed verbatim in the session summary so it can be reviewed without switching branches.
+
+| File | What it adds | Destructive? | Applied to prod |
+|---|---|---|---|
+| *(none yet — first migration lands in M1)* | | | |
