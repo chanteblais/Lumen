@@ -22,6 +22,10 @@ function line(p: ToolPart): string | null {
       return `Let go · ${out.title ?? ""}`;
     case "tool-report_capacity":
       return `Today · ${out.level === "low" ? "not much" : out.level === "high" ? "lots" : "normal-ish"}`;
+    case "tool-start_focus_session":
+      return `Together · ${out.goal ?? inp.goal ?? ""}${out.plannedMinutes ? ` · ${out.plannedMinutes} min` : ""}`;
+    case "tool-end_focus_session":
+      return `Session closed · ${out.goal ?? ""}`;
     case "tool-remember":
       return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
     case "tool-confirm_belief":

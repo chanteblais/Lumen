@@ -54,5 +54,15 @@ export async function latestEvent(db: Db, userId: string, type: string): Promise
   return row;
 }
 
+/** Has reflection already run over this subject (a session)? Keeps the abandoned-session sweep from reflecting twice. */
+export async function reflectedOn(db: Db, userId: string, subjectId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(and(eq(events.userId, userId), eq(events.type, "reflection.ran"), eq(events.subjectId, subjectId)))
+    .limit(1);
+  return Boolean(row);
+}
+
 /** Nothing older than 36 hours can be "today" in any timezone — the cheap bound for today-derived views. */
 export const TODAY_BOUND_MS = 36 * 3_600_000;

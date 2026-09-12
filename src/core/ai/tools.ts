@@ -8,10 +8,12 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { type Db } from "@/db/client";
+import type { UserPreferences } from "@/db/schema";
 import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { applyBeliefOps } from "@/core/domain/memory";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
+import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
 
 /** A write that means today's path should be re-cut once the turn has streamed. */
 export type PlanInvalidation = "capacity" | "reentry";
@@ -20,10 +22,14 @@ export type ToolContext = {
   db: Db;
   userId: string;
   timezone: string;
+  /** Session defaults (length, check-in interval). */
+  preferences?: Pick<UserPreferences, "session_minutes" | "check_in_minutes">;
   /** This sitting began after a week or more away: letting things go re-cuts the path. */
   reentry?: boolean;
   /** Called (at most once per reason) when a write invalidates today's path; the route re-cuts in `after()`. */
   onPlanChange?: (reason: PlanInvalidation) => void;
+  /** Called when a session closes during the turn (ended, or replaced by a new one); the route reflects on it in `after()`. */
+  onSessionEnd?: (sessionId: string) => void;
 };
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
@@ -33,8 +39,10 @@ function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
   return fn().catch((e: unknown) => ({ error: e instanceof Error ? e.message : "failed" }));
 }
 
-export function buildTools({ db, userId, timezone, reentry = false, onPlanChange }: ToolContext) {
+export function buildTools({ db, userId, timezone, preferences, reentry = false, onPlanChange, onSessionEnd }: ToolContext) {
   const me = { id: userId, timezone };
+  const sessionMinutes = preferences?.session_minutes ?? 45;
+  const checkInMinutes = preferences?.check_in_minutes ?? 15;
   return {
     create_intention: tool({
       description:
@@ -135,6 +143,44 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
           await reportCapacity(db, userId, input);
           onPlanChange?.("capacity");
           return { level: input.level };
+        }),
+    }),
+
+    start_focus_session: tool({
+      description:
+        "Begin a stretch of company once three things are settled — what we're doing, the first physical step, how long. Take them from the context when already known (the intention's next step, its estimate) instead of re-asking; minutes defaults to their usual. approach = the way in being tried, if there is one (e.g. 'read the last paragraph first'), worded like an existing strategy belief when one fits — outcomes are linked back to it. The interface shows the session and runs the check-ins; you go quiet.",
+      inputSchema: z.object({
+        goal: z.string().min(1).max(120).describe("What we're doing, in their words"),
+        first_step: z.string().min(1).max(200).describe("The smallest physical action to begin with"),
+        approach: z.string().max(160).optional().describe("The strategy being tried, if any"),
+        minutes: z.number().int().min(5).max(180).optional().describe("Planned length; omit for their usual"),
+        intention_id: z.string().uuid().optional().describe("The intention this is for, if it's one from the context"),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const { session, replaced } = await startFocusSession(db, userId, {
+            goal: input.goal,
+            firstStep: input.first_step,
+            approach: input.approach,
+            plannedMinutes: input.minutes ?? sessionMinutes,
+            checkInMinutes,
+            intentionId: input.intention_id,
+          });
+          if (replaced) onSessionEnd?.(replaced.id);
+          return toSessionView(session);
+        }),
+    }),
+
+    end_focus_session: tool({
+      description:
+        "Close the running session (id from the context) when they say in their own words that they're done or want to stop — the interface's Done and End taps close it on their own. completed if they got somewhere with it; stopped_early if they stopped before that. Neither is a judgement.",
+      inputSchema: z.object({ id: z.string().uuid(), outcome: z.enum(["completed", "stopped_early"]) }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await endFocusSession(db, userId, input.id, input.outcome);
+          if (!row) return { error: "no session running" };
+          onSessionEnd?.(row.id);
+          return { id: row.id, goal: row.goal, outcome: input.outcome };
         }),
     }),
 

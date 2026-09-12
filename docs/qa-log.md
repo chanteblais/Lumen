@@ -6,6 +6,44 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (7) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
+
+### Verified (live, against the real database; `check_in_minutes` set to 1 for the sweep and restored to 15 after; the sweep's sessions, their events, and the two beliefs it created were removed afterwards)
+- **Start → bar.** "Stay with me while I work on the lineage section? First step… Say 4 minutes." → Lumi called `start_focus_session` (goal, first step, `approach: read the last paragraph first`, the intention's id, 5 min) and said one line; ledger *Together · Intellectual lineage section of practicum paper · 5 min*; the bar appeared above the composer with *0 of 5 min* and End. Dev log: `tools=start_focus_session`.
+- **Check-in → Yep.** At minute 1 the card appeared (*Still with it?* · Yep · Stuck · Got distracted · Done). Yep closed it with no message and no model call; `session.check_in {response: ok, minute: 1}` in events.
+- **Check-in → Got distracted.** At minute 2: "Got distracted." landed as a user message, Lumi answered in one line, session still running; `session.check_in {distracted, minute: 2}`. Dev log: `session_event=distracted`, 25 output tokens.
+- **Card steps aside.** Typing a message ("remember this: reading the last paragraph first…") while the card was up dismissed it; Lumi stored the strategy belief.
+- **Check-in → Done.** At minute 5: session closed as `completed` in the route (`session.ended {completed, actual_minutes: 5}`), Lumi one line + one question, bar gone. `after()` ran reflection: `reflection.ran {session_end, ops: 1}`, the strategy belief's `evidence_for` moved, `users.last_reflected_at` set. Dev log: `session_event=done reflect=pending` then `[reflect] … ops=1`.
+- **End on the bar.** Second session ("Kendra reply", no approach) → End → "Let's stop here." → closed `stopped_early`, `actual_minutes: 0`, Lumi one line, bar gone.
+- **Abandoned session.** Third session (5 min) left open with no taps; reloading Chat eleven minutes later swept it (`session.ended {abandoned, actual_minutes: null}`), showed no bar, and greeted with "Good to see you, Chanté. / Looks like we left a session open on “Kendra reply.” Pick it back up, or let it go?" Saying "pick it back up" → Lumi started it again with the same goal and first step (see the line below the Fixed list).
+- Unit: 76 tests (check-in timing and copy, session-from-transcript, abandonment threshold, context lines for running/last session and each tap, strategy matching across wordings, deterministic session ops, reflection clamps, the model-step threshold).
+
+### Fixed
+- **Reflection double-counted.** Lumi confirmed the strategy herself in the reply to Done (`by: lumi`) and reflection confirmed it again (`by: reflection`) — evidence 2 from one session. Beliefs touched during the session are now off limits to reflection.
+- **Reflection over-reached on an 11-second session.** The stopped-early "Kendra reply" run confirmed the last-paragraph strategy (which it never used) and created a strategy at 0.25 from nothing. Now: a strategy gets evidence only from a session that used it (approach or first step — code-enforced), and a session that ended within a couple of minutes without finishing skips the model step.
+- **Approach ↔ belief matching missed inflections** ("read the last paragraph first" vs "Reading the last paragraph first…"). Matching is now on lightly stemmed content words.
+- **`reflection.ran` was stamped with the run's start time**, so it appeared before the ops it counted. Stamped at the end now.
+- **"Pick it back up" didn't.** With the abandoned session's start still visible in the transcript, Lumi answered "Already running." The context block now leads with "No focus session is running now — even if the transcript above shows one being started" and spells out that a yes means `start_focus_session` again with the same goal and first step.
+- **Abandoned sessions were never reflected on** (the sweep isn't a chat turn). The Chat page and the next chat turn now hand a just-abandoned session to reflection, which runs once per session.
+
+### Known and deliberate
+- A session's planned minutes are what Lumi passed (she rounded "4 minutes" up to the tool's minimum of 5).
+- After Done, Lumi may ask one question ("Is the section itself finished, or just this stretch?") — it decides whether she completes the intention; the persona allows exactly that one.
+- Starting a session while one runs closes the old one as `stopped_early` (and reflects on it); there is no "are you sure".
+- The check-in timer lives in the tab: a backgrounded tab fires late, a closed tab not at all; the server's only view is the abandonment sweep. Fine for V1.
+- Message metadata (`session_event`, `declined`, …) is not persisted; a reloaded transcript shows the visible words only. The events table holds what happened.
+- The Next dev overlay showed "1 issue" during the sweep: a transient HMR error between two edits of `reflect.ts`, gone on reload.
+- Deleting the sweep's rows is the one exception to append-only, for test data only.
+
+### Open
+- The 20-minute done-when session was run as a 5-minute one at a 1-minute interval; a real-length session with the default 15-minute interval is the manual test below.
+- Whether the abandoned greeting should also fire when a session goes quiet in a *still-open* tab (currently the sweep only runs on a request).
+
+### Highest-value manual tests
+1. From Today, *Start with Lumi* on the Right now card → Lumi settles the three things from what she already knows → a 45-minute session with the 15-minute check-ins; Yep twice, Done once.
+2. Leave a session open, close the tab, come back after twice its length → greeting offers it back; say "pick it back up" → a new session with the same goal.
+3. Say "I'm done" in words during a session → `end_focus_session` → ledger *Session closed · goal*.
+
 ## Sweep 2026-09-12 (6) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
 
 ### Verified (live, against the real database; the rows the sweep created were removed afterwards)

@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import { buildContextBlock } from "@/core/ai/context";
+import { buildContextBlock, type SessionEventNow } from "@/core/ai/context";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { reflectAfterSession } from "@/core/ai/reflect";
 import { primeTodaysPlan, type RecutReason } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import { isDeclineReason } from "@/core/declines";
@@ -16,8 +17,10 @@ import {
 } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { declineIntention } from "@/core/domain/intentions";
+import { elapsedMinutes, endFocusSession, getSession, recordCheckIn } from "@/core/domain/sessions";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
+import { isSessionEventResponse } from "@/core/focus";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
 
@@ -38,6 +41,15 @@ export async function POST(req: Request) {
   // (a "not this", a capacity report, letting things go on the way back).
   let recut: RecutReason | undefined;
   after(() => primeTodaysPlan(db(), user, recut));
+  // A session that closed during this turn (Done / End tap, end_focus_session, or
+  // replaced by a new one) is reflected on once the reply has streamed — as is
+  // one the snapshot's sweep just closed as abandoned (reflection runs once per session).
+  let endedSessionId: string | undefined;
+  let abandonedSessionId: string | undefined;
+  after(async () => {
+    const id = endedSessionId ?? abandonedSessionId;
+    if (id) await reflectAfterSession(db(), user, id);
+  });
 
   const body = (await req.json()) as { message?: LumenUIMessage };
   const incoming = body.message;
@@ -66,6 +78,23 @@ export async function POST(req: Request) {
     }
   }
 
+  // A tap on the session's check-in or End arrives the same way. Code records
+  // it — and closes the session on Done / End — before Lumi sees the message,
+  // so her one line is about a fact, not a request. (Yep never gets here.)
+  let sessionEventNow: SessionEventNow | undefined;
+  if (meta?.kind === "session_event" && isUuid(meta.sessionId) && isSessionEventResponse(meta.response) && meta.response !== "ok") {
+    const s = await getSession(db(), user.id, meta.sessionId);
+    if (s && !s.endedAt) {
+      const minute = elapsedMinutes(s);
+      if (meta.response !== "end") await recordCheckIn(db(), user.id, s.id, meta.response);
+      if (meta.response === "done" || meta.response === "end") {
+        await endFocusSession(db(), user.id, s.id, meta.response === "done" ? "completed" : "stopped_early");
+        endedSessionId = s.id;
+      }
+      sessionEventNow = { response: meta.response, goal: s.goal, minute, intentionId: s.intentionId };
+    }
+  }
+
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick on Lists a minute ago is in Lumi's context before she reads the message.
   const [history, snap, recentActivity] = await Promise.all([
@@ -75,14 +104,19 @@ export async function POST(req: Request) {
   ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
+  if (snap.session.last?.outcome === "abandoned") abandonedSessionId = snap.session.last.id;
 
   const tools = buildTools({
     db: db(),
     userId: user.id,
     timezone: user.timezone,
+    preferences: user.preferences,
     reentry: isReentry(snap.sitting),
     onPlanChange: (reason) => {
       recut ??= reason;
+    },
+    onSessionEnd: (id) => {
+      endedSessionId ??= id;
     },
   });
 
@@ -109,6 +143,9 @@ export async function POST(req: Request) {
           plan: snap.plan,
           declinedNow,
           declinedToday: snap.declinedToday,
+          session: snap.session.active,
+          lastSession: snap.session.last,
+          sessionEventNow,
         }),
       },
     ],
@@ -118,7 +155,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${endedSessionId ? " reflect=pending" : ""}`);
       }
     },
   });
