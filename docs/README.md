@@ -11,7 +11,7 @@
 | [Features](features.md) | Every page and feature — who it's for, what it does, key states |
 | [Design System](design-system.md) | Tokens, typography, CSS classes, component patterns |
 | [Design Philosophy](design-philosophy.md) | What the interface *is* and *is never*; how personality enters the app (draft — validate against Chanté's reactions) |
-| [Branching](branching.md) | Branch rules, parallel sessions, commit guards, Claude-session guardrails |
+| [Branching](branching.md) | Branch rules, the docs audit before every merge and push, parallel sessions, dev servers and ports, commit guards, Claude-session guardrails |
 | [EF-Burden Log](ef-burden-log.md) | **Standing ledger:** every place the app asks the user to maintain, decide, rate or tidy something. The dogfood ledger for the one question |
 | [Voice Eval Log](voice-eval-log.md) | Scripted scenarios run against Lumi's persona, what was off, what changed in the prompt |
 | [QA Log](qa-log.md) | QA sweeps: tested/fixed, known-and-deliberate (don't re-report), open items |
