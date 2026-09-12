@@ -81,9 +81,10 @@ body::before {
 .shell {
   position: relative;
   z-index: 1;
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .sidebar {
@@ -93,6 +94,7 @@ body::before {
   padding: 44px 36px 40px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 /* Inner frame line: the "double rule" of a book plate. */
 .sidebar::after {
@@ -128,9 +130,34 @@ body::before {
 
 .main {
   min-width: 0;
-  padding: 36px 48px 40px;
+  min-height: 0;
+  padding: 36px 48px 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto; /* pages scroll here; the chat page scrolls its own transcript instead */
+}
+
+/* ---------- Chat page: transcript scrolls, composer stays put ---------- */
+.chat-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
+  scrollbar-gutter: stable;
+}
+.composer-dock {
+  flex: none;
+  padding: 18px 0 28px;
+  background: linear-gradient(to bottom, transparent, var(--paper) 22px);
 }
 
 /* ---------- Chat surfaces ---------- */
@@ -196,6 +223,10 @@ body::before {
   max-height: 160px;
 }
 .composer textarea::placeholder { color: var(--ink-mute); }
+.composer.is-listening { border-color: var(--brass); box-shadow: var(--shadow), 0 0 0 4px rgba(156, 126, 78, 0.12); }
+.tool-link.is-listening { color: var(--brass); }
+.tool-link.is-listening svg { animation: breathe 1.6s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 
 .send {
   display: inline-flex;
@@ -248,7 +279,7 @@ body::before {
 
 /* ---------- Mobile: sidebar becomes a top strip ---------- */
 @media (max-width: 767px) {
-  .shell { grid-template-columns: minmax(0, 1fr); }
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .sidebar {
     border-right: 0;
     border-bottom: 1px solid var(--rule);
@@ -264,7 +295,8 @@ body::before {
   .nav-item { padding: 6px 10px; margin: 0; gap: 8px; }
   .nav-item .num { display: none; }
   .nav-item .name { font-size: 15px; }
-  .main { padding: 22px 20px 28px; }
+  .main { padding: 22px 20px 0; }
+  .composer-dock { padding-bottom: 18px; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
   .msg p { font-size: 17px; }

@@ -44,7 +44,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 
 ## Spacing & Layout
 
-- **Shell:** CSS grid `272px minmax(0,1fr)` (`.shell`); sidebar `.sidebar` with an inner 10px inset frame line (`::after`); main `.main` padded `36px 48px`.
+- **Shell:** CSS grid `272px minmax(0,1fr)`, **viewport-height** (`.shell { height: 100dvh }`); sidebar `.sidebar` scrolls internally, with an inner 10px inset frame line (`::after`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
 - **Content width:** `max-w-[1080px]`, left-aligned within main.
 - **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right; the footer aside and numerals are hidden.
 - **Radii:** cards `10px`; chips, icon buttons, composer, send `999px`.
@@ -61,7 +61,8 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.card` | Card surface: `--card` bg, rule border, 10px radius, `--shadow` |
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
 | `.icon-btn` | 44px round icon button on paper-deep |
-| `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px |
+| `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it |
+| `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on |
 | `.send` | 64px forest circle; disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
 | `.nav-item` | Sidebar link; `[aria-current="page"]` gets the soft highlight; `.num` / `.name` children |
@@ -80,7 +81,7 @@ Forest circle with the hooded figure from the character sheet (`mockups/rali.png
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.
 
 ### Composer (`components/chat/Composer.tsx`)
-`+` icon button · auto-growing textarea · send. Below it, the tool links row and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines (M7).
+`+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
 ### Sidebar (`components/shell/Sidebar.tsx`)
 Wordmark, tagline label, short rule, numbered nav (`01 Chat` …), italic footer aside between two short rules. Active route from `usePathname`.
