@@ -179,9 +179,9 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 
 | Route | Method | Gate | What it does | Since |
 |---|---|---|---|---|
-| *(none yet)* | | | | |
+| `/api/chat` | POST | `requireUser()` | One streamed turn. Body `{ id, message }` — the new user `UIMessage` only; the server loads the last 30 from the database, persists the user message, streams `claude-opus-5` with `instructions: [persona (cache_control ephemeral), context block]` at `effort: low` with server-side refusal fallbacks, and persists the assistant message in `onEnd`. `maxDuration = 60`. Dev logs a `[chat] tokens …` line with cache read/write counts | M2 |
 
-Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PATCH /api/intentions` complete/reopen from Today (M3) · `GET/DELETE /api/beliefs` (M6).
+Planned: `POST /api/session` check-in ticks (M5) · `PATCH /api/intentions` complete/reopen from Today (M3) · `GET/DELETE /api/beliefs` (M6).
 
 ## 6. Key conventions
 
@@ -190,7 +190,9 @@ Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PA
 - **Deterministic where it can be:** the greeting, focus check-ins, quick starts. Rali speaks unprompted only at check-ins.
 - **Store facts and events; derive judgements** (stale, avoided, gap, today's capacity). Never persist derived flags.
 - **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
-- **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with `cache_read_input_tokens`.
+- **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). Anthropic's minimum cacheable prefix is model-dependent; a short persona may never cache — grow it before assuming a bug.
+- **Message ids are UUIDs on both sides** (`generateId: () => crypto.randomUUID()` in `useChat`, `generateMessageId` in the route) because `messages.id` is a uuid column.
+- **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the two public prefixes by hand and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
 - **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else.
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.

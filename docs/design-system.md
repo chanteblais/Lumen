@@ -14,8 +14,8 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Ink | `#1b1a17` | `text-ink` | Primary text |
 | Ink soft | `#3f3c36` | `text-ink-soft` | Secondary text, labels |
 | Ink mute | `#8a8378` | `text-ink-mute` | Placeholders, nav numerals, quiet labels |
-| Brass | `#9c7e4e` | `text-brass` | Accent — sparingly (avatar monogram, one flourish per surface) |
-| Brass soft | `#c9b58c` | `text-brass-soft` | Monogram on dark |
+| Brass | `#9c7e4e` | `text-brass` | Accent — sparingly (one flourish per surface) |
+| Brass soft | `#c9b58c` | `text-brass-soft` | Accent on dark fills |
 | Forest | `#2a342e` | `bg-forest` | Avatar circle, send button — the only dark fills |
 | Glow | `#f1d8a0` | `text-glow` | Rali's eyes (reserved) |
 | Rule | `rgba(27,26,23,.16)` | — | Fine rules, borders |
@@ -74,7 +74,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 Avatar left, display lines right, quick-start chips below. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component.
 
 ### Rali avatar (`components/chat/RaliAvatar.tsx`)
-Forest circle with a brass-soft monogram (`size` prop, default 68). Placeholder until the hooded figure exists as a `currentColor`-friendly SVG with eye states. Never larger than the text it accompanies; never decorative on its own.
+Forest circle with the hooded figure from the character sheet (`mockups/rali.png`), matching the sheet's icon. Sprites live in `public/rali-sprites.png`: one row of eight 176px cells — neutral · happy · thinking · excited · curious · focused · supportive · playful — keyed off the sheet's cream ground. Props: `size` (default 68) and `expression` (default `neutral`); the figure is placed with `background-position`, so a new state is a new cell, never a new component. Never larger than the text it accompanies; never decorative on its own.
 
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.

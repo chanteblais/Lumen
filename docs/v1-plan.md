@@ -14,7 +14,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - Drizzle schema for all seven tables (`docs/domain.md`), `drizzle-kit generate` + `migrate`, Supabase pooler connection.
 - **Done when:** signing in creates a user row; `npm run check` (tsc + vitest) passes; migrations apply cleanly to a fresh database.
 
-## M2 — The conversation (1 day)
+## M2 — The conversation (1 day) — **built 2026-09-12 on `feat/m2-conversation`; voice eval pending `ANTHROPIC_API_KEY`**
 - `POST /api/chat`: `streamText` with the persona system prompt (cached prefix) and a minimal context block (name, local time, visit gap). No tools yet.
 - Persist user + assistant `UIMessage`s; load the last 30 on page open; render history with date rules between visits.
 - Server-rendered greeting (`core/ai/greeting.ts`) replaces the static card; quick-start chips send canned first messages.

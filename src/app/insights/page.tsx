@@ -1,4 +1,7 @@
-export default function Page() {
+import { requireUser } from "@/lib/auth";
+
+export default async function Page() {
+  await requireUser();
   return (
     <div className="mx-auto w-full max-w-[1080px] px-1">
       <p className="label">Insights</p>

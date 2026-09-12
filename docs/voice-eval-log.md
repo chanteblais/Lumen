@@ -24,4 +24,6 @@ Scripted scenarios run against Rali's persona (`src/core/ai/persona.ts`), what w
 
 ## Runs
 
-*(None yet — first run at M2.)*
+Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
+
+*(No runs yet.)*

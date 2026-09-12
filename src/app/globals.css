@@ -226,6 +226,26 @@ body::before {
 }
 .tool-link:hover { color: var(--ink); }
 
+/* ---------- Messages ---------- */
+.msg { display: flex; gap: 18px; align-items: flex-start; max-width: 760px; }
+.msg p { font-size: 18px; line-height: 1.55; }
+.msg p + p { margin-top: 0.7em; }
+.msg-user { margin-left: auto; flex-direction: row-reverse; }
+.msg-user p {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 14px 14px 4px 14px;
+  padding: 12px 18px;
+  color: var(--ink);
+}
+.msg-rali .msg-avatar { margin-top: 2px; }
+.msg-rali .msg-body { padding-top: 4px; min-width: 0; }
+.msg-rali p { color: var(--ink); }
+.thinking-dots span { display: inline-block; font-size: 26px; line-height: 1; color: var(--ink-mute); animation: dot 1.2s infinite; }
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
 /* ---------- Mobile: sidebar becomes a top strip ---------- */
 @media (max-width: 767px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -246,5 +266,7 @@ body::before {
   .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 28px; }
   .composer textarea { font-size: 19px; }
+  .msg { max-width: 100%; }
+  .msg p { font-size: 17px; }
   .send { width: 52px; height: 52px; }
 }

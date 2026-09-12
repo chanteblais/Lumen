@@ -1,19 +1,57 @@
-type Props = { size?: number; className?: string };
-
 /**
- * Rali's avatar. M0: a brass monogram on the dark circle from the mockup.
- * Later: the hooded figure with eye states (thinking, focused, amused, waiting…).
+ * Rali's avatar: the hooded figure from the character sheet (`mockups/rali.png`),
+ * cropped into `public/rali-sprites.png` — one row of eight 176px cells, in the
+ * order below. The figure sits in the forest circle from the sheet's icon.
+ *
+ * States are props, not new drawings. Deterministic surfaces (greeting, check-ins)
+ * pick an expression; conversation turns will pick one from M2.
  */
-export function RaliAvatar({ size = 68, className = "" }: Props) {
+export const RALI_EXPRESSIONS = [
+  "neutral",
+  "happy",
+  "thinking",
+  "excited",
+  "curious",
+  "focused",
+  "supportive",
+  "playful",
+] as const;
+
+export type RaliExpression = (typeof RALI_EXPRESSIONS)[number];
+
+type Props = { size?: number; expression?: RaliExpression; className?: string };
+
+const CELLS = RALI_EXPRESSIONS.length;
+
+export function RaliAvatar({ size = 68, expression = "neutral", className = "" }: Props) {
+  const index = RALI_EXPRESSIONS.indexOf(expression);
+  // The figure fills ~70% of its cell, bottom-anchored; scale the cell up so she
+  // fills the circle, and nudge her down a touch so the hood's peak clears the rim.
+  const cell = size * 1.06;
+  const offsetX = (size - cell) / 2;
+  const offsetY = (size - cell) / 2 + size * 0.03;
+
   return (
     <span
-      aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-forest ${className}`}
+      role="img"
+      aria-label={`Rali, ${expression}`}
+      className={`relative inline-block shrink-0 overflow-hidden rounded-full bg-forest ${className}`}
       style={{ width: size, height: size }}
     >
-      <span className="font-display select-none text-brass-soft" style={{ fontSize: size * 0.5, lineHeight: 1, transform: "translateY(-1px)" }}>
-        R
-      </span>
+      <span
+        aria-hidden
+        className="absolute block"
+        style={{
+          width: cell,
+          height: cell,
+          left: offsetX,
+          top: offsetY,
+          backgroundImage: "url(/rali-sprites.png)",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: `${CELLS * 100}% 100%`,
+          backgroundPosition: `${(index / (CELLS - 1)) * 100}% 0`,
+        }}
+      />
     </span>
   );
 }

@@ -1,12 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Protected-first: every surface is signed-in (docs/features.md). Only the
-// auth pages themselves are public. Clerk's own callback paths (/__clerk) are
-// handled by the SDK before this runs.
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+// auth pages themselves are public. This wall is defence in depth — every
+// page and route also calls requireUser() itself (Clerk's recommended
+// resource-based check; the route-auth audit enforces it for API routes).
+const PUBLIC_PREFIXES = ["/sign-in", "/sign-up"];
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) await auth.protect();
+  const path = req.nextUrl.pathname;
+  const isPublic = PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
+  if (!isPublic) await auth.protect();
 });
 
 export const config = {

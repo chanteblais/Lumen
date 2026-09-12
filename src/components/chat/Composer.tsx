@@ -2,9 +2,19 @@
 
 import { useRef, useState } from "react";
 
-export function Composer() {
+type Props = { onSend?: (text: string) => void; busy?: boolean };
+
+export function Composer({ onSend, busy = false }: Props) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  const submit = () => {
+    const text = value.trim();
+    if (!text || busy) return;
+    onSend?.(text);
+    setValue("");
+    requestAnimationFrame(resize);
+  };
 
   const resize = () => {
     const el = ref.current;
@@ -18,7 +28,8 @@ export function Composer() {
       <form
         className="composer"
         onSubmit={(e) => {
-          e.preventDefault(); // M2 wires this to /api/chat
+          e.preventDefault();
+          submit();
         }}
       >
         <button type="button" className="icon-btn h-[60px] w-[60px] shrink-0" aria-label="Add">
@@ -36,8 +47,14 @@ export function Composer() {
             setValue(e.target.value);
             resize();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              submit();
+            }
+          }}
         />
-        <button type="submit" className="send shrink-0" aria-label="Send" disabled={value.trim().length === 0}>
+        <button type="submit" className="send shrink-0" aria-label="Send" disabled={value.trim().length === 0 || busy}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 19V5M6 11l6-6 6 6" />
           </svg>

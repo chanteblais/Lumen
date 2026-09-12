@@ -31,10 +31,11 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 **What:** The conversation with Rali. The only surface that matters in V1.
 
 - **Greeting card** — two lines from `core/ai/greeting.ts` (deterministic, no model call): recognition ("Good to see you, Chanté.") + somewhere to begin. Variants: default ("What are we working with today?"), long gap (≥7 days: "It's been a minute…"), abandoned session ("Looks like we left a session open on…").
-- **Quick starts** — Help me choose · Break it down · Body double · Just talk, plus "another way in". M0: static. M2: each sends a canned first message.
-- **Composer** — auto-growing textarea, `+`, send. M0: visual only. M2: streams a turn via `POST /api/chat`.
+- **Quick starts** — Help me choose · Break it down · Body double · Just talk, plus "another way in" (sends "I don't know where to start."). Each chip sends its own label as the user message — the user sees exactly what they tapped — and the persona knows what each means. Hidden once the conversation has messages (the card compacts).
+- **Conversation** (`components/chat/Conversation.tsx`, `useChat`) — the transcript below the greeting card. User lines right-aligned on paper-deep; Rali lines with a 36px avatar. A fine rule with "Yesterday" / "3 days ago" separates messages more than six hours apart. While Rali is thinking, three slow dots. Errors render as one line in Rali's voice ("I lost the thread for a second. Say that again?"). The last 30 messages load on page open; the client sends only the new message and the server holds the transcript.
+- **Composer** — auto-growing textarea, `+`, send. Enter sends, Shift+Enter newlines; disabled while a turn streams.
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
-- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap.
+- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Rali says so if asked to remember or track something. Avatar is the hooded Rali sprite (neutral) as of 2026-09-11.
 
 ### Today (`/today`)
 
