@@ -6,6 +6,21 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 — M2 conversation (`feat/m2-conversation`)
+
+### Verified
+- One real turn through the UI: streamed reply in voice, user + assistant rows persisted with UUID ids, `cacheRead=1013` on the first UI turn (shares the prefix with the eval run). Reload renders history from the database; card compacts and chips hide once there are messages. Test rows deleted afterwards.
+- Voice eval: nine scenarios, two tuning changes, three reruns — `docs/voice-eval-log.md`.
+
+### Known and deliberate
+- The client sends only the newest message; two tabs open on the same conversation won't see each other's turns until reload (no live sync in V1).
+- `sendReasoning: false` — thinking never reaches the client or the database.
+- Quick starts hide after the first message; the "another way in" button sends "I don't know where to start."
+
+### Open
+- Abort mid-stream persists whatever text arrived (by design) but the UI has no stop button yet (M7 polish).
+- Very long replies aren't clamped; the persona keeps them short in practice.
+
 ## Sweep 2026-09-11 — M0 static shell (`feat/m0-shell`)
 
 ### Fixed

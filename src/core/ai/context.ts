@@ -26,7 +26,7 @@ export function buildContextBlock(input: ContextInput): string {
   const lines = [
     "## Right now",
     `- Talking with: ${input.displayName}. Use the name sparingly.`,
-    `- Their local time: ${local} (${dayPart(now, input.timezone)}), timezone ${input.timezone}.`,
+    `- Their local time: ${local} (${dayPart(now, input.timezone)}), timezone ${input.timezone}. Mention it only if it changes the advice.`,
   ];
 
   if (!input.lastSeenAt) {
