@@ -19,18 +19,22 @@ Rali   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 
 ---
 
+## Auth
+
+Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in` and `/sign-up`. `requireUser()` (`src/lib/auth.ts`) resolves the Clerk session to the internal `users` row — created lazily on first visit with the Clerk first name and the browser timezone (cookie `rali_tz`, set by `TimezoneCapture` in the layout; a first visit refreshes once so "today" is right). `recordVisit()` bumps `last_seen_at` and returns the previous value for the greeting. No onboarding screen: signing in *is* onboarding.
+
 ## Pages
 
 ### Chat (`/`) — the soft landing
 
-**Who:** Everyone (signed-in from M1).
+**Who:** Signed-in users.
 **What:** The conversation with Rali. The only surface that matters in V1.
 
 - **Greeting card** — two lines from `core/ai/greeting.ts` (deterministic, no model call): recognition ("Good to see you, Chanté.") + somewhere to begin. Variants: default ("What are we working with today?"), long gap (≥7 days: "It's been a minute…"), abandoned session ("Looks like we left a session open on…").
 - **Quick starts** — Help me choose · Break it down · Body double · Just talk, plus "another way in". M0: static. M2: each sends a canned first message.
 - **Composer** — auto-growing textarea, `+`, send. M0: visual only. M2: streams a turn via `POST /api/chat`.
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
-- **Status:** M0 built 2026-09-11 (static).
+- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap.
 
 ### Today (`/today`)
 

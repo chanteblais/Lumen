@@ -9,7 +9,7 @@ Things to sort before anyone but Chanté uses Rali.
 - [ ] Sign-in page redirects are prop-driven (no deprecated `NEXT_PUBLIC_CLERK_AFTER_*` env vars).
 
 ## Database (Supabase / Drizzle)
-- [ ] All migrations in `src/db/migrations/` applied to the production project (ledger: `docs/domain.md` → Migrations Reference).
+- [x] `0000_initial_schema` applied (2026-09-11). Keep the ledger in `docs/domain.md` → Migrations Reference current for every later migration.
 - [ ] Pooler connection string (port 6543, transaction mode) in `DATABASE_URL`; `prepare: false` in the driver config.
 - [ ] Backups enabled.
 

@@ -9,7 +9,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** the page loads in < 1s, says one thing, and looks like the mockup on desktop and acceptable at 390px.
 - **EF check:** nothing on the page asks the user to decide or maintain anything.
 
-## M1 — Identity & persistence (½ day)
+## M1 — Identity & persistence (½ day) — **built 2026-09-11 (`feat/m0-shell` Clerk + `feat/m1-db` schema/auth wiring); migration pending apply**
 - Clerk sign-in; `lib/auth.ts → requireUser()` creates the `users` row lazily and captures browser timezone on first visit.
 - Drizzle schema for all seven tables (`docs/domain.md`), `drizzle-kit generate` + `migrate`, Supabase pooler connection.
 - **Done when:** signing in creates a user row; `npm run check` (tsc + vitest) passes; migrations apply cleanly to a fresh database.

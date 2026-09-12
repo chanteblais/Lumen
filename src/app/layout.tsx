@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-ui";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
+import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
       <body>
         <AuthProvider>
+          <TimezoneCapture />
           <div className="shell">
             <Sidebar />
             <main className="main">

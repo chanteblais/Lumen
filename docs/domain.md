@@ -125,8 +125,8 @@ None in V1. (Voice audio never leaves the browser; file attachments are post-V1.
 
 ## Migrations Reference
 
-Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → review → `npm run db:migrate`). Every migration is listed here with its prod status; whenever a migration is created or changed, its full SQL is also printed verbatim in the session summary so it can be reviewed without switching branches.
+Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename the file to something readable and fix the `tag` in `meta/_journal.json` → review → `npm run db:migrate`, which reads `.env.local` via Node's `--env-file`). Every migration is listed here with its prod status; whenever a migration is created or changed, its full SQL is also printed verbatim in the session summary so it can be reviewed without switching branches.
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
-| *(none yet — first migration lands in M1)* | | | |
+| `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | **Yes** — 2026-09-11, run by hand in the Supabase SQL editor; recorded in `drizzle.__drizzle_migrations` afterwards so `npm run db:migrate` is a no-op. Future migrations: `npm run db:migrate` only |
