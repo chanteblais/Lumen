@@ -170,27 +170,28 @@ body::before {
   pointer-events: none;
   user-select: none;
 }
-/* Idle life: a slow breath on the whole figure; moments cross-fade over the base. */
-.companion-figure {
-  position: relative;
-  transform-origin: bottom center;
-  animation: lumi-breathe 4s ease-in-out infinite;
+/* Idle life. The eight idle frames are stacked; the current one fades in ON TOP
+   of the previous (which stays opaque until covered), so she never turns
+   translucent mid-step. Moments fade in over the loop the same way. */
+.companion-figure { position: relative; }
+.companion-frame {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 0;
 }
-.companion-base { transition: opacity 260ms ease; }
+.companion-frame.prev { opacity: 1; z-index: 1; }
+.companion-frame.on { opacity: 1; z-index: 2; transition: opacity 320ms ease-in-out; }
 .companion-moment {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 260ms ease;
+  z-index: 3;
+  transition: opacity 420ms ease-in-out;
 }
 .companion-moment.on { opacity: 1; }
-@keyframes lumi-breathe {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  50% { transform: translateY(-3px) scaleY(1.025) rotate(-0.6deg); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .companion-figure { animation: none; }
-  .companion-base, .companion-moment { transition: none; }
+  .companion-frame, .companion-moment { transition: none; }
 }
 
 /* ---------- Chat surfaces ---------- */
