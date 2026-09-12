@@ -17,8 +17,10 @@ export default async function Home() {
   const intentionTitles = Object.fromEntries(open.map((i) => [i.id, i.title]));
   const lines = greeting({ displayName: user.displayName, lastSeenAt });
 
+  // Keyed: an element passed as a prop across the server/client boundary
+  // arrives lazily, and React dev then treats it as an unkeyed list child.
   const kicker = (
-    <div className="mb-9 px-1">
+    <div key="kicker" className="mb-9 px-1">
       <p className="label">Lumi</p>
       <div className="my-4"><Divider /></div>
       <p className="label leading-[1.9]">
