@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { RaliUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
-import { RaliAvatar } from "./RaliAvatar";
+import { LumiAvatar } from "./LumiAvatar";
 
 type Props = { messages: RaliUIMessage[]; thinking?: boolean; error?: string };
 
@@ -37,7 +37,7 @@ export function MessageList({ messages, thinking, error }: Props) {
         </div>
       ) : (
         <div key={m.id} className="msg msg-rali">
-          <RaliAvatar size={36} className="msg-avatar" />
+          <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body">
             {text.split(/\n{2,}/).map((para, i) => (
               <p key={i}>{para}</p>
@@ -52,14 +52,14 @@ export function MessageList({ messages, thinking, error }: Props) {
     <section className="mt-10 flex flex-col gap-7" aria-live="polite" aria-label="Conversation">
       {items}
       {thinking && (
-        <div className="msg msg-rali" aria-label="Rali is thinking">
-          <RaliAvatar size={36} className="msg-avatar" />
+        <div className="msg msg-rali" aria-label="Lumi is thinking">
+          <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
         </div>
       )}
       {error && (
         <div className="msg msg-rali">
-          <RaliAvatar size={36} className="msg-avatar" />
+          <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body"><p className="text-ink-soft">{error}</p></div>
         </div>
       )}

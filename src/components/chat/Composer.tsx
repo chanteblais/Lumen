@@ -41,8 +41,8 @@ export function Composer({ onSend, busy = false }: Props) {
           ref={ref}
           rows={1}
           value={value}
-          placeholder="Message Rali…"
-          aria-label="Message Rali"
+          placeholder="Message Lumi…"
+          aria-label="Message Lumi"
           onChange={(e) => {
             setValue(e.target.value);
             resize();

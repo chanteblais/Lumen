@@ -30,7 +30,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 ### Known and deliberate
 - Chips, composer send, and tool links do nothing (M0 is static).
 - Greeting name is a constant (`DEV_NAME`) until M1 auth.
-- ~~Rali avatar is a monogram, not the hooded figure.~~ Fixed 2026-09-11: sprite sheet in `public/rali-sprites.png`.
+- ~~Rali avatar is a monogram, not the hooded figure.~~ Fixed 2026-09-11: sprite sheets in `public/lumi-heads.png` / `public/lumi-body.png`.
 - The Next dev indicator ("N" bottom-left) is dev-only.
 
 ### Open

@@ -11,7 +11,7 @@
   --brass: #9c7e4e;
   --brass-soft: #c9b58c;
   --forest: #2a342e;       /* avatar, send button */
-  --glow: #f1d8a0;         /* Rali's eyes */
+  --glow: #f1d8a0;         /* Lumi's eyes */
   --rule: rgba(27, 26, 23, 0.16);
   --rule-strong: rgba(27, 26, 23, 0.34);
   --shadow: 0 1px 2px rgba(27, 26, 23, 0.04), 0 8px 24px rgba(27, 26, 23, 0.05);
@@ -128,9 +128,42 @@ body::before {
 
 .main {
   min-width: 0;
-  padding: 36px 48px 40px;
+  padding: 36px 48px 168px; /* bottom band is Lumi's corner (.companion) */
   display: flex;
   flex-direction: column;
+}
+
+/* Lumi keeping you company, bottom right, standing on the screen's bottom
+   edge. Never interactive. */
+.companion {
+  position: fixed;
+  right: 28px;
+  bottom: -4px;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
+/* Idle life: a slow breath on the whole figure; moments cross-fade over the base. */
+.companion-figure {
+  position: relative;
+  transform-origin: bottom center;
+  animation: breathe 4s ease-in-out infinite;
+}
+.companion-base { transition: opacity 260ms ease; }
+.companion-moment {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.companion-moment.on { opacity: 1; }
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-3px) scaleY(1.025) rotate(-0.6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion-figure { animation: none; }
+  .companion-base, .companion-moment { transition: none; }
 }
 
 /* ---------- Chat surfaces ---------- */
@@ -264,7 +297,8 @@ body::before {
   .nav-item { padding: 6px 10px; margin: 0; gap: 8px; }
   .nav-item .num { display: none; }
   .nav-item .name { font-size: 15px; }
-  .main { padding: 22px 20px 28px; }
+  .main { padding: 22px 20px 110px; }
+  .companion { right: 10px; bottom: -3px; transform: scale(0.62); transform-origin: bottom right; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
   .msg p { font-size: 17px; }
