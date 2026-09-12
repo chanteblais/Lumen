@@ -174,7 +174,7 @@ body::before {
 .companion-figure {
   position: relative;
   transform-origin: bottom center;
-  animation: breathe 4s ease-in-out infinite;
+  animation: lumi-breathe 4s ease-in-out infinite;
 }
 .companion-base { transition: opacity 260ms ease; }
 .companion-moment {
@@ -184,7 +184,7 @@ body::before {
   transition: opacity 260ms ease;
 }
 .companion-moment.on { opacity: 1; }
-@keyframes breathe {
+@keyframes lumi-breathe {
   0%, 100% { transform: translateY(0) scaleY(1); }
   50% { transform: translateY(-3px) scaleY(1.025) rotate(-0.6deg); }
 }
