@@ -33,7 +33,7 @@ export function Sidebar() {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? "page" : undefined}>
-              <Diamond size={9} className="nav-mark" />
+              <Diamond size={12} className="nav-mark" />
               <span className="name">{item.label}</span>
             </Link>
           );
