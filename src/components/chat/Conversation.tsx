@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/declines";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 import { Composer } from "./Composer";
-import { GreetingCard } from "./GreetingCard";
+import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
 
 type Props = {
@@ -104,11 +104,11 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     <div className="chat-page">
       <div className="chat-scroll">
         {kicker}
-        {/* The greeting card marks this page open: the earlier conversation above it (scroll up), this visit below. */}
+        {/* The greeting marks this page open, like a chapter head: the earlier conversation above it (scroll up), this visit below. */}
         <MessageList
           messages={messages}
           cardAt={cardAt}
-          card={<GreetingCard lines={greetingLines} onQuickStart={send} compact={inSitting} />}
+          card={<Greeting lines={greetingLines} onQuickStart={send} compact={inSitting} />}
           thinking={status === "submitted"}
           error={error ? "I lost the thread for a second. Say that again?" : undefined}
         />

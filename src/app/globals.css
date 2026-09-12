@@ -4,7 +4,7 @@
 :root {
   --paper: #efeae2;        /* page ground */
   --paper-deep: #e6e0d5;   /* sidebar, chips */
-  --card: #f8f5ef;         /* greeting card, composer */
+  --card: #f8f5ef;         /* composer, Today's cards, the companion bubble */
   --ink: #1b1a17;
   --ink-soft: #3f3c36;
   --ink-mute: #8a8378;
@@ -264,20 +264,40 @@ body::after {
   border-radius: 6px;
   box-shadow: var(--shadow);
 }
-/* A plate: the card with a second hairline set in from the edge, like an
-   engraving's frame. The inset line is the surface's one flourish. */
-.plate { position: relative; }
-.plate::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  pointer-events: none;
+/* ---------- The greeting: a chapter opening, not a card ----------
+   Set on the paper itself, the way a chapter begins in a book: a headpiece
+   across the measure (hairline · asterism · hairline), Lumi's portrait in the
+   margin, the first line as the title, the second beneath it in the softer
+   ink, then the quick starts. No box — the ornament and the white space are
+   the break between what was there and this visit. */
+.opening { padding: 8px 4px 4px; }
+.opening-head { display: flex; align-items: center; gap: 14px; color: var(--brass); margin-bottom: 40px; }
+.opening-head .hair { display: block; flex: 1; height: 1px; background: var(--rule-strong); }
+.opening-body { display: flex; align-items: flex-start; gap: 28px; }
+.opening-portrait { margin-top: 6px; }
+.opening-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
+.opening-line {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 12px;
+}
+/* Within a sitting the opening is a running head: the same break, smaller. */
+.opening.is-compact .opening-head { margin-bottom: 26px; }
+.opening.is-compact .opening-portrait { margin-top: 2px; }
+.opening.is-compact .opening-title { font-size: 26px; line-height: 1.25; }
+.opening.is-compact .opening-line { font-size: 20px; margin-top: 6px; }
 
-/* Lumi's avatar as a medallion: a brass hairline ring set off the forest. */
-.medallion { box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass-soft); }
+/* Lumi's avatar as a medallion: a brass hairline ring set off the forest
+   by a gap of paper. */
+.medallion { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--brass-soft); }
 
 .chip {
   font-family: var(--font-body);
@@ -465,4 +485,8 @@ body::after {
   .msg { max-width: 100%; }
   .msg p { font-size: 17px; }
   .send { width: 52px; height: 52px; }
+  .opening-body { gap: 18px; }
+  .opening-head { margin-bottom: 28px; }
+  .opening-title { font-size: 30px; }
+  .opening-line { font-size: 22px; }
 }

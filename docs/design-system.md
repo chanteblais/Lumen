@@ -10,7 +10,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 |---|---|---|---|
 | Paper | `#efeae2` | `bg-paper` | Page ground |
 | Paper deep | `#e6e0d5` | `bg-paper-deep` | Sidebar, chips, icon buttons |
-| Card | `#f8f5ef` | `bg-card` | Greeting card, composer, message surfaces |
+| Card | `#f8f5ef` | `bg-card` | Composer, Today's cards, the companion bubble (the greeting sits on bare paper) |
 | Ink | `#1b1a17` | `text-ink` | Primary text |
 | Ink soft | `#3f3c36` | `text-ink-soft` | Secondary text, labels |
 | Ink mute | `#8a8378` | `text-ink-mute` | Placeholders, nav numerals, quiet labels |
@@ -39,7 +39,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Cormorant Garamond | 400 / 500 / 600 + italics | Google Fonts via `next/font` | `--font-cormorant` → `.font-display` |
 | EB Garamond | 400 / 500 + italics | Google Fonts via `next/font` | `--font-garamond` → `.font-body` (default on `body`) |
 
-- **Display** (Cormorant): the wordmark (56px), greeting lines (26–30px), the composer input (24px), italic asides ("Progress lives here.").
+- **Display** (Cormorant): the wordmark (56px), the greeting's title line (38px) and second line (26px, `--ink-soft`), the composer input (24px), italic asides ("Progress lives here.").
 - **Body** (EB Garamond, 17px/1.45): everything else, including nav names (19px) and chips (16px).
 - **Labels** (`.label`): EB Garamond 11px, uppercase, `letter-spacing: 0.24em`, `--ink-soft`. `.label-mute` for the quieter variant. Every kicker, date, and tagline in the interface is a `.label`.
 
@@ -65,7 +65,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.rule` / `.rule-short` | 1px full rule / 34px short rule |
 | `.rule-double` | Thick-thin "Oxford" rule under the running head (top bar) |
 | `.divider` / `.tailpiece` | Ornament layouts: hairline · diamond · hairline under every kicker; hairline · hedera · hairline closing a page with nothing more to say (see Ornaments) |
-| `.plate` | Adds a second hairline set 6px in from a `.card`'s edge — an engraving's frame. Greeting card only |
+| `.opening` | The greeting as a chapter opening on bare paper: `.opening-head` (hairline · asterism · hairline across the measure), `.opening-body` (portrait + text), `.opening-title` (38px display), `.opening-line` (26px display, ink-soft). `.is-compact` within a sitting: same break, smaller (26/20px, 44px portrait) |
 | `.medallion` | Brass hairline ring around a `LumiAvatar`, set off by a 2px paper gap |
 | `.card` | Card surface: `--card` bg, rule border, 6px radius, `--shadow` |
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
@@ -80,8 +80,8 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 
 ## Component Patterns
 
-### Greeting card (`components/chat/GreetingCard.tsx`)
-Avatar left, display lines right, quick-start chips below. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component. It is the chapter mark of the transcript (`MessageList`): everything from before this page open above it, this visit below; the page opens scrolled to it. No rule between the earlier messages and the card — the plate is the break.
+### Greeting (`components/chat/Greeting.tsx`)
+A chapter opening, not a card (2026-09-12: the boxed `.card.plate` read as a widget dropped onto the page). Set on the paper itself the way a chapter begins in a book: a headpiece across the measure (hairline · asterism · hairline, `.opening-head`), Lumi's portrait medallion in the margin, the first line as the title (38px display), the second beneath it in the softer ink (26px), then the quick-start chips. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component. It is the chapter mark of the transcript (`MessageList`): everything from before this page open above it, this visit below; the page opens scrolled to it. No rule or box between the earlier messages and the greeting — the headpiece and the white space are the break. Within a sitting (`compact`) it is a running head: the same headpiece, a 44px portrait, 26/20px lines, no chips. It matches Today's opener (avatar beside a display-serif greeting on bare paper), so the two pages open the same way.
 
 ### Lumi sprites (`components/chat/LumiSprite.tsx`)
 The single source of Lumi's drawings. `public/lumi-heads.png`: one row of 176px square cells cut from `mockups/lumi.png` — neutral · blink · happy · curious · excited · sleepy. `public/lumi-idle.webp`: a 9×6 grid of 144×208 cells cut from `mockups/lumi-slow-idle.png` — rows 0–2 the nine-frame **breath** loop with open, half-shut and shut eyes (the sheet's blink frames composited on, so blinking and breathing run together), rows 3–5 the nine-frame **sway** loop likewise. Every frame is the same pose at the same scale, centred on the figure and anchored on the feet baseline (the sheet's own spacing wobbles, so its offsets read as a slide). Cut by `scripts/cut-lumi-idle.py`: paper is flood-filled from outside the figure, so the cream hood survives the matte. `LumiSprite` draws one cell at a height via `background-position`; `headCell` / `idleCell` address them. A new state is a new cell, never a new component.
@@ -93,7 +93,7 @@ Forest circle with the hooded head. Props: `size` (default 68) and `expression` 
 Lumi, full figure, standing a little in from the bottom-right corner of every page (`.companion`, fixed, 150px tall, ~104px wide at `right: 56px; bottom: 40px` — 28px/2px read as tucked into the corner). She is fixed to the viewport, outside the content column: on desktop `.chat-page` keeps a lane clear on its right (`--companion-lane`, 140px on top of `.main`'s 48px padding, added to the column's max-width) so the docked send button never sits under her at any width, whether the column fills `.main` or is centred inside it. Hidden under 768px, where there is no room for a lane, and the lane drops to 0. Idle life: the breath loop at ~320ms/frame (one breath ≈ 3s), every frame fading in **on top of** the previous so she never turns translucent; every 20–45 s one pass of the sway loop at ~560ms/frame, then back to breathing; a blink every 2.5–6.5 s (half · shut · half, ~0.3s, occasionally doubled) by switching the eye row. No pose changes — the micro variations from `lumi-idle.png` read as image swaps and were dropped. All of it stops under `prefers-reduced-motion`. `pointer-events: none`, `aria-hidden` — she is company, not a control.
 
 ### Ornaments (`components/ui/Ornament.tsx`)
-Printer's marks, the engraved vocabulary an old book uses instead of icons. Inline SVG in brass (`.ornament`), hairline weight, `aria-hidden`; they decorate, never carry meaning. Three glyphs: **Diamond** ✦ (the smallest mark: dividers, visit rules), **Fleuron** ❦ (the hedera, an ivy leaf with a curled stem: tailpieces, the sidebar foot), **Asterism** ⁂ (reserved for a pause in the text). Two layouts: `Divider` (replaces the short rule under every kicker) and `Tailpiece` (closes an empty page). **One flourish per surface** — a plate has its frame, a page has its tailpiece, a sitting break has its diamonds. If a surface already has one, it does not get another.
+Printer's marks, the engraved vocabulary an old book uses instead of icons. Inline SVG in brass (`.ornament`), hairline weight, `aria-hidden`; they decorate, never carry meaning. Three glyphs: **Diamond** ✦ (the smallest mark: dividers, visit rules), **Fleuron** ❦ (the hedera, an ivy leaf with a curled stem: tailpieces, the sidebar foot), **Asterism** ⁂ (a pause in the text: the greeting's headpiece, where this visit begins after whatever was there). Two layouts: `Divider` (replaces the short rule under every kicker) and `Tailpiece` (closes an empty page). **One flourish per surface** — the greeting has its headpiece, a page has its tailpiece, a sitting break has its diamonds. If a surface already has one, it does not get another.
 
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.
