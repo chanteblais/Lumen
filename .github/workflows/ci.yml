@@ -1,0 +1,21 @@
+# typegen+tsc, eslint (incl. the src/core import guard), vitest, route-auth audit
+# on every push to main and every PR. Deploys are Vercel-on-push-to-main, so a
+# main failure is after the fact — but branch pushes get checked before merge.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check

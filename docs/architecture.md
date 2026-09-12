@@ -170,3 +170,26 @@ rali/
 ├── .env.example
 └── package.json
 ```
+
+## 5. API routes
+
+Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET`); `npm run check:routes` asserts it statically. Client components never touch the database — they call these routes; server components call `src/core` directly.
+
+| Route | Method | Gate | What it does | Since |
+|---|---|---|---|---|
+| *(none yet)* | | | | |
+
+Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PATCH /api/intentions` complete/reopen from Today (M3) · `GET/DELETE /api/beliefs` (M6).
+
+## 6. Key conventions
+
+- **`src/core` is framework-free** — no `next`/`react` imports (eslint-enforced). Domain logic and AI assembly live there; unit tests too.
+- **Model reads via the context block, writes via tools.** Every tool write appends an `events` row. Never parse prose for state.
+- **Deterministic where it can be:** the greeting, focus check-ins, quick starts. Rali speaks unprompted only at check-ins.
+- **Store facts and events; derive judgements** (stale, avoided, gap, today's capacity). Never persist derived flags.
+- **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
+- **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with `cache_read_input_tokens`.
+- **Clerk only in `src/lib/auth.ts` and the sign-in page.** Internal `users.id` everywhere else.
+- **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
+- **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
+- **EF-burden log** (`docs/ef-burden-log.md`) gets a row for every new user-maintained state, in the same commit.

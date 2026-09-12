@@ -1,0 +1,30 @@
+#!/bin/sh
+# Guards against crossed-session commits (docs/branching.md → Commit guards).
+# Active because core.hooksPath = .githooks (set once per clone:
+#   git config core.hooksPath .githooks
+# ). Worktrees share the config and carry their own checkout of this file.
+
+# 1. Never commit .claude/ session/routine bookkeeping (launch.json excepted).
+staged_claude=$(git diff --cached --name-only --diff-filter=d | grep '^\.claude/' | grep -v '^\.claude/launch\.json$')
+if [ -n "$staged_claude" ]; then
+  echo "✗ Commit includes .claude/ session bookkeeping — almost certainly swept in by accident:" >&2
+  echo "$staged_claude" | sed 's/^/    /' >&2
+  echo "  Unstage with: git restore --staged .claude/" >&2
+  exit 1
+fi
+
+# 2. No direct commits to main (main = deployable; work happens on branches).
+#    Crossed-session tripwire: a session that thinks it's in Glåüm or All Hands
+#    lands here on main and stops loudly. Deliberate tiny tweaks:
+#      RALI_ALLOW_MAIN=1 git commit …
+#    (--no-ff merges use the pre-merge-commit hook path, so merges are unaffected.)
+branch=$(git symbolic-ref --quiet --short HEAD)
+if [ "$branch" = "main" ] && [ -z "$RALI_ALLOW_MAIN" ]; then
+  echo "✗ Direct commit to main in rali blocked." >&2
+  echo "  Working on another project (glaum-camp-website? all-hands?) — then your cwd is crossed: this is RALI." >&2
+  echo "  Meant to commit here? Use a branch (docs/branching.md), or for a deliberate tiny tweak:" >&2
+  echo "    RALI_ALLOW_MAIN=1 git commit …" >&2
+  exit 1
+fi
+
+exit 0

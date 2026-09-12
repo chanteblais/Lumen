@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes",
+    "check:routes": "node scripts/check-route-auth.mjs"
   },
   "dependencies": {
     "next": "16.3.5",

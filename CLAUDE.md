@@ -7,11 +7,13 @@ AI companion for task initiation, momentum, re-entry and body doubling. **Not a 
 ## Stack
 Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) · `claude-opus-5` · Postgres on Supabase via Drizzle (`postgres` driver, pooler) · Clerk · Tailwind 4 · Zod 4 · Vitest · Vercel.
 
-## Docs — read on demand
+## Docs — read on demand (index: `docs/README.md`)
 - `docs/architecture.md` — stack, how the AI layer touches state (context block + tools), sticky decisions, repo layout
 - `docs/domain.md` — the seven tables, events catalogue, derived views
 - `docs/v1-plan.md` — milestones M0–M7 with done-when + EF checks
 - `docs/decisions.md` — append when a decision changes
+- `docs/features.md` — every page/feature (who, what, states) · `docs/design-system.md` — tokens, classes, patterns · `docs/design-philosophy.md` — what we are / are never (draft)
+- `docs/ef-burden-log.md` — **standing ledger** of user-maintained state · `docs/voice-eval-log.md` — persona scenario runs · `docs/qa-log.md` / `docs/ux-review-log.md` · `docs/pre-prod.md`
 
 ## Conventions
 - `src/core` is framework-free (no `next`/`react` imports; ESLint enforces). Domain logic and AI assembly live there and are unit-tested.

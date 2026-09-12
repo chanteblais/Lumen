@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# Claude session bookkeeping (launch.json is the one versioned file)
+.claude/*
+!.claude/launch.json
+__pycache__/
