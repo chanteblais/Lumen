@@ -202,4 +202,4 @@ Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PA
 - `db()` (`src/db/client.ts`) is a lazy singleton over `postgres` with `prepare: false` (Supabase transaction pooler, port 6543) and a small pool. Import only from server code.
 - Domain functions in `src/core/domain/*` take the `Db` as their first argument (no module-level client) so they're testable against a scratch database and liftable into a worker.
 - Every write goes through a domain function that also calls `appendEvent` — never `db().insert(...)` from a route or component.
-- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` around it and returns the internal row.
+- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` around it and returns the internal `User` row. Timezone arrives via the `rali_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit for greeting/context.
