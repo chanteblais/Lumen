@@ -5,10 +5,13 @@
 Sources:
 - art/lumi-slow-idle.png — the breath loop (nine frames), the blink row,
   and the sway loop (nine frames).
-- art/lumi-playful-foot.png — the playful-foot loop (eight frames, the
-  top row of the sheet). Drawn about a fifth larger than the slow-idle sheet,
-  so it is scaled down until her hood top and chin land where the breath
-  loop's do; the kicked-up specks of dirt are kept.
+- art/lumi-idle.png — the playful-foot loop: sixteen in-betweened frames
+  (two rows of eight) of one drawing where only the foot and the kicked-up
+  dirt move, on a flat grey-blue ground. Drawn larger than the slow-idle
+  sheet, so it is scaled down until her hood top and chin land where the
+  breath loop's do. The sheet is two scuffs with a full return to rest in the
+  middle (frame 8) — FOOT_ORDER takes frames 1–7 and 10–16 so the cut is one
+  eased kick out and back, fourteen frames.
 
 Each figure is matted by flood-filling paper from *outside* the figure, so the
 cream hood (which is close to the paper colour) is never eaten. The soft
@@ -23,7 +26,8 @@ the face read differently frame to frame.)
 
 Output rows, each loop with open / half-shut / shut eyes (the blink row's
 half-shut and shut eyes are pasted onto every frame, aligned by the face):
-breath ×3, sway ×3, foot ×3. Nine columns; the foot rows leave the last empty.
+breath ×3, sway ×3, foot ×3. Fourteen columns (the longest loop); shorter
+loops leave their trailing columns empty.
 """
 from PIL import Image
 import numpy as np
@@ -33,15 +37,20 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public/lumi-idle.webp')
 W, H = 144, 208
-COLS = 9
+COLS = 14             # the longest loop
 FEET_Y = 200          # feet baseline inside the cell
 TOL = 45              # paper tolerance for the flood fill
-FOOT_SCALE = 0.81     # playful-foot sheet → slow-idle sheet: hood top 26 / chin 118 vs the breath loop's 27 / 119
+FOOT_SCALE = 0.71     # foot sheet → slow-idle sheet: hood top 27 / hood x 18–127 vs the breath loop's 27 / 17–126
+FOOT_ORDER = [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15]  # sheet frames (0-based) → one kick out and back
 HEAD_ROWS = 122       # cell rows above this are hood + face — the part of her that holds still
+SHADOW_RGB = (228, 218, 204)  # the slow-idle sheet's shadow tone; applied to every sheet so shadows match
 
 
 class Sheet:
-    def __init__(self, name, paper_box):
+    def __init__(self, name, paper_box, contrast=False):
+        """`contrast`: the ground is far from the figure's colours (the foot sheet's grey-blue), so
+        edge pixels are de-matted against it and its shadow is read by darkness, not by distance."""
+        self.contrast = contrast
         self.src = np.array(Image.open(os.path.join(ROOT, 'art', name)).convert('RGB')).astype(int)
         (y0, y1), (x0, x1) = paper_box
         self.paper = np.median(self.src[y0:y1, x0:x1].reshape(-1, 3), axis=0)
@@ -71,18 +80,33 @@ class Sheet:
         rgb = self.src[Y0:Y1, X0:X1]
         d = self.d_all[Y0:Y1, X0:X1]
         l = self.lum[Y0:Y1, X0:X1]
+        chroma = (rgb.max(axis=2) - rgb.min(axis=2))
+
+        def flood(cand):
+            lab, n = ndi.label(cand)
+            border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])))
+            border.discard(0)
+            inside = ~np.isin(lab, list(border))
+            il, k = ndi.label(inside)
+            sizes = ndi.sum(inside, il, range(1, k + 1))
+            return inside, il, k, sizes, il == (1 + int(np.argmax(sizes)))
+
         cand = d < TOL
-        lab, n = ndi.label(cand)
-        border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])))
-        border.discard(0)
-        outside = np.isin(lab, list(border))
-        inside = ~outside
+        inside, il, k, sizes, main = flood(cand)
+        if self.contrast:
+            # On a contrasting ground the soft shadow is too far from paper to
+            # flood as paper, so it lands inside the figure, opaque and cold.
+            # Hand the darker, colourless pixels below the feet back to the ground.
+            # (the shadow is the ground darkened, so it keeps the ground's blue
+            # cast: b > r. Her feet and the dirt are warm, so they stay.)
+            feet = np.where(main.any(axis=1))[0].max()
+            below = np.zeros_like(cand); below[feet - 14:] = True
+            cool = rgb[:, :, 2] > rgb[:, :, 0]
+            cand |= below & cool & (chroma < 40) & (l < self.paper.mean()) & (d < 170)
+            inside, il, k, sizes, main = flood(cand)
         # tidy: drop specks not connected to the main figure (or, for the foot
         # loop, keep the kicked-up dirt — anything below the knees that is more
         # than a few pixels)
-        il, k = ndi.label(inside)
-        sizes = ndi.sum(inside, il, range(1, k + 1))
-        main = il == (1 + int(np.argmax(sizes)))
         if specks:
             feet = np.where(main.any(axis=1))[0].max()
             keep = main.copy()
@@ -95,23 +119,48 @@ class Sheet:
             inside = main
         outside = ~inside
         alpha = np.where(inside, 255.0, 0.0)
-        # soft shadow under the feet: darker-than-paper, neutral pixels outside the figure
+        # soft shadow under the feet: darker-than-paper, neutral pixels outside
+        # the figure, drawn in one warm tone whatever the sheet's ground (the
+        # foot sheet's is grey-blue, and its shadow came out cold)
         feet = np.where(main.any(axis=1))[0].max()
         shadow_zone = outside.copy(); shadow_zone[:feet - 14] = False
         dark = np.clip((self.paper.mean() - l) - 6, 0, None) * 4.5
-        chroma = (rgb.max(axis=2) - rgb.min(axis=2))
-        alpha = np.where(shadow_zone & (chroma < 40), np.clip(dark, 0, 170), alpha)
-        # feather the 1px edge with the pixel's distance from paper
-        ring = inside & ~ndi.binary_erosion(inside)
-        alpha = np.where(ring, np.clip(d / 50, 0.4, 1) * 255, alpha)
+        shadow = shadow_zone & (chroma < 40) & (dark > 0)
+        alpha = np.where(shadow, np.clip(dark, 0, 170), alpha)
+        rgb = np.where(shadow[:, :, None], SHADOW_RGB, rgb)
+        if self.contrast:
+            # De-matte the 2px edge band against the known ground — otherwise
+            # the anti-aliased edge keeps a grey-blue fringe. Each edge pixel's
+            # own colour is taken to be that of the nearest interior pixel, so
+            # its coverage is how far it has moved from paper toward that,
+            # whether the edge there is cream hood or dark boot.
+            interior = ndi.binary_erosion(inside, iterations=2)
+            band = inside & ~interior
+            iy, ix = ndi.distance_transform_edt(~interior, return_indices=True)[1]
+            own = rgb[iy, ix]
+            full = np.maximum(np.abs(own - self.paper).sum(axis=2), 1)
+            a = np.clip(d / full, 0, 1)[:, :, None]
+            clean = np.clip((rgb - (1 - a) * self.paper) / np.maximum(a, 0.05), 0, 255)
+            rgb = np.where(band[:, :, None], clean, rgb)
+            alpha = np.where(band, a[:, :, 0] * 255, alpha)
+        else:
+            # feather the 1px edge with the pixel's distance from paper
+            ring = inside & ~ndi.binary_erosion(inside)
+            alpha = np.where(ring, np.clip(d / 50, 0.4, 1) * 255, alpha)
         return np.dstack([rgb, alpha]).astype(np.uint8), main
 
 
 def scale(rgba, main, s):
+    """Resize with premultiplied alpha, so the edge doesn't pick up a dark halo from the transparent black outside."""
     if s == 1: return rgba, main
     h, w = rgba.shape[:2]
     size = (int(round(w * s)), int(round(h * s)))
-    rgba = np.array(Image.fromarray(rgba, 'RGBA').resize(size, Image.LANCZOS))
+    a = rgba[:, :, 3:4].astype(float) / 255
+    pre = np.dstack([rgba[:, :, :3] * a, rgba[:, :, 3:4]]).astype(np.float32)
+    out = np.dstack([np.array(Image.fromarray(pre[:, :, i]).resize(size, Image.LANCZOS)) for i in range(4)])
+    a2 = np.clip(out[:, :, 3:4], 0, 255)
+    rgb = np.clip(out[:, :, :3] / np.maximum(a2 / 255, 1e-3), 0, 255)
+    rgba = np.dstack([rgb, a2]).astype(np.uint8)
     main = np.array(Image.fromarray(main.astype(np.uint8) * 255, 'L').resize(size, Image.BILINEAR)) > 127
     return rgba, main
 
@@ -201,8 +250,9 @@ sway = [cut(slow, b) for b in slow.frames(695, 885, 200, 1285, 9)]
 blink = slow.frames(440, 620, 200, 1285, 9)
 half, shut = cut(slow, blink[2]), cut(slow, blink[3])
 
-playful = Sheet('lumi-playful-foot.png', ((440, 460), (40, 60)))
-foot = [cut_foot(playful, b) for b in playful.frames(165, 400, 170, 1500, 8)]
+playful = Sheet('lumi-idle.png', ((5, 25), (5, 25)), contrast=True)
+boxes = playful.frames(140, 410, 0, 1774, 8) + playful.frames(490, 760, 0, 1774, 8)
+foot = [cut_foot(playful, boxes[i]) for i in FOOT_ORDER]
 # The head holds still while the foot kicks: settle frame 0 onto the breath
 # rest pose (so the hand-over doesn't step sideways), then the rest onto frame 0.
 foot[0] = settle(foot[0], breath[0])

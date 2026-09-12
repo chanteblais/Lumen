@@ -5,13 +5,13 @@ import type { CSSProperties } from "react";
  *
  * - `public/lumi-heads.png` — one row of 176px square cells, the six head
  *   expressions from the original `lumi.png` character sheet (not kept). Used inside the round avatar.
- * - `public/lumi-idle.webp` — a 9×9 grid of 144×208 cells, three rows per
+ * - `public/lumi-idle.webp` — a 14×9 grid of 144×208 cells, three rows per
  *   loop (open / half-shut / shut eyes, the blink frames composited on):
  *   rows 0–2 the nine-frame breath loop and rows 3–5 the nine-frame sway loop
- *   from `art/lumi-slow-idle.png`, rows 6–8 the eight-frame playful-foot
- *   loop from `art/lumi-playful-foot.png` (last column empty). One pose,
- *   tiny movements; every loop starts and ends at the same rest frame.
- *   Cut by `scripts/cut-lumi-idle.py`.
+ *   from `art/lumi-slow-idle.png`, rows 6–8 the fourteen-frame playful-foot
+ *   loop from `art/lumi-idle.png` (shorter loops leave their trailing columns
+ *   empty). One pose, tiny movements; every loop starts and ends at the same
+ *   rest frame. Cut by `scripts/cut-lumi-idle.py`.
  *
  * A new state is a new cell in one of these lists, never a new component.
  */
@@ -19,14 +19,14 @@ export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excite
 export const LUMI_EYES = ["open", "half", "closed"] as const;
 export const LUMI_LOOPS = ["breath", "sway", "foot"] as const;
 /** Columns in the body sheet — the longest loop. */
-export const LUMI_IDLE_FRAMES = 9;
+export const LUMI_IDLE_FRAMES = 14;
 
 export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
 export type LumiLoop = (typeof LUMI_LOOPS)[number];
 
 /** Frames in each loop; shorter loops leave the sheet's trailing columns empty. */
-export const LUMI_LOOP_FRAMES: Record<LumiLoop, number> = { breath: 9, sway: 9, foot: 8 };
+export const LUMI_LOOP_FRAMES: Record<LumiLoop, number> = { breath: 9, sway: 9, foot: 14 };
 
 const SHEETS = {
   head: { src: "/lumi-heads.png", cols: LUMI_EXPRESSIONS.length, rows: 1, w: 176, h: 176 },
