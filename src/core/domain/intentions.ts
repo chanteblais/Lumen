@@ -6,7 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { intentions, type EffortHint, type Event, type Intention } from "@/db/schema";
 import { localDate } from "@/core/time";
-import { appendEvent } from "./events";
+import { appendEvent, type ActionSource } from "./events";
 
 export const STALE_AFTER_MS = 14 * 86_400_000;
 
@@ -61,24 +61,26 @@ export async function updateIntention(db: Db, userId: string, id: string, patch:
   return row;
 }
 
-export async function completeIntention(db: Db, userId: string, id: string): Promise<Intention | undefined> {
+/** `via` records whether the user ticked it on a page or Lumi did it in chat — the context block tells them apart. */
+export async function completeIntention(db: Db, userId: string, id: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const now = new Date();
   const [row] = await db
     .update(intentions)
     .set({ status: "done", completedAt: now, lastTouchedAt: now })
     .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
     .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.completed", subjectType: "intention", subjectId: id });
+  if (row) await appendEvent(db, { userId, type: "intention.completed", subjectType: "intention", subjectId: id, payload: { via } });
   return row;
 }
 
-export async function reopenIntention(db: Db, userId: string, id: string): Promise<Intention | undefined> {
+/** Back to open from done or dropped — a mistaken tick, or a change of mind. */
+export async function reopenIntention(db: Db, userId: string, id: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const [row] = await db
     .update(intentions)
     .set({ status: "open", completedAt: null, droppedAt: null, lastTouchedAt: new Date() })
     .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
     .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.reopened", subjectType: "intention", subjectId: id });
+  if (row) await appendEvent(db, { userId, type: "intention.reopened", subjectType: "intention", subjectId: id, payload: { via } });
   return row;
 }
 

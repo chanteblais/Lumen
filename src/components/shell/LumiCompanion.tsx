@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_LOOP_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
 const HEIGHT = 150;
@@ -25,10 +27,14 @@ const DEBUG = process.env.NODE_ENV === "development";
 
 /**
  * Lumi in the corner of the screen, keeping you company. Full figure, standing
- * on the bottom edge. Purely decorative: no clicks, no state, nothing to maintain.
+ * a little in from the bottom edge. Click her and a speech bubble opens so you
+ * can say one thing from wherever you are ("add take out compost") without
+ * leaving the page (`CompanionBubble`). On the chat page she just hands you the
+ * composer. No state of her own to maintain.
  *
  * Idle life, all of it off under `prefers-reduced-motion`:
  * - the sheet's nine-frame breath loop, each frame fading in over the last
+ *   (two frames mounted: the last one underneath, the new one fading in on top)
  * - every so often one pass of a variation (the sway, or the playful foot —
  *   never the same one twice running), then back to breathing
  * - a blink every few seconds, composited onto whichever frame is showing so
@@ -36,8 +42,19 @@ const DEBUG = process.env.NODE_ENV === "development";
  * One pose throughout — small movements, never a swap to another drawing.
  */
 export function LumiCompanion() {
+  const pathname = usePathname();
+  const onChat = pathname === "/";
+  // The bubble remembers which page it opened on, so leaving the page closes
+  // it (the conversation is there in Chat anyway) without an effect.
+  const [openedOn, setOpenedOn] = useState<string | null>(null);
+  const open = openedOn === pathname;
+  const close = useCallback(() => setOpenedOn(null), []);
+
   const [pose, setPose] = useState<{ cur: Pose; prev: Pose }>({ cur: REST, prev: REST });
   const [eyes, setEyes] = useState<LumiEyes>("open");
+  // One blink on demand — her "got it" when you send from the bubble. Set up
+  // by the idle effect so it shares its timers (and is absent under reduced motion).
+  const ack = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -88,6 +105,7 @@ export function LumiCompanion() {
     };
     const scheduleBlink = () =>
       after(between(2500, 6500), () => blink(Math.random() < 0.2 ? () => after(180, () => blink(scheduleBlink)) : scheduleBlink));
+    ack.current = () => blink(() => {});
 
     // A cue from the debug strip: a variation plays at the next rest frame
     // (the same hand-over as a scheduled one); a blink plays now.
@@ -102,6 +120,7 @@ export function LumiCompanion() {
     scheduleBlink();
     scheduleVariation();
     return () => {
+      ack.current = null;
       timers.forEach(clearTimeout);
       if (DEBUG) window.removeEventListener(CUE_EVENT, onCue);
     };
@@ -112,19 +131,36 @@ export function LumiCompanion() {
   // (and finished fade) when it becomes the previous one.
   const stack = key(pose.prev) === key(pose.cur) ? [pose.cur] : [pose.prev, pose.cur];
 
+  const tap = () => {
+    if (onChat) {
+      document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
+      return;
+    }
+    setOpenedOn(open ? null : pathname);
+  };
+
   return (
     <>
-      <div className="companion" aria-hidden>
-        <div className="companion-figure" style={cellSize("body", HEIGHT)}>
-          {stack.map((p, i) => (
-            <LumiSprite
-              key={key(p)}
-              cell={idleCell(p.loop, p.frame, eyes)}
-              height={HEIGHT}
-              className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
-            />
-          ))}
-        </div>
+      <div className="companion">
+        {open && !onChat && <CompanionBubble onClose={close} onSend={() => ack.current?.()} />}
+        <button
+          type="button"
+          className="companion-btn"
+          onClick={tap}
+          aria-label={onChat ? "Message Lumi" : "Say something to Lumi"}
+          aria-expanded={onChat ? undefined : open}
+        >
+          <span className="companion-figure" style={cellSize("body", HEIGHT)} aria-hidden>
+            {stack.map((p, i) => (
+              <LumiSprite
+                key={key(p)}
+                cell={idleCell(p.loop, p.frame, eyes)}
+                height={HEIGHT}
+                className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
+              />
+            ))}
+          </span>
+        </button>
       </div>
       {DEBUG && <DebugStrip />}
     </>

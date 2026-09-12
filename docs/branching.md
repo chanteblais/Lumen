@@ -6,11 +6,30 @@ Deliberately chill (inherited from Glåüm, 2026-09-11). `main` always deploys c
 
 1. **`main` is the deployable truth.** Pushing `main` deploys production (Vercel). Never push `main` with something half-done in it.
 2. **Branch for anything non-trivial.** Short-lived, named `type/slug`: `feat/…` · `fix/…` · `ux/…` · `docs/…` · `chore/…`. Milestones from `docs/v1-plan.md` are `feat/m<N>-<slug>` (e.g. `feat/m0-shell`).
-3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit) and you've clicked through the affected pages on a local dev server. CI (`.github/workflows/ci.yml`) runs the same on pushes and PRs.
+3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit), you've clicked through the affected pages on a local dev server, and the **docs audit** (its own section below) is done — every doc the branch's changes touch reads true, fixed on the branch if not. CI (`.github/workflows/ci.yml`) runs the same checks on pushes and PRs; the docs audit is a human/Claude step, CI can't do it.
 4. **Merge with `--no-ff`, then delete the branch.** `git log --first-parent main` reads as a changelog.
-5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `LUMEN_ALLOW_MAIN=1` on those.
+5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `LUMEN_ALLOW_MAIN=1` on those. The docs audit still applies in miniature: does any doc describe the line you just changed?
 6. **Migrations ride the branch that needs them.** Apply to prod at merge+deploy time; note the migration in the merge commit message.
 7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy. A pushed branch may also go up as a **pull request** (first one: #1, 2026-09-12): CI runs on it, and the desktop app can watch it and auto-fix CI failures. Merge a PR with **Create a merge commit** — never squash or rebase-merge — so `git log --first-parent main` stays the changelog; delete the branch after. Local `--no-ff` merge and PR merge are interchangeable; the merge commit is the invariant. (`gh` must be on the personal account for this repo — `gh auth switch --user chanteblais`; the work account can push over the `github-personal` SSH alias but can't open PRs here.)
+
+## Docs audit — before every merge and push
+
+The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. This step keeps the **branch** honest: what a branch ends up changing is rarely what its first commit changed, and a doc updated on commit one is often stale by commit six. So the audit runs once more, whole-branch, as the last thing before a `--no-ff` merge, a PR merge or a push of `main` — after `npm run check` and the click-through, never before them (a fix during verification changes the answer).
+
+1. **List what changed.** `git diff main...HEAD --stat` on a branch; `git log --first-parent origin/main..main` plus `git diff origin/main..main --stat` before a push (a push ships all of `main`, so the audit covers everything riding along, not just your own work).
+2. **Map every changed file to the doc that describes it,** then *read that passage* — not just check the file was touched:
+   | Changed | Doc that must still read true |
+   |---|---|
+   | `src/db/schema.ts`, `src/db/migrations/*.sql` | `docs/domain.md` (tables + migrations reference) |
+   | `src/app/api/**`, `src/core/ai/**`, conventions | `docs/architecture.md` (API routes, how the AI layer touches state, sticky decisions) |
+   | a page or component (`src/app/**`, `src/components/**`) | `docs/features.md`; the page's spec where one exists (`docs/today.md`) |
+   | anything visual — tokens, classes, ornaments, the companion | `docs/design-system.md`; `docs/design-philosophy.md` if a principle bent |
+   | persona, tools, greeting, check-ins | `docs/architecture.md`; `docs/voice-eval-log.md` if a scenario was run |
+   | copy or a control that asks the user to set, keep, rate or confirm anything | `docs/ef-burden-log.md` (a row, with its verdict) |
+   | a decision that moved | `docs/decisions.md` (append) |
+   | a working rule, port, script or session convention | `CLAUDE.md`, `docs/branching.md`, `docs/README.md` index |
+3. **Fix what's stale on the branch,** before the merge — its own `docs: …` commit is fine, amending the last commit is fine, "I'll do it after the merge" is not. If the audit finds something on `main` that's already stale (someone else's), land that docs fix first, then push.
+4. **Say what you audited.** The final summary lists the docs checked and the ones changed, or says *docs audited, nothing stale*. A merge or push isn't offered as ready until this line can be written.
 
 ## Parallel sessions — one checkout is ONE git context
 
@@ -54,7 +73,7 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 
 - **Approval first.** Merge + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
-- **Docs ride along — verify before pushing.** Every outgoing commit must have its docs folded in (the standing docs-before-commit sweep: `docs/domain.md` incl. migrations reference, `docs/features.md`, `docs/architecture.md` incl. API routes, the relevant spec, `docs/ef-burden-log.md`, `docs/decisions.md` if a decision moved). Stale docs → land the docs fix first, then push.
+- **Docs audit before the merge and again before the push.** The whole-branch audit above is the gate: every commit that would ride along has its docs folded in and reading true. Stale docs → land the docs fix first (on the branch before a merge; on `main` with `LUMEN_ALLOW_MAIN=1` before a push), then merge or push. Never merge with a docs fix "to follow".
 - **Migrations deploy with their code.** Claude applies additive migrations itself (`npm run db:migrate`) on the branch, before review; destructive ones wait for Chanté's explicit go. If a migration can't be applied, hold the push and say why.
 - **When in doubt, don't.** Leave the push to Chanté.
 
@@ -64,8 +83,10 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 git checkout -b fix/thing        # start
 # …work, verify (npm run check + local click-through)…
 git add <paths> && git commit -m "Fix thing"
+git diff main...HEAD --stat        # docs audit: does every doc these files touch still read true? fix on the branch first
 git checkout main
 git merge --no-ff fix/thing -m "Fix thing (fix/thing)"
 git branch -d fix/thing
+git log --first-parent origin/main..main   # what rides along — audit its docs too
 git push                          # on approval — approval to merge = approval to deploy
 ```

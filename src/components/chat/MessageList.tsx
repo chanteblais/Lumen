@@ -87,10 +87,13 @@ function render(messages: LumenUIMessage[]): React.ReactNode[] {
       items.push(<VisitRule key={`rule-${m.id}`} at={at} />);
     }
     if (at) prevAt = at;
+    // One text part per block of speech: Lumi often says a line, acts (a tool
+    // part), then says another. Each block is its own paragraph.
     const text = m.parts
       .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-      .map((p) => p.text)
-      .join("");
+      .map((p) => p.text.trim())
+      .filter(Boolean)
+      .join("\n\n");
     const hasTools = m.role === "assistant" && m.parts.some((p) => p.type.startsWith("tool-"));
     if (!text && !hasTools) continue;
     items.push(

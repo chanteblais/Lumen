@@ -102,7 +102,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` — from the chat tool or Today's prompt |
 | `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
 | `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
-| `intention.created` / `.updated` / `.completed` / `.dropped` / `.touched` | `{ diff? }` |
+| `intention.created` / `.updated` / `.completed` / `.reopened` / `.dropped` / `.touched` | `{ diff? }`; `.completed` and `.reopened` carry `{ via: 'app' | 'chat' }` — the circle on Today/Lists vs a chat tool. The chat context's *Recent changes* (`core/domain/activity.ts`) is derived from these, joined to the intention's title and current status |
 | `session.started` | `{ goal, first_step, planned_minutes }` |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` |
 | `session.ended` | `{ outcome, actual_minutes }` |
@@ -117,6 +117,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `declinedToday` | today's `intention.declined` events, newest first, with reasons — never Right now again today; flagged in the context block (`core/domain/intentions.ts`) |
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
 | `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |
+| `recentActivity` | `intention.*` events in the last 36h, newest first (≤ 15), joined to the intention for title + current status; who did it from `payload.via`. Read only by the chat route for the context block |
 | `abandonedSession` | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` on next visit |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
