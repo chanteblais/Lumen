@@ -1,14 +1,25 @@
-"""Cut public/lumi-idle.webp from mockups/lumi-slow-idle.png.
+"""Cut public/lumi-idle.webp from the idle mockup sheets.
 
     python3 scripts/cut-lumi-idle.py
+
+Sources:
+- mockups/lumi-slow-idle.png — the breath loop (nine frames), the blink row,
+  and the sway loop (nine frames).
+- mockups/lumi-playful-foot.png — the playful-foot loop (eight frames, the
+  top row of the sheet). Drawn about a fifth larger than the slow-idle sheet,
+  so it is scaled down to match; the head stays put while the foot kicks, so
+  those frames are centred on the face rather than the whole figure, and the
+  kicked-up specks of dirt are kept.
 
 Each figure is matted by flood-filling paper from *outside* the figure, so the
 cream hood (which is close to the paper colour) is never eaten. The soft
 shadow under the feet is kept. Frames are centred on the figure and anchored
 on the feet baseline: the sheet's own frame spacing wobbles by a few px, so
-preserving it read as a sideways slide. Rows: breath open/half/shut eyes,
-then sway likewise; the blink row's half-shut and shut eyes are pasted onto
-every frame, aligned by the face.
+preserving it read as a sideways slide.
+
+Output rows, each loop with open / half-shut / shut eyes (the blink row's
+half-shut and shut eyes are pasted onto every frame, aligned by the face):
+breath ×3, sway ×3, foot ×3. Nine columns; the foot rows leave the last empty.
 """
 from PIL import Image
 import numpy as np
@@ -16,68 +27,95 @@ from scipy import ndimage as ndi
 
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'mockups/lumi-slow-idle.png')
 OUT = os.path.join(ROOT, 'public/lumi-idle.webp')
 W, H = 144, 208
+COLS = 9
 FEET_Y = 200          # feet baseline inside the cell
 TOL = 45              # paper tolerance for the flood fill
+FOOT_SCALE = 0.83     # playful-foot sheet → slow-idle sheet figure size
 
-src = np.array(Image.open(SRC).convert('RGB')).astype(int)
-paper = np.median(src[590:610, 90:110].reshape(-1, 3), axis=0)
-d_all = np.abs(src - paper).sum(axis=2)
-lum = src.mean(axis=2)
 
-BANDS = {'breath': (168, 362), 'blink': (440, 620), 'sway': (695, 885)}
+class Sheet:
+    def __init__(self, name, paper_box):
+        self.src = np.array(Image.open(os.path.join(ROOT, 'mockups', name)).convert('RGB')).astype(int)
+        (y0, y1), (x0, x1) = paper_box
+        self.paper = np.median(self.src[y0:y1, x0:x1].reshape(-1, 3), axis=0)
+        self.d_all = np.abs(self.src - self.paper).sum(axis=2)
+        self.lum = self.src.mean(axis=2)
 
-def frames(band):
-    y0, y1 = BANDS[band]
-    m = d_all[y0:y1, 200:1285] > 60
-    on = m.sum(axis=0) > 3
-    segs, s = [], None
-    for i, v in enumerate(on):
-        if v and s is None: s = i
-        if not v and s is not None: segs.append((s + 200, i + 200)); s = None
-    if s is not None: segs.append((s + 200, len(on) + 200))
-    out = []
-    for x0, x1 in [sg for sg in segs if sg[1] - sg[0] > 40]:
-        rows = np.where(m[:, x0 - 200:x1 - 200].sum(axis=1) > 2)[0]
-        out.append((x0, x1, rows[0] + y0, rows[-1] + y0))
-    assert len(out) == 9, (band, out)
-    return out
+    def frames(self, y0, y1, x0, x1, expect):
+        """Bounding boxes of the figures in one row of the sheet."""
+        m = self.d_all[y0:y1, x0:x1] > 60
+        on = m.sum(axis=0) > 3
+        segs, s = [], None
+        for i, v in enumerate(on):
+            if v and s is None: s = i
+            if not v and s is not None: segs.append((s + x0, i + x0)); s = None
+        if s is not None: segs.append((s + x0, len(on) + x0))
+        out = []
+        for a, b in [sg for sg in segs if sg[1] - sg[0] > 40]:
+            rows = np.where(m[:, a - x0:b - x0].sum(axis=1) > 2)[0]
+            out.append((a, b, rows[0] + y0, rows[-1] + y0))
+        assert len(out) == expect, (y0, out)
+        return out
 
-def cut(bbox):
-    """One figure as an RGBA 144x208 cell, centred on x, feet on FEET_Y."""
-    x0, x1, y0, y1 = bbox
-    X0, X1, Y0, Y1 = x0 - 5, x1 + 5, y0 - 8, y1 + 12
-    rgb = src[Y0:Y1, X0:X1]
-    d = d_all[Y0:Y1, X0:X1]
-    l = lum[Y0:Y1, X0:X1]
-    cand = d < TOL
-    lab, n = ndi.label(cand)
-    border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])))
-    border.discard(0)
-    outside = np.isin(lab, list(border))
-    inside = ~outside
-    # tidy: drop specks not connected to the main figure
-    il, k = ndi.label(inside)
-    sizes = ndi.sum(inside, il, range(1, k + 1))
-    inside = il == (1 + int(np.argmax(sizes)))
-    outside = ~inside
-    alpha = np.where(inside, 255.0, 0.0)
-    # soft shadow under the feet: darker-than-paper, neutral pixels outside the figure
-    feet = np.where(inside.any(axis=1))[0].max()
-    shadow_zone = outside.copy(); shadow_zone[:feet - 14] = False
-    dark = np.clip((paper.mean() - l) - 6, 0, None) * 4.5
-    chroma = (rgb.max(axis=2) - rgb.min(axis=2))
-    alpha = np.where(shadow_zone & (chroma < 40), np.clip(dark, 0, 170), alpha)
-    # feather the 1px edge with the pixel's distance from paper
-    ring = inside & ~ndi.binary_erosion(inside)
-    alpha = np.where(ring, np.clip(d / 50, 0.4, 1) * 255, alpha)
+    def matte(self, bbox, specks=False):
+        """One figure as straight-alpha RGBA plus the mask of its main body."""
+        x0, x1, y0, y1 = bbox
+        X0, X1, Y0, Y1 = x0 - 5, x1 + 5, y0 - 8, y1 + 12
+        rgb = self.src[Y0:Y1, X0:X1]
+        d = self.d_all[Y0:Y1, X0:X1]
+        l = self.lum[Y0:Y1, X0:X1]
+        cand = d < TOL
+        lab, n = ndi.label(cand)
+        border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])))
+        border.discard(0)
+        outside = np.isin(lab, list(border))
+        inside = ~outside
+        # tidy: drop specks not connected to the main figure (or, for the foot
+        # loop, keep the kicked-up dirt — anything below the knees that is more
+        # than a few pixels)
+        il, k = ndi.label(inside)
+        sizes = ndi.sum(inside, il, range(1, k + 1))
+        main = il == (1 + int(np.argmax(sizes)))
+        if specks:
+            feet = np.where(main.any(axis=1))[0].max()
+            keep = main.copy()
+            for i in range(1, k + 1):
+                comp = il == i
+                if sizes[i - 1] >= 6 and np.where(comp.any(axis=1))[0].min() > feet - 30:
+                    keep |= comp
+            inside = keep
+        else:
+            inside = main
+        outside = ~inside
+        alpha = np.where(inside, 255.0, 0.0)
+        # soft shadow under the feet: darker-than-paper, neutral pixels outside the figure
+        feet = np.where(main.any(axis=1))[0].max()
+        shadow_zone = outside.copy(); shadow_zone[:feet - 14] = False
+        dark = np.clip((self.paper.mean() - l) - 6, 0, None) * 4.5
+        chroma = (rgb.max(axis=2) - rgb.min(axis=2))
+        alpha = np.where(shadow_zone & (chroma < 40), np.clip(dark, 0, 170), alpha)
+        # feather the 1px edge with the pixel's distance from paper
+        ring = inside & ~ndi.binary_erosion(inside)
+        alpha = np.where(ring, np.clip(d / 50, 0.4, 1) * 255, alpha)
+        return np.dstack([rgb, alpha]).astype(np.uint8), main
+
+
+def scale(rgba, main, s):
+    if s == 1: return rgba, main
+    h, w = rgba.shape[:2]
+    size = (int(round(w * s)), int(round(h * s)))
+    rgba = np.array(Image.fromarray(rgba, 'RGBA').resize(size, Image.LANCZOS))
+    main = np.array(Image.fromarray(main.astype(np.uint8) * 255, 'L').resize(size, Image.BILINEAR)) > 127
+    return rgba, main
+
+
+def place(rgba, main, cx):
+    """Paste into a W×H cell with the main body's feet on FEET_Y and `cx` at the centre."""
     cell = np.zeros((H, W, 4), dtype=np.uint8)
-    ys, xs = np.where(inside)
-    cx = (xs.min() + xs.max()) / 2
+    ys = np.where(main.any(axis=1))[0]
     ox = int(round(W / 2 - cx)); oy = FEET_Y - ys.max()
-    rgba = np.dstack([rgb, alpha]).astype(np.uint8)
     h, w = rgba.shape[:2]
     # paste with clipping
     sy0, sx0 = max(0, -oy), max(0, -ox)
@@ -85,6 +123,7 @@ def cut(bbox):
     hh, ww = min(h - sy0, H - ty0), min(w - sx0, W - tx0)
     cell[ty0:ty0 + hh, tx0:tx0 + ww] = rgba[sy0:sy0 + hh, sx0:sx0 + ww]
     return cell
+
 
 def face(cell):
     dark = (cell[:, :, :3].sum(axis=2) < 150) & (cell[:, :, 3] > 200)
@@ -94,6 +133,21 @@ def face(cell):
     filled = fl == (1 + int(np.argmax(sizes)))
     ys, xs = np.where(filled)
     return filled, dark, ((xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2)
+
+
+def cut(sheet, bbox):
+    """Breath / sway: the figure centred on its own width."""
+    rgba, main = sheet.matte(bbox)
+    xs = np.where(main.any(axis=0))[0]
+    return place(rgba, main, (xs.min() + xs.max()) / 2)
+
+
+def cut_foot(sheet, bbox):
+    """Playful foot: scaled to size, the dirt kept, centred on the face so the head holds still."""
+    rgba, main = scale(*sheet.matte(bbox, specks=True), FOOT_SCALE)
+    _, _, (cx, _) = face(rgba)
+    return place(rgba, main, cx)
+
 
 def with_eyes(target, donor):
     """Copy the donor's eye area onto the target, aligned by the face."""
@@ -113,16 +167,24 @@ def with_eyes(target, donor):
                 out[ty, tx] = donor[dy, dx]
     return out
 
-breath = [cut(b) for b in frames('breath')]
-sway = [cut(b) for b in frames('sway')]
-blink = frames('blink')
-half, shut = cut(blink[2]), cut(blink[3])
 
-sheet = np.zeros((H * 6, W * 9, 4), dtype=np.uint8)
-for r, cells in enumerate([breath, [with_eyes(c, half) for c in breath], [with_eyes(c, shut) for c in breath],
-                           sway, [with_eyes(c, half) for c in sway], [with_eyes(c, shut) for c in sway]]):
-    for c, cell in enumerate(cells):
-        sheet[r * H:(r + 1) * H, c * W:(c + 1) * W] = cell
+slow = Sheet('lumi-slow-idle.png', ((590, 610), (90, 110)))
+breath = [cut(slow, b) for b in slow.frames(168, 362, 200, 1285, 9)]
+sway = [cut(slow, b) for b in slow.frames(695, 885, 200, 1285, 9)]
+blink = slow.frames(440, 620, 200, 1285, 9)
+half, shut = cut(slow, blink[2]), cut(slow, blink[3])
+
+playful = Sheet('lumi-playful-foot.png', ((440, 460), (40, 60)))
+foot = [cut_foot(playful, b) for b in playful.frames(165, 400, 170, 1500, 8)]
+
+loops = [breath, sway, foot]
+sheet = np.zeros((H * 3 * len(loops), W * COLS, 4), dtype=np.uint8)
+r = 0
+for cells in loops:
+    for eyes in [cells, [with_eyes(c, half) for c in cells], [with_eyes(c, shut) for c in cells]]:
+        for c, cell in enumerate(eyes):
+            sheet[r * H:(r + 1) * H, c * W:(c + 1) * W] = cell
+        r += 1
 
 Image.fromarray(sheet, 'RGBA').save(OUT, quality=90, method=6)
-print('wrote', OUT, os.path.getsize(OUT), 'bytes')
+print('wrote', OUT, sheet.shape[1], 'x', sheet.shape[0], os.path.getsize(OUT), 'bytes')
