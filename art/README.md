@@ -1,6 +1,6 @@
 # art/
 
-Lumi's source drawings — the sheets her sprites are cut from. Kept in the repo so the cut can be redone; never served.
+Lumi's source drawings — the sheets her sprites are cut from. Kept in the repo so the cut can be redone; never served. Also here: `home-background.png`, the painted room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room).
 
 | Sheet | What it is | Used by |
 |---|---|---|

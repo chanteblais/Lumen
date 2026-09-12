@@ -689,3 +689,157 @@ body::after {
   .session-goal { font-size: 20px; }
   .session-question { font-size: 19px; }
 }
+
+/* ---------- Home: the room ----------
+   Home is set in a painted room (art/home-background.png → public/home-room.webp):
+   an evening study, lamp-lit — the same book, read by lantern light. The page
+   renders one fixed layer (`.home-scene`) behind the shell and the rest is
+   the room's light on the same tokens: `.shell:has(.home-scene)` re-maps the
+   palette to parchment on dark wood, so every class (labels, rules, chips,
+   the composer, the session bar) keeps its shape and takes the new light.
+   Only Home; every other page stays ivory. The greeting is the exception
+   inside the exception: it hangs on the wall as a parchment scroll, so its
+   tokens go back to ink on paper. Nothing new for the user to keep. */
+.home-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #362e29 url("/home-room.webp") center / cover no-repeat;
+}
+/* The room dims toward the spine and the floor so the text sits in the light:
+   darkest under the sidebar, lighter where the room shows, dark again behind
+   the composer. */
+.home-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(22, 14, 9, 0.62) 0, rgba(22, 14, 9, 0.44) 272px, rgba(22, 14, 9, 0.22) 480px, rgba(22, 14, 9, 0.14) 60%, rgba(22, 14, 9, 0.3) 100%),
+    linear-gradient(to bottom, rgba(22, 14, 9, 0.66), rgba(22, 14, 9, 0.3) 22%, rgba(22, 14, 9, 0.1) 40%, rgba(22, 14, 9, 0.28) 68%, rgba(22, 14, 9, 0.78) 100%);
+}
+/* The page opens scrolled to the greeting; leave room above it for the scroll's top rod. */
+.shell:has(.home-scene) .chat-scroll { scroll-padding-top: 12px; }
+body:has(.home-scene)::before { opacity: 0.16; } /* the grain stays; it reads as the paper of the painting */
+body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
+
+.shell:has(.home-scene) {
+  /* The palette by lantern light. Both the raw tokens and Tailwind's mapped
+     colours: `--color-*` resolve on :root, so re-mapping `--ink` alone would
+     leave `text-ink` ivory-on-ivory. */
+  --paper: #1a120c;
+  --paper-deep: rgba(241, 230, 207, 0.08);
+  --card: rgba(26, 18, 12, 0.72);
+  --ink: #f1e6cf;
+  --ink-soft: #d6c8aa;
+  --ink-mute: #a89a80;
+  --brass: #d9ac5f;
+  --brass-soft: #f0d9a6;
+  --forest: #2f3a32;
+  --rule: rgba(241, 230, 207, 0.16);
+  --rule-strong: rgba(241, 230, 207, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  --color-forest: var(--forest);
+  color: var(--ink);
+}
+/* Text set straight on the painting (kicker, clock, rules' labels) gets a
+   breath of shadow so it holds against the brushwork. */
+.shell:has(.home-scene) .main { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.5); box-shadow: none; }
+.shell:has(.home-scene) .sidebar {
+  background: rgba(24, 16, 10, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right-color: rgba(241, 230, 207, 0.12);
+}
+.shell:has(.home-scene) .nav-item:hover { background: rgba(241, 230, 207, 0.06); }
+.shell:has(.home-scene) .nav-item[aria-current="page"] { background: rgba(241, 230, 207, 0.1); }
+.shell:has(.home-scene) .chip:hover,
+.shell:has(.home-scene) .icon-btn:hover { background: rgba(241, 230, 207, 0.16); }
+
+/* The greeting hangs on the wall as a parchment scroll — the one light thing
+   in the room, the way the tagline hangs in the mockup. Ink on paper again
+   inside it; the rods are the two dark bars past its edges. */
+.shell:has(.home-scene) .opening {
+  --paper: #f1e7d2;
+  --paper-deep: rgba(43, 34, 22, 0.07);
+  --ink: #2b2216;
+  --ink-soft: #4f4231;
+  --ink-mute: #7f6f57;
+  --brass: #8b6a38;
+  --brass-soft: #c9ad78;
+  --rule: rgba(43, 34, 22, 0.16);
+  --rule-strong: rgba(43, 34, 22, 0.38);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  position: relative;
+  color: var(--ink);
+  text-shadow: none;
+  margin-top: 8px;
+  padding: 30px 34px 32px;
+  background: linear-gradient(180deg, #f5edda 0%, #eee2c9 55%, #e7d9bc 100%);
+  border-radius: 3px;
+  box-shadow: var(--shadow), inset 0 0 40px rgba(122, 96, 54, 0.12);
+}
+.shell:has(.home-scene) .opening::before,
+.shell:has(.home-scene) .opening::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  right: -9px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #8d6538, #55391c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+.shell:has(.home-scene) .opening::before { top: -6px; }
+.shell:has(.home-scene) .opening::after { bottom: -6px; }
+.shell:has(.home-scene) .opening.is-compact { padding: 22px 28px 24px; }
+.shell:has(.home-scene) .chip:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
+.shell:has(.home-scene) .icon-btn:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
+
+/* Lines on the page sit on dark glass: Lumi's on a plate, yours on a tint. */
+.shell:has(.home-scene) .msg-lumi .msg-body {
+  padding: 14px 20px 16px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 6px 6px 6px 2px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+}
+.shell:has(.home-scene) .msg-lumi .msg-avatar { margin-top: 6px; }
+.shell:has(.home-scene) .msg-user p {
+  background: rgba(241, 230, 207, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.shell:has(.home-scene) .chat-now [aria-label="Lumi is thinking"] .msg-body { background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none; }
+
+/* The composer is the same pill on dark glass; the send button is the lamp. */
+.shell:has(.home-scene) .composer {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.shell:has(.home-scene) .composer-dock { background: linear-gradient(to bottom, transparent, rgba(26, 18, 12, 0.55) 26px); }
+.shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
+.shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
+.shell:has(.home-scene) .session-checkin {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@media (max-width: 767px) {
+  .shell:has(.home-scene) .sidebar { border-bottom-color: rgba(241, 230, 207, 0.12); }
+  .shell:has(.home-scene) .opening { padding: 22px 20px 24px; }
+}

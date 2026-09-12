@@ -65,6 +65,10 @@ export default async function Home() {
 
   return (
     <Suspense>
+      {/* Home is set in the room: the painting fills the viewport behind the shell
+          (globals.css → Home: the room); everything else on the page is the same
+          conversation, re-lit for the evening. */}
+      <div className="home-scene" aria-hidden />
       <Conversation
         conversationId={conversation.id}
         initialMessages={initialMessages}

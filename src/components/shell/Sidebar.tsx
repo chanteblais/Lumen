@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Diamond, Divider, Fleuron } from "@/components/ui/Ornament";
 
 const NAV = [
-  { href: "/", label: "Chat" },
+  { href: "/", label: "Home" },
   { href: "/today", label: "Today" },
   { href: "/lists", label: "Lists" },
   { href: "/insights", label: "Insights" },
