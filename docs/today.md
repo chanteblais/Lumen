@@ -30,7 +30,7 @@ Top to bottom, on paper, in the shell:
 - **AFTER THAT** — up to three rows, each: title · list pill · ~minutes. Complete/reopen circle. Nothing else. If the plan holds more, a single collapsed line — *A few more, when you get there* — no number.
 - **LATER** — fixed-time commitments only (things with a `due_at` today): "Practicum · 5:00 pm". Reads as the shape of the day, not a list.
 - **Everything else can wait.** One closing line from the plan when there are open intentions not on the path.
-- **Lumi** — the corner companion already present in the shell; nothing extra.
+- **Lumi** — the corner companion already present in the shell. Tap her for a speech bubble and say a thing ("add take out compost") without leaving the page; the path refreshes once she's done. Nothing else.
 
 That's the page. When *Right now* is completed, the path advances (code, not the model): After-that's first row becomes Right now with a one-line acknowledgement in Lumi's voice; the day line updates only if the plan says something changes.
 

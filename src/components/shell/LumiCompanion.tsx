@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_IDLE_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
 const HEIGHT = 150;
@@ -9,7 +11,10 @@ const SWAY_MS = 560; // nine frames ≈ five seconds, per the sheet
 
 /**
  * Lumi in the corner of the screen, keeping you company. Full figure, standing
- * on the bottom edge. Purely decorative: no clicks, no state, nothing to maintain.
+ * a little in from the bottom edge. Click her and a speech bubble opens so you
+ * can say one thing from wherever you are ("add take out compost") without
+ * leaving the page (`CompanionBubble`). On the chat page she just hands you the
+ * composer. No state of her own to maintain.
  *
  * Idle life, all of it off under `prefers-reduced-motion`:
  * - the sheet's nine-frame breath loop, each frame fading in over the last
@@ -19,6 +24,14 @@ const SWAY_MS = 560; // nine frames ≈ five seconds, per the sheet
  * One pose throughout — small movements, never a swap to another drawing.
  */
 export function LumiCompanion() {
+  const pathname = usePathname();
+  const onChat = pathname === "/";
+  // The bubble remembers which page it opened on, so leaving the page closes
+  // it (the conversation is there in Chat anyway) without an effect.
+  const [openedOn, setOpenedOn] = useState<string | null>(null);
+  const open = openedOn === pathname;
+  const close = useCallback(() => setOpenedOn(null), []);
+
   const [loop, setLoop] = useState<LumiLoop>("breath");
   const [frame, setFrame] = useState(0);
   const [eyes, setEyes] = useState<LumiEyes>("open");
@@ -76,18 +89,35 @@ export function LumiCompanion() {
   const prev = (frame + LUMI_IDLE_FRAMES - 1) % LUMI_IDLE_FRAMES;
   const frames = Array.from({ length: LUMI_IDLE_FRAMES }, (_, i) => i);
 
+  const tap = () => {
+    if (onChat) {
+      document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
+      return;
+    }
+    setOpenedOn(open ? null : pathname);
+  };
+
   return (
-    <div className="companion" aria-hidden>
-      <div className="companion-figure" style={cellSize("body", HEIGHT)}>
-        {frames.map((i) => (
-          <LumiSprite
-            key={i}
-            cell={idleCell(loop, i, eyes)}
-            height={HEIGHT}
-            className={`companion-frame ${i === frame ? "on" : i === prev ? "prev" : ""}`}
-          />
-        ))}
-      </div>
+    <div className="companion">
+      {open && !onChat && <CompanionBubble onClose={close} />}
+      <button
+        type="button"
+        className="companion-btn"
+        onClick={tap}
+        aria-label={onChat ? "Message Lumi" : "Say something to Lumi"}
+        aria-expanded={onChat ? undefined : open}
+      >
+        <span className="companion-figure" style={cellSize("body", HEIGHT)} aria-hidden>
+          {frames.map((i) => (
+            <LumiSprite
+              key={i}
+              cell={idleCell(loop, i, eyes)}
+              height={HEIGHT}
+              className={`companion-frame ${i === frame ? "on" : i === prev ? "prev" : ""}`}
+            />
+          ))}
+        </span>
+      </button>
     </div>
   );
 }
