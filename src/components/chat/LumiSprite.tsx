@@ -4,12 +4,12 @@ import type { CSSProperties } from "react";
  * The single source of Lumi's drawings.
  *
  * - `public/lumi-heads.png` — one row of 176px square cells, the six head
- *   expressions from `mockups/lumi.png`. Used inside the round avatar.
+ *   expressions from the original `lumi.png` character sheet (not kept). Used inside the round avatar.
  * - `public/lumi-idle.webp` — a 9×9 grid of 144×208 cells, three rows per
  *   loop (open / half-shut / shut eyes, the blink frames composited on):
  *   rows 0–2 the nine-frame breath loop and rows 3–5 the nine-frame sway loop
- *   from `mockups/lumi-slow-idle.png`, rows 6–8 the eight-frame playful-foot
- *   loop from `mockups/lumi-playful-foot.png` (last column empty). One pose,
+ *   from `art/lumi-slow-idle.png`, rows 6–8 the eight-frame playful-foot
+ *   loop from `art/lumi-playful-foot.png` (last column empty). One pose,
  *   tiny movements; every loop starts and ends at the same rest frame.
  *   Cut by `scripts/cut-lumi-idle.py`.
  *

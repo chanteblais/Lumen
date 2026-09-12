@@ -1,11 +1,11 @@
-"""Cut public/lumi-idle.webp from the idle mockup sheets.
+"""Cut public/lumi-idle.webp from the idle sheets in art/.
 
     python3 scripts/cut-lumi-idle.py
 
 Sources:
-- mockups/lumi-slow-idle.png — the breath loop (nine frames), the blink row,
+- art/lumi-slow-idle.png — the breath loop (nine frames), the blink row,
   and the sway loop (nine frames).
-- mockups/lumi-playful-foot.png — the playful-foot loop (eight frames, the
+- art/lumi-playful-foot.png — the playful-foot loop (eight frames, the
   top row of the sheet). Drawn about a fifth larger than the slow-idle sheet,
   so it is scaled down to match; the head stays put while the foot kicks, so
   those frames are centred on the face rather than the whole figure, and the
@@ -37,7 +37,7 @@ FOOT_SCALE = 0.83     # playful-foot sheet → slow-idle sheet figure size
 
 class Sheet:
     def __init__(self, name, paper_box):
-        self.src = np.array(Image.open(os.path.join(ROOT, 'mockups', name)).convert('RGB')).astype(int)
+        self.src = np.array(Image.open(os.path.join(ROOT, 'art', name)).convert('RGB')).astype(int)
         (y0, y1), (x0, x1) = paper_box
         self.paper = np.median(self.src[y0:y1, x0:x1].reshape(-1, 3), axis=0)
         self.d_all = np.abs(self.src - self.paper).sum(axis=2)
