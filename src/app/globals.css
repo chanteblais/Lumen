@@ -137,14 +137,20 @@ body::before {
   overflow-y: auto; /* pages scroll here; the chat page scrolls its own transcript instead */
 }
 
-/* ---------- Chat page: transcript scrolls, composer stays put ---------- */
+/* ---------- Chat page: transcript scrolls, composer stays put ----------
+   The column keeps a lane free on its right for the companion (she is fixed
+   to the viewport, 108px wide at right: 28px), so the docked send button is
+   never under her — whether the column fills .main or is centred inside it.
+   .main already pads 48px; the lane makes up the rest plus breathing room. */
+:root { --companion-lane: 112px; }
 .chat-page {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1080px;
+  max-width: calc(1080px + var(--companion-lane));
+  padding-right: var(--companion-lane);
   margin: 0 auto;
 }
 .chat-scroll {
@@ -332,6 +338,7 @@ body::before {
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
   .companion { display: none; } /* would sit on the docked composer's send button */
+  .chat-page { --companion-lane: 0px; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
   .msg p { font-size: 17px; }
