@@ -249,21 +249,25 @@ def settle(cell, ref, reach=12, fine=1.0, step=0.25):
     return cell if fx == 0 and fy == 0 else shift(cell, fx, fy)
 
 
-def hold_head(cells, top=112, bottom=124):
-    """An animation hold: every frame keeps frame 0's head. The sheet is one
-    drawing with only the foot moving, but the generator still redrew the hood
-    rim and its sun a little each frame, which the crossfade showed as a soft
-    shimmer around her head. Blended in over the collar rows (`top`..`bottom`)
-    on premultiplied channels, so the seam sits under the chin, inside the figure."""
+def hold_head(cells, donor, top=112, bottom=124):
+    """An animation hold: every frame keeps the donor's head — the breath rest
+    frame's, so the head is the same drawing on both sides of the hand-over and
+    through the loop. (The foot sheet is one drawing with only the foot moving,
+    but the generator still redrew the hood rim and its sun a little each frame,
+    and its hood is not quite the slow-idle sheet's: under the crossfade both
+    read as a soft shimmer or a small head turn.) Blended in over the collar
+    rows (`top`..`bottom`) on premultiplied channels, so the seam sits under the
+    chin, inside the figure, above the ribbon; the cloak below keeps its own
+    movement, which the kick carries all the way up to the collar."""
     def pre(c):
         a = c[:, :, 3:4].astype(float) / 255
         return np.dstack([c[:, :, :3] * a, c[:, :, 3:4].astype(float)])
     def straight(p):
         a = np.clip(p[:, :, 3:4], 0, 255)
         return np.dstack([np.clip(p[:, :, :3] / np.maximum(a / 255, 1e-3), 0, 255), a]).astype(np.uint8)
-    w = np.clip((np.arange(H) - top) / (bottom - top), 0, 1)[:, None, None]  # 0 = frame 0's head, 1 = the frame's own
-    p0 = pre(cells[0])
-    return [cells[0]] + [straight((1 - w) * p0 + w * pre(c)) for c in cells[1:]]
+    w = np.clip((np.arange(H) - top) / (bottom - top), 0, 1)[:, None, None]  # 0 = the donor's head, 1 = the frame's own
+    p0 = pre(donor)
+    return [straight((1 - w) * p0 + w * pre(c)) for c in cells]
 
 
 def with_eyes(target, donor):
@@ -298,7 +302,7 @@ foot = [cut_foot(playful, boxes[i]) for i in FOOT_ORDER]
 # rest pose (so the hand-over doesn't step sideways), then the rest onto frame 0.
 foot[0] = settle(foot[0], breath[0])
 foot[1:] = [settle(c, foot[0]) for c in foot[1:]]
-foot = hold_head(foot)
+foot = hold_head(foot, breath[0])
 
 loops = [breath, sway, foot]
 sheet = np.zeros((H * 3 * len(loops), W * COLS, 4), dtype=np.uint8)
