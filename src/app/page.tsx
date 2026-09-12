@@ -26,8 +26,10 @@ export default async function Home() {
   const intentionTitles = Object.fromEntries(open.map((i) => [i.id, i.title]));
   const inSitting = isInSitting(initialMessages);
   // The greeting reads the gap this sitting began after — so coming back via
-  // Today still counts — until they've said something this sitting.
-  const lines = greeting({ displayName: user.displayName, lastSeenAt: sitting && !inSitting ? visitBeforeSitting(sitting) : previous });
+  // Today still counts — until they've said something since the sitting began.
+  const lastSaid = initialMessages.at(-1)?.metadata?.createdAt;
+  const saidThisSitting = sitting ? Boolean(lastSaid && new Date(lastSaid) >= sitting.openedAt) : inSitting;
+  const lines = greeting({ displayName: user.displayName, lastSeenAt: sitting && !saidThisSitting ? visitBeforeSitting(sitting) : previous });
 
   // Keyed: an element passed as a prop across the server/client boundary
   // arrives lazily, and React dev then treats it as an unkeyed list child.
