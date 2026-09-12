@@ -14,9 +14,7 @@ import { dismissLead, keepLead } from "@/core/domain/leads";
 import { applyBeliefOps } from "@/core/domain/memory";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import type { EmailReader } from "@/core/email/types";
-
-/** A write that means today's path should be re-cut once the turn has streamed. */
-export type PlanInvalidation = "capacity" | "reentry";
+import type { Recut } from "./today-plan";
 
 export type ToolContext = {
   db: Db;
@@ -24,8 +22,8 @@ export type ToolContext = {
   timezone: string;
   /** This sitting began after a week or more away: letting things go re-cuts the path. */
   reentry?: boolean;
-  /** Called (at most once per reason) when a write invalidates today's path; the route re-cuts in `after()`. */
-  onPlanChange?: (reason: PlanInvalidation) => void;
+  /** Called when a write (or an ask) means today's path should be re-cut; the route does it once in `after()`. */
+  onPlanChange?: (recut: Recut) => void;
   /** Their mail, resolved only if Lumi actually looks (undefined = not connected). */
   mail?: () => Promise<EmailReader | undefined>;
 };
@@ -125,7 +123,7 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
           const row = await dropIntention(db, userId, input.id, input.reason);
           if (row) await reflectClosedInPlan(db, me, row.id);
           // Letting things go during the coming-back pass reshapes the day; re-cut once the turn ends.
-          if (row && reentry) onPlanChange?.("reentry");
+          if (row && reentry) onPlanChange?.({ reason: "reentry" });
           return row ? { id: row.id, title: row.title, status: "dropped" } : { error: "not found" };
         }),
     }),
@@ -140,9 +138,23 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
       execute: (input) =>
         safe(async () => {
           await reportCapacity(db, userId, input);
-          onPlanChange?.("capacity");
+          onPlanChange?.({ reason: "capacity" });
           return { level: input.level };
         }),
+    }),
+
+    reshape_today: tool({
+      description:
+        "Re-cut the path on the Today page around what the user just asked for — something easy, something quick, a fresh plan, \"what should I do now\". Pass their ask in a few words. If your reply names the thing to do now, pass its id (and the first step you gave) so Today shows the same thing. Today re-cuts after your reply; don't narrate it.",
+      inputSchema: z.object({
+        ask: z.string().min(2).max(120).describe("What they asked for, in their words: 'something easy', 'quick wins', 'a fresh plan'"),
+        right_now: z.string().uuid().optional().describe("The open intention you're proposing for right now, if your reply names one (id from context)"),
+        first_step: z.string().max(140).optional().describe("The first physical step you gave for it, if any"),
+      }),
+      execute: async (input) => {
+        onPlanChange?.({ reason: "asked", ask: { text: input.ask, rightNowId: input.right_now, firstStep: input.first_step } });
+        return { ok: true, ask: input.ask };
+      },
     }),
 
     remember: tool({

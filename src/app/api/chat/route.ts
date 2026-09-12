@@ -4,7 +4,7 @@ import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock } from "@/core/ai/context";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
-import { primeTodaysPlan, type RecutReason } from "@/core/ai/today-plan";
+import { primeTodaysPlan, type Recut } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import { isDeclineReason } from "@/core/declines";
 import { listRecentActivity } from "@/core/domain/activity";
@@ -37,8 +37,11 @@ export async function POST(req: Request) {
   const previous = await recordVisit(user);
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
-  // (a "not this", a capacity report, letting things go on the way back).
-  let recut: RecutReason | undefined;
+  // (a "not this", a capacity report, letting things go on the way back, an ask
+  // for a different shape of day). An ask carries Lumi's pick and wins over
+  // the plain reasons; declines and capacity reach the planner from the
+  // snapshot regardless of which reason is recorded.
+  let recut: Recut | undefined;
   after(() => primeTodaysPlan(db(), user, recut));
 
   const body = (await req.json()) as { message?: LumenUIMessage };
@@ -64,7 +67,7 @@ export async function POST(req: Request) {
     const row = await declineIntention(db(), user.id, meta.intentionId, reason);
     if (row) {
       declinedNow = { title: row.title, reason };
-      recut = "declined";
+      recut = { reason: "declined" };
     }
   }
 
@@ -85,8 +88,8 @@ export async function POST(req: Request) {
     userId: user.id,
     timezone: user.timezone,
     reentry: isReentry(snap.sitting),
-    onPlanChange: (reason) => {
-      recut ??= reason;
+    onPlanChange: (change) => {
+      if (!recut || change.reason === "asked") recut = change;
     },
     mail: lazyMailReader(user),
   });
@@ -125,7 +128,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}`);
       }
     },
   });
