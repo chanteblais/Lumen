@@ -7,15 +7,19 @@ Sources:
   and the sway loop (nine frames).
 - mockups/lumi-playful-foot.png — the playful-foot loop (eight frames, the
   top row of the sheet). Drawn about a fifth larger than the slow-idle sheet,
-  so it is scaled down to match; the head stays put while the foot kicks, so
-  those frames are centred on the face rather than the whole figure, and the
-  kicked-up specks of dirt are kept.
+  so it is scaled down until her hood top and chin land where the breath
+  loop's do; the kicked-up specks of dirt are kept.
 
 Each figure is matted by flood-filling paper from *outside* the figure, so the
 cream hood (which is close to the paper colour) is never eaten. The soft
 shadow under the feet is kept. Frames are centred on the figure and anchored
 on the feet baseline: the sheet's own frame spacing wobbles by a few px, so
-preserving it read as a sideways slide.
+preserving it read as a sideways slide. The foot frames are then settled
+sideways on the head silhouette — frame 0 onto the breath rest pose, the rest
+onto frame 0 — because the head holds still while the foot kicks. (Centring
+them on the dark face instead had her hop ~14px on every hand-over, since her
+face sits right of her hood's centre, and wander a few px through the kick as
+the face read differently frame to frame.)
 
 Output rows, each loop with open / half-shut / shut eyes (the blink row's
 half-shut and shut eyes are pasted onto every frame, aligned by the face):
@@ -32,7 +36,8 @@ W, H = 144, 208
 COLS = 9
 FEET_Y = 200          # feet baseline inside the cell
 TOL = 45              # paper tolerance for the flood fill
-FOOT_SCALE = 0.83     # playful-foot sheet → slow-idle sheet figure size
+FOOT_SCALE = 0.81     # playful-foot sheet → slow-idle sheet: hood top 26 / chin 118 vs the breath loop's 27 / 119
+HEAD_ROWS = 122       # cell rows above this are hood + face — the part of her that holds still
 
 
 class Sheet:
@@ -143,10 +148,32 @@ def cut(sheet, bbox):
 
 
 def cut_foot(sheet, bbox):
-    """Playful foot: scaled to size, the dirt kept, centred on the face so the head holds still."""
+    """Playful foot: scaled to size, the dirt kept, centred on the figure like the rest (then settled)."""
     rgba, main = scale(*sheet.matte(bbox, specks=True), FOOT_SCALE)
-    _, _, (cx, _) = face(rgba)
-    return place(rgba, main, cx)
+    xs = np.where(main.any(axis=0))[0]
+    return place(rgba, main, (xs.min() + xs.max()) / 2)
+
+
+def head(cell):
+    """Silhouette of the hood and face."""
+    m = cell[:, :, 3] > 127
+    m[HEAD_ROWS:] = False
+    return m
+
+
+def nudge(cell, dx):
+    """The cell moved `dx` px sideways (its margins are empty, so nothing is lost)."""
+    out = np.zeros_like(cell)
+    if dx >= 0: out[:, dx:] = cell[:, :W - dx]
+    else: out[:, :W + dx] = cell[:, -dx:]
+    return out
+
+
+def settle(cell, ref, reach=12):
+    """Slide `cell` sideways so its head silhouette best overlaps `ref`'s."""
+    r, c = head(ref), head(cell)
+    dx = max(range(-reach, reach + 1), key=lambda d: (np.roll(c, d, axis=1) & r).sum())
+    return nudge(cell, dx)
 
 
 def with_eyes(target, donor):
@@ -176,6 +203,10 @@ half, shut = cut(slow, blink[2]), cut(slow, blink[3])
 
 playful = Sheet('lumi-playful-foot.png', ((440, 460), (40, 60)))
 foot = [cut_foot(playful, b) for b in playful.frames(165, 400, 170, 1500, 8)]
+# The head holds still while the foot kicks: settle frame 0 onto the breath
+# rest pose (so the hand-over doesn't step sideways), then the rest onto frame 0.
+foot[0] = settle(foot[0], breath[0])
+foot[1:] = [settle(c, foot[0]) for c in foot[1:]]
 
 loops = [breath, sway, foot]
 sheet = np.zeros((H * 3 * len(loops), W * COLS, 4), dtype=np.uint8)
