@@ -6,6 +6,29 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (7) — Mail + Insights (`feat/email-insights`, shared checkout, port 3005)
+
+### Verified
+- `npm run check` (63 unit tests incl. `clampLeads` and Gmail parsing) and a production build compile every route. Signed-in pages could not be clicked through by Claude (the automation browser has no session); Chanté connected Google end to end and Insights read her mail live.
+- Migration `0002_leads` applied by Claude (additive).
+
+### Fixed (setup, not code)
+- **Google "This app is blocked" on Connect Google.** Not the app: `.env.local` carried the old *rali* Clerk application's test keys, so every OAuth request went out under Clerk's shared Google client, which Google refuses for Gmail. Also a live key pair had been appended below the test pair (last line wins → "Production keys are only allowed for domain burlyman.ca" on localhost). Fixed with `clerk env pull --app <Lumen>` for the dev keys, the live pair commented out, and the `users` row re-keyed to the new Clerk user in one guarded transaction (the auto-created empty row deleted). See `architecture.md` → Env.
+- On the way there, each of these also had to be true and was checked: Google consent screen in Testing with the account as a test user; both Clerk instances' callback URLs on the Google client; custom credentials on for the Development instance (Clerk's free plan briefly disabled one instance's connection when the other was enabled).
+
+### Known and deliberate
+- Google's Testing mode expires the refresh token after 7 days: Insights will show the connect chip again about weekly. One tap; not a bug.
+- Insights looks at most once per 30 minutes per open; there is no refresh button on purpose (`ef-burden-log.md`).
+- A lead's mail body is sent to the model once and never stored; only sender · subject · received-at · Lumi's line are kept.
+
+### Open
+- Lead quality (does Lumi pick the right things, phrase them as actions, skip noise) has had one live look; tune `core/ai/leads.ts` rules from real use.
+- Chat side (`look_at_email`, `keep_lead`, `dismiss_lead`) verified by types and build only; try "anything in my email I need to handle?" and "did X reply?".
+
+### Highest-value manual tests
+- Insights → *Still needs doing* lands the item on Lists with the subject in the note; *Let it go* removes it; both gone on reload.
+- After a week: the connect chip returns, one tap restores mail.
+
 ## Sweep 2026-09-12 (6) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
 
 ### Verified (live, against the real database; the rows the sweep created were removed afterwards)

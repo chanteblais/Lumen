@@ -34,6 +34,12 @@ function line(p: ToolPart): string | null {
       return "Reworded something I know";
     case "tool-forget_belief":
       return "Forgotten";
+    case "tool-look_at_email":
+      return "Looked through your mail";
+    case "tool-keep_lead":
+      return `Noted · ${out.title ?? ""}`;
+    case "tool-dismiss_lead":
+      return `Let go · ${out.title ?? ""}`;
     default:
       return null;
   }

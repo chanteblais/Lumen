@@ -10,14 +10,15 @@ Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; aft
 | AI runtime | **Vercel AI SDK v7** (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) | Owns the hard, boring part of chat UX: streaming protocol, `useChat`, tool-call parts streamed into the UI, Zod-typed tools, multi-step loops, `UIMessage` persistence shape. `@ai-sdk/anthropic` is a first-party Anthropic provider (not an OpenAI-compatible shim); Anthropic-specific request fields (cache control, thinking, effort) pass through `providerOptions.anthropic`. Alternative: `@anthropic-ai/sdk` directly + hand-rolled SSE + React stream state — fewer abstractions and day-one access to every Anthropic feature, but ~2 days of plumbing we'd rather not own. **Escape hatch:** the model call is isolated in `src/core/ai/model.ts`; if a needed Anthropic feature can't pass through the provider, that one module switches to the raw SDK. |
 | Model | **`claude-opus-5`** for the companion; adaptive thinking (default); `output_config.effort: "low"` for chat turns (raise to `medium` if quality demands) | Personality, judgement and restraint *are* the product; chat turns are short so per-turn cost is small. Prompt caching on the stable prefix (persona + tools) keeps input cost flat. `claude-sonnet-5` is the cost step-down lever; `claude-haiku-4-5` for background jobs (summaries, extraction) later. Enable server-side refusal fallbacks (`fallbacks: "default"`) if the provider exposes it; otherwise handle `stop_reason: "refusal"` gracefully (Lumi says "I couldn't answer that one" rather than erroring). |
 | Database | **Postgres on Supabase**, accessed through **Drizzle ORM** over the `postgres` driver (Supavisor transaction pooler, `prepare: false`) — **not** `supabase-js` | Free tier, dashboard you know, pgvector available when memory needs embeddings. Drizzle makes the schema typed code (the domain model *is* the schema file), generates migrations, and has no vendor coupling — moving to Neon is a connection-string change. All DB access is server-side with the service role, so RLS is irrelevant. |
-| Auth | **Clerk** (`@clerk/nextjs` 7) behind `src/lib/auth.ts` → `requireUser()` returning the **internal** `users.id` | Fastest path, Expo SDK exists for later. Nothing outside `lib/auth.ts`, `lib/auth-ui.tsx` and the sign-in/sign-up pages imports Clerk. Alternative: no auth for a single user — rejected: adding auth later touches every query; adding it now costs an hour. |
+| Auth | **Clerk** (`@clerk/nextjs` 7) behind `src/lib/auth.ts` → `requireUser()` returning the **internal** `users.id` | Fastest path, Expo SDK exists for later. Nothing outside `lib/auth.ts`, `lib/auth-ui.tsx`, `lib/auth-mail.tsx` and the sign-in/sign-up pages imports Clerk. Alternative: no auth for a single user — rejected: adding auth later touches every query; adding it now costs an hour. |
 | Styling | **Tailwind v4** + CSS custom-property tokens; `next/font` for serifs | Tokens (`--ink`, `--paper`, `--brass`, `--rule`) defined once; Tailwind for layout only. No component library — the design is too specific and the surface too small. |
 | Validation | **Zod 4** | Shared by tool input schemas and API bodies. |
 | Voice | Two engines behind `useVoiceInput()` (`components/chat/voice/`): the **Web Speech API** where it works, else **Whisper in the browser** (`@huggingface/transformers`, `whisper-base.en` on WebGPU in a worker) → text into the same composer | Zero cost, no vendor, no key; audio never leaves the device. Speech engine: Chrome/Safari/Edge. Local engine: Brave, Firefox (Brave exposes the API but has no speech service behind it). Model (~90 MB) fetched from huggingface.co on the first tap and kept in the browser cache. |
+| Mail | **Gmail REST** (`gmail.readonly`) over the Google OAuth token **Clerk** holds for the user's connected Google account (`clerkClient().users.getUserOauthAccessToken(id, "google")`; Clerk refreshes it). `src/core/email/gmail.ts` is two endpoints and a MIME walk behind an `EmailReader` interface — no SDK, no token storage, no callback route of our own | Considered and rejected: our own Google OAuth (a client secret, a token table, refresh logic — all things Clerk already does) and an inbox-sync worker (a mail cache is a second inbox to keep). The Clerk dashboard needs the Google social connection on **custom credentials** (a Google Cloud OAuth client with the Gmail API enabled) with the `gmail.readonly` scope allowed; the user connects (or re-authorises) Google from the Insights chip. Google Cloud side: Gmail API enabled, consent screen **External · Testing** with the user as a test user (Gmail read is a *restricted* scope; publishing would need Google's verification), and both Clerk instances' callback URLs on the OAuth client. In Testing, Google expires refresh tokens after **7 days**, so about weekly Insights shows the connect chip again — one tap; the Gmail 401 path is built for it |
 | Hosting | **Vercel** (Hobby) + Supabase free tier | Streaming works under Fluid Compute; set `export const maxDuration = 60` on the chat route. Both free until real users. |
 | Tests | **Vitest** on `src/core` only | Pure logic (staleness, context assembly, tool handlers against a test DB). No UI tests in V1. |
 
-Env (`.env.local`): `ANTHROPIC_API_KEY`, `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
+Env (`.env.local`): `ANTHROPIC_API_KEY`, `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`. Mail adds no env: the Google credentials live in the Clerk dashboard (Google social connection → custom credentials + `https://www.googleapis.com/auth/gmail.readonly`). **Which Clerk app:** the keys must be the **Lumen** application's — development `grown-bluejay-5063.clerk.accounts.dev` (`ins_3JDaO9fk…`) for localhost, production `clerk.burlyman.ca` for Vercel only (live keys refuse any other origin). An older **rali** application still exists on the account (`related-manatee-268`); its keys sat in `.env.local` until 2026-09-12 and sent every Google request through Clerk's shared client, which Google blocks for Gmail. `clerk apps list` shows the mapping; `clerk env pull --app app_3JDaO5zSlUJQOliFTKcnnM43y5l --instance dev` writes the right test keys. Switching instances changes `clerk_user_id`, so the `users` row has to be re-keyed once (done that day) or the app starts empty.
 
 ## 2. How the AI layer touches application state
 
@@ -47,12 +48,13 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
    - recently done (≤ 5) with ids and when, so a mistaken tick can be undone by id (`reopen_intention`)
    - active focus session, if any (goal, first step, minutes elapsed/planned)
    - beliefs (≤ 40), grouped by kind, ordered by confidence; strategies with evidence counts; low-confidence ones marked *tentative*
+   - **their mail** (chat-only): when Lumi last looked (`email.scanned`), and the suggested leads (≤ 8) — what she noticed there that might need doing, unconfirmed, with ids for `keep_lead` / `dismiss_lead`
    - rolling summary of older conversation, if any
    - `preferences` (tone hint, default session length, check-in interval)
    The block is small on purpose. If a list outgrows its cap, we add a read tool (`search_intentions`) rather than growing the block.
 
 ### Tools (server-executed, Zod-typed, in `src/core/ai/tools.ts`) — built in M3
-Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `complete_intention`, `reopen_intention`, `drop_intention`, `report_capacity`, `reshape_today`, `remember`, `confirm_belief`, `contradict_belief`, `revise_belief`, `forget_belief`. The chat route runs `stopWhen: stepCountIs(5)` so Lumi can act, then speak. Completing/dropping through a tool also advances today's plan. The UI renders **ledger lines** (`components/chat/Ledger.tsx`) from tool parts — never from prose.
+Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `complete_intention`, `reopen_intention`, `drop_intention`, `report_capacity`, `reshape_today`, `remember`, `confirm_belief`, `contradict_belief`, `revise_belief`, `forget_belief`, `look_at_email`, `keep_lead`, `dismiss_lead`. The chat route runs `stopWhen: stepCountIs(5)` so Lumi can act, then speak. Completing/dropping through a tool also advances today's plan. The UI renders **ledger lines** (`components/chat/Ledger.tsx`) from tool parts — never from prose.
 | Tool | Effect |
 |---|---|
 | `create_intention {title, next_action?, note?, due_at?, effort_hint?}` | insert; event `intention.created` |
@@ -67,12 +69,14 @@ Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `c
 | `confirm {id}` / `contradict {id, note?}` | adjust evidence + confidence; events |
 | `revise {id, content}` | new belief superseding the old (history kept) |
 | `forget {id}` | user-requested retire |
+| `look_at_email {search?, days?}` | **the one read tool** (2026-09-12): reads recent mail through the `EmailReader` the route hands in (`ToolContext.mail`, resolved lazily so a turn that doesn't look never calls Clerk); returns sender · subject · when · a ≤280-char gist for ≤ 15 messages. Only when they ask about their mail; `{error: "not_connected"}` when Google isn't connected. No event (a read) |
+| `keep_lead {id}` / `dismiss_lead {id}` | a lead from the context's *Their mail* becomes an intention (`intention.created` + `lead.kept {via: chat}`) or is let go (`lead.dismissed`). Same domain calls as the Insights buttons (`via: app`) |
 
 Rules for tools:
 - Every write tool also appends an `events` row (append-only). This is non-negotiable — it is the raw material for future pattern memory.
 - Tool results are compact JSON (`{id, title, status}`), never prose. Lumi narrates in his own words.
 - Tools never throw to the model; failures return `{error}` so Lumi can say "I couldn't save that" instead of the turn dying.
-- No `list_*` read tools in V1; the context block covers reads. Add them when caps bite.
+- No `list_*` read tools over our own state in V1; the context block covers reads. Add them when caps bite. `look_at_email` is the exception: mail is not our state, it is large, and it is read only when asked.
 - Tool descriptions are part of the cached prefix — keep them stable.
 
 ### What is deterministic (no LLM call)
@@ -117,6 +121,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 - Model calls happen only on the server; the key never reaches the client.
 - Every table is keyed by `user_id`; export and delete are a single cascade.
 - Conversation text never goes to Vercel logs; log ids and durations only.
+- Mail: read-only, and read only when Insights is opened (at most once per 30 minutes) or when the user asks Lumi to look. Message text goes to the model for that one call and is **never stored** — a lead keeps sender, subject, received-at and Lumi's own line. Tokens stay in Clerk. Disconnecting is Clerk's account panel → Connected accounts.
 - Anthropic API standard retention is 30 days; note this in the eventual privacy page. Zero-data-retention is an org-level option to revisit if Lumi gets real users.
 
 ## 3. Decisions that are expensive to reverse
@@ -155,6 +160,8 @@ lumen/
 │   │   ├── layout.tsx            fonts, tokens, AuthProvider
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
+│   │   ├── insights/page.tsx     what Lumi noticed in the mail — "do any of these still need doing?"
+│   │   ├── lists/page.tsx        the pile
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── knows/page.tsx        "What Lumi knows" — beliefs, grouped, correct/delete inline
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
@@ -162,17 +169,21 @@ lumen/
 │   │   └── api/
 │   │       ├── chat/route.ts     POST — one streamed turn
 │   │       ├── session/route.ts  POST — check-in ticks (non-LLM)
-│   │       └── intentions/route.ts  PATCH — complete/reopen from Today
+│   │       ├── intentions/[id]/route.ts  PATCH — complete/reopen from Today
+│   │       └── leads/[id]/route.ts  PATCH — keep/dismiss from Insights
 │   ├── components/
 │   │   ├── chat/                 Conversation, Message, Ledger, Composer, QuickStarts, LumiAvatar
+│   │   ├── insights/             LeadsSection (looks, then asks), LeadActions (Still needs doing · Let it go)
 │   │   ├── focus/                SessionBar, CheckIn
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested
 │   │   ├── domain/               users.ts intentions.ts focus.ts capacity.ts memory.ts events.ts
-│   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts reflect.ts
+│   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts reflect.ts leads.ts (mail → leads, model proposes / clampLeads guards)
+│   │   ├── email/                types.ts (EmailReader) gmail.ts (REST + MIME parse) scan.ts (one look: watermark → read → infer → leads)
+│   │   ├── insights.ts           Insights copy (deterministic)
 │   │   └── time.ts               tz-aware today/gap helpers
 │   ├── db/                       schema.ts (the domain model as code) client.ts (lazy postgres-js + drizzle) migrations/ (drizzle-kit)
-│   ├── lib/                      auth.ts (server boundary → ensureUser) · auth-ui.tsx (provider, auth controls)
+│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
@@ -193,6 +204,8 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 | `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Lists. Complete also advances today's plan (`reflectClosedInPlan`). Both events carry `via: "app"`, which is how the chat context tells a tick on a page from a tool call | M3 |
 | `/api/capacity` | POST | `requireUser()` | Today's capacity prompt. `{ level }` writes `capacity.reported` and re-cuts the path (`recutTodaysPlan(…, "capacity")` — skipped when the answer matches what the plan already assumed), returning `{ level, rightNow }`; `{ skip: true }` writes `capacity.asked {skipped}` so it isn't asked again today. `maxDuration = 60` (model call) | M4 |
 
+| `/api/leads/[id]` | PATCH | `requireUser()` | `{ action: "keep" \| "dismiss" }` from Insights. Keep creates the intention and resolves the lead (`lead.kept {via: "app", intention_id}`); dismiss resolves it (`lead.dismissed {via: "app"}`). Same domain calls as the chat tools | 2026-09-12 |
+
 `/api/chat` also reads the incoming message's metadata: `kind: "declined"` with a valid `intentionId` records `intention.declined {reason}` before the context block is built, so Lumi answers the reason; the turn's `after()` then re-cuts the path (`reason: declined`). Tool writes that invalidate the path (`report_capacity`; `drop_intention` during a re-entry sitting) and an ask for a different shape of day (`reshape_today`) flag it through `ToolContext.onPlanChange` as a `Recut` (`{ reason, ask? }`), and the same `after()` re-cuts once: the first reason raised, except that an `asked` re-cut replaces a plain one because it carries the ask and Lumi's pick (declines and capacity reach the planner from the snapshot either way).
 
 Planned: `POST /api/session` check-in ticks (M5) · `GET/DELETE /api/beliefs` (M6).
@@ -207,7 +220,7 @@ Planned: `POST /api/session` check-in ticks (M5) · `GET/DELETE /api/beliefs` (M
 - **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). Anthropic's minimum cacheable prefix is model-dependent; a short persona may never cache — grow it before assuming a bug.
 - **Message ids are UUIDs on both sides** (`generateId: () => crypto.randomUUID()` in `useChat`, `generateMessageId` in the route) because `messages.id` is a uuid column.
 - **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the two public prefixes by hand and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
-- **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else.
+- **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx`, `src/lib/auth-mail.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else. The Google token for mail is fetched in `auth.ts` and handed on as an `EmailReader` (`lib/email.ts`), so `src/core` never sees Clerk or a token.
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
 - **EF-burden log** (`docs/ef-burden-log.md`) gets a row for every new user-maintained state, in the same commit.
@@ -225,3 +238,13 @@ Planned: `POST /api/session` check-in ticks (M5) · `GET/DELETE /api/beliefs` (M
 - Every write goes through a domain function that also calls `appendEvent` — never `db().insert(...)` from a route or component.
 - `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` (local session-cookie check) around it and returns the internal `User` row; the Clerk profile (`currentUser()`, a network call) is fetched only when the row has to be created, so it never sits on the request path. Timezone arrives via the `lumen_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit and writes `app.opened {gap_seconds}` when the gap was ≥ 30 min; every page (Chat, Today, Lists) and every chat turn calls it (M4), so `last_seen_at` is always the last request and the newest `app.opened` is always the start of the current sitting.
 - **The sitting, not the last request, carries the gap.** `loadSnapshot` includes `currentSitting` (newest `app.opened`). The greeting on Chat, the context block and the planner all read the gap the sitting began after, so "came back after two weeks" survives navigating Today → Chat and the fifth turn of the visit, and disappears once they've said something this sitting (greeting) or the next sitting begins (context). The route's `lastSeenAt` (previous request) still drives "same sitting" / "last here: 3 hours ago".
+
+## 9. Mail and leads (2026-09-12)
+
+Lumi can look through the user's recent mail, notice what might need doing, and ask — once, on the Insights page — *do any of these still need doing?* The pattern is the day plan's: **model proposes, code guards, the user answers with one tap.** Nothing is synced, cached or counted.
+
+- **Access.** `lib/email.ts → mailAccessFor(user)` asks Clerk for the Google OAuth token (`auth.ts → googleAccessToken`) and returns an `EmailReader` (`core/email/gmail.ts`), or `not_connected` / `needs_scope`. The Insights page places `ConnectMail` (`lib/auth-mail.tsx`): `user.createExternalAccount({strategy: "oauth_google", additionalScopes: [gmail.readonly]})`, or `reauthorize` on an existing Google account, then follows Clerk's redirect; Google sends the browser back to `/insights`.
+- **One look** (`core/email/scan.ts → ensureFreshMailScan`). Runs when Insights is opened and the newest `email.scanned` is older than 30 minutes; in-flight per user per process. Reads the inbox (minus promotions and social) since the last watermark (first look: 7 days; ≤ 30 messages), skips message ids that already produced a lead, and makes **one model call** (`core/ai/leads.ts → inferLeads`, persona + reading rules + the messages, plus the open intentions and recently kept/let-go titles so nothing is suggested twice). `clampLeads` (pure, tested): message ids must exist, ≤ 2 per message, confidence ≥ 0.5, ≤ 8 total, no repeats, no known titles, list only if it is one of theirs, due only if it parses, counts stripped. Leads are inserted (`lead.suggested`), the look is recorded (`email.scanned {through, read, suggested}`), and a Gmail 401/403 surfaces as *disconnected* with the connect chip, never an error page.
+- **The answer.** Insights shows each lead as a card — title, why, sender · subject · when — with *Still needs doing* (→ `createIntention` with the lead's title, why + subject as the note, list, due; `lead.kept`) and *Let it go* (`lead.dismissed`; "done", "not a thing" and "not mine" are deliberately not distinguished). A lead is gone once answered. In chat the same leads sit in the context block under *Their mail*, and `keep_lead` / `dismiss_lead` are the same domain calls with `via: "chat"`.
+- **Looking on request.** `look_at_email` reads fresh (a search, days back) when the user asks about their mail; the persona says never unasked, and never read the inbox back — answer in a few lines.
+- **What is never built:** a mail list in the app, unread or "needs reply" counts, a sync job, a stored copy of any message.
