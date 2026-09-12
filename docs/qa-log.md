@@ -38,6 +38,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ### Open
 - The 20-minute done-when session was run as a 5-minute one at a 1-minute interval; a real-length session with the default 15-minute interval is the manual test below.
+- The planned-end check-in (fix above) is covered by unit tests only: it landed while Chanté's own 5-minute session was already running, the tab that had it open kept its earlier timer (Fast Refresh did not reschedule it), and starting a fresh short session would have closed hers. Manual test 1 below covers it.
 - Whether the abandoned greeting should also fire when a session goes quiet in a *still-open* tab (currently the sweep only runs on a request).
 
 ### Highest-value manual tests
