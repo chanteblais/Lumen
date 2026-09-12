@@ -66,22 +66,3 @@ export function isInSitting(messages: LumenUIMessage[], now = Date.now()): boole
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;
 }
-
-/**
- * Where this sitting's messages begin: the index after the last gap wider
- * than the sitting window, or `messages.length` when the newest message is
- * older than the window (a fresh visit — nothing said yet). The greeting
- * card is rendered at this index, so coming back opens on it with the
- * earlier conversation above, still there when you scroll up. Tested.
- */
-export function sittingStartIndex(messages: LumenUIMessage[], now = Date.now()): number {
-  if (!isInSitting(messages, now)) return messages.length;
-  let start = 0;
-  let prev: number | undefined;
-  messages.forEach((m, i) => {
-    const at = m.metadata?.createdAt ? new Date(m.metadata.createdAt).getTime() : undefined;
-    if (at !== undefined && prev !== undefined && at - prev > SITTING_GAP_MS) start = i;
-    if (at !== undefined) prev = at;
-  });
-  return start;
-}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
@@ -9,9 +9,9 @@ import { Ledger } from "./Ledger";
 
 type Props = {
   messages: LumenUIMessage[];
-  /** Index where this sitting's messages begin (`sittingStartIndex`). */
-  sittingStart: number;
-  /** The greeting card — rendered at `sittingStart`, between earlier visits and this one. */
+  /** How many messages were there when the page opened; the greeting card sits after them. */
+  cardAt: number;
+  /** The greeting card — rendered at `cardAt`, between the earlier conversation and this visit. */
   card: React.ReactNode;
   thinking?: boolean;
   error?: string;
@@ -20,24 +20,35 @@ type Props = {
 const SIX_HOURS = 6 * 3_600_000;
 
 /**
- * The transcript in chapters: everything from earlier visits, then the
- * greeting card, then this sitting. A fresh visit opens on the card — the
- * chat feels new, and the old conversation is one scroll up. Once there is
- * something from this sitting, the page opens at the end as any chat does.
+ * The transcript in two parts: everything from before this page open, then
+ * the greeting card, then what is said now. The page opens on the card — the
+ * chat feels fresh every time you come to it — and the earlier conversation
+ * is one scroll up, untouched. From the first message onward it follows the
+ * newest line, as any chat does.
  */
-export function MessageList({ messages, sittingStart, card, thinking, error }: Props) {
+export function MessageList({ messages, cardAt, card, thinking, error }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const firstScroll = useRef(true);
+  const fresh = messages.length <= cardAt && !thinking && !error;
+  // While fresh, the part below the card is padded to fill the scroll region,
+  // so the card can sit at the top with quiet paper beneath it and the earlier
+  // conversation out of view above. Measured, because the region is a flex child.
+  const [room, setRoom] = useState(0);
+  useLayoutEffect(() => {
+    const cardEl = cardRef.current;
+    const region = cardEl?.closest<HTMLElement>(".chat-scroll");
+    if (!fresh || !cardEl || !region) return setRoom(0);
+    setRoom(Math.max(0, region.clientHeight - cardEl.offsetHeight - 48));
+  }, [fresh]);
   useEffect(() => {
-    const fresh = firstScroll.current && messages.length <= sittingStart && !thinking;
     if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
     else endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
     firstScroll.current = false;
-  }, [messages, sittingStart, thinking]);
+  }, [messages, fresh, room]);
 
-  const earlier = render(messages.slice(0, sittingStart));
-  const current = render(messages.slice(sittingStart));
+  const earlier = render(messages.slice(0, cardAt));
+  const current = render(messages.slice(cardAt));
 
   return (
     <section aria-label="Conversation">
@@ -47,7 +58,7 @@ export function MessageList({ messages, sittingStart, card, thinking, error }: P
         </div>
       )}
       <div ref={cardRef}>{card}</div>
-      <div className="mt-10 flex flex-col gap-7" aria-live="polite">
+      <div className="mt-10 flex flex-col gap-7" aria-live="polite" style={room ? { minHeight: room } : undefined}>
         {current}
         {thinking && (
           <div className="msg msg-lumi" aria-label="Lumi is thinking">
