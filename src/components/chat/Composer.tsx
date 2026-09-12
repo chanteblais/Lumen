@@ -39,18 +39,21 @@ export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
   });
 
   const toggleVoice = () => {
-    if (voice.listening) {
-      voice.stop();
-    } else {
+    if (voice.state === "idle") {
       baseRef.current = value;
       voice.start();
+    } else if (voice.state !== "finishing") {
+      voice.stop();
     }
   };
+
+  const voiceLabel = { idle: "Voice", preparing: "Getting voice ready…", listening: "Listening — tap to stop", finishing: "Writing that down…" }[voice.state];
+  const placeholder = { idle: "Message Lumi…", preparing: "Getting voice ready…", listening: "Listening…", finishing: "Writing that down…" }[voice.state];
 
   const submit = () => {
     const text = value.trim();
     if (!text || busy) return;
-    if (voice.listening) voice.stop();
+    if (voice.state !== "idle") voice.stop();
     onSend?.(text);
     setValue("");
     requestAnimationFrame(resize);
@@ -74,7 +77,7 @@ export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
           ref={ref}
           rows={1}
           value={value}
-          placeholder={voice.listening ? "Listening…" : "Message Lumi…"}
+          placeholder={placeholder}
           aria-label="Message Lumi"
           onChange={(e) => {
             setValue(e.target.value);
@@ -101,14 +104,15 @@ export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
               type="button"
               className={`tool-link ${voice.listening ? "is-listening" : ""}`}
               onClick={toggleVoice}
-              aria-pressed={voice.listening}
-              aria-label={voice.listening ? "Stop listening" : "Speak instead of typing"}
+              aria-pressed={voice.state !== "idle"}
+              aria-busy={voice.state === "preparing" || voice.state === "finishing"}
+              aria-label={voice.state === "idle" ? "Speak instead of typing" : "Stop listening"}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="3" width="6" height="12" rx="3" />
                 <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
               </svg>
-              {voice.listening ? "Listening — tap to stop" : "Voice"}
+              {voiceLabel}
             </button>
           )}
           {voice.error && <span className="text-[15px] text-ink-soft">{voice.error}</span>}
