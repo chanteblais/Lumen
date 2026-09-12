@@ -6,7 +6,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
-## Sweep 2026-09-12 (5) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
+## Sweep 2026-09-12 (6) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
 
 ### Verified (live, against the real database; the rows the sweep created were removed afterwards)
 - **Not this → reason → Lumi → re-cut.** Tapping *Not this* on the Right now card swapped the buttons for "Fair. What's getting in the way?" and the six chips; *Too tired* landed in Chat as "Not this one: Respond to Kendra — too tired." and Lumi answered the reason in voice ("Too tired at 2 a.m. is just accurate. Nothing here needs tonight. Sleep. Kendra keeps, cat food keeps, the paper keeps."). The dev log showed `recut=declined`; `after()` wrote a `day_plans` row with `reason: declined` whose Right now was no longer Kendra, and Today showed the new path with a new day line on the next open.
@@ -34,6 +34,23 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 - Today → *Not this* → *Too big* → Chat: Lumi names a smaller piece (may `update_intention`); back on Today the Right now is something else.
 - Re-entry: `update users set last_seen_at = now() - interval '14 days'` → open Chat → "It's been a minute. Want me to help figure out what's still relevant?" → "yes" → Lumi goes through the stale ones by name, drops what you release in one go, ends with one next step; no number anywhere; Today re-cut (`reason: reentry`) if anything was dropped.
 
+## Sweep 2026-09-12 (5) — Voice in Brave (`feat/voice-local-whisper`, worktree, port 3007)
+
+### Fixed
+- **Voice never worked in Brave** ("Voice needs a network connection right now" every time). Measured: Brave's `SpeechRecognition.available({processLocally:true})` reports `downloadable` and `install()` sits at `downloading` forever — `brave://components` has no speech (SODA) component, while Chrome installs it in ~9s. No path through the Web Speech API. New local engine (`components/chat/voice/localEngine.ts` + `whisper.worker.ts`): an AudioWorklet captures 16 kHz PCM, a worker runs `whisper-base.en` via `@huggingface/transformers` on WebGPU. Verified with the real engine bundled into a harness in a throwaway Chrome, synthesized speech piped in as the microphone: first tap ~12s (model download), later taps 1.8s to *Listening*; live text every 4s; final pass 0.45s for a 12s take; transcript verbatim. Silent 6s take → "I didn't hear anything" (RMS gate), no invented words. Whisper *does* hallucinate on identical looped audio (19 repeats of one sentence) — a harness artefact, not a speech one; exact-match filter for its classic silence outputs ("you", "Thank you.").
+- **Brave showed *Listening…* and the mic indicator but heard nothing** (Chanté). Two causes covered: (1) the `AudioContext` was created after `getUserMedia` resolved — when the permission prompt takes more than a few seconds the user gesture has expired and the context starts suspended, so the worklet gets silence. Now created inside the tap, resumed after the mic arrives, and refused if it still isn't running. (2) The default input device may be the wrong one (macOS offers a nearby iPhone as a Continuity mic): the silent-take line now names the device — *I didn't hear anything from "iPhone Microphone". Is that the right mic?* Re-verified in a throwaway Brave with speech piped in: 2.1s to *Listening*, live text at 4s intervals, verbatim final; silent take → the named line. Also resamples if a browser ignores the requested 16 kHz context rate.
+- Web Speech engine re-verified through the same harness after the refactor: plain end restarts, no-speech line, foreign abort line, own stop quiet, two quick ends give up, not-allowed line.
+
+### Known and deliberate
+- Local engine re-transcribes the whole take on each live pass; takes are capped at five minutes. Fine for dictating a message, not for an hour of notes.
+- The model comes from huggingface.co and the ONNX runtime's WASM from jsdelivr at runtime; the first tap in a browser needs a network connection and patience. No progress bar (one more thing to watch); the label says *Getting voice ready…*.
+- Not verified in Chanté's own Brave profile (the Claude Chrome extension stopped responding mid-session and Brave can't be driven). The harness is the real engine code; the Composer wiring is type-checked and mirrors the speech path.
+
+### Highest-value manual tests
+- Brave: tap Voice, allow the mic, wait for *Listening…*, talk, tap stop → text appears; second tap is fast.
+- Brave: tap Voice and stay silent → "I didn't hear anything" line.
+- Chrome: unchanged behaviour (speech engine); `localStorage.setItem("lumen.voice","local")` + reload forces the Whisper path there for comparison.
+
 ## Sweep 2026-09-12 (4) — Voice stops on its own (`fix/voice-silent-stop`, port 3005)
 
 ### Fixed
@@ -42,11 +59,8 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 ### Known and deliberate
 - Chrome allows one recognition session per browser: tapping Voice in a second tab takes the mic from the first, which now says so. The first tab does not reclaim it.
 - After `no-speech` Lumi stops rather than restarting forever: a mic that hears nothing should be noticed, not masked by a breathing icon.
-- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error. Chanté's follow-up: Chrome works; Brave failed every time with "Voice needs a network connection right now" (Brave ships no speech-service keys). Voice is now hidden in Brave (`navigator.brave`), like Firefox.
+- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error. Chanté's follow-up: Chrome works; Brave failed every time with "Voice needs a network connection right now" (Brave ships no speech-service keys). Hidden in Brave for one commit; superseded by sweep (5): the local engine.
 - Chrome picked Chanté's iPhone as the microphone: macOS Continuity offers a nearby iPhone as an input device and the Web Speech API always uses the browser's default input. Change it under Chrome → Settings → Privacy → Site settings → Microphone, or System Settings → Sound → Input. No in-app picker (one more thing to set).
-
-### Open
-- Voice is Chrome/Safari/Edge only while it rides on the browser's cloud recognition. A server-side transcriber (the hook's surface was designed for the swap) would bring Brave and Firefox in.
 
 ### Highest-value manual tests
 - Allow the mic, tap Voice, say nothing for ten seconds → "I didn't hear anything…" line, button off.
