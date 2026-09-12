@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_IDLE_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
@@ -18,6 +18,7 @@ const SWAY_MS = 560; // nine frames ≈ five seconds, per the sheet
  *
  * Idle life, all of it off under `prefers-reduced-motion`:
  * - the sheet's nine-frame breath loop, each frame fading in over the last
+ *   (two layers: the last frame underneath, the new one fading in on top)
  * - every so often one pass of the sway loop, then back to breathing
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
@@ -35,6 +36,9 @@ export function LumiCompanion() {
   const [loop, setLoop] = useState<LumiLoop>("breath");
   const [frame, setFrame] = useState(0);
   const [eyes, setEyes] = useState<LumiEyes>("open");
+  // One blink on demand — her "got it" when you send from the bubble. Set up
+  // by the idle effect so it shares its timers (and is absent under reduced motion).
+  const ack = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -79,15 +83,26 @@ export function LumiCompanion() {
       });
     };
     const scheduleBlink = () => after(between(2500, 6500), () => blink(Math.random() < 0.2));
+    ack.current = () => {
+      setEyes("half");
+      after(70, () => setEyes("closed"));
+      after(210, () => setEyes("half"));
+      after(280, () => setEyes("open"));
+    };
 
     after(BREATH_MS, tick);
     scheduleBlink();
     scheduleSway();
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      ack.current = null;
+      timers.forEach(clearTimeout);
+    };
   }, []);
 
+  // Two layers, fixed order: the previous frame underneath, opaque; the current
+  // frame on top, remounted each tick (keyed) so its fade-in replays. Simpler
+  // than the earlier stack of nine with class-toggled transitions and z-indexes.
   const prev = (frame + LUMI_IDLE_FRAMES - 1) % LUMI_IDLE_FRAMES;
-  const frames = Array.from({ length: LUMI_IDLE_FRAMES }, (_, i) => i);
 
   const tap = () => {
     if (onChat) {
@@ -99,7 +114,7 @@ export function LumiCompanion() {
 
   return (
     <div className="companion">
-      {open && !onChat && <CompanionBubble onClose={close} />}
+      {open && !onChat && <CompanionBubble onClose={close} onSend={() => ack.current?.()} />}
       <button
         type="button"
         className="companion-btn"
@@ -108,14 +123,8 @@ export function LumiCompanion() {
         aria-expanded={onChat ? undefined : open}
       >
         <span className="companion-figure" style={cellSize("body", HEIGHT)} aria-hidden>
-          {frames.map((i) => (
-            <LumiSprite
-              key={i}
-              cell={idleCell(loop, i, eyes)}
-              height={HEIGHT}
-              className={`companion-frame ${i === frame ? "on" : i === prev ? "prev" : ""}`}
-            />
-          ))}
+          <LumiSprite cell={idleCell(loop, prev, eyes)} height={HEIGHT} className="companion-frame" />
+          <LumiSprite key={frame} cell={idleCell(loop, frame, eyes)} height={HEIGHT} className="companion-frame companion-frame-in" />
         </span>
       </button>
     </div>

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Ledger } from "@/components/chat/Ledger";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 
-type Props = { onClose: () => void };
+type Props = { onClose: () => void; onSend?: () => void };
 
 const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 
@@ -19,11 +19,14 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
  * shows here, with the ledger of what she did; once the turn has landed the
  * page refreshes so Today / Lists reflect any writes. Nothing to maintain:
  * Escape, a click outside or a click on Lumi closes it.
+ *
+ * Sending has to feel like it landed: what you said appears as a bubble that
+ * slides in, the box says she's on it, and `onSend` lets Lumi blink.
  */
-export function CompanionBubble({ onClose }: Props) {
+export function CompanionBubble({ onClose, onSend }: Props) {
   const router = useRouter();
   const [value, setValue] = useState("");
-  const [said, setSaid] = useState<string | null>(null);
+  const [said, setSaid] = useState<{ text: string; n: number } | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const bubble = useRef<HTMLDivElement>(null);
 
@@ -77,10 +80,11 @@ export function CompanionBubble({ onClose }: Props) {
   const send = () => {
     const text = value.trim();
     if (!text || busy) return;
-    setSaid(text);
+    setSaid((s) => ({ text, n: (s?.n ?? 0) + 1 }));
     setValue("");
     requestAnimationFrame(resize);
     void sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
+    onSend?.();
     input.current?.focus();
   };
 
@@ -94,7 +98,7 @@ export function CompanionBubble({ onClose }: Props) {
     <div ref={bubble} className="companion-bubble" role="dialog" aria-label="Say something to Lumi">
       {said && (
         <div className="companion-exchange" aria-live="polite">
-          <p className="companion-said">{said}</p>
+          <p key={said.n} className="companion-said">{said.text}</p>
           {status === "submitted" && (
             <p className="thinking-dots" aria-label="Lumi is thinking"><span>·</span><span>·</span><span>·</span></p>
           )}
@@ -120,7 +124,7 @@ export function CompanionBubble({ onClose }: Props) {
           ref={input}
           rows={1}
           value={value}
-          placeholder={said ? "Anything else?" : "Tell Lumi…"}
+          placeholder={busy ? "Lumi's on it…" : said ? "Anything else?" : "Tell Lumi…"}
           aria-label="Message Lumi"
           onChange={(e) => {
             setValue(e.target.value);
