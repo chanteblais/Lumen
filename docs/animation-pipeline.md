@@ -1,0 +1,143 @@
+# Lumi animation pipeline — the working doc
+
+**Who this is for:** Claude, at the start of every session that touches Lumi's drawings, the cut, or the companion's loops. Read it top to bottom (three minutes), then follow *Session start*. Before the session ends, do *Session end*. The doc is a tool, not a record: rewrite what is wrong, delete what no longer earns its place, keep it short enough to read every time.
+
+**The standing goal:** Chanté wants many animations. Every animation session leaves the pipeline faster than it found it — at least one move from the *Efficiency backlog* lands, or a new one is added with a reason it beats the ones above it. Measure the cost of each animation in the *Ledger* so the trend is visible.
+
+**What it is not:** the how-the-cut-works reference. That lives in `art/README.md` (prompt recipe, what the cut corrects), `docs/design-system.md` → *Lumi sprites* / *Lumi companion* (what ships), and `docs/decisions.md` (why). This doc is the *process*: order of work, gates, touch points, costs, and what to fix next.
+
+---
+
+## Session start (≤ 3 minutes)
+
+1. `ls art/` — any sheet not in the `art/README.md` table is new and uncut. Any sheet listed as *not cut yet* (`lumi-stretch.png` on 2026-09-12) is a candidate.
+2. Read the *Ledger* (last two rows) and the top three of the *Efficiency backlog*. Decide which backlog move this session will land — the top one unless the animation at hand needs another first.
+3. `python3 -c "import numpy, scipy, PIL"` — the scripts need all three (2.5 / 1.18 / 12.2 on 2026-09-12, `/usr/local/bin/python3`).
+4. Port check (`lsof -nP -iTCP:3005 -sTCP:LISTEN -t`, then `lsof -a -p $PID -d cwd`) before starting a review server; the rules are in `CLAUDE.md`.
+5. Branch: `ux/lumi-<movement>` for the animation; the backlog move rides on the same branch if it is what the animation needed, else its own `chore/lumi-<move>`.
+
+---
+
+## The pipeline, fastest known path
+
+Seven stages. The cost of the first two animations sat almost entirely in stages 2 and 6 (bad sheets, and review rounds spent discovering what a number would have shown). Push every problem left: reject at *measure*, never at *review*.
+
+### 1 · Brief (2 min, before any generation)
+Write down, in the ledger row you open for this animation: the movement in one line, which part moves and which parts hold, where it plays (a variation on the breath loop · a reaction · a state), the frame budget (twelve or more in-betweens per motion; 120 ms a frame for a quick gesture, 320–560 ms for a slow one), and how it starts and ends (at or next to the breath rest frame, always — loops hand over there).
+
+### 2 · Generate (Chanté does this; give her the prompt ready to paste)
+ChatGPT image generation, with `art/lumi-slow-idle.png` attached as the pose reference and `art/lumi-idle-foot.png` as the motion/style reference. The recipe that worked is in `art/README.md`; the template below is that recipe as a fill-in prompt. **Save the exact prompt used** as `art/prompts/<sheet>.md` next to the sheet (backlog #5) so the next one is a copy, not a rewrite.
+
+```
+One base drawing of this character; in every frame only <THE MOVING PART> changes.
+The hood, face, ribbon, cloak folds and feet hold pixel for pixel unless named below.
+Phases, in frame order:
+  frames 1–<a>: <phase 1 — e.g. rest, then the head turns a little toward the left foot>
+  frames <a+1>–<b>: <phase 2 — e.g. the left foot lifts and scuffs forward, head held turned>
+  frames <b+1>–<n>: <phase 3 — e.g. everything returns to frame 1>
+<n> frames in total, small even steps, slow in and slow out; frame 1 is the attached rest pose; the last frame equals frame 1.
+Layout: a regular grid of <rows> rows × 8 columns, identical cell size, generous margins, the figure in the same place in every cell, feet on one baseline.
+Ground: flat, untextured grey-blue (as in the attached sheet). No titles, labels, numbers or notes anywhere.
+Same style, line weight, palette, lighting and hood ornament as the reference. Highest resolution, landscape.
+```
+
+Ask for the turn *back* explicitly and separately (the generator skipped it once and drew rest frames instead); if it is skipped again, the loop replays the way in reversed — that is fine and costs no sheet space.
+
+### 3 · Measure (1 min — the gate)
+```bash
+python3 scripts/measure-lumi-sheet.py art/<sheet>.png
+```
+Read the numbers, then flip through the aligned strip it writes. **Reject the sheet, and say why in one line, when any of these fails** — a cut cannot fix them, only hide them for a round or two:
+
+| Gate | Pass | Fail → what to ask for |
+|---|---|---|
+| Frames found | equals rows × columns asked for | a merged or split figure: wider margins, plainer ground |
+| Height per frame, within a row | spread ≤ 2% | figures boil: "one base drawing, only X changes" |
+| Scale per row | each within 5% of 1.0 (the cut rescales; more than that softens her) | rows drawn at different sizes: "identical cell size" |
+| Head IoU per step, in a held phase | ≥ 0.975 | < 0.95 is a pop: a phase redrawn from scratch |
+| Head IoU per step, in a turn | 0.95–0.975, monotone | jumps: too few in-betweens for that phase |
+| Eyes dx | moves only in a glance phase | stray eye drift: hold the face |
+| Dirt pixels | only where dirt is meant | specks on the ground: plainer ground |
+| A phase present | every phase in the brief has frames | the generator skipped it: ask for it alone, or plan the reverse replay |
+
+A sheet that passes all gates has, so far, needed one cut and one review round. A sheet that fails one has needed three.
+
+### 4 · Cut (10–40 min today; backlog #1 brings it to ~5)
+`scripts/cut-lumi-idle.py` regenerates `public/lumi-idle.webp`. Today a new sheet means editing the script: a `Sheet(...)` with the ground sample box, the row y-ranges for `frames(...)`, the cell list, the per-row scale, `settle` (cell 0 onto the breath rest frame, the rest onto cell 0), and the `hold_head` spans per phase. Copy the foot block; the comments there say what each step is for. Run it, read the printed row scales (should match the measure script's), and check the sheet size printed at the end.
+
+### 5 · Wire (5 min — every touch point, in order)
+1. `src/components/chat/LumiSprite.tsx` — `LUMI_LOOPS` (the name), `LUMI_LOOP_CELLS` (the play order over the row's cells; repeats and reversals are free), `LUMI_IDLE_FRAMES` if the row is the widest yet; the header comment's row map.
+2. `src/components/shell/LumiCompanion.tsx` — `FRAME_MS` (with the one-line reason), `VARIATIONS` if it plays as a variation. The dev cue strip picks the new loop up on its own.
+3. Docs, same commit: `art/README.md` table row · `docs/design-system.md` → Lumi sprites (the row map) and Lumi companion (timing) · `docs/features.md` → *Lumi in the corner* (the one-line description of what she does) · `docs/decisions.md` if a rule moved.
+
+### 6 · Verify, then review (this is where rounds are won or lost)
+**What Claude can verify without a browser, and should, before asking Chanté for anything:**
+- The cut cells: write a contact strip of the loop in play order from `public/lumi-idle.webp` and look at it; the head must be one drawing across a held phase, the feet on one baseline, no cold rim, no grey fringe.
+- Frame-to-frame head IoU on the *cut* cells (same method as the measure script) — the settle should have made held phases ≥ 0.99.
+- Fade: `fadeMs` is 80% of the faster loop's frame time; a fade longer than the frame reads as blur. A new frame time changes the fade for hand-overs automatically.
+- Loop ends at or next to rest: first and last cells of the order.
+- **Not** the Claude-in-Chrome tab: Chrome freezes CSS animation in that occluded window, and a capture shows her mid-fade. Say "verified from the cut cells and the measurements" and mean it.
+
+**Then one review round, made to count.** Start the review server (`npm run dev -- -p 3005`, or the next free port from your checkout; say which branch it serves), and give Chanté in one message: the port and the cue button to press; the three numbers that matter (frame time, frames, fade); what changed since the last round in one line; and **one question per thing you suspect** ("does the head hold still through the kick?"), because "how does it look?" costs a round of translation. She judges motion by feel on her own screen and notices sub-pixel drift, fade ghosting and accidental gestures. If a gesture came from an accident (the crossfade morph once read as a head turn, and she liked it), say so before removing it — then draw it.
+
+**When two treatments are plausible** (two orders, two frame times, hold vs no hold), cut both as separate loops and let the cue strip show each, so one round compares them instead of two rounds trying one each.
+
+### 7 · Docs, ledger, commit
+The docs sweep from stage 5 goes in the same commit as the cut. Then fill the ledger row (below) and update this doc — see *Session end*.
+
+---
+
+## Ledger — what each animation cost
+
+Newest first. *Rounds* = messages from Chanté that sent the work back. *Wall clock* is from the first cut commit to the last, from `git log`, and includes other work interleaved on the same day.
+
+| Date | Animation | Sheets generated | Rounds | Wall clock | Touch points | What cost the most | What it taught (→ where it is written) |
+|---|---|---|---|---|---|---|---|
+| 2026-09-12 | Playful foot with a glance (`lumi-idle-foot.png`, 15 cells, 21 frames, 120 ms) | 3 (`lumi-playful-foot` → `lumi-idle` → `lumi-idle-foot`) | 5 | ~2 h 05 (03:10 → 05:16) | 7 files + 4 docs | Sheet 1 was poses, not in-betweens (a whole sheet and two rounds lost); anchoring on the face (one round); a fade longer than the frame (one round); an accidental gesture removed and then drawn (one sheet, one round) | measure before judging; one drawing, only the moving part changes; a loop is an order over cells; hold a head cel per phase; fade ≤ 80% of frame → `art/README.md`, `decisions.md` |
+| 2026-09-11/12 | Slow idle: breath · blink · sway (`lumi-slow-idle.png`) | 2 (`lumi-idle` → `lumi-slow-idle`) | 3 | ~1 h 05 (23:37 → 00:43) | first cut of everything | The first sheet's "micro variations" were separate drawings and read as image swaps; a hand cut keyed on paper ate the cream hood | matte by flood fill from outside; centre on the figure, not the sheet's spacing → `decisions.md` |
+
+**Target for the next animation:** one sheet (rejected at *measure* if it must be), ≤ 2 rounds, ≤ 45 min wall clock, ≤ 3 code touch points.
+
+---
+
+## Efficiency backlog — ranked, one per session minimum
+
+Rank by (rounds or minutes saved per animation) ÷ (effort once). Re-rank at session end. When a move lands, move it to *Landed* with the date and what it actually saved.
+
+1. **The cut takes a sheet spec, not code edits.** Replace the foot-specific block in `scripts/cut-lumi-idle.py` with a list of specs — `{sheet, contrast, rows (found by segmentation the way the measure script does, not hard-coded y-ranges), cells, holds: [(span, donor)], settle_to}` — so a new loop is one dict entry and one run. *Saves* ~30 min and the row-coordinate hunting per sheet; removes the "expect N frames" assertion failures. *Done when* the current three loops re-cut byte-identical (or visually identical) from the spec form and `lumi-stretch.png` cuts from a spec alone.
+2. **A preview without a browser.** `scripts/preview-lumi-loop.py <loop>` renders the loop in its play order at its `FRAME_MS`, with the crossfade approximated, to `art/preview/<loop>.gif` (and a contact strip PNG). Claude judges from it (no frozen-tab problem), and Chanté can watch it on her phone via SendUserFile before a server is even up. *Saves* a review round per animation on average, and the server-and-port dance for the first look. *Done when* the foot loop's GIF matches what the page shows.
+3. **One command each.** `npm run lumi:measure -- art/x.png`, `lumi:cut`, `lumi:preview`; `lumi:measure` exits non-zero and prints the failed gate from the table above, so a bad sheet is rejected by the tool, not by the fifth review round. *Saves* a few minutes and, more, the temptation to cut a sheet that should be rejected.
+4. **A loop is one entry.** Move `FRAME_MS` next to `LUMI_LOOP_CELLS` (a `{cells, ms, variation}` record per loop in `LumiSprite.tsx`), derive `LUMI_IDLE_FRAMES` from the widest row, and have the cut script read the same table (or write it). Touch points for a new loop: 3 → 1 code file plus docs.
+5. **Prompts are files.** `art/prompts/<sheet>.md` holds the verbatim prompt and the attachments used, saved the moment a sheet is added. The template above is reconstructed from the recipe; the first saved prompt replaces it.
+6. **Compare in one round.** A cue-strip convention for candidate loops (`foot-a`, `foot-b`) that never ship: cut alternatives as extra rows, review once, delete the losers before merge.
+7. **Reaction states, not only idles.** When a first non-idle animation is wanted (a nod, a look-up when a message lands), decide once how it is triggered (an event from the page the way `lumi:cue` works today) so it plugs into the same sprite/loop tables. Design it before generating a sheet for it.
+
+### Landed
+- 2026-09-12 — `scripts/measure-lumi-sheet.py` (measure before judging; the aligned strip). `LUMI_LOOP_CELLS` (orders over cells, so reversals and repeats cost no sheet space). Per-row scale, quarter-pixel settle, per-phase head hold, the contrast-ground matte. The dev cue strip (a variation on demand instead of a 20–45 s wait). Written up in `art/README.md`.
+
+---
+
+## Pitfalls that are not in `art/README.md`
+
+Everything the generator gets wrong and the cut already corrects is in the README's table; do not repeat it here. These are the process traps:
+
+- **Judging from the raw sheet or the browser tab first.** The numbers take a minute and have been right every time; eyes on the raw sheet were wrong twice.
+- **Cutting a sheet that failed a gate** because "the cut can probably fix it". It fixed the scale and the hold; it never fixed poses-instead-of-in-betweens or a missing phase. Reject and regenerate; it is cheaper than the rounds.
+- **Removing an accidental gesture silently.** Say what it was, ask whether to keep it, draw it if yes.
+- **Verifying motion in the Claude-in-Chrome tab.** Frozen when occluded. Use the cut cells, the measurements, and (once backlog #2 lands) the preview.
+- **Two dev servers from one checkout** corrupt `.next`; ports 3000–3004 belong to other projects. Check who is on a port before starting anything.
+- **Docs after the merge.** The row map in `design-system.md`, the README table and `features.md` go in the same commit as the cut, or the next session reads a stale map and cuts over the wrong row.
+
+---
+
+## Session end (≤ 5 minutes, before the last commit)
+
+1. Fill or update the ledger row: sheets, rounds, wall clock from `git log`, what cost the most, what it taught and where that is now written.
+2. Move the landed backlog item to *Landed* with what it actually saved; re-rank the rest; add any new move with a one-line reason for its rank.
+3. Fix anything in this doc that turned out wrong (a gate threshold, a stage's time, a touch point). Delete what did not help.
+4. Append one line to the *Change log* below.
+5. This doc is a doc: it goes in the same commit as the animation, and the docs audit before merge checks it like any other.
+
+## Change log
+
+- 2026-09-12 — Created after the playful-foot work: baseline ledger (two animations), the gates as numbers, the seven-stage path, the first ranked backlog. Prompt template reconstructed from the recipe, not verbatim.
