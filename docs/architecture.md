@@ -164,8 +164,8 @@ rali/
 │   │   ├── domain/               users.ts intentions.ts focus.ts capacity.ts memory.ts events.ts
 │   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts reflect.ts
 │   │   └── time.ts               tz-aware today/gap helpers
-│   ├── db/                       schema.ts client.ts migrations/
-│   ├── lib/                      auth.ts (server boundary) · auth-ui.tsx (provider, auth controls)
+│   ├── db/                       schema.ts (the domain model as code) client.ts (lazy postgres-js + drizzle) migrations/ (drizzle-kit)
+│   ├── lib/                      auth.ts (server boundary → ensureUser) · auth-ui.tsx (provider, auth controls)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── drizzle.config.ts
@@ -195,3 +195,11 @@ Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PA
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
 - **EF-burden log** (`docs/ef-burden-log.md`) gets a row for every new user-maintained state, in the same commit.
+
+## 7. Data access
+
+- `src/db/schema.ts` is the single source of truth for tables and their TS types (`User`, `Intention`, …). `docs/domain.md` is its prose twin — update both in the same commit.
+- `db()` (`src/db/client.ts`) is a lazy singleton over `postgres` with `prepare: false` (Supabase transaction pooler, port 6543) and a small pool. Import only from server code.
+- Domain functions in `src/core/domain/*` take the `Db` as their first argument (no module-level client) so they're testable against a scratch database and liftable into a worker.
+- Every write goes through a domain function that also calls `appendEvent` — never `db().insert(...)` from a route or component.
+- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` around it and returns the internal row.

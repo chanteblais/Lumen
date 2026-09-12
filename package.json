@@ -10,11 +10,16 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes",
-    "check:routes": "node scripts/check-route-auth.mjs"
+    "check:routes": "node scripts/check-route-auth.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
+    "db:studio": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs studio"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.2",
+    "drizzle-orm": "^0.45.2",
     "next": "16.3.5",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -23,6 +28,7 @@
     "@types/node": "^22.20.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
