@@ -102,7 +102,7 @@ Four chips + a round "another way in" button. They are starting points, not mode
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
 ### Sidebar (`components/shell/Sidebar.tsx`)
-Wordmark, tagline label, divider ornament, nav of plain names (no numerals), italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
+Wordmark, tagline label, divider ornament, nav of plain names (no numerals) with a brass diamond marking the open chapter, italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
 
 ### Clock (`components/ui/Clock.tsx`)
 Viewer-local date + time as a `.label`, top right. Renders empty on the server and fills on mount (no hydration mismatch).

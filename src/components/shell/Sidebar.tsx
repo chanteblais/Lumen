@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Divider, Fleuron } from "@/components/ui/Ornament";
+import { Diamond, Divider, Fleuron } from "@/components/ui/Ornament";
 
 const NAV = [
   { href: "/", label: "Chat" },
@@ -33,6 +33,7 @@ export function Sidebar() {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? "page" : undefined}>
+              <Diamond size={9} className="nav-mark" />
               <span className="name">{item.label}</span>
             </Link>
           );
