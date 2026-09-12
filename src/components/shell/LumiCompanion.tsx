@@ -17,6 +17,12 @@ type Pose = { loop: LumiLoop; frame: number };
 const REST: Pose = { loop: "breath", frame: 0 };
 const key = (p: Pose) => `${p.loop}-${p.frame}`;
 
+/** Something the companion can be asked to do out of turn (dev only, from the debug strip). */
+type Cue = LumiLoop | "blink";
+const CUE_EVENT = "lumi:cue";
+const cue = (what: Cue) => window.dispatchEvent(new CustomEvent<Cue>(CUE_EVENT, { detail: what }));
+const DEBUG = process.env.NODE_ENV === "development";
+
 /**
  * Lumi in the corner of the screen, keeping you company. Full figure, standing
  * on the bottom edge. Purely decorative: no clicks, no state, nothing to maintain.
@@ -64,28 +70,41 @@ export function LumiCompanion() {
     };
     const scheduleVariation = () =>
       after(between(20000, 45000), () => {
+        if (pending) return; // a cue is already waiting; it plays instead
         const choices = VARIATIONS.filter((loop) => loop !== last);
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
       });
 
     // Blink: half → shut → half → open, ~0.3s. Occasionally doubled.
-    const blink = (thenDouble: boolean) => {
+    const blink = (then: () => void) => {
       setEyes("half");
       after(70, () => setEyes("closed"));
       after(210, () => setEyes("half"));
       after(280, () => {
         setEyes("open");
-        if (thenDouble) after(180, () => blink(false));
-        else scheduleBlink();
+        then();
       });
     };
-    const scheduleBlink = () => after(between(2500, 6500), () => blink(Math.random() < 0.2));
+    const scheduleBlink = () =>
+      after(between(2500, 6500), () => blink(Math.random() < 0.2 ? () => after(180, () => blink(scheduleBlink)) : scheduleBlink));
+
+    // A cue from the debug strip: a variation plays at the next rest frame
+    // (the same hand-over as a scheduled one); a blink plays now.
+    const onCue = (e: Event) => {
+      const what = (e as CustomEvent<Cue>).detail;
+      if (what === "blink") blink(() => {});
+      else if (what !== "breath") pending = what;
+    };
+    if (DEBUG) window.addEventListener(CUE_EVENT, onCue);
 
     after(FRAME_MS.breath, tick);
     scheduleBlink();
     scheduleVariation();
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      if (DEBUG) window.removeEventListener(CUE_EVENT, onCue);
+    };
   }, []);
 
   // The previous frame stays underneath while the current one fades in on top.
@@ -94,17 +113,38 @@ export function LumiCompanion() {
   const stack = key(pose.prev) === key(pose.cur) ? [pose.cur] : [pose.prev, pose.cur];
 
   return (
-    <div className="companion" aria-hidden>
-      <div className="companion-figure" style={cellSize("body", HEIGHT)}>
-        {stack.map((p, i) => (
-          <LumiSprite
-            key={key(p)}
-            cell={idleCell(p.loop, p.frame, eyes)}
-            height={HEIGHT}
-            className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
-          />
-        ))}
+    <>
+      <div className="companion" aria-hidden>
+        <div className="companion-figure" style={cellSize("body", HEIGHT)}>
+          {stack.map((p, i) => (
+            <LumiSprite
+              key={key(p)}
+              cell={idleCell(p.loop, p.frame, eyes)}
+              height={HEIGHT}
+              className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
+            />
+          ))}
+        </div>
       </div>
+      {DEBUG && <DebugStrip />}
+    </>
+  );
+}
+
+/**
+ * Dev-only buttons above the companion: play each variation (or a blink) on
+ * demand instead of waiting for the schedule. Not a control in the product —
+ * it never ships (`NODE_ENV === "development"` only).
+ */
+function DebugStrip() {
+  const cues: Cue[] = [...VARIATIONS, "blink"];
+  return (
+    <div className="companion-debug">
+      {cues.map((what) => (
+        <button key={what} type="button" className="companion-debug-btn" onClick={() => cue(what)}>
+          {what}
+        </button>
+      ))}
     </div>
   );
 }

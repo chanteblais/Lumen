@@ -259,6 +259,28 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .companion-frame { animation: none; }
 }
+/* Dev-only cue buttons, sitting just above her head. */
+.companion-debug {
+  position: fixed;
+  right: 56px;
+  bottom: 200px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+}
+.companion-debug-btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 4px 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.companion-debug-btn:hover { color: var(--ink); border-color: var(--rule-strong); }
 
 /* ---------- Chat surfaces ---------- */
 .card {
@@ -462,7 +484,7 @@ body::after {
   .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
-  .companion { display: none; } /* would sit on the docked composer's send button */
+  .companion, .companion-debug { display: none; } /* would sit on the docked composer's send button */
   .chat-page { --companion-lane: 0px; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
