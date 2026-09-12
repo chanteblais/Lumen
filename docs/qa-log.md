@@ -6,6 +6,26 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (3) — Today latency (`fix/today-latency`, worktree, port 3006)
+
+Chanté: "the app is quite slow, particularly Today." Measured from her machine: Clerk `currentUser()` ~200ms, a warm query to the Supabase pooler (us-east-2) 65–110ms, a fresh connection ~500ms, the snapshot's five queries on a cold pool ~460ms, first plan generation of the day several seconds — all serial, all before Today could show more than the skeleton.
+
+### Fixed
+- **Clerk profile fetched on every server render.** `requireUser` awaited `currentUser()` before looking up the row; the name is only needed to create it. `ensureUser` now takes the name as a lazy function. ~200ms off every page and every chat turn.
+- **Plan generation on Today's critical path.** `ensureTodaysPlan` (shared) is primed in `after()` on the home page and after each chat turn, so Today usually finds the plan persisted. An in-flight map stops a prime and a page racing into two generations.
+- **Empty plan going stale.** Priming on open means the plan can be cut before the day's first brain-dump; a plan with no Right now / After that is re-cut once intentions exist (`first_items`). Plans that already have a Right now are never regenerated here.
+- **Pool cold-started after 20s idle.** `idle_timeout` 20 → 300s.
+
+### Known and deliberate
+- Opening Today first, on a new day, with no earlier home/chat visit, still generates on the page (skeleton streams meanwhile). Priming covers the normal entry order.
+- On Vercel, `after()` runs in the same invocation after the response; priming adds nothing to the reply time but does extend the function's runtime.
+- Dev-mode first hit of a route still pays a Turbopack compile — one-off per route per server start, not an app property.
+
+### Highest-value manual tests
+- Sign in → Chat → Today: Today's path appears with no skeleton wait (plan was primed on the Chat open).
+- New day (or delete today's `day_plans` rows): open Chat with nothing open → brain-dump three things → Today shows a Right now (plan re-cut as `first_items`, visible in `day_plans.reason`).
+- Reload Today twice: same Right now both times.
+
 ## Sweep 2026-09-13 — M3 (`feat/m3-intentions`, worktree, port 3007)
 
 ### Verified (live, against the real database, test rows removed afterwards)

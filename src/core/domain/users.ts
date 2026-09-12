@@ -10,7 +10,12 @@ import { appendEvent } from "./events";
 
 export type EnsureUserInput = {
   clerkUserId: string;
-  displayName: string;
+  /**
+   * What Lumi calls them. Only needed when creating the row, so a caller that
+   * has to fetch it (the auth provider's profile — a network call) passes a
+   * function and pays for it once, not on every request.
+   */
+  displayName: string | (() => Promise<string>);
   /** IANA timezone from the browser; only used when creating the row. */
   timezone?: string;
 };
@@ -20,11 +25,12 @@ export async function ensureUser(db: Db, input: EnsureUserInput): Promise<User> 
   const existing = await db.query.users.findFirst({ where: eq(users.clerkUserId, input.clerkUserId) });
   if (existing) return existing;
 
+  const displayName = typeof input.displayName === "function" ? await input.displayName() : input.displayName;
   const [created] = await db
     .insert(users)
     .values({
       clerkUserId: input.clerkUserId,
-      displayName: input.displayName,
+      displayName,
       timezone: isValidTimezone(input.timezone) ? input.timezone : "UTC",
       preferences: DEFAULT_PREFERENCES,
     })

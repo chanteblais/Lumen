@@ -71,12 +71,14 @@ Guardrails: Right now must be open and not declined today; After that ≤ 3 (≤
 
 Persisted in `day_plans` so the path is **stable across reloads** — the one thing must not change every time the page opens.
 
+**Cut before it's needed.** Generation is primed in the background when the app is opened (home page) and after every chat turn, so Today normally finds the plan already there instead of waiting several seconds on the model. If the day's plan was cut with nothing to choose from (or everything on it has been ticked off) and intentions have since arrived — brain-dump in chat, then Today — it is re-cut once (`reason: first_items`). A plan with a Right now is never touched by this.
+
 ## Domain additions (proposed; migration when built)
 | Change | Why |
 |---|---|
 | `intentions.list` text null | Lists membership (free label, user-editable list names) |
 | `intentions.estimate_minutes` int null | "~40 min" pills; Lumi infers when unstated; `effort_hint` stays as the coarse fallback |
-| `day_plans` (id, user_id, local_date, capacity, plan jsonb, generated_at, reason: 'new_day'\|'capacity'\|'declined'\|'asked'\|'advanced') | Stable path per day; history of how the day was re-cut |
+| `day_plans` (id, user_id, local_date, capacity, plan jsonb, generated_at, reason: 'new_day'\|'first_items'\|'capacity'\|'declined'\|'asked'\|'advanced') | Stable path per day; history of how the day was re-cut |
 | events: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `capacity.asked` | *Not this* reasons are the richest learning signal in the product — "too big" three times on the same kind of task is an `anti_pattern` belief waiting to be written |
 
 ## Handoffs into chat

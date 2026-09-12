@@ -1,32 +1,18 @@
 import { cache } from "react";
 import Link from "next/link";
 import { CompleteCircle } from "@/components/lists/CompleteCircle";
-import { buildDayPlan } from "@/core/ai/plan";
-import { loadSnapshot } from "@/core/domain/snapshot";
-import { savePlan } from "@/core/domain/plans";
+import { ensureTodaysPlan } from "@/core/ai/today-plan";
 import { db } from "@/db/client";
 import type { DayPlanJson, Intention, User } from "@/db/schema";
 
 /**
- * Loads (or, first time today, generates) the persisted path. Both halves of
- * the page call this; React's cache() makes it one computation per request.
+ * Loads the persisted path — usually already primed in the background when
+ * the app was opened (`primeTodaysPlan`); generated here only if not. Both
+ * halves of the page call this; React's cache() makes it one computation per request.
  */
 const getTodaysPlan = cache(async (user: User): Promise<{ plan: DayPlanJson; byId: Map<string, Intention> }> => {
-  const snap = await loadSnapshot(db(), user);
-  const byId = new Map(snap.openIntentions.map((i) => [i.id, i]));
-  if (snap.plan) return { plan: snap.plan, byId };
-  const plan = await buildDayPlan({
-    displayName: user.displayName,
-    timezone: user.timezone,
-    localDate: snap.today,
-    now: new Date(),
-    capacity: snap.capacity,
-    openIntentions: snap.openIntentions,
-    beliefs: snap.beliefs,
-    lastSeenAt: user.lastSeenAt,
-  });
-  await savePlan(db(), user.id, snap.today, plan, "new_day", snap.capacity?.level);
-  return { plan, byId };
+  const { snap, plan } = await ensureTodaysPlan(db(), user);
+  return { plan, byId: new Map(snap.openIntentions.map((i) => [i.id, i])) };
 });
 
 export async function PlanSection({ user, part }: { user: User; part: "dayline" | "path" }) {

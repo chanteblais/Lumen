@@ -171,7 +171,7 @@ export type DayPlanJson = {
   restCanWait: boolean;
   closingLine?: string;
 };
-export type PlanReason = "new_day" | "capacity" | "declined" | "asked" | "advanced";
+export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "asked" | "advanced";
 
 export const dayPlans = pgTable(
   "day_plans",
