@@ -59,7 +59,7 @@ Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `c
 | `report_capacity {level, flags?, note?}` | event `capacity.reported` (source of truth for "today") |
 | `start_focus_session {goal, first_step, approach?, minutes, intention_id?}` | insert session; `approach` = the strategy being tried; event; client SessionBar appears |
 | `end_focus_session {id, outcome}` | close; event |
-| `remember {kind, content, confidence?}` | new belief; `source: user_said` or `rali_inferred` |
+| `remember {kind, content, confidence?}` | new belief; `source: user_said` or `lumi_inferred` |
 | `confirm {id}` / `contradict {id, note?}` | adjust evidence + confidence; events |
 | `revise {id, content}` | new belief superseding the old (history kept) |
 | `forget {id}` | user-requested retire |
@@ -210,4 +210,4 @@ Planned: `POST /api/session` check-in ticks (M5) · `GET/DELETE /api/beliefs` (M
 - `db()` (`src/db/client.ts`) is a lazy singleton over `postgres` with `prepare: false` (Supabase transaction pooler, port 6543) and a small pool that keeps idle connections for five minutes — opening one costs ~0.5s against ~70ms per warm query (Vancouver → us-east-2), so a pause between page views must not cold-start the pool. Import only from server code.
 - Domain functions in `src/core/domain/*` take the `Db` as their first argument (no module-level client) so they're testable against a scratch database and liftable into a worker.
 - Every write goes through a domain function that also calls `appendEvent` — never `db().insert(...)` from a route or component.
-- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` (local session-cookie check) around it and returns the internal `User` row; the Clerk profile (`currentUser()`, a network call) is fetched only when the row has to be created, so it never sits on the request path. Timezone arrives via the `rali_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit for greeting/context.
+- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` (local session-cookie check) around it and returns the internal `User` row; the Clerk profile (`currentUser()`, a network call) is fetched only when the row has to be created, so it never sits on the request path. Timezone arrives via the `lumen_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit for greeting/context.

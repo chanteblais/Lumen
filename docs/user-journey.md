@@ -11,11 +11,11 @@ flowchart TD
     REENTRY --> TALK
     RESUME --> TALK
 
-    TALK --> RALI{"Lumi reads context\n(intentions · capacity · beliefs)\nand acts through tools"}
-    RALI --> INT["Intentions created /\ncompleted / dropped\n(ledger lines)"]
-    RALI --> CAP["Capacity noted"]
-    RALI --> STEP["One next physical step"]
-    RALI --> SESSION["Focus Together\nwhat · first step · how long"]
+    TALK --> LUMI{"Lumi reads context\n(intentions · capacity · beliefs)\nand acts through tools"}
+    LUMI --> INT["Intentions created /\ncompleted / dropped\n(ledger lines)"]
+    LUMI --> CAP["Capacity noted"]
+    LUMI --> STEP["One next physical step"]
+    LUMI --> SESSION["Focus Together\nwhat · first step · how long"]
 
     SESSION --> CHECK{"Still with it?"}
     CHECK -->|Yep| SESSION

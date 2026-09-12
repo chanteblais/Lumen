@@ -72,8 +72,8 @@ Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | user_id | fk | |
 | kind | text | `fact | project | preference | strategy | pattern | anti_pattern` — *strategy* = what helps this user start; *anti_pattern* = what reliably doesn't |
 | content | text | one sentence, present tense |
-| source | text | `user_said | rali_inferred | reflection` |
-| confidence | real | 0–1. `user_said` 0.9 (corrections 0.95), `rali_inferred` 0.4–0.6, reflection sets per evidence |
+| source | text | `user_said | lumi_inferred | reflection` |
+| confidence | real | 0–1. `user_said` 0.9 (corrections 0.95), `lumi_inferred` 0.4–0.6, reflection sets per evidence |
 | evidence_for / evidence_against | int | incremented by `confirm` / `contradict` and by reflection ops |
 | last_confirmed_at / last_contradicted_at | timestamptz null | |
 | supersedes_id | uuid null | set when `revise` replaces a belief; the old one is retired with reason `superseded` |
