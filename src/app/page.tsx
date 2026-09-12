@@ -4,8 +4,10 @@ import { Conversation } from "@/components/chat/Conversation";
 import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
+import { reflectAfterSession } from "@/core/ai/reflect";
 import { primeTodaysPlan } from "@/core/ai/today-plan";
 import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
+import { resolveSession, toSessionView } from "@/core/domain/sessions";
 import { currentSitting, visitBeforeSitting } from "@/core/domain/users";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
@@ -18,10 +20,12 @@ export default async function Home() {
   // Cut today's path now, off the response, so Today opens with it ready.
   after(() => primeTodaysPlan(db(), user));
   const conversation = await ensureMainConversation(db(), user.id);
-  const [initialMessages, open, sitting] = await Promise.all([
+  const [initialMessages, open, sitting, session] = await Promise.all([
     loadRecentMessages(db(), conversation.id),
     listOpenIntentions(db(), user.id),
     currentSitting(db(), user.id),
+    // Sweeps a session left open past its threshold (closed as abandoned) and returns what's running.
+    resolveSession(db(), user.id),
   ]);
   const intentionTitles = Object.fromEntries(open.map((i) => [i.id, i.title]));
   const inSitting = isInSitting(initialMessages);
@@ -29,12 +33,20 @@ export default async function Home() {
   // Today still counts — until they've said something since the sitting began.
   const lastSaid = initialMessages.at(-1)?.metadata?.createdAt;
   const saidThisSitting = sitting ? Boolean(lastSaid && new Date(lastSaid) >= sitting.openedAt) : inSitting;
+  // A session that was left open and closed for them: offered back until they've said anything since,
+  // and reflected on once (off the response) — leaving a session open is evidence too.
+  const abandoned = session.last?.outcome === "abandoned" && session.last.endedAt && (!lastSaid || session.last.endedAt > new Date(lastSaid)) ? session.last : undefined;
+  if (session.last?.outcome === "abandoned") {
+    const id = session.last.id;
+    after(() => reflectAfterSession(db(), user, id));
+  }
   const lines = greeting({
     displayName: user.displayName,
     lastSeenAt: sitting && !saidThisSitting ? visitBeforeSitting(sitting) : previous,
     // The second line continues from the last thing said, in their calendar.
     lastSaidAt: lastSaid ? new Date(lastSaid) : undefined,
     timezone: user.timezone,
+    abandonedSessionGoal: abandoned?.goal,
   });
 
   // Keyed: an element passed as a prop across the server/client boundary
@@ -60,6 +72,7 @@ export default async function Home() {
         kicker={kicker}
         initialInSitting={inSitting}
         intentionTitles={intentionTitles}
+        initialSession={session.active ? toSessionView(session.active) : null}
       />
     </Suspense>
   );

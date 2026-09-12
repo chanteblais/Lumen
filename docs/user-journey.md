@@ -45,4 +45,4 @@ flowchart TD
 
 ## Open questions
 - Where does a user *see* that an intention was captured without turning Today into a task list? (Ledger lines under the message are the M3 answer.)
-- When a session is abandoned, is the next-visit prompt a greeting variant (current plan) or a silent close?
+- ~~When a session is abandoned, is the next-visit prompt a greeting variant (current plan) or a silent close?~~ Decided M5 (2026-09-12): the greeting variant, shown until they've said anything since the session was closed — see `decisions.md`.

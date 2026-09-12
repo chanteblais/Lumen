@@ -7,8 +7,11 @@ import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
 
-/** `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down). */
-export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string };
+/**
+ * `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down);
+ * `kind: "session_event"` with `sessionId`/`response` is a tap on the session bar or a check-in.
+ */
+export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
 export type LumenUIMessage = UIMessage<LumenMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;

@@ -4,8 +4,11 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SessionBar } from "@/components/focus/SessionBar";
 import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/declines";
 import type { LumenUIMessage } from "@/core/domain/conversations";
+import type { SessionView } from "@/core/domain/sessions";
+import { sessionEventText, sessionFromMessages, type SessionEventResponse } from "@/core/focus";
 import { Composer } from "./Composer";
 import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
@@ -20,6 +23,8 @@ type Props = {
   initialInSitting: boolean;
   /** Titles for handoff messages (id → title), from the server. */
   intentionTitles?: Record<string, string>;
+  /** The focus session running when the page opened, if any. */
+  initialSession?: SessionView | null;
 };
 
 export type Handoff = { text: string; kind: "start_intention" | "declined" | "break_down"; intentionId: string; reason?: DeclineReason };
@@ -45,7 +50,7 @@ export function handoffMessage(params: URLSearchParams, titles: Record<string, s
   return null;
 }
 
-export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {} }: Props) {
+export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {}, initialSession = null }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
   // Every page open is a fresh start: the greeting card sits after everything
@@ -81,6 +86,18 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     void sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString(), ...(extra ?? {}) } });
   };
 
+  // Focus Together: what the server said was running when the page opened,
+  // then Lumi's start/end tool calls and the user's own Done / End taps as
+  // they happen. `gone` covers the one case the transcript can't see — the
+  // server closing it while this page sat idle.
+  const [gone, setGone] = useState<string | null>(null);
+  const liveSession = useMemo(() => sessionFromMessages(initialSession, messages.slice(cardAt)), [initialSession, messages, cardAt]);
+  const session = liveSession && liveSession.id !== gone ? liveSession : null;
+  const sessionEvent = (response: Exclude<SessionEventResponse, "ok">, minute: number) => {
+    if (!session) return;
+    send(sessionEventText(response), { kind: "session_event", sessionId: session.id, response, minute });
+  };
+
   // Send the handoff once, then clean the URL without a navigation (a router
   // navigation would re-render the page and remount the chat mid-request).
   const prefill = params.get("prefill") ?? "";
@@ -113,6 +130,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
           error={error ? "I lost the thread for a second. Say that again?" : undefined}
         />
       </div>
+      {session && <SessionBar session={session} busy={busy} quietKey={messages.length} onEvent={sessionEvent} onGone={setGone} />}
       <Composer onSend={send} busy={busy} initialValue={prefill} />
     </div>
   );

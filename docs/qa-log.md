@@ -6,6 +6,49 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (8) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
+
+### Verified (live, against the real database; `check_in_minutes` set to 1 for the sweep and restored to 15 after; the sweep's sessions, their events, and the two beliefs it created were removed afterwards)
+- **Start → bar.** "Stay with me while I work on the lineage section? First step… Say 4 minutes." → Lumi called `start_focus_session` (goal, first step, `approach: read the last paragraph first`, the intention's id, 5 min) and said one line; ledger *Together · Intellectual lineage section of practicum paper · 5 min*; the bar appeared above the composer with *0 of 5 min* and End. Dev log: `tools=start_focus_session`.
+- **Check-in → Yep.** At minute 1 the card appeared (*Still with it?* · Yep · Stuck · Got distracted · Done). Yep closed it with no message and no model call; `session.check_in {response: ok, minute: 1}` in events.
+- **Check-in → Got distracted.** At minute 2: "Got distracted." landed as a user message, Lumi answered in one line, session still running; `session.check_in {distracted, minute: 2}`. Dev log: `session_event=distracted`, 25 output tokens.
+- **Card steps aside.** Typing a message ("remember this: reading the last paragraph first…") while the card was up dismissed it; Lumi stored the strategy belief.
+- **Check-in → Done.** At minute 5: session closed as `completed` in the route (`session.ended {completed, actual_minutes: 5}`), Lumi one line + one question, bar gone. `after()` ran reflection: `reflection.ran {session_end, ops: 1}`, the strategy belief's `evidence_for` moved, `users.last_reflected_at` set. Dev log: `session_event=done reflect=pending` then `[reflect] … ops=1`.
+- **End on the bar.** Second session ("Kendra reply", no approach) → End → "Let's stop here." → closed `stopped_early`, `actual_minutes: 0`, Lumi one line, bar gone.
+- **Abandoned session.** Third session (5 min) left open with no taps; reloading Chat eleven minutes later swept it (`session.ended {abandoned, actual_minutes: null}`), showed no bar, and greeted with "Good to see you, Chanté. / Looks like we left a session open on “Kendra reply.” Pick it back up, or let it go?" Saying "pick it back up" → Lumi started it again with the same goal and first step (see the line below the Fixed list).
+- Unit: 76 tests (check-in timing and copy, session-from-transcript, abandonment threshold, context lines for running/last session and each tap, strategy matching across wordings, deterministic session ops, reflection clamps, the model-step threshold).
+
+### Fixed
+- **Reflection double-counted.** Lumi confirmed the strategy herself in the reply to Done (`by: lumi`) and reflection confirmed it again (`by: reflection`) — evidence 2 from one session. Beliefs touched during the session are now off limits to reflection.
+- **Reflection over-reached on an 11-second session.** The stopped-early "Kendra reply" run confirmed the last-paragraph strategy (which it never used) and created a strategy at 0.25 from nothing. Now: a strategy gets evidence only from a session that used it (approach or first step — code-enforced), and a session that ended within a couple of minutes without finishing skips the model step.
+- **Approach ↔ belief matching missed inflections** ("read the last paragraph first" vs "Reading the last paragraph first…"). Matching is now on lightly stemmed content words.
+- **`reflection.ran` was stamped with the run's start time**, so it appeared before the ops it counted. Stamped at the end now.
+- **"Pick it back up" didn't.** With the abandoned session's start still visible in the transcript, Lumi answered "Already running." The context block now leads with "No focus session is running now — even if the transcript above shows one being started" and spells out that a yes means `start_focus_session` again with the same goal and first step.
+- **A short session heard nothing at its end.** Chanté's own first session (compost, 5 min) with the default 15-minute interval would have had its first check-in at minute 15. The planned end now counts as a check-in when it comes before the next interval.
+- **Start with Lumi didn't reliably start.** Chanté's own test (compost, 5 min): the first tap opened a session, but with the old timer nothing asked her anything at 5 min; she tapped again from Today and Lumi only talked ("Still running…", correct but invisible from Today); after the sweep closed it as abandoned her next tap got "Something's looping on your end. Want me to close it and start fresh…?" — the route never told Lumi the message was a button, so the repeated "Let's start" lines read as a loop. The route now hands the context block a *Just now* line for `start_intention` (title, Today's first step, estimate, "this is the start itself — call start_focus_session"), with the running-on-this / running-on-another cases spelled out. Verified by replaying the exact turn server-side against her account with the real tools (`scripts/_sim-start.mjs` pattern, not committed): Lumi called `start_focus_session` ("Fresh one running. Tie the bag — I'm here.").
+- **Abandoned sessions were never reflected on** (the sweep isn't a chat turn). The Chat page and the next chat turn now hand a just-abandoned session to reflection, which runs once per session.
+
+### Known and deliberate
+- A session's planned minutes are what Lumi passed (she rounded "4 minutes" up to the tool's minimum of 5).
+- After Done, Lumi may ask one question ("Is the section itself finished, or just this stretch?") — it decides whether she completes the intention; the persona allows exactly that one.
+- Starting a session while one runs closes the old one as `stopped_early` (and reflects on it); there is no "are you sure".
+- The check-in timer lives in the tab: a backgrounded tab fires late, a closed tab not at all; the server's only view is the abandonment sweep. Fine for V1.
+- Message metadata (`session_event`, `declined`, …) is not persisted; a reloaded transcript shows the visible words only. The events table holds what happened.
+- The Next dev overlay showed "1 issue" during the sweep: a transient HMR error between two edits of `reflect.ts`, gone on reload.
+- Lumi may call `end_focus_session` on a session that is already closed (she did, on the abandoned one, before starting fresh); the tool answers `no session running` and nothing else happens.
+- The browser test was cut short: another session's Google sign-in switched the shared automation browser to a second account, which created a second `users` row (`62d0a68a…`, "Chanté", 12:17Z, one two-message conversation). Left in place — it is a real sign-in, not test data. The Today Right now card does not show that a session is running (Chat only, by decision); a second *Start with Lumi* tap therefore looks like nothing happened until Chat opens — worth a UX-review row.
+- Deleting the sweep's rows is the one exception to append-only, for test data only.
+
+### Open
+- The 20-minute done-when session was run as a 5-minute one at a 1-minute interval; a real-length session with the default 15-minute interval is the manual test below.
+- The planned-end check-in (fix above) is covered by unit tests only: it landed while Chanté's own 5-minute session was already running, the tab that had it open kept its earlier timer (Fast Refresh did not reschedule it), and starting a fresh short session would have closed hers. Manual test 1 below covers it.
+- Whether the abandoned greeting should also fire when a session goes quiet in a *still-open* tab (currently the sweep only runs on a request).
+
+### Highest-value manual tests
+1. From Today, *Start with Lumi* on the Right now card → Lumi settles the three things from what she already knows → a 45-minute session with the 15-minute check-ins; Yep twice, Done once.
+2. Leave a session open, close the tab, come back after twice its length → greeting offers it back; say "pick it back up" → a new session with the same goal.
+3. Say "I'm done" in words during a session → `end_focus_session` → ledger *Session closed · goal*.
+
 ## Sweep 2026-09-12 (7) — Mail + Insights (`feat/email-insights`, shared checkout, port 3005)
 
 ### Verified

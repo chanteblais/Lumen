@@ -75,6 +75,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.send` | 64px forest circle; disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
 | `.nav-item` | Sidebar link; `[aria-current="page"]` gets the soft highlight; `.name` child |
+| `.session-bar` / `.session-checkin` | Focus Together (M5): the ruled strip above the composer while a session runs (`.session-goal` 24px display, `.session-step` 16px ink-soft, `.session-side` with the elapsed `.label-mute` and the End `.tool-link`), and the check-in as a small `--card` plate above it (`.session-question` 22px display + `.chip`s), fading in over 160ms |
 
 ---
 
@@ -100,6 +101,9 @@ Printer's marks, the engraved vocabulary an old book uses instead of icons. Inli
 
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.
+
+### Session bar (`components/focus/SessionBar.tsx`)
+Focus Together on screen, Chat only, pinned between the transcript and the composer while a session runs. A **ruled strip on the paper** — hairline above and below, no box — with the *Together* label, the goal in display serif (24px), *First: the step* in ink-soft, and on the right the elapsed label (*12 of 45 min*, tracked small caps, mute — minutes in, never a countdown) over a quiet **End** tool-link. When a check-in is due, a small `--card` plate appears **above** the strip (the same plate as the companion bubble: rule-strong hairline, 6px radius, one shadow, 160ms fade): the question in display serif (22px) on the left, four `.chip`s on the right — Yep · Stuck · Got distracted · Done. One question, one tap, then it is gone; nothing pulses, counts down or turns red. Chips disable (except Yep) while a turn streams; End disables too. On phones the goal drops to 20px and the question to 19px; the strip wraps. Copy comes from `core/focus.ts`, never from the component.
 
 ### Composer (`components/chat/Composer.tsx`)
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.

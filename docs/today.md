@@ -1,6 +1,6 @@
 # Today — a path, not a pile
 
-*Spec, 2026-09-12. Source: Chanté's Today-page philosophy brief and the `mockups/` Today mockup. Status: **built** — Lists (minimum) and Today v1 in M3; the capacity prompt, *Not this* with reasons and re-entry in M4 (2026-09-12). *Start with Lumi* opening a session is M5. Current behaviour: `features.md` → Today.*
+*Spec, 2026-09-12. Source: Chanté's Today-page philosophy brief and the `mockups/` Today mockup. Status: **built** — Lists (minimum) and Today v1 in M3; the capacity prompt, *Not this* with reasons and re-entry in M4 (2026-09-12); *Start with Lumi* opening a focus session in M5 (2026-09-12). Current behaviour: `features.md` → Today.*
 
 ## The one question Today answers
 **What should I be doing right now?**
@@ -86,7 +86,7 @@ Persisted in `day_plans` so the path is **stable across reloads** — the one th
 | events: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `capacity.asked` | *Not this* reasons are the richest learning signal in the product — "too big" three times on the same kind of task is an `anti_pattern` belief waiting to be written |
 
 ## Handoffs into chat
-- **Start with Lumi** → `/` with a structured user message (`{ kind: "start_intention", intentionId }` in metadata; visible text "Let's start: *Finish discussion post*"). Lumi runs initiation and may open a focus session (M5).
+- **Start with Lumi** → `/` with a structured user message (`{ kind: "start_intention", intentionId }` in metadata; visible text "Let's start: *Finish discussion post*"). The route tells Lumi this was the button (a *Just now* line with the title, the path's first step and the estimate): it is the start itself, so she opens the focus session at once (`start_focus_session`, M5) and says one line — the session bar appears above the composer; tapping it again while that session runs gets one line and no second session. See `features.md` → Chat → Focus Together.
 - **Not this** → the six quick answers appear in place on the card under "Fair. What's getting in the way?" (plus a quiet *Keep it*); the tapped answer posts as a `{ kind: "declined", intentionId, reason }` message ("Not this one: *title* — too big."); Lumi replies to the reason; the plan regenerates with it. Built M4.
 - **Break it down** → chat with `{ kind: "break_down", intentionId }`.
 Each is a real user message in the one transcript (decision #11 in `architecture.md`).
@@ -94,7 +94,7 @@ Each is a real user message in the one transcript (decision #11 in `architecture
 ## Milestone re-cut
 - **M3 — Intentions, beliefs, Lists (minimum), Today v1:** tools + ledger lines as planned, plus `list`/`estimate_minutes`, a plain Lists page, and Today rendering a generated `DayPlan` with Right now / After that / Later and *Start with Lumi* → chat handoff. No capacity prompt yet; *Not this* posts to chat but the plan only regenerates on the next day or when asked.
 - **M4 — Capacity, Not this, re-entry:** capacity prompt + regeneration; declined reasons feed the plan and beliefs; the re-entry pass rebuilds the plan after a gap.
-- **M5 — Focus Together:** *Start with Lumi* can open a session; session bar with the timer; check-ins.
+- **M5 — Focus Together (built 2026-09-12):** *Start with Lumi* can open a session; session bar with elapsed-of-planned; check-ins.
 - **M6/M7** unchanged.
 
 ## Open questions for Chanté

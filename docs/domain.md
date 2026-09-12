@@ -31,7 +31,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | id | uuid pk | client-generated (AI SDK) or server |
 | conversation_id | fk | index `(conversation_id, created_at)` |
 | role | text | `user | assistant | system` |
-| parts | jsonb | AI SDK `UIMessage.parts` — text, tool-call, tool-result, metadata (e.g. `session_event`) |
+| parts | jsonb | AI SDK `UIMessage.parts` — text, tool-call, tool-result. Message *metadata* (`kind: declined | start_intention | break_down | session_event`, ids, reason/response) travels with the request and is acted on by the route; it is **not** persisted — the events table holds what happened, and a reloaded transcript shows the visible text only |
 | format_version | int | `1`; bump on shape changes |
 | created_at | timestamptz | |
 
@@ -63,7 +63,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | check_in_minutes | int | copied from preferences at start |
 | started_at | timestamptz | |
 | ended_at | timestamptz null | |
-| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal) |
+| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early`. Built M5 (2026-09-12), no migration — the table was in `0000` |
 
 ### `memory_notes` — beliefs with evidence
 | column | type | notes |
@@ -103,13 +103,13 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
 | `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
 | `intention.created` / `.updated` / `.completed` / `.reopened` / `.dropped` / `.touched` | `{ diff? }`; `.completed` and `.reopened` carry `{ via: 'app' | 'chat' }` — the circle on Today/Lists vs a chat tool. The chat context's *Recent changes* (`core/domain/activity.ts`) is derived from these, joined to the intention's title and current status |
-| `session.started` | `{ goal, first_step, planned_minutes }` |
-| `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` |
-| `session.ended` | `{ outcome, actual_minutes }` |
+| `session.started` | `{ goal, first_step, planned_minutes, approach, intention_id }` (M5) |
+| `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below |
+| `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
 | `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }` |
 | `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
-| `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` |
+| `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
 
 ## Derived (never stored)
 | view | rule |
@@ -120,7 +120,9 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
 | `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |
 | `recentActivity` | `intention.*` events in the last 36h, newest first (≤ 15), joined to the intention for title + current status; who did it from `payload.via`. Read only by the chat route for the context block |
-| `abandonedSession` | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` on next visit |
+| `activeSession` | the newest `focus_sessions` row with `ended_at IS NULL` that has not reached the abandonment threshold (`core/domain/sessions.ts`). Read into every snapshot and by the Chat page; the client then follows Lumi's start/end tool parts and its own Done/End taps within the page open (`core/focus.ts → sessionFromMessages`) |
+| `abandonedSession` | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` by `resolveSession` on the next visit — any page or turn, since it runs inside `loadSnapshot` and on the Chat page. Offered back by the greeting while nothing has been said since it closed |
+| `lastSession` | the most recently ended session if it ended in the last 36h — continuity for the context block ("pick it back up") and the abandoned greeting |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
 | `mailScan` | the newest `email.scanned`: when Lumi last looked and the watermark (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |

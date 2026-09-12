@@ -3,8 +3,22 @@ import { dayPart, describeGap, gapBucket } from "@/core/time";
 import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
+import { elapsedMinutes } from "@/core/domain/sessions";
 import { isReentry, type Sitting } from "@/core/domain/users";
-import type { DayPlanJson, Intention, Lead, MemoryNote } from "@/db/schema";
+import type { SessionEventResponse } from "@/core/focus";
+import type { DayPlanJson, FocusSession, Intention, Lead, MemoryNote } from "@/db/schema";
+
+/** A tap on the session bar or a check-in that arrived as this very message. */
+export type SessionEventNow = { response: Exclude<SessionEventResponse, "ok">; goal: string; minute: number; intentionId?: string | null };
+
+/** "Start with Lumi" on Today arrived as this very message. */
+export type StartNow = {
+  intentionId: string;
+  title: string;
+  /** The first step Today's path gave them, or the intention's own next action. */
+  firstStep?: string | null;
+  estimateMinutes?: number | null;
+};
 
 export type ContextInput = {
   displayName: string;
@@ -26,6 +40,14 @@ export type ContextInput = {
   declinedNow?: { title: string; reason?: string | null };
   /** Everything declined today, so nothing gets re-proposed. */
   declinedToday?: { intentionId: string; reason: string | null }[];
+  /** The running focus session, if any. */
+  session?: FocusSession;
+  /** The most recently ended session (last day and a half), for continuity — "pick it back up". */
+  lastSession?: FocusSession;
+  /** This very message was a tap on the session's check-in or End. */
+  sessionEventNow?: SessionEventNow;
+  /** This very message was Start with Lumi on Today. */
+  startNow?: StartNow;
   /** When the mail was last looked through; null = never (chat passes one or the other; pages omit). */
   mailScan?: { at: Date } | null;
   /** What Lumi noticed in the mail that might need doing — unconfirmed. */
@@ -89,6 +111,54 @@ export function buildContextBlock(input: ContextInput): string {
   if (input.plan) {
     const rn = input.plan.rightNow ? open.find((i) => i.id === input.plan!.rightNow!.intentionId) : undefined;
     lines.push(`- Today's path: ${rn ? `right now → "${rn.title}"` : "nothing queued"}; ${input.plan.afterThat.length} after that. Day line: "${input.plan.dayLine}"`);
+  }
+
+  if (input.session) {
+    const s = input.session;
+    lines.push(
+      `- Focus session running: ${s.id} · "${s.goal}" · first step: ${s.firstStep} · ${elapsedMinutes(s, now)} of ${s.plannedMinutes} min${s.approach ? ` · approach: ${s.approach}` : ""}. You're keeping them company: answer only what they say, briefly, and don't start anything new unless they ask.`,
+    );
+  } else if (input.lastSession?.endedAt) {
+    const s = input.lastSession;
+    const endedAt = input.lastSession.endedAt;
+    const how = s.outcome === "completed" ? "finished" : s.outcome === "stopped_early" ? "stopped early" : "left open with no end signal, so the app closed it";
+    lines.push(
+      `- No focus session is running now — even if the transcript above shows one being started. The last one: "${s.goal}" (first step: ${s.firstStep}${s.approach ? `; approach: ${s.approach}` : ""}) · ${how} · ended ${describeGap(endedAt, now)}.${
+        s.outcome === "abandoned" ? ' The page offered to pick it back up or let it go; "pick it back up" (or a yes) means start_focus_session again with the same goal and first step.' : ""
+      }`,
+    );
+  }
+
+  if (input.startNow) {
+    const s = input.startNow;
+    const running = input.session;
+    const step = s.firstStep ? `the first step Today gave them is "${s.firstStep}"` : "no first step is set — name the smallest physical action yourself";
+    const mins = s.estimateMinutes ? `${s.estimateMinutes} min from the estimate` : "their usual length";
+    lines.push(
+      "",
+      "## Just now",
+      !running
+        ? `- They tapped Start with Lumi on "${s.title}" (${s.intentionId}) from Today. This is the start itself, not a question — don't ask whether to begin, and ignore any earlier "Let's start" lines in the transcript. ${step}; call start_focus_session now (goal "${s.title}", that first step, intention_id ${s.intentionId}, ${mins}) and say one line: the first step, and that you're here. Ask something only if the first step is genuinely unclear.`
+        : running.intentionId === s.intentionId
+          ? `- They tapped Start with Lumi on "${s.title}" again while its session is already running (above). Don't start another; one line — the first step, and that you're here.`
+          : `- They tapped Start with Lumi on "${s.title}" (${s.intentionId}) while a session on "${running.goal}" is running. Switching is fine: start_focus_session for "${s.title}" (${step}, ${mins}) — the old one closes as stopped early on its own — and say one line.`,
+    );
+  }
+
+  if (input.sessionEventNow) {
+    const e = input.sessionEventNow;
+    const where = `the session on "${e.goal}"`;
+    lines.push(
+      "",
+      "## Just now",
+      e.response === "stuck"
+        ? `- They tapped Stuck on the check-in for ${where}. The smallest next physical action, or the one question that unsticks it. One or two lines; no pep.`
+        : e.response === "distracted"
+          ? `- They tapped Got distracted on the check-in for ${where}. "Welcome back. Where did we end up?" energy — no absolution speech — then straight back to the first step or the next one. One or two lines. The session is still running.`
+          : e.response === "done"
+            ? `- They tapped Done on the check-in for ${where}. It is already closed as completed. One line, no stats, no praise-as-performance. If the intention itself is finished, complete_intention${e.intentionId ? ` (${e.intentionId})` : ""}; ask only if it changes what you'd do next.`
+            : `- They ended ${where} from the bar before the time we set. It is already closed as stopped early. One line, no stats, no consolation; don't ask why unless it changes what you'd do next.`,
+    );
   }
 
   if (input.declinedNow) {

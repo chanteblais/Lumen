@@ -43,13 +43,13 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** returning after a simulated 14-day gap yields the re-entry greeting and a two-minute cleanup, ending with one suggested next step.
 - **EF check:** re-entry never shows a number of overdue things.
 
-## M5 — Focus Together + outcome loop (1–1½ days)
+## M5 — Focus Together + outcome loop (1–1½ days) — **built 2026-09-12 (`feat/m5-focus-together`, worktree)**; no migration
 - Tools `start_focus_session` (with `approach`) / `end_focus_session`; `SessionBar` (goal, first step, elapsed/planned, end) pinned above the composer while active.
 - **Reflection v1** (`core/ai/reflect.ts`): runs in `after()` when a session ends; structured-output ops applied with guardrails; `reflection.ran` event. A completed session whose `approach` matches a `strategy` belief confirms it; an abandoned one contradicts it.
 - Client timer fires check-ins at `check_in_minutes`: *Still with it?* → Yep (event only) / Stuck / Got distracted / Done (structured `session_event` user message; Lumi replies).
 - Abandoned-session detection on next visit; sessions close with a one-line acknowledgement, no stats.
-- **Done when:** a 20-minute test session runs end to end with one distraction and re-entry, Lumi says nothing between check-ins, and the strategy belief's evidence count moves after the session.
-- **EF check:** the session asks for exactly three things up front (what, first step, how long) and nothing during.
+- **Done when:** a 20-minute test session runs end to end with one distraction and re-entry, Lumi says nothing between check-ins, and the strategy belief's evidence count moves after the session. *Met 2026-09-12 with a 5-minute session at a 1-minute check-in interval (see `qa-log.md`): Yep → event only; Got distracted → one line; Done → closed as completed, one line, reflection confirmed the matching strategy.*
+- **EF check:** the session asks for exactly three things up front (what, first step, how long) and nothing during. *Held: Done and End close the session in code — no "did you finish?" question; the interface's one question is the check-in, one tap.*
 
 ## M6 — Reflection daily + "What Lumi knows" (1 day)
 - Lazy daily reflection: on the first turn of a new local day, reflect over events and messages since `last_reflected_at` (in `after()`). Covers patterns (time of day, capacity rhythm) and anti-patterns (intentions touched repeatedly, never started).
