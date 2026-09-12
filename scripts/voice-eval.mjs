@@ -39,7 +39,7 @@ for (const [i, turns] of SCENARIOS.entries()) {
       messages,
       providerOptions: chatProviderOptions,
     });
-    console.log(`\nRali: ${r.text}`);
+    console.log(`\nLumi: ${r.text}`);
     const d = r.totalUsage.inputTokenDetails;
     console.log(`   [in=${r.totalUsage.inputTokens} out=${r.totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} finish=${r.finishReason}]`);
     messages.push({ role: "assistant", content: r.text });

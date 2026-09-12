@@ -8,7 +8,7 @@ export function TopBar() {
         <Clock />
         <AuthControls />
       </div>
-      <div className="rule mt-3" />
+      <div className="rule-double mt-3" />
     </header>
   );
 }

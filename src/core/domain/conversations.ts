@@ -7,8 +7,8 @@ import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
 
-export type RaliMessageMetadata = { createdAt?: string };
-export type RaliUIMessage = UIMessage<RaliMessageMetadata>;
+export type LumenMessageMetadata = { createdAt?: string };
+export type LumenUIMessage = UIMessage<LumenMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;
 
@@ -22,7 +22,7 @@ export async function ensureMainConversation(db: Db, userId: string) {
 }
 
 /** Most recent `limit` messages, oldest first, as UIMessages with createdAt metadata. */
-export async function loadRecentMessages(db: Db, conversationId: string, limit = MESSAGE_WINDOW): Promise<RaliUIMessage[]> {
+export async function loadRecentMessages(db: Db, conversationId: string, limit = MESSAGE_WINDOW): Promise<LumenUIMessage[]> {
   const rows = await db
     .select()
     .from(messages)
@@ -32,13 +32,13 @@ export async function loadRecentMessages(db: Db, conversationId: string, limit =
   return rows.reverse().map((r) => ({
     id: r.id,
     role: r.role,
-    parts: r.parts as RaliUIMessage["parts"],
+    parts: r.parts as LumenUIMessage["parts"],
     metadata: { createdAt: r.createdAt.toISOString() },
   }));
 }
 
 /** Insert-or-replace by id (the same message can be finalised after streaming). */
-export async function saveMessage(db: Db, conversationId: string, m: RaliUIMessage): Promise<void> {
+export async function saveMessage(db: Db, conversationId: string, m: LumenUIMessage): Promise<void> {
   await db
     .insert(messages)
     .values({ id: m.id, conversationId, role: m.role as MessageRole, parts: m.parts })
@@ -55,7 +55,7 @@ export async function messageCount(db: Db, conversationId: string): Promise<numb
 export const SITTING_GAP_MS = 6 * 3_600_000;
 
 /** True when the newest message is from this sitting — quick starts hide, the greeting compacts. */
-export function isInSitting(messages: RaliUIMessage[], now = Date.now()): boolean {
+export function isInSitting(messages: LumenUIMessage[], now = Date.now()): boolean {
   const last = messages[messages.length - 1];
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;

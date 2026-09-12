@@ -7,7 +7,7 @@ import {
   ensureMainConversation,
   loadRecentMessages,
   saveMessage,
-  type RaliUIMessage,
+  type LumenUIMessage,
 } from "@/core/domain/conversations";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
@@ -24,12 +24,12 @@ export async function POST(req: Request) {
   const user = await requireUser();
   const lastSeenAt = await recordVisit(user);
 
-  const body = (await req.json()) as { message?: RaliUIMessage };
+  const body = (await req.json()) as { message?: LumenUIMessage };
   const incoming = body.message;
   if (!incoming || incoming.role !== "user" || !Array.isArray(incoming.parts)) {
     return Response.json({ error: "message required" }, { status: 400 });
   }
-  const userMessage: RaliUIMessage = {
+  const userMessage: LumenUIMessage = {
     id: isUuid(incoming.id) ? incoming.id : randomUUID(),
     role: "user",
     parts: incoming.parts,
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse<RaliUIMessage>({
+  return result.toUIMessageStreamResponse<LumenUIMessage>({
     originalMessages: all,
     generateMessageId: () => randomUUID(),
     sendReasoning: false,

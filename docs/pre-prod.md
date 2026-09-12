@@ -1,6 +1,6 @@
 # Pre-Production Checklist
 
-Things to sort before anyone but Chanté uses Rali.
+Things to sort before anyone but Chanté uses Lumen.
 
 ---
 
@@ -16,7 +16,7 @@ Things to sort before anyone but Chanté uses Rali.
 ## Anthropic
 - [ ] `ANTHROPIC_API_KEY` set on Vercel; spend limit set in the Anthropic console.
 - [ ] Prompt caching verified in prod (`cache_read_input_tokens > 0` on second turn).
-- [ ] Refusal handling produces a Rali-voice message, not an error.
+- [ ] Refusal handling produces a Lumi-voice message, not an error.
 
 ## Environment variables (Vercel)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` · `CLERK_SECRET_KEY` · `DATABASE_URL` · `ANTHROPIC_API_KEY`
