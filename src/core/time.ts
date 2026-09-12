@@ -28,7 +28,7 @@ export function gapBucket(since: Date, now: Date = new Date()): GapBucket {
   return "long";
 }
 
-/** Prose for a gap, as Rali would say it. Never a precise count of anything the user could feel judged by. */
+/** Prose for a gap, as Lumi would say it. Never a precise count of anything the user could feel judged by. */
 export function describeGap(since: Date, now: Date = new Date()): string {
   const ms = now.getTime() - since.getTime();
   switch (gapBucket(since, now)) {

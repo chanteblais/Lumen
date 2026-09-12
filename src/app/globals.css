@@ -373,9 +373,9 @@ body::after {
   padding: 12px 18px;
   color: var(--ink);
 }
-.msg-rali .msg-avatar { margin-top: 2px; }
-.msg-rali .msg-body { padding-top: 4px; min-width: 0; }
-.msg-rali p { color: var(--ink); }
+.msg-lumi .msg-avatar { margin-top: 2px; }
+.msg-lumi .msg-body { padding-top: 4px; min-width: 0; }
+.msg-lumi p { color: var(--ink); }
 .thinking-dots span { display: inline-block; font-size: 26px; line-height: 1; color: var(--brass); animation: dot 1.2s infinite; }
 .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }

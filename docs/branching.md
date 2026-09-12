@@ -8,7 +8,7 @@ Deliberately chill (inherited from Glåüm, 2026-09-11). `main` always deploys c
 2. **Branch for anything non-trivial.** Short-lived, named `type/slug`: `feat/…` · `fix/…` · `ux/…` · `docs/…` · `chore/…`. Milestones from `docs/v1-plan.md` are `feat/m<N>-<slug>` (e.g. `feat/m0-shell`).
 3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit) and you've clicked through the affected pages on a local dev server. CI (`.github/workflows/ci.yml`) runs the same on pushes and PRs.
 4. **Merge with `--no-ff`, then delete the branch.** `git log --first-parent main` reads as a changelog.
-5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `RALI_ALLOW_MAIN=1` on those.
+5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `LUMEN_ALLOW_MAIN=1` on those.
 6. **Migrations ride the branch that needs them.** Apply to prod at merge+deploy time; note the migration in the merge commit message.
 7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy.
 
@@ -19,9 +19,9 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 1. **The main checkout belongs to one git-active session at a time.** Check `git branch --show-current` before your first git command — a branch you didn't create means someone else is here: stop and ask, or take a worktree.
 2. **A second concurrent session uses `git worktree`:**
    ```bash
-   git worktree add ../rali-<branch> -b <type>/<slug>
+   git worktree add ../lumen-<branch> -b <type>/<slug>
    # …work there; when merged:
-   git worktree remove ../rali-<branch>
+   git worktree remove ../lumen-<branch>
    ```
    (Claude sessions: the EnterWorktree tool does this.) `.env.local` is untracked, so a fresh worktree has none — symlink it before starting a dev server there: `ln -s <main-checkout>/.env.local .env.local`. Run `npm ci` in the worktree too.
 3. **Never `git add -A` / `git add .` in the shared checkout.** Stage explicit paths; glance at `git status` first.
@@ -36,7 +36,7 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
-2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `RALI_ALLOW_MAIN=1 git commit …`.
+2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `LUMEN_ALLOW_MAIN=1 git commit …`.
 
 ## Claude sessions
 

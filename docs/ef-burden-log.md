@@ -1,6 +1,6 @@
 # EF-Burden Log
 
-A **running ledger of every place Rali asks the user to maintain, decide, categorise, rate, or tidy something** — the raw material for the one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* Mirrors Glåüm's generalizability log: captured from reality as we build, not guessed.
+A **running ledger of every place Lumi asks the user to maintain, decide, categorise, rate, or tidy something** — the raw material for the one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* Mirrors Glåüm's generalizability log: captured from reality as we build, not guessed.
 
 > **Why this exists:** productivity systems accrete maintenance. The only defence is to notice each increment as it appears. Some burden is fine (typing a message). The point is that every increment is *seen* and *chosen*.
 
@@ -9,7 +9,7 @@ A **running ledger of every place Rali asks the user to maintain, decide, catego
 During **any** work on this codebase, whenever you write, propose, or read code or copy that:
 - asks the user to **set** something (a status, priority, category, tag, due date, setting, tone),
 - asks the user to **keep** something current (a list to groom, an inbox to clear, a session to close),
-- asks the user to **rate** or **confirm** something Rali could infer from behaviour,
+- asks the user to **rate** or **confirm** something Lumi could infer from behaviour,
 - shows the user a **count** of undone things,
 - or requires the user to **remember** to do something in the app for the app to work,
 
@@ -30,8 +30,17 @@ During **any** work on this codebase, whenever you write, propose, or read code 
 | 2026-09-11 | Quick-start chips, `components/chat/QuickStarts.tsx` | choose | Four starting points on the landing page | Kept: they are prompts, not modes; nothing happens if ignored. Watch that they never grow beyond four | accepted |
 | 2026-09-11 | Composer tool links "Add file / Tools" | choose | Two affordances with no V1 behaviour | Hidden 2026-09-12 (review finding: dead buttons on the main screen). Return only when they do something | removed |
 | 2026-09-12 | Voice input, `components/chat/useVoiceInput.ts` | choose | A second way to put words in the box | Kept: transcription lands in the composer for reading, never auto-sends; one tap on, one tap off. The lowest-effort input for the lowest-capacity moment | accepted |
-| 2026-09-11 | `mockups/rali-list.png` — Lists board | maintain, count, set | Per-column counts, due-date on every row, five "Add item", drag-to-prioritise, category columns | Today page = derived read-only view; categories only if inferred; no counts | removed (not built) |
-| 2026-09-11 | Tone preference | set | A tone picker in Settings | Learned as a `preference` belief; visible/correctable in "What Rali knows" | derived |
+| 2026-09-11 | `mockups/rali-list.png` — Lists board | maintain, count, set | Per-column counts, due-date on every row, five "Add item", drag-to-prioritise, category columns | **Revised 2026-09-12** by the Today brief: Lists is in as "the pile" so Today can be "the path". The interaction-model objections stand: no per-column counts, no due date unless set, one Add, reorder later. See `today.md` | accepted (scoped) |
+| 2026-09-12 | Today mockup — "Other items (2)" | count | A count of items beyond the path | Wordless collapse: "A few more, when you get there" | removed |
+| 2026-09-12 | Today mockup — "1 of 3" carousel on Right now | choose | Browse alternative current tasks | *Not this* is the only way to change the current task; a carousel invites scanning | removed |
+| 2026-09-12 | Today mockup — quick capture with Task/Note/Idea | set, choose | A second input with a type picker | Chat is capture; Lumi files. Revisit only if chat-capture proves slow in daily use | removed (V1) |
+| 2026-09-12 | Today mockup — focus timer widget (25 min ±) | set | A timer to configure on the page | Timer appears only inside a started session (M5); defaults from beliefs/preferences | removed from Today |
+| 2026-09-12 | Today mockup — "Your Day" calendar timeline | maintain | Calendar events to keep current | Post-V1 with real calendar integration; until then Later shows fixed-time intentions only | deferred |
+| 2026-09-12 | Capacity prompt on Today | rate | "How much have we got today?" three answers + skip | Kept: asked at most once a day, skippable, and it materially changes the plan — the one self-report that earns its tap | accepted |
+| 2026-09-12 | *Not this* quick answers | rate | Six reasons for declining the current task | Kept: it's the opposite of pressure — the user corrects Lumi in one tap, and the reason is the best learning signal we have | accepted |
+| 2026-09-12 | Lists membership (`intentions.list`) | set | Which list a thing belongs to | Lumi infers on capture; the user only ever corrects. Never a required field | accepted (derived by default) |
+
+| 2026-09-11 | Tone preference | set | A tone picker in Settings | Learned as a `preference` belief; visible/correctable in "What Lumi knows" | derived |
 | 2026-09-11 | Focus check-ins | rate | "Still with it?" Yep / Stuck / Distracted / Done at intervals | Kept: it's the body-double contract the user agreed to; "Yep" costs one tap and no reply | accepted |
 | 2026-09-12 | Quick-start chip text, `core/ai/persona.ts` | choose | The chip sends its label as the user's message | Considered a hidden canned prompt per chip; rejected — the transcript would show words the user didn't say. The persona interprets the four labels instead | accepted |
 | 2026-09-12 | "Another way in" button, `components/chat/QuickStarts.tsx` | choose | Sends "I don't know where to start." | Kept: one tap for the person with the least capacity to type | accepted |

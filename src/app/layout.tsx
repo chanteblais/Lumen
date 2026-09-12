@@ -24,7 +24,7 @@ const garamond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Rali",
+  title: "Lumen",
   description: "A quieter way forward.",
 };
 

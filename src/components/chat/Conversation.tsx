@@ -3,14 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useMemo, useState } from "react";
-import type { RaliUIMessage } from "@/core/domain/conversations";
+import type { LumenUIMessage } from "@/core/domain/conversations";
 import { Composer } from "./Composer";
 import { GreetingCard } from "./GreetingCard";
 import { MessageList } from "./MessageList";
 
 type Props = {
   conversationId: string;
-  initialMessages: RaliUIMessage[];
+  initialMessages: LumenUIMessage[];
   greetingLines: string[];
   /** Kicker labels rendered above the greeting, inside the scroll area. */
   kicker?: React.ReactNode;
@@ -24,7 +24,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   const [inSitting, setInSitting] = useState(initialInSitting);
   const transport = useMemo(
     () =>
-      new DefaultChatTransport<RaliUIMessage>({
+      new DefaultChatTransport<LumenUIMessage>({
         api: "/api/chat",
         // Send only the new message; the server holds the transcript.
         prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
@@ -32,7 +32,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     [],
   );
 
-  const { messages, sendMessage, status, error } = useChat<RaliUIMessage>({
+  const { messages, sendMessage, status, error } = useChat<LumenUIMessage>({
     id: conversationId,
     messages: initialMessages,
     transport,

@@ -1,6 +1,6 @@
 # Voice Eval Log
 
-Scripted scenarios run against Rali's persona (`src/core/ai/persona.ts`), what was off, and what changed. Newest first. The scenario list is the nine situations in `product.md` plus anything that came up in real use.
+Scripted scenarios run against Lumi's persona (`src/core/ai/persona.ts`), what was off, and what changed. Newest first. The scenario list is the nine situations in `product.md` plus anything that came up in real use.
 
 **Grading (manual, per reply):** ✓ in voice · ~ slightly off (note why) · ✗ wrong register. Watch for the classic failures: over-reassuring, over-planning (a list where a step would do), therapy-speak, exclamation marks, restating feelings, offering three options, lecturing.
 

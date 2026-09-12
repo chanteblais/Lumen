@@ -36,7 +36,7 @@ function getCtor(): RecognizerCtor | undefined {
 export type VoiceInput = {
   supported: boolean;
   listening: boolean;
-  /** One line in Rali's voice when something went wrong; undefined otherwise. */
+  /** One line in Lumi's voice when something went wrong; undefined otherwise. */
   error?: string;
   start: () => void;
   stop: () => void;

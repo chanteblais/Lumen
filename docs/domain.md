@@ -1,4 +1,4 @@
-# Rali — Domain Model (V1)
+# Lumen — Domain Model (V1)
 
 Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
 
@@ -9,7 +9,7 @@ Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 |---|---|---|
 | id | uuid pk | internal id — everything references this, never the Clerk id |
 | clerk_user_id | text unique | auth provider id |
-| display_name | text | what Rali calls you |
+| display_name | text | what Lumi calls you |
 | timezone | text | IANA, captured from the browser on first visit |
 | preferences | jsonb | `{ v: 1, session_minutes: 45, check_in_minutes: 15 }` — tone is *learned* as a `preference` belief, not set here |
 | created_at, last_seen_at | timestamptz | `last_seen_at` bumped on every turn and page open |
@@ -104,7 +104,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `session.started` | `{ goal, first_step, planned_minutes }` |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` |
 | `session.ended` | `{ outcome, actual_minutes }` |
-| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'rali'|'reflection' }` |
+| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }` |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` |
 
 ## Derived (never stored)
@@ -117,8 +117,11 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
 
+## Proposed for M3 (see `today.md` → Domain additions)
+`intentions.list`, `intentions.estimate_minutes`, a `day_plans` table (one persisted `DayPlan` per user per local date, with the reason it was cut), and events `plan.generated`, `plan.advanced`, `intention.declined {reason}`, `capacity.asked`. Migration `0001` lands with M3.
+
 ## Deliberately absent
-Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking.
+Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration).
 
 ## Storage
 None in V1. (Voice audio never leaves the browser; file attachments are post-V1.)

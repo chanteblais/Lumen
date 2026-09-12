@@ -19,7 +19,7 @@ describe("gapBucket", () => {
 });
 
 describe("describeGap", () => {
-  it("speaks in Rali's register", () => {
+  it("speaks in Lumi's register", () => {
     expect(describeGap(ago(3 * H), now)).toBe("3 hours ago");
     expect(describeGap(ago(30 * H), now)).toBe("yesterday");
     expect(describeGap(ago(9 * D), now)).toBe("about 1 week ago");

@@ -1,5 +1,5 @@
 /**
- * Rali schema — the domain model as code. See docs/domain.md for the prose.
+ * Lumen schema — the domain model as code. See docs/domain.md for the prose.
  * Seven tables. Everything is keyed by users.id (internal UUID), never by the
  * auth provider's id. Derived judgements (stale, avoided, gap, today's
  * capacity) are computed at read time and never stored.
@@ -129,7 +129,7 @@ export const focusSessions = pgTable(
 /* --------------------------------------------- memory_notes (beliefs) */
 
 export type BeliefKind = "fact" | "project" | "preference" | "strategy" | "pattern" | "anti_pattern";
-export type BeliefSource = "user_said" | "rali_inferred" | "reflection";
+export type BeliefSource = "user_said" | "lumi_inferred" | "reflection";
 export type RetiredReason = "user" | "contradicted" | "superseded";
 
 export const memoryNotes = pgTable(

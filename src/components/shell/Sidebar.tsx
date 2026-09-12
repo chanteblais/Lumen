@@ -18,7 +18,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div>
         <Link href="/" className="font-display block text-[56px] leading-none tracking-tight text-ink">
-          Rali
+          Lumen
         </Link>
         <p className="label tagline mt-5 leading-[1.7]">
           A quieter
