@@ -9,11 +9,13 @@ const HEIGHT = 150;
 /** Time per frame of each loop. */
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
-  sway: 560, // nine frames ≈ five seconds, per the sheet
-  foot: 120, // twenty-one in-betweened frames ≈ 2.5 s: a glance toward the foot, one scuff, the glance back
 };
-/** Loops mixed into the breathing now and then, one pass at a time. */
-const VARIATIONS: LumiLoop[] = ["sway", "foot"];
+/**
+ * Loops mixed into the breathing now and then, one pass at a time. Empty since
+ * the lantern character (2026-09-12): the sway and the playful foot were drawn
+ * of the earlier character, and her new sheet has no in-betweened variation yet.
+ */
+const VARIATIONS: LumiLoop[] = [];
 /**
  * How long a frame fades in over the last: most of the frame time of the
  * faster of the two loops involved, so it is fully in before the next arrives.
@@ -45,8 +47,9 @@ const DEBUG = process.env.NODE_ENV === "development";
  * Idle life, all of it off under `prefers-reduced-motion`:
  * - the sheet's nine-frame breath loop, each frame fading in over the last
  *   (two frames mounted: the last one underneath, the new one fading in on top)
- * - every so often one pass of a variation (the sway, or the playful foot —
- *   never the same one twice running), then back to breathing
+ * - every so often one pass of a variation (none drawn of the lantern
+ *   character yet; when there are, never the same one twice running), then
+ *   back to breathing
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
  * One pose throughout — small movements, never a swap to another drawing.
@@ -96,6 +99,7 @@ export function LumiCompanion() {
       after(FRAME_MS[current], tick);
     };
     const scheduleVariation = () =>
+      VARIATIONS.length &&
       after(between(20000, 45000), () => {
         if (pending) return; // a cue is already waiting; it plays instead
         const choices = VARIATIONS.filter((loop) => loop !== last);
