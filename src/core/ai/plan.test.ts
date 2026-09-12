@@ -30,6 +30,17 @@ describe("clampPlan", () => {
     const p = clampPlan({ dayLine: "x", rightNow: null, afterThat: [] }, [c("a")], [], undefined, new Set(["a"]));
     expect(p.rightNow).toBeNull();
   });
+  it("keeps the thing Lumi named in chat as Right now, over the model's pick and over a decline earlier today", () => {
+    const raw = { dayLine: "x", rightNow: { intentionId: "a", firstStep: "Go." }, afterThat: [{ intentionId: "b" }, { intentionId: "c" }] };
+    const p = clampPlan(raw, [c("a"), c("b", "Open it."), c("c")], [], undefined, new Set(["b"]), { intentionId: "b", firstStep: "Open the tab." });
+    expect(p.rightNow).toEqual({ intentionId: "b", firstStep: "Open the tab." });
+    expect(p.afterThat.map((x) => x.intentionId)).toEqual(["c"]);
+    // Without a step from chat: the model's step if it picked the same thing, else the intention's own next action.
+    expect(clampPlan(raw, [c("a"), c("b", "Open it.")], [], undefined, undefined, { intentionId: "a" }).rightNow?.firstStep).toBe("Go.");
+    expect(clampPlan(raw, [c("a"), c("b", "Open it.")], [], undefined, undefined, { intentionId: "b" }).rightNow?.firstStep).toBe("Open it.");
+    // A pin that isn't an open candidate (fixed-time, done, made up) is ignored.
+    expect(clampPlan(raw, [c("a"), c("b")], [c("f")], undefined, undefined, { intentionId: "f" }).rightNow?.intentionId).toBe("a");
+  });
   it("strips counts from lines", () => {
     expect(stripCounts("You've got eight things and 3 tasks.")).toBe("You've got a few things and a few things.");
   });

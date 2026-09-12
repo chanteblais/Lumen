@@ -133,10 +133,10 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked` is reserved for "replan" in chat (not wired) |
+| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
-Events added: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
+Events added: `plan.generated {reason, ask?}` (`ask`: the user's words when the reason is `asked` — a learning signal, e.g. "easy" three days running), `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
 
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration).
