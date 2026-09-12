@@ -31,6 +31,31 @@ describe("buildContextBlock", () => {
     expect(block).toContain("stale (flagged below)");
     expect(block).toMatch(/Thesis intro.*stale/);
   });
+  it("lists recent changes with who did them, and gives done things their ids", () => {
+    const block = buildContextBlock({
+      displayName: "C",
+      timezone: "UTC",
+      now,
+      recentActivity: [
+        { type: "intention.completed", at: new Date(now.getTime() - 2 * 60_000), via: "app", intentionId: "i9", title: "Take out compost", status: "done" },
+        { type: "intention.reopened", at: new Date(now.getTime() - 40 * 60_000), via: "app", intentionId: "i8", title: "Email Priya", status: "open" },
+        { type: "intention.updated", at: new Date(now.getTime() - 3 * 3_600_000), via: "chat", intentionId: "i7", title: "Grant report", status: "open", fields: ["list"] },
+        { type: "intention.created", at: new Date(now.getTime() - 4 * 3_600_000), via: "chat", intentionId: "i6", title: "Buy stamps", status: "dropped" },
+      ],
+      recentlyDone: [{ id: "i9", title: "Take out compost", completedAt: new Date(now.getTime() - 2 * 60_000) } as unknown as Intention],
+    });
+    expect(block).toContain("## Recent changes");
+    expect(block).toMatch(/just now · they ticked "Take out compost" done on Today or Lists · i9 · now done/);
+    expect(block).toMatch(/40 minutes ago · they unticked "Email Priya" on Today or Lists — open again · i8 · now open/);
+    expect(block).toMatch(/3 hours ago · you changed "Grant report" \(list\) · i7 · now open/);
+    expect(block).toMatch(/4 hours ago · you saved "Buy stamps" · i6 · now dropped/);
+    expect(block).toMatch(/## Recently done.*\n- i9 · "Take out compost" · just now/);
+    expect(block).toContain("reopen_intention");
+  });
+  it("leaves the recent-changes section out when nothing changed", () => {
+    const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, recentActivity: [] });
+    expect(block).not.toContain("Recent changes");
+  });
   it("says why they declined, and marks it on the intention", () => {
     const i = { id: "i1", title: "Grant report", status: "open", lastTouchedAt: now, list: null, estimateMinutes: null, dueAt: null, nextAction: null } as unknown as Intention;
     const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, openIntentions: [i], declinedNow: { title: "Grant report", reason: "too_big" }, declinedToday: [{ intentionId: "i1", reason: "too_big" }] });

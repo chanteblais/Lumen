@@ -9,7 +9,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { type Db } from "@/db/client";
 import { reportCapacity } from "@/core/domain/capacity";
-import { completeIntention, createIntention, dropIntention, updateIntention } from "@/core/domain/intentions";
+import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { applyBeliefOps } from "@/core/domain/memory";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 
@@ -96,6 +96,17 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
           const row = await completeIntention(db, userId, input.id);
           if (row) await reflectClosedInPlan(db, me, row.id);
           return row ? { id: row.id, title: row.title, status: "done" } : { error: "not found" };
+        }),
+    }),
+
+    reopen_intention: tool({
+      description:
+        "Put a done or dropped intention back on the list — they ticked it by mistake, or changed their mind about letting it go. Use the id from Recent changes or Recently done in the context; never create a duplicate instead.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await reopenIntention(db, userId, input.id);
+          return row ? { id: row.id, title: row.title, status: "open" } : { error: "not found" };
         }),
     }),
 
