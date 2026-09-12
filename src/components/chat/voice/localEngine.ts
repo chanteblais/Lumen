@@ -103,6 +103,18 @@ function clean(text: string): string {
   return HALLUCINATIONS.has(t.toLowerCase()) ? "" : t;
 }
 
+/** Linear resample for browsers that ignore the requested context rate. */
+function resample(input: Float32Array, ratio: number): Float32Array {
+  const out = new Float32Array(Math.floor(input.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const pos = i * ratio;
+    const j = Math.floor(pos);
+    const frac = pos - j;
+    out[i] = input[j] * (1 - frac) + (input[Math.min(j + 1, input.length - 1)] ?? input[j]) * frac;
+  }
+  return out;
+}
+
 function concat(chunks: Float32Array[], length: number): Float32Array {
   const out = new Float32Array(length);
   let offset = 0;
@@ -123,6 +135,7 @@ export function createLocalEngine(): VoiceEngine {
   let passing = false;
   let stopping = false;
   let lastText = "";
+  let micLabel = "";
 
   const teardown = () => {
     if (timer) clearInterval(timer);
@@ -159,9 +172,16 @@ export function createLocalEngine(): VoiceEngine {
   };
 
   const capture = async () => {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Create the context inside the tap, before any await: a context made
+    // after the permission prompt has eaten the user gesture starts
+    // suspended, and a suspended context feeds the worklet nothing.
     const ac = new AudioContext({ sampleRate: SAMPLE_RATE });
     ctx = ac;
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    micLabel = stream.getAudioTracks()[0]?.label ?? "";
+    if (ac.state !== "running") await ac.resume();
+    console.debug("[voice] mic:", micLabel || "(unnamed)", "context:", ac.state, ac.sampleRate + " Hz");
+    if (ac.state !== "running") throw new Error("audio context " + ac.state);
     const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" }));
     try {
       await ac.audioWorklet.addModule(url);
@@ -169,10 +189,12 @@ export function createLocalEngine(): VoiceEngine {
       URL.revokeObjectURL(url);
     }
     const node = new AudioWorkletNode(ac, "lumen-pcm");
+    const ratio = ac.sampleRate / SAMPLE_RATE;
     node.port.onmessage = ({ data }: MessageEvent<Float32Array>) => {
       if (length >= SAMPLE_RATE * MAX_SECONDS) return;
-      chunks.push(data);
-      length += data.length;
+      const frame = ratio === 1 ? data : resample(data, ratio);
+      chunks.push(frame);
+      length += frame.length;
     };
     ac.createMediaStreamSource(stream).connect(node);
     // The worklet needs a sink to run; it outputs silence.
@@ -220,7 +242,7 @@ export function createLocalEngine(): VoiceEngine {
       if (!audio) return finish("");
       const level = rms(audio);
       console.debug("[voice] take:", (length / SAMPLE_RATE).toFixed(1), "s, rms", level.toFixed(4));
-      if (level < SILENCE_RMS) return finish("", "I didn't hear anything. Is the mic on? Tap Voice to try again.");
+      if (level < SILENCE_RMS) return finish("", micLabel ? `I didn't hear anything from "${micLabel}". Is that the right mic? Tap Voice to try again.` : "I didn't hear anything. Is the mic on? Tap Voice to try again.");
       const wait = passing ? new Promise<void>((r) => { const t = setInterval(() => { if (!passing) { clearInterval(t); r(); } }, 50); }) : Promise.resolve();
       void wait
         .then(() => ensureWorker())
