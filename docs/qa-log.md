@@ -6,6 +6,25 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (4) — Voice stops on its own (`fix/voice-silent-stop`, port 3005)
+
+### Fixed
+- **Voice button switched itself off with no message.** `useVoiceInput` swallowed two recognition errors — `no-speech` and `aborted` — and every `end` dropped the listening state. Measured in Chrome 152 with a fake microphone: ~8s of initial silence fires `no-speech` then `end`; starting recognition in a second tab (or another app) fires `aborted` on the first. Both now surface one line in Lumi's voice; a plain `end` while the user still wants to listen restarts the session and keeps the transcript; two instant ends in a row give up with the generic line. Our own `stop()` still ends quietly. Verified through the real UI with an injected fake recognizer for every path (plain end → restart, result accumulates, no-speech, foreign abort, own stop, double quick end, not-allowed).
+
+### Known and deliberate
+- Chrome allows one recognition session per browser: tapping Voice in a second tab takes the mic from the first, which now says so. The first tab does not reclaim it.
+- After `no-speech` Lumi stops rather than restarting forever: a mic that hears nothing should be noticed, not masked by a breathing icon.
+- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error. Chanté's follow-up: Chrome works; Brave failed every time with "Voice needs a network connection right now" (Brave ships no speech-service keys). Voice is now hidden in Brave (`navigator.brave`), like Firefox.
+- Chrome picked Chanté's iPhone as the microphone: macOS Continuity offers a nearby iPhone as an input device and the Web Speech API always uses the browser's default input. Change it under Chrome → Settings → Privacy → Site settings → Microphone, or System Settings → Sound → Input. No in-app picker (one more thing to set).
+
+### Open
+- Voice is Chrome/Safari/Edge only while it rides on the browser's cloud recognition. A server-side transcriber (the hook's surface was designed for the swap) would bring Brave and Firefox in.
+
+### Highest-value manual tests
+- Allow the mic, tap Voice, say nothing for ten seconds → "I didn't hear anything…" line, button off.
+- Tap Voice, talk for a minute or two with pauses → stays listening; text keeps accumulating.
+- Tap Voice in two tabs → the first shows the "another tab" line.
+
 ## Sweep 2026-09-12 (3) — Today latency (`fix/today-latency`, worktree, port 3006)
 
 Chanté: "the app is quite slow, particularly Today." Measured from her machine: Clerk `currentUser()` ~200ms, a warm query to the Supabase pooler (us-east-2) 65–110ms, a fresh connection ~500ms, the snapshot's five queries on a cold pool ~460ms, first plan generation of the day several seconds — all serial, all before Today could show more than the skeleton.
@@ -25,6 +44,7 @@ Chanté: "the app is quite slow, particularly Today." Measured from her machine:
 - Sign in → Chat → Today: Today's path appears with no skeleton wait (plan was primed on the Chat open).
 - New day (or delete today's `day_plans` rows): open Chat with nothing open → brain-dump three things → Today shows a Right now (plan re-cut as `first_items`, visible in `day_plans.reason`).
 - Reload Today twice: same Right now both times.
+
 
 ## Sweep 2026-09-13 — M3 (`feat/m3-intentions`, worktree, port 3007)
 
