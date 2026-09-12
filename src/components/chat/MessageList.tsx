@@ -11,8 +11,10 @@ const SIX_HOURS = 6 * 3_600_000;
 
 export function MessageList({ messages, thinking, error }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
+  const firstScroll = useRef(true);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
+    firstScroll.current = false;
   }, [messages, thinking]);
 
   if (messages.length === 0 && !thinking && !error) return null;

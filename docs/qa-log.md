@@ -6,6 +6,18 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (2) — M2 review findings (`feat/m2-voice-layout`, worktree)
+
+### Fixed
+- **Layout shifted after navigating away and back; composer below the fold.** The page was a normal document that grew with the transcript, so the composer's position depended on content length. Now the shell is viewport-height, the transcript scrolls in its own region, and the composer is docked at the bottom on every load. Verified: Chat → Today → Chat renders identically.
+- **Quick-start chips vanished after the first message, so they couldn't be tested.** They now follow the sitting rule (hidden only while there's a message from the last six hours) and return on the next visit.
+- **Voice button did nothing.** Was a placeholder for M7; voice input is now live via the Web Speech API. Add file / Tools removed until they do something.
+
+### Known and deliberate
+- The corner companion (`LumiCompanion`) is hidden under 768px: with the composer docked at the bottom it would overlap the send button on phones.
+- Voice needs the browser's microphone permission; the first click prompts. In browsers without `SpeechRecognition` (Firefox) the button doesn't render at all.
+- Transcription is appended to whatever is already typed and never auto-sent.
+
 ## Sweep 2026-09-12 — M2 conversation (`feat/m2-conversation`)
 
 ### Verified

@@ -50,3 +50,13 @@ export async function messageCount(db: Db, conversationId: string): Promise<numb
   const rows = await db.select({ id: messages.id }).from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.createdAt));
   return rows.length;
 }
+
+/** A "sitting": messages within this window of each other belong to one visit. */
+export const SITTING_GAP_MS = 6 * 3_600_000;
+
+/** True when the newest message is from this sitting — quick starts hide, the greeting compacts. */
+export function isInSitting(messages: RaliUIMessage[], now = Date.now()): boolean {
+  const last = messages[messages.length - 1];
+  const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
+  return at !== undefined && now - at < SITTING_GAP_MS;
+}

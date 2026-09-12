@@ -55,7 +55,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **EF check:** the user never sets up, tags, or rates anything; learning is invisible until they look.
 
 ## M7 — Voice, polish, ship (½ day)
-- `useVoiceInput()` on Web Speech API; mic button in the composer; hidden when unsupported.
+- ~~`useVoiceInput()` on Web Speech API; mic button in the composer; hidden when unsupported.~~ **Pulled forward into M2 (2026-09-12)** after review.
 - Keyboard: Enter sends, Shift+Enter newline, ⌘K focuses composer. Loading, empty and error states in Rali's voice ("I lost the thread for a second — say that again?").
 - Privacy note in Settings; `.env.example`; README; cache hit rate and p50 turn latency checked in production.
 - **Done when:** the deployed app is used daily for a week without opening the code.
