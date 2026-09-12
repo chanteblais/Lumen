@@ -14,7 +14,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - Drizzle schema for all seven tables (`docs/domain.md`), `drizzle-kit generate` + `migrate`, Supabase pooler connection.
 - **Done when:** signing in creates a user row; `npm run check` (tsc + vitest) passes; migrations apply cleanly to a fresh database.
 
-## M2 — The conversation (1 day)
+## M2 — The conversation (1 day) — **built + voice-evaluated 2026-09-12 on `feat/m2-conversation`, pending review**
 - `POST /api/chat`: `streamText` with the persona system prompt (cached prefix) and a minimal context block (name, local time, visit gap). No tools yet.
 - Persist user + assistant `UIMessage`s; load the last 30 on page open; render history with date rules between visits.
 - Server-rendered greeting (`core/ai/greeting.ts`) replaces the static card; quick-start chips send canned first messages.
@@ -55,7 +55,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **EF check:** the user never sets up, tags, or rates anything; learning is invisible until they look.
 
 ## M7 — Voice, polish, ship (½ day)
-- `useVoiceInput()` on Web Speech API; mic button in the composer; hidden when unsupported.
+- ~~`useVoiceInput()` on Web Speech API; mic button in the composer; hidden when unsupported.~~ **Pulled forward into M2 (2026-09-12)** after review.
 - Keyboard: Enter sends, Shift+Enter newline, ⌘K focuses composer. Loading, empty and error states in Rali's voice ("I lost the thread for a second — say that again?").
 - Privacy note in Settings; `.env.example`; README; cache hit rate and p50 turn latency checked in production.
 - **Done when:** the deployed app is used daily for a week without opening the code.

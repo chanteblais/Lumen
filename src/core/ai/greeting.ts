@@ -11,7 +11,7 @@ export type GreetingState = {
 };
 
 /**
- * The opening lines Rali says on page open. Deterministic: no model call.
+ * The opening lines Lumi says on page open. Deterministic: no model call.
  * First line = recognition. Second line = somewhere to begin.
  */
 export function greeting(state: GreetingState): string[] {

@@ -24,4 +24,30 @@ Scripted scenarios run against Rali's persona (`src/core/ai/persona.ts`), what w
 
 ## Runs
 
-*(None yet — first run at M2.)*
+Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
+
+### Run 2 — 2026-09-12 (after tuning) · scenarios 2, 6, 9 rerun
+Persona additions: "never count their things back to them" and "use the local time only when it changes what you'd say"; context-block time line carries the same hint. Prefix grew to 1114 tokens; still cached from turn two.
+
+| # | Grade | Notes |
+|---|---|---|
+| 2 | ✓ | Reflects the *shape* ("one big thing that's actually hard, a couple of small things you're avoiding…"), no count; closes with one question |
+| 6 | ✓ | "Messes are allowed" is the mildest reassurance; acceptable. Offers the relevance pass without mentioning the gap |
+| 9 | ✓ | Best reply of the set: sorts the dump into three groups without numbers, picks one two-line email, "Everything else keeps." |
+
+### Run 1 — 2026-09-12 · all nine (`scripts/voice-eval.mjs`, `claude-opus-5`, effort low, context = Friday 11pm Vancouver, last seen 3h ago)
+Cache: `cacheWrite=1013` on the first call, `cacheRead=1013` on every call after — the persona alone clears Anthropic's minimum cacheable prefix. Output 25–172 tokens per reply.
+
+| # | Grade | Notes |
+|---|---|---|
+| 1 | ✓ | "What's the thing?" then, given a Friday-night grant report, asks whether it's tonight or bed. Right diagnosis, one question |
+| 2 | ~ | Voice right, but reflected the list back as a numbered set and led with the time |
+| 3 | ✓ | One orienting question |
+| 4 | ~ | Good insight (phone calls: "not knowing what you'll say"), but opened with the clock again |
+| 5 | ✓ | Exactly "Welcome back. Where did we end up?" |
+| 6 | ✓ | "Welcome back. Nothing's owed." No counts; offers the pass |
+| 7 | ✓ | Three things asked, then "45 minutes on chapter 3. I'm here. Go." |
+| 8 | ✓ | "20% is what there is. Fine." One thing or stop |
+| 9 | ✗ | "That's eight things" — a count, forbidden. Otherwise strong grouping |
+
+Systemic finding: the local-time line in the context block was over-used (six of nine replies opened with the hour). Fixed in run 2.
