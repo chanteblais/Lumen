@@ -4,7 +4,8 @@
  */
 import { and, desc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
-import { intentions, type EffortHint, type Intention } from "@/db/schema";
+import { intentions, type EffortHint, type Event, type Intention } from "@/db/schema";
+import { localDate } from "@/core/time";
 import { appendEvent } from "./events";
 
 export const STALE_AFTER_MS = 14 * 86_400_000;
@@ -92,10 +93,29 @@ export async function dropIntention(db: Db, userId: string, id: string, reason?:
   return row;
 }
 
-/** Recorded when the user says "not this" to the plan's current task. Never a failure. */
-export async function declineIntention(db: Db, userId: string, id: string, reason?: string): Promise<void> {
-  await db.update(intentions).set({ lastTouchedAt: new Date() }).where(and(eq(intentions.id, id), eq(intentions.userId, userId)));
-  await appendEvent(db, { userId, type: "intention.declined", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
+/**
+ * Recorded when the user says "not this" to the plan's current task. Never a
+ * failure — the reason (a key from core/declines.ts, or free text) is the
+ * signal. Returns the row, or undefined when it isn't theirs.
+ */
+export async function declineIntention(db: Db, userId: string, id: string, reason?: string): Promise<Intention | undefined> {
+  const [row] = await db.update(intentions).set({ lastTouchedAt: new Date() }).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).returning();
+  if (row) await appendEvent(db, { userId, type: "intention.declined", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
+  return row;
+}
+
+export type Decline = { intentionId: string; reason: string | null; at: Date };
+export const DECLINE_EVENT_TYPE = "intention.declined";
+
+/** Pure: today's declines from recent events (newest first). Feeds the plan (never Right now again today) and the context block. */
+export function declinesFromEvents(rows: Pick<Event, "type" | "subjectId" | "payload" | "occurredAt">[], timeZone: string, now: Date = new Date()): Decline[] {
+  const today = localDate(now, timeZone);
+  const out: Decline[] = [];
+  for (const e of rows) {
+    if (e.type !== DECLINE_EVENT_TYPE || !e.subjectId || localDate(e.occurredAt, timeZone) !== today) continue;
+    out.push({ intentionId: e.subjectId, reason: ((e.payload as { reason?: string | null }).reason ?? null) || null, at: e.occurredAt });
+  }
+  return out;
 }
 
 export async function listOpenIntentions(db: Db, userId: string): Promise<Intention[]> {

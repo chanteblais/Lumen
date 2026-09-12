@@ -7,7 +7,8 @@ import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
 
-export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string };
+/** `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down). */
+export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string };
 export type LumenUIMessage = UIMessage<LumenMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;

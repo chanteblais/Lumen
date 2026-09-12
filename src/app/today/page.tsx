@@ -2,13 +2,15 @@ import { Suspense } from "react";
 import { PlanSection } from "@/components/today/PlanSection";
 import { LumiAvatar } from "@/components/chat/LumiAvatar";
 import { dayPart } from "@/core/time";
-import { requireUser } from "@/lib/auth";
+import { recordVisit, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 /** What should I be doing right now? One thing, then a short path. docs/today.md */
 export default async function TodayPage() {
   const user = await requireUser();
+  // A page open is a visit too: the sitting (and any gap it began after) starts here if Today is opened first.
+  await recordVisit(user);
   const part = dayPart(new Date(), user.timezone);
   const hello = part === "morning" ? "Good morning" : part === "afternoon" ? "Good afternoon" : part === "evening" ? "Good evening" : "Still up";
 

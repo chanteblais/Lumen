@@ -98,8 +98,10 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 ## Events catalogue (V1)
 | type | payload |
 |---|---|
-| `app.opened` | `{ gap_seconds }` |
-| `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` |
+| `app.opened` | `{ gap_seconds }` — written by `touchLastSeen` on any page open or turn that follows a gap ≥ 30 min; the newest one is the start of the current *sitting* (see Derived) |
+| `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` — from the chat tool or Today's prompt |
+| `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
+| `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
 | `intention.created` / `.updated` / `.completed` / `.dropped` / `.touched` | `{ diff? }` |
 | `session.started` | `{ goal, first_step, planned_minutes }` |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` |
@@ -111,8 +113,10 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | view | rule |
 |---|---|
 | `staleIntentions` | `status = open AND last_touched_at < now − 14d` |
-| `todayCapacity` | latest `capacity.reported` event within the user's local day |
+| `todayCapacityState` | latest `capacity.reported` within the user's local day, plus whether a `capacity.asked {skipped}` exists today — Today's prompt shows only when neither does (`core/domain/capacity.ts`) |
+| `declinedToday` | today's `intention.declined` events, newest first, with reasons — never Right now again today; flagged in the context block (`core/domain/intentions.ts`) |
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
+| `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |
 | `abandonedSession` | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` on next visit |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
@@ -128,7 +132,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | first_items | capacity | declined | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived |
+| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked` is reserved for "replan" in chat (not wired) |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
 Events added: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.

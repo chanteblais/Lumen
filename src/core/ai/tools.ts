@@ -13,7 +13,18 @@ import { completeIntention, createIntention, dropIntention, updateIntention } fr
 import { applyBeliefOps } from "@/core/domain/memory";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 
-export type ToolContext = { db: Db; userId: string; timezone: string };
+/** A write that means today's path should be re-cut once the turn has streamed. */
+export type PlanInvalidation = "capacity" | "reentry";
+
+export type ToolContext = {
+  db: Db;
+  userId: string;
+  timezone: string;
+  /** This sitting began after a week or more away: letting things go re-cuts the path. */
+  reentry?: boolean;
+  /** Called (at most once per reason) when a write invalidates today's path; the route re-cuts in `after()`. */
+  onPlanChange?: (reason: PlanInvalidation) => void;
+};
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
 const EFFORT = ["tiny", "small", "medium", "large"] as const;
@@ -22,7 +33,7 @@ function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
   return fn().catch((e: unknown) => ({ error: e instanceof Error ? e.message : "failed" }));
 }
 
-export function buildTools({ db, userId, timezone }: ToolContext) {
+export function buildTools({ db, userId, timezone, reentry = false, onPlanChange }: ToolContext) {
   const me = { id: userId, timezone };
   return {
     create_intention: tool({
@@ -95,6 +106,8 @@ export function buildTools({ db, userId, timezone }: ToolContext) {
         safe(async () => {
           const row = await dropIntention(db, userId, input.id, input.reason);
           if (row) await reflectClosedInPlan(db, me, row.id);
+          // Letting things go during the coming-back pass reshapes the day; re-cut once the turn ends.
+          if (row && reentry) onPlanChange?.("reentry");
           return row ? { id: row.id, title: row.title, status: "dropped" } : { error: "not found" };
         }),
     }),
@@ -109,6 +122,7 @@ export function buildTools({ db, userId, timezone }: ToolContext) {
       execute: (input) =>
         safe(async () => {
           await reportCapacity(db, userId, input);
+          onPlanChange?.("capacity");
           return { level: input.level };
         }),
     }),

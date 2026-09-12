@@ -6,6 +6,32 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-12 (5) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
+
+### Verified (live, against the real database; the rows the sweep created were removed afterwards)
+- **Not this → reason → Lumi → re-cut.** Tapping *Not this* on the Right now card swapped the buttons for "Fair. What's getting in the way?" and the six chips; *Too tired* landed in Chat as "Not this one: Respond to Kendra — too tired." and Lumi answered the reason in voice ("Too tired at 2 a.m. is just accurate. Nothing here needs tonight. Sleep. Kendra keeps, cat food keeps, the paper keeps."). The dev log showed `recut=declined`; `after()` wrote a `day_plans` row with `reason: declined` whose Right now was no longer Kendra, and Today showed the new path with a new day line on the next open.
+- **Capacity prompt.** Hidden on the real page because a `capacity.reported` already existed today (from the earlier "20%" in chat) — correct, derived. With the prompt forced on locally: renders as one quiet line above the card; *Skip* posted to `/api/capacity`, wrote `capacity.asked {skipped: true}`, and the page refreshed. The *Lots* click did not register before the browser tab was taken over by another session (see Open), so the answer path is covered by unit tests only (`recutTodaysPlan`: re-cut + capacity recorded; no re-cut when normal-ish matches an unstated plan).
+- Unit: 47 tests (declines vocabulary, capacity state and skip, declines-from-events, sitting/re-entry, `clampPlan` never returning a declined intention, context block re-entry + Just-now lines with no digits, re-cut reasons, planner inputs using the sitting's gap).
+
+### Fixed
+- **Chat context said "First time here" on every turn.** The route compared `recordVisit`'s return value with the same field it had just returned. Now compares against `created_at`, and the sitting (newest `app.opened`) carries the real gap through the whole visit.
+- **Fallback first step read wrong.** When the model's Right now is rejected (declined, unknown id, or null with candidates), the code-chosen first step was "Open it up and look at where you left off." — seen on "Pick up cat food". Now "The smallest first piece of it, nothing more.", and the planner is told to always pick one thing with a step that fits, even late or on a low day.
+
+### Known and deliberate
+- A declined intention can still appear in After that (the model decides; "too tired" is about now). It is never Right now again that day.
+- *Normal-ish* on a plan cut without a report does not re-cut — nothing would change; the answer is still recorded.
+- The capacity prompt does not show on a day with nothing to plan.
+- Deleting the sweep's rows from `events` is the one exception to append-only, for test data only.
+
+### Open
+- **Re-entry not exercised live.** Simulating a 14-day gap means moving Chanté's `users.last_seen_at` and writing a fake `app.opened`; left as a manual test (SQL in the review checklist) rather than done to her data.
+- The browser tab used for this sweep was navigated to port 3007 mid-test by another session (voice work in `lumen-voice`); Claude-in-Chrome tab groups are apparently shared across sessions. Check the tab's URL before every action.
+
+### Highest-value manual tests
+- On a day with no capacity said in chat: open Today → the prompt line shows → *Not much* → "Shaping the day around that…" → the path re-cuts to one thing + at most one After that; reload → same; the prompt is gone.
+- Today → *Not this* → *Too big* → Chat: Lumi names a smaller piece (may `update_intention`); back on Today the Right now is something else.
+- Re-entry: `update users set last_seen_at = now() - interval '14 days'` → open Chat → "It's been a minute. Want me to help figure out what's still relevant?" → "yes" → Lumi goes through the stale ones by name, drops what you release in one go, ends with one next step; no number anywhere; Today re-cut (`reason: reentry`) if anything was dropped.
+
 ## Sweep 2026-09-12 (4) — Voice stops on its own (`fix/voice-silent-stop`, port 3005)
 
 ### Fixed
