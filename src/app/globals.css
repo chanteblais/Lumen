@@ -119,6 +119,13 @@ body::before {
 .nav-item .num { font-size: 13px; color: var(--ink-mute); letter-spacing: 0.06em; }
 .nav-item .name { font-size: 19px; }
 
+.auth-link {
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+.auth-link:hover { color: var(--ink); }
+
 .main {
   min-width: 0;
   padding: 36px 48px 40px;

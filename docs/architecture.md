@@ -10,7 +10,7 @@ Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; aft
 | AI runtime | **Vercel AI SDK v7** (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) | Owns the hard, boring part of chat UX: streaming protocol, `useChat`, tool-call parts streamed into the UI, Zod-typed tools, multi-step loops, `UIMessage` persistence shape. `@ai-sdk/anthropic` is a first-party Anthropic provider (not an OpenAI-compatible shim); Anthropic-specific request fields (cache control, thinking, effort) pass through `providerOptions.anthropic`. Alternative: `@anthropic-ai/sdk` directly + hand-rolled SSE + React stream state — fewer abstractions and day-one access to every Anthropic feature, but ~2 days of plumbing we'd rather not own. **Escape hatch:** the model call is isolated in `src/core/ai/model.ts`; if a needed Anthropic feature can't pass through the provider, that one module switches to the raw SDK. |
 | Model | **`claude-opus-5`** for the companion; adaptive thinking (default); `output_config.effort: "low"` for chat turns (raise to `medium` if quality demands) | Personality, judgement and restraint *are* the product; chat turns are short so per-turn cost is small. Prompt caching on the stable prefix (persona + tools) keeps input cost flat. `claude-sonnet-5` is the cost step-down lever; `claude-haiku-4-5` for background jobs (summaries, extraction) later. Enable server-side refusal fallbacks (`fallbacks: "default"`) if the provider exposes it; otherwise handle `stop_reason: "refusal"` gracefully (Rali says "I couldn't answer that one" rather than erroring). |
 | Database | **Postgres on Supabase**, accessed through **Drizzle ORM** over the `postgres` driver (Supavisor transaction pooler, `prepare: false`) — **not** `supabase-js` | Free tier, dashboard you know, pgvector available when memory needs embeddings. Drizzle makes the schema typed code (the domain model *is* the schema file), generates migrations, and has no vendor coupling — moving to Neon is a connection-string change. All DB access is server-side with the service role, so RLS is irrelevant. |
-| Auth | **Clerk** (`@clerk/nextjs` 7) behind `src/lib/auth.ts` → `requireUser()` returning the **internal** `users.id` | Fastest path, Expo SDK exists for later. Nothing outside `lib/auth.ts` and the sign-in page imports Clerk. Alternative: no auth for a single user — rejected: adding auth later touches every query; adding it now costs an hour. |
+| Auth | **Clerk** (`@clerk/nextjs` 7) behind `src/lib/auth.ts` → `requireUser()` returning the **internal** `users.id` | Fastest path, Expo SDK exists for later. Nothing outside `lib/auth.ts`, `lib/auth-ui.tsx` and the sign-in/sign-up pages imports Clerk. Alternative: no auth for a single user — rejected: adding auth later touches every query; adding it now costs an hour. |
 | Styling | **Tailwind v4** + CSS custom-property tokens; `next/font` for serifs | Tokens (`--ink`, `--paper`, `--brass`, `--rule`) defined once; Tailwind for layout only. No component library — the design is too specific and the surface too small. |
 | Validation | **Zod 4** | Shared by tool input schemas and API bodies. |
 | Voice | **Web Speech API** (`SpeechRecognition`) behind `useVoiceInput()` → text into the same composer | Zero cost, works in Chrome/Safari desktop; hidden where unsupported. Later: server transcription (Whisper/Deepgram) behind the same hook signature. |
@@ -145,12 +145,13 @@ rali/
 │   └── decisions.md              ADR-lite log (append as things change)
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx            fonts, tokens, ClerkProvider
+│   │   ├── layout.tsx            fonts, tokens, AuthProvider
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── knows/page.tsx        "What Rali knows" — beliefs, grouped, correct/delete inline
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
+│   │   ├── sign-up/[[...sign-up]]/page.tsx
 │   │   └── api/
 │   │       ├── chat/route.ts     POST — one streamed turn
 │   │       ├── session/route.ts  POST — check-in ticks (non-LLM)
@@ -164,7 +165,8 @@ rali/
 │   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts reflect.ts
 │   │   └── time.ts               tz-aware today/gap helpers
 │   ├── db/                       schema.ts client.ts migrations/
-│   ├── lib/                      auth.ts (the only Clerk import outside sign-in)
+│   ├── lib/                      auth.ts (server boundary) · auth-ui.tsx (provider, auth controls)
+│   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── drizzle.config.ts
 ├── .env.example
@@ -189,7 +191,7 @@ Planned: `POST /api/chat` (M2) · `POST /api/session` check-in ticks (M5) · `PA
 - **Store facts and events; derive judgements** (stale, avoided, gap, today's capacity). Never persist derived flags.
 - **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
 - **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with `cache_read_input_tokens`.
-- **Clerk only in `src/lib/auth.ts` and the sign-in page.** Internal `users.id` everywhere else.
+- **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else.
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
 - **EF-burden log** (`docs/ef-burden-log.md`) gets a row for every new user-maintained state, in the same commit.

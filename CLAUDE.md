@@ -22,6 +22,6 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 - Store facts and events; derive judgements (stale, avoided, gap) at read time. Never persist derived flags.
 - **Understanding layer is first-class:** beliefs (`memory_notes`) carry confidence + evidence; the model proposes belief ops, `core/domain/memory.ts` applies them with guardrails; outcomes (sessions, completions) are the feedback signal. The user never rates or tags anything.
 - Persona prompt (`src/core/ai/persona.ts`) + tool descriptions are the cached prefix — keep them byte-stable; volatile context goes after.
-- Clerk is imported only in `src/lib/auth.ts` and the sign-in page. Internal `users.id` everywhere else.
+- Clerk is imported only in `src/lib/auth.ts` (server: `requireUser()`), `src/lib/auth-ui.tsx` (provider + sign-in/up/account controls) and the sign-in/sign-up pages. Internal `users.id` everywhere else.
 - Branching: `feat/` `fix/` `ux/` `docs/` off `main`; `main` deploys. Verify with `npm run check` (tsc + vitest) before merging. Print migrations verbatim in the session summary when created.
 - Dev server for review: `npm run dev -- -p 3005` (3000–3004 are taken by other projects on this machine).

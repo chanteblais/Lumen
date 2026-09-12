@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, EB_Garamond } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-ui";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 
@@ -29,13 +30,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
       <body>
-        <div className="shell">
-          <Sidebar />
-          <main className="main">
-            <TopBar />
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="shell">
+            <Sidebar />
+            <main className="main">
+              <TopBar />
+              {children}
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
