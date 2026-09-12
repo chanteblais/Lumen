@@ -15,7 +15,7 @@ Rali   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 - Active route highlighted via `aria-current="page"`.
 - Mobile (<768px): sidebar collapses to a top strip with the wordmark and nav names.
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
-- Open question (2026-09-11): the Lists mockup shows an icon nav with **Focus** in place of Library. Decide before M5.
+- Open question (2026-09-12): the Today mockup shows Today · Lists · Focus · Chat · Insights · Archive. Proposal in `today.md`: **Today · Lists · Chat · Settings** for V1, Today becoming the landing page at M3.
 
 **Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then a slow sway — one pose, small movements. Decorative only — no clicks, no state. Still under reduced-motion.
 
@@ -40,14 +40,19 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
 - **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Rali says so if asked to remember or track something. Avatar is Lumi's head (neutral) from `mockups/lumi.png` as of 2026-09-11.
 
-### Today (`/today`)
+### Today (`/today`) — spec: `today.md`
 
 **Who:** Signed-in.
-**What:** A quiet, read-only view of open intentions with their next action. Complete/reopen only. No editing, sorting, counts, or categories. M0: placeholder line. Built in M3.
+**What:** Answers *what should I be doing right now?* Greeting, Lumi's one-line read of the day, an optional capacity prompt, one dominant **Right now** card with **Start with Lumi** and **Not this**, up to three **After that** rows, **Later** (fixed-time commitments only), and "everything else can wait." Generated as a persisted `DayPlan` (model proposes, code guards), stable across reloads, advanced by code on completion. M0: placeholder line. Built in M3 (path), M4 (capacity + *Not this* regeneration).
+
+### Lists (`/lists`) — spec: `today.md` → Lists
+
+**Who:** Signed-in.
+**What:** The pile: the user's broader structure in named lists (School · Work · Personal · Later by default). Lumi files intentions here conversationally; the user can move and reorder. No per-list counts, no due date unless one was set, one Add affordance. Minimum in M3 (assignment + per-list view); reorder later.
 
 ### Library (`/library`)
 
-Placeholder. Intended for saved strategies ("what actually works for you") — post-V1.
+Placeholder. Proposed to leave the V1 nav (2026-09-12) in favour of Lists; the "what works for you" idea folds into *What Lumi knows*.
 
 ### Insights (`/insights`)
 

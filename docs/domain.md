@@ -117,8 +117,11 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
 
+## Proposed for M3 (see `today.md` → Domain additions)
+`intentions.list`, `intentions.estimate_minutes`, a `day_plans` table (one persisted `DayPlan` per user per local date, with the reason it was cut), and events `plan.generated`, `plan.advanced`, `intention.declined {reason}`, `capacity.asked`. Migration `0001` lands with M3.
+
 ## Deliberately absent
-Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking.
+Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration).
 
 ## Storage
 None in V1. (Voice audio never leaves the browser; file attachments are post-V1.)

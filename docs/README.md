@@ -5,6 +5,7 @@
 | [Product](product.md) | The brief: the problem, the one question, behavioural pillars, Rali's voice, visual direction, V1 scope |
 | [Architecture](architecture.md) | Stack, how the AI layer touches state (context block + tools), the understanding layer, sticky decisions, repo layout, API routes, key conventions |
 | [Domain](domain.md) | The tables, events catalogue, derived views, migrations reference |
+| [Today](today.md) | The Today page spec: a path, not a pile — one dominant task, *Not this*, capacity, Lists as the pile, how the day plan is built, what was cut from the mockup |
 | [V1 Plan](v1-plan.md) | Milestones M0–M7 with done-when + executive-function checks |
 | [Decisions](decisions.md) | ADR-lite log — append when a decision in the docs above changes |
 | [Features](features.md) | Every page and feature — who it's for, what it does, key states |

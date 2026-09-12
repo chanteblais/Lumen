@@ -23,17 +23,21 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** a returning user sees their history and a state-aware greeting, and Rali's replies pass the voice eval.
 - **EF check:** Rali asks one thing at a time; the first reply to "I can't start" is a step, not a plan.
 
-## M3 — Intentions and beliefs through tools (1–1½ days)
+> **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions.
+
+## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days)
 - Tools: `create_intention`, `update_intention`, `complete_intention`, `drop_intention`; every call writes an `events` row.
 - Belief tools from the same day: `remember`, `confirm`, `contradict`, `revise`, `forget`, applied through `core/domain/memory.ts` (the same op-applier reflection will use). Beliefs injected into the context block with confidence and evidence.
 - Ledger lines under assistant messages rendered from tool parts (✦ Noted · … / ✦ Done · …), with undo for complete → reopen.
 - `/today`: open intentions with `next_action`, complete/reopen only — no editing UI, no sorting controls, no counts in the nav.
 - Context block now includes open intentions with ids (cap 25).
-- **Done when:** a brain dump becomes intentions without the user confirming each one; completing from chat and from Today both write events; "I hate being given options" becomes a `preference` belief and the next reply respects it.
+- `intentions.list` + `estimate_minutes`; a plain `/lists` page (per-list view, complete/reopen, one Add that goes through chat).
+- `core/ai/plan.ts` → `DayPlan` (model proposes, code guards), persisted in `day_plans`; `/today` renders Right now / After that / Later + the day line; *Start with Lumi* and *Break it down* hand off into chat as structured user messages. Today becomes the landing page.
+- **Done when:** a brain dump becomes intentions without the user confirming each one; completing from chat, Today and Lists all write events; "I hate being given options" becomes a `preference` belief and the next reply respects it; opening Today shows one dominant task within a second and the same one after a reload.
 - **EF check:** the user never has to "file" anything; Today is a view, not a chore.
 
-## M4 — Context & re-entry (½–1 day)
-- `report_capacity` tool; capacity in the context block; greeting variants for gap ≥ 7 days and abandoned sessions.
+## M4 — Capacity, *Not this*, re-entry (1 day)
+- `report_capacity` tool + the Today capacity prompt (once a day, skippable); the plan regenerates on capacity. *Not this* → six quick answers → `intention.declined {reason}` → Lumi replies → plan regenerates with the reason. Greeting variants for gap ≥ 7 days and abandoned sessions.
 - Stale intentions flagged in context; persona guidance for the "what's still relevant?" pass (offer to drop in bulk, never list counts).
 - `app.opened` events; `last_seen_at` on every turn.
 - **Done when:** returning after a simulated 14-day gap yields the re-entry greeting and a two-minute cleanup, ending with one suggested next step.

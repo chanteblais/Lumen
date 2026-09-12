@@ -40,6 +40,8 @@ Decorative imagery is not on this list.
 - `mockups/` chat mockup (the canon): sidebar frame, greeting card, chips, pill composer. Everything built in M0 follows it.
 - `mockups/rali-list.png` ("Lists"): keep the *visual language* (card rows, category glyphs, Rali speaking in a bubble, Focus as a first-class nav item); reject the *interaction model* (per-column counts, due-date labels on every row, five "Add item" affordances, drag-to-prioritise). Logged in `ef-burden-log.md`.
 
+- `mockups/` Today mockup (2026-09-12): canon for the *shape* of Today — one dominant card, After that, Later, Lumi small beside the greeting, celestial marks as punctuation. Cut: calendar timeline, timer widget, quick capture, "1 of 3", tabs, counts — reasons in `today.md`. The sidebar's "Small steps still move the world" is the one permitted aside; nothing else inspirational goes on the walls.
+
 ## 5. Weaving philosophy into the app as it grows
 
 - **Copy first.** When a state needs explaining, try a line in Rali's voice before adding UI.

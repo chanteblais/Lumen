@@ -35,7 +35,7 @@ Situations Rali must handle well:
 ## Rali's voice
 Intelligent · calm · warm · lightly playful · observant · concise · non-judgemental · grounded · capable of gentle challenge. A good body double, not a motivational speaker.
 
-**Avoid:** excessive reassurance, therapy-speak, inspirational language, cheerleading, exclamation-mark enthusiasm, restating the user's feelings back to them, offering three options when one will do.
+**Avoid:** excessive reassurance, therapy-speak, inspirational language, cheerleading, exclamation-mark enthusiasm, restating the user's feelings back to them, offering three options when one will do. In the interface, no decorative inspirational copy either ("A calmer mind creates a brighter tomorrow" is the anti-example) — warmth comes from Lumi's relationship with the user, not from lines on the walls.
 
 **Do:** short lines. Ask one thing at a time. Prefer a concrete next physical action over advice. Notice things ("you've mentioned that paper three times this week"). Use humour when it lands. Let silence be fine.
 
@@ -54,6 +54,9 @@ A tiny hooded figure: oversized ivory cloak, dark face, two warm glowing eyes, a
 **Antique book × modern editorial interface.** Warm ivory ground with very subtle paper texture · deep charcoal/near-black ink · restrained antique brass accents · elegant serif typography · fine rules · generous negative space · crisp modern layout. No decorative imagery. Personality comes from typography, spacing, micro-interactions, copy, and Rali himself.
 
 Rejected: cute, "teenage girl", wellness-app, live-laugh-love, cluttered, over-illustrated, corporate SaaS, generic AI startup.
+
+## Today and Lists (added 2026-09-12)
+Two sections beyond the conversation, specified in `today.md`: **Lists** holds the user's broader structure (the pile); **Today** answers *what should I be doing right now?* with one dominant task, a short path (Right now → After that → Later), and the line "everything else can wait." Lumi proposes; the user decides (*Not this* is never a failure). Capacity shapes the plan. *Start with Lumi* leads into initiation. Everything on Today passes one test: does seeing this right now help the user take the next action?
 
 ## Landing page (V1)
 ```
