@@ -58,7 +58,7 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
         </div>
       )}
       <div ref={cardRef}>{card}</div>
-      <div className="mt-10 flex flex-col gap-7" aria-live="polite" style={room ? { minHeight: room } : undefined}>
+      <div className="chat-now mt-10 flex flex-col gap-7" aria-live="polite" style={room ? { minHeight: room } : undefined}>
         {current}
         {thinking && (
           <div className="msg msg-lumi" aria-label="Lumi is thinking">

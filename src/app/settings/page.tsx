@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { Divider, Tailpiece } from "@/components/ui/Ornament";
 import { requireUser } from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function Page() {
   await requireUser();

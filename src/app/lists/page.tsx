@@ -1,10 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CompleteCircle } from "@/components/lists/CompleteCircle";
+import { Divider, Tailpiece } from "@/components/ui/Ornament";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Lists" };
 
 /** The pile. Lumi files things here from the conversation; you tick them off or correct her. */
 export default async function ListsPage() {
@@ -24,7 +27,9 @@ export default async function ListsPage() {
       <div className="mb-8 flex items-end justify-between gap-6">
         <div>
           <p className="label">Lists</p>
-          <div className="rule-short my-4 !w-[18px]" />
+          <div className="my-4">
+            <Divider />
+          </div>
           <p className="font-display text-[26px] leading-[1.35] text-ink-soft">Everything, kept. Say it in the chat and Lumi files it here.</p>
         </div>
         <Link href={{ pathname: "/", query: { prefill: "Add to my list: " } }} className="chip shrink-0">
@@ -65,6 +70,8 @@ export default async function ListsPage() {
           ),
         )}
       </div>
+
+      {snap.openIntentions.length === 0 && <Tailpiece className="mt-14" />}
     </div>
   );
 }

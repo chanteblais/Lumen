@@ -24,7 +24,8 @@ const garamond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Lumen",
+  // The tab reads like a running head: "Today · Lumen". Chat is just "Lumen".
+  title: { default: "Lumen", template: "%s · Lumen" },
   description: "A quieter way forward.",
 };
 

@@ -47,8 +47,20 @@ body {
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Old-style figures, the way a book sets them: a "3" on the baseline, a "7"
+     dropping below it. Inherited everywhere; the display face (Cormorant)
+     honours it, so every display-set line with a number in it gets them. The
+     Google-served EB Garamond has no such feature and shows lining figures
+     regardless (decisions.md 2026-09-12). Labels ask for lining figures
+     explicitly (see .label) so caps and numerals stand at one height. */
+  font-variant-numeric: oldstyle-nums proportional-nums;
   position: relative;
 }
+
+/* Line breaks set with care: display lines balance across their measure,
+   running text avoids a single word stranded on its last line. */
+.opening-title, .opening-line, .session-goal, .session-question, h1, h2 { text-wrap: balance; }
+.msg p, .companion-reply p { text-wrap: pretty; }
 
 ::selection { background: var(--brass-soft); color: var(--ink); }
 
@@ -92,6 +104,7 @@ body::after {
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
+  font-variant-numeric: lining-nums tabular-nums;
   color: var(--ink-soft);
 }
 .label-mute { color: var(--ink-mute); }
@@ -533,6 +546,11 @@ body::after {
   padding: 12px 18px;
   color: var(--ink);
 }
+/* A line said this visit settles onto the page — a short rise and fade, like
+   ink taking. Only below the greeting; what was there when the page opened
+   is simply there. Keys are stable, so a streaming reply animates once. */
+.chat-now > .msg { animation: msg-in 260ms ease-out both; }
+@keyframes msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .msg-lumi .msg-avatar { margin-top: 2px; }
 .msg-lumi .msg-body { padding-top: 4px; min-width: 0; }
 .msg-lumi p { color: var(--ink); }
@@ -545,17 +563,20 @@ body::after {
 .row { display: flex; align-items: center; gap: 16px; padding: 12px 4px; border-bottom: 1px solid var(--rule); }
 .row:last-child { border-bottom: 0; }
 .row-quiet { padding: 8px 4px; }
+/* A marginal note, not a tag: the list and the estimate beside a title are
+   set as tracked small caps in the mute ink, the way a book notes a source
+   in the margin. (The boxed grey pill read as a SaaS tag.) Two in a row are
+   parted by a middle dot. */
 .pill {
   font-family: var(--font-body);
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  background: var(--paper-deep);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 3px 11px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-variant-numeric: lining-nums;
+  color: var(--ink-mute);
   white-space: nowrap;
 }
+.pill + .pill::before { content: "·"; margin-right: 0.7em; }
 .circle {
   flex: none;
   display: inline-flex; align-items: center; justify-content: center;
@@ -569,6 +590,11 @@ body::after {
 .circle:hover { border-color: var(--brass); }
 .circle.is-done { background: var(--forest); border-color: var(--forest); }
 .circle:disabled { opacity: 0.6; cursor: default; }
+/* The tick draws itself, one stroke, as the circle fills (the path carries
+   pathLength="1"). A small physical thing, not a state flip. */
+.circle svg path { stroke-dasharray: 1; }
+.circle.is-done svg path { animation: check-draw 220ms ease-out 40ms both; }
+@keyframes check-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 
 .btn-primary {
   display: inline-flex; align-items: center; gap: 10px;
@@ -620,7 +646,9 @@ body::after {
 }
 .session-question { font-family: var(--font-display); font-size: 22px; line-height: 1.3; color: var(--ink); margin-right: auto; }
 .session-checkin .chip:disabled { opacity: 0.5; cursor: default; }
-@media (prefers-reduced-motion: reduce) { .session-checkin { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .session-checkin, .chat-now > .msg, .circle.is-done svg path { animation: none; }
+}
 
 /* ---------- Ledger: what Lumi did, under her reply ---------- */
 .ledger { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }

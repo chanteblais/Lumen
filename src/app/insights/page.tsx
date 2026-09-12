@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LeadsSection, Opener } from "@/components/insights/LeadsSection";
 import { Divider } from "@/components/ui/Ornament";
@@ -7,6 +8,7 @@ import { ConnectMail } from "@/lib/auth-mail";
 import { mailAccessFor } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Insights" };
 
 /**
  * Insights: what Lumi noticed in the mail that might need doing, and one
