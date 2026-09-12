@@ -29,7 +29,13 @@ export default async function Home() {
   // Today still counts — until they've said something since the sitting began.
   const lastSaid = initialMessages.at(-1)?.metadata?.createdAt;
   const saidThisSitting = sitting ? Boolean(lastSaid && new Date(lastSaid) >= sitting.openedAt) : inSitting;
-  const lines = greeting({ displayName: user.displayName, lastSeenAt: sitting && !saidThisSitting ? visitBeforeSitting(sitting) : previous });
+  const lines = greeting({
+    displayName: user.displayName,
+    lastSeenAt: sitting && !saidThisSitting ? visitBeforeSitting(sitting) : previous,
+    // The second line continues from the last thing said, in their calendar.
+    lastSaidAt: lastSaid ? new Date(lastSaid) : undefined,
+    timezone: user.timezone,
+  });
 
   // Keyed: an element passed as a prop across the server/client boundary
   // arrives lazily, and React dev then treats it as an unkeyed list child.

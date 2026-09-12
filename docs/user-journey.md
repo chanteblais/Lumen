@@ -7,7 +7,10 @@ flowchart TD
     OPEN["Open Lumi"] --> GREET["Greeting (deterministic)\nrecognition + somewhere to begin"]
     GREET -->|long gap| REENTRY["Re-entry pass\n'what's still relevant?'\n→ drop / keep, one next step"]
     GREET -->|open session| RESUME["Pick it back up\nor let it go"]
-    GREET --> TALK["Talk / type / speak"]
+    GREET -->|first time| ASK["'What are we working with today?'\n(asked once)"]
+    GREET -->|came back| CONT["Continuation\n'Where did we end up?' · 'Picking up from yesterday'"]
+    ASK --> TALK["Talk / type / speak"]
+    CONT --> TALK
     REENTRY --> TALK
     RESUME --> TALK
 
