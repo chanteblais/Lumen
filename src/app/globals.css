@@ -203,10 +203,10 @@ body::after {
 
 /* ---------- Chat page: transcript scrolls, composer stays put ----------
    The column keeps a lane free on its right for the companion (she is fixed
-   to the viewport, 108px wide at right: 28px), so the docked send button is
+   to the viewport, 108px wide at right: 56px), so the docked send button is
    never under her — whether the column fills .main or is centred inside it.
    .main already pads 48px; the lane makes up the rest plus breathing room. */
-:root { --companion-lane: 112px; }
+:root { --companion-lane: 140px; }
 .chat-page {
   flex: 1;
   min-height: 0;
@@ -230,12 +230,12 @@ body::after {
   background: linear-gradient(to bottom, transparent, var(--paper) 22px);
 }
 
-/* Lumi keeping you company, bottom right, standing on the screen's bottom
-   edge. Never interactive. */
+/* Lumi keeping you company, bottom right, set in from the corner and a
+   little up off the bottom edge. Never interactive. */
 .companion {
   position: fixed;
-  right: 28px;
-  bottom: 2px;
+  right: 56px;
+  bottom: 40px;
   z-index: 3;
   pointer-events: none;
   user-select: none;
