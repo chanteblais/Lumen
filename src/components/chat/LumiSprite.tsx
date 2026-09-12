@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
  *   `mockups/lumi-slow-idle.png`: rows 0–2 are the nine-frame breath loop with
  *   open / half-shut / shut eyes (the sheet's blink frames composited on),
  *   rows 3–5 the nine-frame sway loop likewise. One pose, tiny movements.
+ *   Cut by `scripts/cut-lumi-idle.py`.
  *
  * A new state is a new cell in one of these lists, never a new component.
  */

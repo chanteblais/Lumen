@@ -243,7 +243,8 @@ body::after {
 /* Idle life. The nine loop frames are stacked; the current one fades in ON TOP
    of the previous (which stays opaque until covered), so she never turns
    translucent mid-step. */
-.companion-figure { position: relative; }
+/* Mirrored so she looks in toward the page, not off the edge. */
+.companion-figure { position: relative; transform: scaleX(-1); }
 .companion-frame {
   position: absolute;
   inset: 0;
