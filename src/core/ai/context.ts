@@ -1,5 +1,6 @@
 import { declineLabel } from "@/core/declines";
 import { dayPart, describeGap, gapBucket } from "@/core/time";
+import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
 import { isReentry, type Sitting } from "@/core/domain/users";
@@ -16,6 +17,8 @@ export type ContextInput = {
   lists?: readonly string[];
   openIntentions?: Intention[];
   recentlyDone?: Intention[];
+  /** What changed lately, wherever it happened (ticks on Today/Lists, tool calls) — newest first. */
+  recentActivity?: ActivityItem[];
   beliefs?: MemoryNote[];
   capacity?: CapacityReport;
   plan?: DayPlanJson;
@@ -26,6 +29,7 @@ export type ContextInput = {
 };
 
 const MAX_INTENTIONS = 25;
+const MAX_ACTIVITY = 12;
 
 /**
  * The volatile context block: everything about *this* user and *this* moment.
@@ -112,8 +116,23 @@ export function buildContextBlock(input: ContextInput): string {
     lines.push("", "## Open intentions", "- None saved yet.");
   }
 
+  if (input.recentActivity?.length) {
+    lines.push(
+      "",
+      "## Recent changes (newest first — when · what · id · where it stands now)",
+      "What changed lately, wherever it happened. Ticks and unticks on Today and Lists are theirs and never appear in the transcript; \"the one I just checked off\" or \"what I just deleted\" is here — act on it, don't ask what it was. A tick that was a mistake: reopen_intention.",
+    );
+    for (const a of input.recentActivity.slice(0, MAX_ACTIVITY)) {
+      lines.push(`- ${describeGap(a.at, now)} · ${describeActivity(a)} · ${a.intentionId} · now ${a.status}`);
+    }
+  }
+
   if (input.recentlyDone?.length) {
-    lines.push("", "## Recently done", ...input.recentlyDone.slice(0, 5).map((i) => `- "${i.title}"`));
+    lines.push(
+      "",
+      "## Recently done (id · title · when) — reopen_intention puts one back",
+      ...input.recentlyDone.slice(0, 5).map((i) => `- ${i.id} · "${i.title}"${i.completedAt ? ` · ${describeGap(i.completedAt, now)}` : ""}`),
+    );
   }
 
   const beliefs = input.beliefs ?? [];
@@ -127,6 +146,24 @@ export function buildContextBlock(input: ContextInput): string {
   }
 
   return lines.join("\n");
+}
+
+/** One change in Lumi's terms: "they" did it on a page, "you" did it through a tool. */
+export function describeActivity(a: ActivityItem): string {
+  const t = `"${a.title}"`;
+  const onPage = a.via === "app";
+  switch (a.type) {
+    case "intention.completed":
+      return onPage ? `they ticked ${t} done on Today or Lists` : `you marked ${t} done`;
+    case "intention.reopened":
+      return onPage ? `they unticked ${t} on Today or Lists — open again` : `you put ${t} back`;
+    case "intention.dropped":
+      return `you let ${t} go`;
+    case "intention.created":
+      return `you saved ${t}`;
+    case "intention.updated":
+      return `you changed ${t}${a.fields?.length ? ` (${a.fields.join(", ")})` : ""}`;
+  }
 }
 
 function fmtDue(d: Date, timeZone: string): string {

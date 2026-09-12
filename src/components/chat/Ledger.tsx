@@ -16,6 +16,8 @@ function line(p: ToolPart): string | null {
       return `Updated · ${out.title ?? ""}`;
     case "tool-complete_intention":
       return `Done · ${out.title ?? ""}`;
+    case "tool-reopen_intention":
+      return `Back on the list · ${out.title ?? ""}`;
     case "tool-drop_intention":
       return `Let go · ${out.title ?? ""}`;
     case "tool-report_capacity":

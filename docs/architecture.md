@@ -43,6 +43,8 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
    - time since last visit (`users.last_seen_at`), phrased in buckets ("3 hours", "9 days")
    - today's capacity report, if any
    - open intentions (≤ 25, newest-touched first; stale ones flagged `stale: 14d`), with ids
+   - **recent changes** (≤ 12, newest first, last 36h; `core/domain/activity.ts`): every `intention.*` change joined to its title and current status, phrased by who did it — *they ticked "X" done on Today or Lists* (`payload.via: "app"`) vs *you marked "X" done* (a tool). This is how "add back the one I just checked off" works: ticks on a page never appear in the transcript, so the block carries them, with the id, and the persona says act on it rather than ask. Chat-only (pages don't load it).
+   - recently done (≤ 5) with ids and when, so a mistaken tick can be undone by id (`reopen_intention`)
    - active focus session, if any (goal, first step, minutes elapsed/planned)
    - beliefs (≤ 40), grouped by kind, ordered by confidence; strategies with evidence counts; low-confidence ones marked *tentative*
    - rolling summary of older conversation, if any
@@ -50,12 +52,13 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
    The block is small on purpose. If a list outgrows its cap, we add a read tool (`search_intentions`) rather than growing the block.
 
 ### Tools (server-executed, Zod-typed, in `src/core/ai/tools.ts`) — built in M3
-Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `complete_intention`, `drop_intention`, `report_capacity`, `remember`, `confirm_belief`, `contradict_belief`, `revise_belief`, `forget_belief`. The chat route runs `stopWhen: stepCountIs(5)` so Lumi can act, then speak. Completing/dropping through a tool also advances today's plan. The UI renders **ledger lines** (`components/chat/Ledger.tsx`) from tool parts — never from prose.
+Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `complete_intention`, `reopen_intention`, `drop_intention`, `report_capacity`, `remember`, `confirm_belief`, `contradict_belief`, `revise_belief`, `forget_belief`. The chat route runs `stopWhen: stepCountIs(5)` so Lumi can act, then speak. Completing/dropping through a tool also advances today's plan. The UI renders **ledger lines** (`components/chat/Ledger.tsx`) from tool parts — never from prose.
 | Tool | Effect |
 |---|---|
 | `create_intention {title, next_action?, note?, due_at?, effort_hint?}` | insert; event `intention.created` |
 | `update_intention {id, title?, next_action?, note?, due_at?, effort_hint?}` | patch; bumps `last_touched_at`; event |
 | `complete_intention {id}` / `drop_intention {id, reason?}` | status change; event |
+| `reopen_intention {id}` | done/dropped → open (a mistaken tick, a change of mind); event `intention.reopened {via: "chat"}`. Same domain call as the circle on Today/Lists (`via: "app"`). Does not touch today's path |
 | `report_capacity {level, flags?, note?}` | event `capacity.reported` (source of truth for "today") |
 | `start_focus_session {goal, first_step, approach?, minutes, intention_id?}` | insert session; `approach` = the strategy being tried; event; client SessionBar appears |
 | `end_focus_session {id, outcome}` | close; event |
@@ -186,7 +189,7 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 |---|---|---|---|---|
 | `/api/chat` | POST | `requireUser()` | One streamed turn, for both clients (the chat page and the companion's speech bubble; each has its own `useChat`, the server holds the one transcript). Body `{ id, message }` — the new user `UIMessage` only; the server loads the last 30 from the database, persists the user message, streams `claude-opus-5` with `instructions: [persona (cache_control ephemeral), context block]` at `effort: low` with server-side refusal fallbacks, and persists the assistant message in `onEnd`. `maxDuration = 60`. Dev logs a `[chat] tokens …` line with cache read/write counts | M2 |
 
-| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Lists. Complete also advances today's plan (`reflectClosedInPlan`) | M3 |
+| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Lists. Complete also advances today's plan (`reflectClosedInPlan`). Both events carry `via: "app"`, which is how the chat context tells a tick on a page from a tool call | M3 |
 | `/api/capacity` | POST | `requireUser()` | Today's capacity prompt. `{ level }` writes `capacity.reported` and re-cuts the path (`recutTodaysPlan(…, "capacity")` — skipped when the answer matches what the plan already assumed), returning `{ level, rightNow }`; `{ skip: true }` writes `capacity.asked {skipped}` so it isn't asked again today. `maxDuration = 60` (model call) | M4 |
 
 `/api/chat` also reads the incoming message's metadata: `kind: "declined"` with a valid `intentionId` records `intention.declined {reason}` before the context block is built, so Lumi answers the reason; the turn's `after()` then re-cuts the path (`reason: declined`). Tool writes that invalidate the path (`report_capacity`; `drop_intention` during a re-entry sitting) flag it through `ToolContext.onPlanChange`, and the same `after()` re-cuts once with the first reason raised.

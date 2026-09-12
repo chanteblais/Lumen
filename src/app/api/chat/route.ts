@@ -7,12 +7,14 @@ import { PERSONA } from "@/core/ai/persona";
 import { primeTodaysPlan, type RecutReason } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import { isDeclineReason } from "@/core/declines";
+import { listRecentActivity } from "@/core/domain/activity";
 import {
   ensureMainConversation,
   loadRecentMessages,
   saveMessage,
   type LumenUIMessage,
 } from "@/core/domain/conversations";
+import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { declineIntention } from "@/core/domain/intentions";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
@@ -64,7 +66,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const [history, snap] = await Promise.all([loadRecentMessages(db(), conversation.id), loadSnapshot(db(), user)]);
+  // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
+  // a tick on Lists a minute ago is in Lumi's context before she reads the message.
+  const [history, snap, recentActivity] = await Promise.all([
+    loadRecentMessages(db(), conversation.id),
+    loadSnapshot(db(), user),
+    listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
+  ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
 
@@ -95,6 +103,7 @@ export async function POST(req: Request) {
           lists: snap.lists,
           openIntentions: snap.openIntentions,
           recentlyDone: snap.recentlyDone,
+          recentActivity,
           beliefs: snap.beliefs,
           capacity: snap.capacity,
           plan: snap.plan,
