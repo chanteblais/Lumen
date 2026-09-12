@@ -12,6 +12,7 @@
   --brass-soft: #c9b58c;
   --forest: #2a342e;       /* avatar, send button */
   --glow: #f1d8a0;         /* Lumi's eyes */
+  --foxing: rgba(122, 96, 54, 0.11); /* the browned edge of an old page */
   --rule: rgba(27, 26, 23, 0.16);
   --rule-strong: rgba(27, 26, 23, 0.34);
   --shadow: 0 1px 2px rgba(27, 26, 23, 0.04), 0 8px 24px rgba(27, 26, 23, 0.05);
@@ -45,19 +46,40 @@ body {
   font-size: 17px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   position: relative;
 }
 
-/* Very subtle paper grain. Fixed, behind everything, never interactive. */
+::selection { background: var(--brass-soft); color: var(--ink); }
+
+/* One focus ring for the whole book: a brass hairline, set off the edge. */
+:focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+.composer textarea:focus-visible { outline: 0; } /* the pill carries the ring */
+
+/* Scrollbars in the paper's own colours, never the browser's grey. */
+.main, .chat-scroll, .sidebar { scrollbar-width: thin; scrollbar-color: rgba(156, 126, 78, 0.28) transparent; }
+
+/* Very subtle paper grain over everything, so cards and sidebar are paper too.
+   Fixed, never interactive. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
   opacity: 0.28;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Foxing: the page browns very slightly toward its edges. Barely there. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+  background: radial-gradient(ellipse 78% 70% at 50% 46%, transparent 60%, var(--foxing) 100%);
 }
 
 /* ---------- Type ---------- */
@@ -76,11 +98,22 @@ body::before {
 
 .rule { height: 1px; background: var(--rule); }
 .rule-short { width: 34px; height: 1px; background: var(--rule-strong); }
+/* Thick-thin "Oxford" rule: a running head's underline. */
+.rule-double { height: 4px; border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule); }
+
+/* ---------- Ornaments (see components/ui/Ornament.tsx) ---------- */
+.ornament { display: inline-block; color: var(--brass); flex: none; }
+.divider { display: inline-flex; align-items: center; gap: 6px; color: var(--brass); vertical-align: middle; }
+.divider .hair { display: block; width: 12px; height: 1px; background: var(--rule-strong); }
+.tailpiece { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--brass); opacity: 0.85; }
+.tailpiece .hair { display: block; width: 28px; height: 1px; background: var(--rule-strong); }
+.ornament-rule { display: flex; align-items: center; gap: 10px; color: var(--brass); }
+.ornament-rule .hair { display: block; height: 1px; background: var(--rule-strong); }
 
 /* ---------- Shell ---------- */
 .shell {
   position: relative;
-  z-index: 1;
+  z-index: 0;
   height: 100dvh;
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
@@ -96,7 +129,7 @@ body::before {
   flex-direction: column;
   overflow-y: auto;
 }
-/* Inner frame line: the "double rule" of a book plate. */
+/* Inner frame line: the ruled border of a book plate... */
 .sidebar::after {
   content: "";
   position: absolute;
@@ -104,12 +137,32 @@ body::before {
   border: 1px solid var(--rule);
   pointer-events: none;
 }
+/* ...with crossed corners, the way a ruled border is drawn by hand. */
+.sidebar::before {
+  --c: var(--rule-strong);
+  content: "";
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c));
+  background-repeat: no-repeat;
+  background-size: 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px;
+  background-position:
+    left 0 top 6px, left 6px top 0,
+    right 0 top 6px, right 6px top 0,
+    left 0 bottom 6px, left 6px bottom 0,
+    right 0 bottom 6px, right 6px bottom 0;
+}
 
 .nav-item {
   display: flex;
+  position: relative;
   align-items: baseline;
-  gap: 18px;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 32px; /* room for the mark, then the name */
   margin: 0 -16px;
   border-radius: 3px;
   color: var(--ink);
@@ -118,7 +171,16 @@ body::before {
 }
 .nav-item:hover { background: rgba(27, 26, 23, 0.04); }
 .nav-item[aria-current="page"] { background: rgba(27, 26, 23, 0.07); }
-.nav-item .num { font-size: 13px; color: var(--ink-mute); letter-spacing: 0.06em; }
+/* The brass diamond points at the open chapter. */
+.nav-item .nav-mark {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translate(-3px, -50%);
+  opacity: 0;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: translate(0, -50%); }
 .nav-item .name { font-size: 19px; }
 
 .auth-link {
@@ -135,6 +197,8 @@ body::before {
   display: flex;
   flex-direction: column;
   overflow-y: auto; /* pages scroll here; the chat page scrolls its own transcript instead */
+  /* The gutter: a whisper of shadow where the page meets the spine. */
+  box-shadow: inset 22px 0 26px -24px rgba(27, 26, 23, 0.16);
 }
 
 /* ---------- Chat page: transcript scrolls, composer stays put ---------- */
@@ -166,7 +230,7 @@ body::before {
   position: fixed;
   right: 28px;
   bottom: 2px;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   user-select: none;
 }
@@ -190,9 +254,23 @@ body::before {
 .card {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow: var(--shadow);
 }
+/* A plate: the card with a second hairline set in from the edge, like an
+   engraving's frame. The inset line is the surface's one flourish. */
+.plate { position: relative; }
+.plate::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Lumi's avatar as a medallion: a brass hairline ring set off the forest. */
+.medallion { box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass-soft); }
 
 .chip {
   font-family: var(--font-body);
@@ -267,7 +345,7 @@ body::before {
   cursor: pointer;
   transition: transform 120ms ease, opacity 160ms ease;
 }
-.send:hover { transform: translateY(-1px); }
+.send:hover { transform: translateY(-1px); box-shadow: 0 0 0 3px var(--card), 0 0 0 4px var(--brass-soft); }
 .send:disabled { opacity: 0.45; cursor: default; transform: none; }
 
 .tool-link {
@@ -291,14 +369,14 @@ body::before {
 .msg-user p {
   background: var(--paper-deep);
   border: 1px solid var(--rule);
-  border-radius: 14px 14px 4px 14px;
+  border-radius: 8px 8px 2px 8px;
   padding: 12px 18px;
   color: var(--ink);
 }
 .msg-rali .msg-avatar { margin-top: 2px; }
 .msg-rali .msg-body { padding-top: 4px; min-width: 0; }
 .msg-rali p { color: var(--ink); }
-.thinking-dots span { display: inline-block; font-size: 26px; line-height: 1; color: var(--ink-mute); animation: dot 1.2s infinite; }
+.thinking-dots span { display: inline-block; font-size: 26px; line-height: 1; color: var(--brass); animation: dot 1.2s infinite; }
 .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
@@ -315,11 +393,12 @@ body::before {
     justify-content: space-between;
     gap: 16px;
   }
-  .sidebar::after { display: none; }
-  .sidebar .sidebar-foot, .sidebar .tagline, .sidebar .rule-short { display: none; }
+  .sidebar::after, .sidebar::before { display: none; }
+  .main { box-shadow: none; }
+  .sidebar .sidebar-foot, .sidebar .tagline, .sidebar .rule-short, .sidebar .divider { display: none; }
   .sidebar nav { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-  .nav-item { padding: 6px 10px; margin: 0; gap: 8px; }
-  .nav-item .num { display: none; }
+  .nav-item { padding: 6px 10px; margin: 0; }
+  .nav-item .nav-mark { display: none; }
   .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }

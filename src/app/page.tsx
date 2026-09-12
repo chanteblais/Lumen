@@ -1,4 +1,5 @@
 import { Conversation } from "@/components/chat/Conversation";
+import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
 import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
 import { db } from "@/db/client";
@@ -16,7 +17,7 @@ export default async function Home() {
   const kicker = (
     <div className="mb-9 px-1">
       <p className="label">Lumi</p>
-      <div className="rule-short my-4 !w-[18px]" />
+      <div className="my-4"><Divider /></div>
       <p className="label leading-[1.9]">
         Same you.
         <br />
