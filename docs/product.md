@@ -67,7 +67,7 @@ Two sections beyond the conversation, specified in `today.md`: **Lists** holds t
 
           ( Message Lumi…                                          ↑ )
 ```
-That's it.
+That's it. The question is the *first* landing; once there is a conversation to pick up, the second line continues it instead ("Where did we end up?", "Picking up from yesterday. What's first today?") — see `features.md` → Greeting card.
 
 ## Explicitly not in V1
 Teams, collaboration, projects/Kanban, calendar or email integration, analytics, gamification, streaks, social, mobile apps, elaborate onboarding.

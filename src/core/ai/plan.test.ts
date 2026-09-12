@@ -19,6 +19,17 @@ describe("clampPlan", () => {
     expect(p.later).toEqual([{ intentionId: "f" }]);
     expect(p.restCanWait).toBe(true);
   });
+  it("never puts something declined today in Right now, even if the model insists", () => {
+    const declined = new Set(["a"]);
+    const p = clampPlan({ dayLine: "x", rightNow: { intentionId: "a", firstStep: "Go." }, afterThat: [{ intentionId: "a" }] }, [c("a"), c("b", "Open it.")], [], undefined, declined);
+    expect(p.rightNow).toEqual({ intentionId: "b", firstStep: "Open it." });
+    // It may still sit After that — "too tired" is about now, not never.
+    expect(p.afterThat).toEqual([{ intentionId: "a" }]);
+  });
+  it("ends with nothing queued when everything left was declined today", () => {
+    const p = clampPlan({ dayLine: "x", rightNow: null, afterThat: [] }, [c("a")], [], undefined, new Set(["a"]));
+    expect(p.rightNow).toBeNull();
+  });
   it("strips counts from lines", () => {
     expect(stripCounts("You've got eight things and 3 tasks.")).toBe("You've got a few things and a few things.");
   });

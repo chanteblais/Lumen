@@ -36,7 +36,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** a brain dump becomes intentions without the user confirming each one; completing from chat, Today and Lists all write events; "I hate being given options" becomes a `preference` belief and the next reply respects it; opening Today shows one dominant task within a second and the same one after a reload.
 - **EF check:** the user never has to "file" anything; Today is a view, not a chore.
 
-## M4 — Capacity, *Not this*, re-entry (1 day) — **next.** `report_capacity` and the *Not this* → Chat handoff already exist from M3; the rest below is open.
+## M4 — Capacity, *Not this*, re-entry (1 day) — **built 2026-09-12 (`feat/m4-capacity`, worktree)**; no migration. Abandoned-session greeting waits for sessions (M5); "replan" in chat (`asked`) not wired.
 - `report_capacity` tool + the Today capacity prompt (once a day, skippable); the plan regenerates on capacity. *Not this* → six quick answers → `intention.declined {reason}` → Lumi replies → plan regenerates with the reason. Greeting variants for gap ≥ 7 days and abandoned sessions.
 - Stale intentions flagged in context; persona guidance for the "what's still relevant?" pass (offer to drop in bulk, never list counts).
 - `app.opened` events; `last_seen_at` on every turn.

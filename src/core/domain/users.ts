@@ -6,7 +6,35 @@
 import { eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { DEFAULT_PREFERENCES, users, type User } from "@/db/schema";
-import { appendEvent } from "./events";
+import { appendEvent, latestEvent } from "./events";
+
+/**
+ * A sitting: one visit, opened by an `app.opened` event (written whenever the
+ * gap since the last request was ≥ 30 min) and carrying the gap it began
+ * after. Derived, never stored: the newest app.opened is always the start of
+ * the current sitting, so "came back after two weeks" survives every request
+ * of the visit — the greeting, the first turn, and the fifth.
+ */
+export type Sitting = { openedAt: Date; gapSeconds: number };
+
+export const REENTRY_GAP_SECONDS = 7 * 86_400;
+
+export async function currentSitting(db: Db, userId: string): Promise<Sitting | undefined> {
+  const e = await latestEvent(db, userId, "app.opened");
+  if (!e) return undefined;
+  const gap = Number((e.payload as { gap_seconds?: number }).gap_seconds ?? 0);
+  return { openedAt: e.occurredAt, gapSeconds: Number.isFinite(gap) ? gap : 0 };
+}
+
+/** Pure: this sitting began after a week or more away — re-entry mode. */
+export function isReentry(s: Sitting | undefined): boolean {
+  return Boolean(s && s.gapSeconds >= REENTRY_GAP_SECONDS);
+}
+
+/** Pure: the last time they were here before this sitting began. */
+export function visitBeforeSitting(s: Sitting): Date {
+  return new Date(s.openedAt.getTime() - s.gapSeconds * 1000);
+}
 
 export type EnsureUserInput = {
   clerkUserId: string;

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { CompleteCircle } from "@/components/lists/CompleteCircle";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { db } from "@/db/client";
-import { requireUser } from "@/lib/auth";
+import { recordVisit, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 /** The pile. Lumi files things here from the conversation; you tick them off or correct her. */
 export default async function ListsPage() {
   const user = await requireUser();
+  await recordVisit(user);
   const snap = await loadSnapshot(db(), user);
   const groups = new Map<string, typeof snap.openIntentions>();
   for (const name of snap.lists) groups.set(name, []);

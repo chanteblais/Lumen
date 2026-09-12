@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayPart, describeGap, gapBucket, localDate } from "./time";
+import { dayPart, describeGap, gapBucket, localDate, localDayDiff } from "./time";
 
 const now = new Date("2026-09-11T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -34,6 +34,14 @@ describe("timezone helpers", () => {
     expect(localDate(at, "UTC")).toBe("2026-09-11");
     expect(localDate(at, "Pacific/Auckland")).toBe("2026-09-12");
     expect(localDate(at, "America/Los_Angeles")).toBe("2026-09-11");
+  });
+  it("counts calendar days in the user's zone, not elapsed hours", () => {
+    const morning = new Date("2026-09-11T12:00:00Z"); // 08:00 Toronto
+    const lastNight = new Date("2026-09-11T02:30:00Z"); // 22:30 Toronto the day before
+    expect(localDayDiff(lastNight, morning, "America/Toronto")).toBe(1);
+    expect(localDayDiff(lastNight, morning, "UTC")).toBe(0);
+    expect(localDayDiff(new Date("2026-09-08T12:00:00Z"), morning, "America/Toronto")).toBe(3);
+    expect(localDayDiff(morning, morning, "Pacific/Auckland")).toBe(0);
   });
   it("names the part of the day", () => {
     expect(dayPart(new Date("2026-09-11T08:00:00Z"), "UTC")).toBe("morning");

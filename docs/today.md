@@ -1,6 +1,6 @@
 # Today — a path, not a pile
 
-*Spec, 2026-09-12. Source: Chanté's Today-page philosophy brief and the `mockups/` Today mockup. Status: **proposed** — not yet built; M3–M5 in `v1-plan.md` are re-cut around it.*
+*Spec, 2026-09-12. Source: Chanté's Today-page philosophy brief and the `mockups/` Today mockup. Status: **built** — Lists (minimum) and Today v1 in M3; the capacity prompt, *Not this* with reasons and re-entry in M4 (2026-09-12). *Start with Lumi* opening a session is M5. Current behaviour: `features.md` → Today.*
 
 ## The one question Today answers
 **What should I be doing right now?**
@@ -73,6 +73,8 @@ Persisted in `day_plans` so the path is **stable across reloads** — the one th
 
 **Cut before it's needed.** Generation is primed in the background when the app is opened (home page) and after every chat turn, so Today normally finds the plan already there instead of waiting several seconds on the model. If the day's plan was cut with nothing to choose from (or everything on it has been ticked off) and intentions have since arrived — brain-dump in chat, then Today — it is re-cut once (`reason: first_items`). A plan with a Right now is never touched by this.
 
+**Re-cut only on purpose (M4).** The one thing moves on three triggers and no others: a capacity answer (`capacity`; skipped when it matches what the plan assumed), a *Not this* answer (`declined`), and letting things go during the coming-back pass (`reentry`). Chat-side triggers are applied once after the reply streams. "Replan" in chat (`asked`) is not wired yet.
+
 ## Domain additions (proposed; migration when built)
 | Change | Why |
 |---|---|
@@ -83,7 +85,7 @@ Persisted in `day_plans` so the path is **stable across reloads** — the one th
 
 ## Handoffs into chat
 - **Start with Lumi** → `/` with a structured user message (`{ kind: "start_intention", intentionId }` in metadata; visible text "Let's start: *Finish discussion post*"). Lumi runs initiation and may open a focus session (M5).
-- **Not this** → the six quick answers post as a `{ kind: "declined", intentionId, reason }` message; Lumi replies; the plan regenerates with the reason.
+- **Not this** → the six quick answers appear in place on the card under "Fair. What's getting in the way?" (plus a quiet *Keep it*); the tapped answer posts as a `{ kind: "declined", intentionId, reason }` message ("Not this one: *title* — too big."); Lumi replies to the reason; the plan regenerates with it. Built M4.
 - **Break it down** → chat with `{ kind: "break_down", intentionId }`.
 Each is a real user message in the one transcript (decision #11 in `architecture.md`).
 
