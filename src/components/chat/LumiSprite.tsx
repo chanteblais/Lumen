@@ -4,24 +4,29 @@ import type { CSSProperties } from "react";
  * The single source of Lumi's drawings.
  *
  * - `public/lumi-heads.png` — one row of 176px square cells, the six head
- *   expressions, cut from the original `lumi.png` character sheet (not kept;
- *   the cells are the source now). Used inside the round avatar.
- * - `public/lumi-idle.webp` — a 9×6 grid of 144×208 cells from
- *   `art/lumi-slow-idle.png`: rows 0–2 are the nine-frame breath loop with
- *   open / half-shut / shut eyes (the sheet's blink frames composited on),
- *   rows 3–5 the nine-frame sway loop likewise. One pose, tiny movements.
+ *   expressions from the original `lumi.png` character sheet (not kept). Used inside the round avatar.
+ * - `public/lumi-idle.webp` — a 9×9 grid of 144×208 cells, three rows per
+ *   loop (open / half-shut / shut eyes, the blink frames composited on):
+ *   rows 0–2 the nine-frame breath loop and rows 3–5 the nine-frame sway loop
+ *   from `art/lumi-slow-idle.png`, rows 6–8 the eight-frame playful-foot
+ *   loop from `art/lumi-playful-foot.png` (last column empty). One pose,
+ *   tiny movements; every loop starts and ends at the same rest frame.
  *   Cut by `scripts/cut-lumi-idle.py`.
  *
  * A new state is a new cell in one of these lists, never a new component.
  */
 export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
 export const LUMI_EYES = ["open", "half", "closed"] as const;
-export const LUMI_LOOPS = ["breath", "sway"] as const;
+export const LUMI_LOOPS = ["breath", "sway", "foot"] as const;
+/** Columns in the body sheet — the longest loop. */
 export const LUMI_IDLE_FRAMES = 9;
 
 export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
 export type LumiLoop = (typeof LUMI_LOOPS)[number];
+
+/** Frames in each loop; shorter loops leave the sheet's trailing columns empty. */
+export const LUMI_LOOP_FRAMES: Record<LumiLoop, number> = { breath: 9, sway: 9, foot: 8 };
 
 const SHEETS = {
   head: { src: "/lumi-heads.png", cols: LUMI_EXPRESSIONS.length, rows: 1, w: 176, h: 176 },
@@ -31,7 +36,7 @@ const SHEETS = {
 export type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };
 
 export const headCell = (expression: LumiExpression): LumiCell => ({ sheet: "head", col: LUMI_EXPRESSIONS.indexOf(expression), row: 0 });
-/** Frame 0–8 of a loop with the given eye state. */
+/** One frame of a loop (0 to `LUMI_LOOP_FRAMES[loop] - 1`) with the given eye state. */
 export const idleCell = (loop: LumiLoop, frame: number, eyes: LumiEyes): LumiCell => ({
   sheet: "body",
   col: frame,

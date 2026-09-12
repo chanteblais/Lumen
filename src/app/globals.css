@@ -4,7 +4,7 @@
 :root {
   --paper: #efeae2;        /* page ground */
   --paper-deep: #e6e0d5;   /* sidebar, chips */
-  --card: #f8f5ef;         /* greeting card, composer */
+  --card: #f8f5ef;         /* composer, Today's cards, the companion bubble */
   --ink: #1b1a17;
   --ink-soft: #3f3c36;
   --ink-mute: #8a8378;
@@ -231,7 +231,7 @@ body::after {
 }
 
 /* Lumi keeping you company, bottom right, set in from the corner and a
-   little up off the bottom edge. Never interactive. */
+   little up off the bottom edge. Tap her to talk (see .companion-btn). */
 .companion {
   position: fixed;
   right: 56px;
@@ -255,21 +255,67 @@ body::after {
   border-radius: 8px;
 }
 .companion-btn:hover .companion-figure { transform: scaleX(-1) translateY(-3px); }
-/* Idle life: two layers in the figure — the previous frame underneath, always
-   opaque; the current frame on top, remounted each tick so it fades in over
-   the last. She never turns translucent mid-step. (Note for anyone testing
-   through an automation tab: Chrome freezes animations in a hidden tab, and a
-   capture of a frozen tab shows her mid-fade — she is fine on screen.) */
+/* Idle life. Two frames are mounted: the current one fades in ON TOP of the
+   previous (which stays opaque until covered), so she never turns translucent
+   mid-step — across a hand-over between loops as much as within one. (Note for
+   anyone testing through an automation tab: Chrome freezes animations in a
+   hidden tab, and a capture of a frozen tab shows her mid-fade — she is fine
+   on screen.) */
 /* Mirrored so she looks in toward the page, not off the edge. */
 .companion-figure { position: relative; display: block; transform: scaleX(-1); transition: transform 220ms ease; }
-.companion-frame { position: absolute; inset: 0; }
-.companion-frame-in { animation: frame-in 260ms ease-in-out both; }
-@keyframes frame-in { from { opacity: 0; } to { opacity: 1; } }
+.companion-frame {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  z-index: 1;
+}
+.companion-frame.on { z-index: 2; animation: companion-fade 260ms ease-in-out; }
+@keyframes companion-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .companion-frame-in { animation: none; }
+  .companion-frame { animation: none; }
   .companion-figure { transition: none; }
   .companion-bubble, .companion-said { animation: none; }
 }
+/* Dev-only cue buttons, sitting just above her head; the handle at the right
+   end folds them away toward itself. */
+.companion-debug {
+  position: fixed;
+  right: 56px;
+  bottom: 200px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.companion-debug-cues {
+  display: flex;
+  gap: 4px;
+  max-width: 320px;
+  overflow: hidden;
+}
+.companion-debug.is-animated .companion-debug-cues { transition: max-width 220ms ease, opacity 180ms ease; }
+.companion-debug.is-folded .companion-debug-cues { max-width: 0; opacity: 0; }
+.companion-debug-fold { padding: 4px 8px; font-size: 14px; line-height: 12px; }
+.companion-debug.is-folded .companion-debug-fold { opacity: 0.55; }
+.companion-debug.is-folded .companion-debug-fold:hover { opacity: 1; }
+.companion-debug-btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 4px 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.companion-debug-btn:hover { color: var(--ink); border-color: var(--rule-strong); }
+/* The strip sits where the bubble opens; the bubble wins while it is open. */
+.companion:has(.companion-bubble) ~ .companion-debug { display: none; }
 
 /* The speech bubble above her: one small card with a tail over her head.
    Say a thing, see her answer (and what she did), stay on the page. */
@@ -349,20 +395,40 @@ body::after {
   border-radius: 6px;
   box-shadow: var(--shadow);
 }
-/* A plate: the card with a second hairline set in from the edge, like an
-   engraving's frame. The inset line is the surface's one flourish. */
-.plate { position: relative; }
-.plate::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  pointer-events: none;
+/* ---------- The greeting: a chapter opening, not a card ----------
+   Set on the paper itself, the way a chapter begins in a book: a headpiece
+   across the measure (hairline · asterism · hairline), Lumi's portrait in the
+   margin, the first line as the title, the second beneath it in the softer
+   ink, then the quick starts. No box — the ornament and the white space are
+   the break between what was there and this visit. */
+.opening { padding: 8px 4px 4px; }
+.opening-head { display: flex; align-items: center; gap: 14px; color: var(--brass); margin-bottom: 40px; }
+.opening-head .hair { display: block; flex: 1; height: 1px; background: var(--rule-strong); }
+.opening-body { display: flex; align-items: flex-start; gap: 28px; }
+.opening-portrait { margin-top: 6px; }
+.opening-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
+.opening-line {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 12px;
+}
+/* Within a sitting the opening is a running head: the same break, smaller. */
+.opening.is-compact .opening-head { margin-bottom: 26px; }
+.opening.is-compact .opening-portrait { margin-top: 2px; }
+.opening.is-compact .opening-title { font-size: 26px; line-height: 1.25; }
+.opening.is-compact .opening-line { font-size: 20px; margin-top: 6px; }
 
-/* Lumi's avatar as a medallion: a brass hairline ring set off the forest. */
-.medallion { box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass-soft); }
+/* Lumi's avatar as a medallion: a brass hairline ring set off the forest
+   by a gap of paper. */
+.medallion { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--brass-soft); }
 
 .chip {
   font-family: var(--font-body);
@@ -544,10 +610,14 @@ body::after {
   .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
-  .companion { display: none; } /* would sit on the docked composer's send button; the bubble goes with her */
+  .companion, .companion-debug { display: none; } /* would sit on the docked composer's send button; the bubble goes with her */
   .chat-page { --companion-lane: 0px; }
   .composer textarea { font-size: 19px; }
   .msg { max-width: 100%; }
   .msg p { font-size: 17px; }
   .send { width: 52px; height: 52px; }
+  .opening-body { gap: 18px; }
+  .opening-head { margin-bottom: 28px; }
+  .opening-title { font-size: 30px; }
+  .opening-line { font-size: 22px; }
 }

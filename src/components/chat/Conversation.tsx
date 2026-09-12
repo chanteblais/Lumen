@@ -4,9 +4,10 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/declines";
 import type { LumenUIMessage } from "@/core/domain/conversations";
 import { Composer } from "./Composer";
-import { GreetingCard } from "./GreetingCard";
+import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
 
 type Props = {
@@ -21,14 +22,25 @@ type Props = {
   intentionTitles?: Record<string, string>;
 };
 
-/** What a link from Today/Lists turns into: a visible message plus metadata. */
-export function handoffMessage(params: URLSearchParams, titles: Record<string, string>): { text: string; kind: string; intentionId: string } | null {
-  for (const kind of ["start", "decline", "breakdown"] as const) {
-    const id = params.get(kind);
+export type Handoff = { text: string; kind: "start_intention" | "declined" | "break_down"; intentionId: string; reason?: DeclineReason };
+
+/**
+ * What a link from Today/Lists turns into: a visible message plus metadata.
+ * `?decline=<id>&reason=<key>` carries one of the six quick answers; the
+ * server records the decline and re-cuts the path. docs/today.md → Handoffs.
+ */
+export function handoffMessage(params: URLSearchParams, titles: Record<string, string>): Handoff | null {
+  for (const key of ["start", "decline", "breakdown"] as const) {
+    const id = params.get(key);
     if (!id) continue;
     const title = titles[id] ?? "that";
-    const text = kind === "start" ? `Let's start: ${title}` : kind === "decline" ? `Not this one: ${title}` : `Help me break this down: ${title}`;
-    return { text, kind, intentionId: id };
+    if (key === "decline") {
+      const r = params.get("reason");
+      const reason = isDeclineReason(r) ? r : undefined;
+      return { text: declineMessageText(title, reason), kind: "declined", intentionId: id, reason };
+    }
+    if (key === "start") return { text: `Let's start: ${title}`, kind: "start_intention", intentionId: id };
+    return { text: `Help me break this down: ${title}`, kind: "break_down", intentionId: id };
   }
   return null;
 }
@@ -36,6 +48,9 @@ export function handoffMessage(params: URLSearchParams, titles: Record<string, s
 export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {} }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
+  // Every page open is a fresh start: the greeting card sits after everything
+  // that was there when the page opened, and what you say next goes below it.
+  const [cardAt] = useState(initialMessages.length);
   // A link from Today/Lists (?start=<id> …) becomes the first message of this sitting.
   const initialHandoff = useMemo(() => handoffMessage(params, intentionTitles), [params, intentionTitles]);
   // Quick starts are for the moment of starting: shown until you've said
@@ -75,7 +90,10 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     const t = setTimeout(() => {
       handled.current = true;
       if (initialHandoff) {
-        void sendMessage({ text: initialHandoff.text, metadata: { createdAt: new Date().toISOString(), kind: initialHandoff.kind, intentionId: initialHandoff.intentionId } });
+        void sendMessage({
+          text: initialHandoff.text,
+          metadata: { createdAt: new Date().toISOString(), kind: initialHandoff.kind, intentionId: initialHandoff.intentionId, ...(initialHandoff.reason ? { reason: initialHandoff.reason } : {}) },
+        });
       }
       window.history.replaceState(null, "", "/");
     }, 50);
@@ -86,8 +104,14 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     <div className="chat-page">
       <div className="chat-scroll">
         {kicker}
-        <GreetingCard lines={greetingLines} onQuickStart={send} compact={inSitting} />
-        <MessageList messages={messages} thinking={status === "submitted"} error={error ? "I lost the thread for a second. Say that again?" : undefined} />
+        {/* The greeting marks this page open, like a chapter head: the earlier conversation above it (scroll up), this visit below. */}
+        <MessageList
+          messages={messages}
+          cardAt={cardAt}
+          card={<Greeting lines={greetingLines} onQuickStart={send} compact={inSitting} />}
+          thinking={status === "submitted"}
+          error={error ? "I lost the thread for a second. Say that again?" : undefined}
+        />
       </div>
       <Composer onSend={send} busy={busy} initialValue={prefill} />
     </div>
