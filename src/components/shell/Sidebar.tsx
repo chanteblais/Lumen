@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Divider, Fleuron } from "@/components/ui/Ornament";
 
 const NAV = [
   { href: "/", label: "Chat" },
@@ -10,6 +11,9 @@ const NAV = [
   { href: "/insights", label: "Insights" },
   { href: "/settings", label: "Settings" },
 ] as const;
+
+/** Chapters are numbered the way a book numbers them. */
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -24,7 +28,7 @@ export function Sidebar() {
           <br />
           way forward
         </p>
-        <div className="rule-short mt-9" />
+        <Divider className="mt-9" />
       </div>
 
       <nav className="mt-8 flex flex-col gap-1" aria-label="Primary">
@@ -32,7 +36,7 @@ export function Sidebar() {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? "page" : undefined}>
-              <span className="num">{String(i + 1).padStart(2, "0")}</span>
+              <span className="num">{ROMAN[i]}</span>
               <span className="name">{item.label}</span>
             </Link>
           );
@@ -40,13 +44,13 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar-foot mt-auto">
-        <div className="rule-short" />
+        <Divider />
         <p className="font-display mt-7 text-[22px] italic leading-[1.35] text-ink-soft">
           Progress
           <br />
           lives here.
         </p>
-        <div className="rule-short mt-7" />
+        <Fleuron className="mt-6" />
       </div>
     </aside>
   );

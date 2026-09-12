@@ -18,10 +18,15 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Brass soft | `#c9b58c` | `text-brass-soft` | Accent on dark fills |
 | Forest | `#2a342e` | `bg-forest` | Avatar circle, send button — the only dark fills |
 | Glow | `#f1d8a0` | `text-glow` | Lumi's eyes (reserved) |
+| Foxing | `rgba(122,96,54,.11)` | — | The page-edge vignette only |
 | Rule | `rgba(27,26,23,.16)` | — | Fine rules, borders |
 | Rule strong | `rgba(27,26,23,.34)` | — | Short rules, composer border |
 
-**Paper grain:** `body::before` — a fixed, non-interactive SVG `feTurbulence` layer at 28% opacity, multiply blend. Keep it barely perceptible; if you notice it, it's too strong.
+**Paper grain:** `body::before` — a fixed, non-interactive SVG `feTurbulence` layer at 28% opacity, multiply blend, laid *over* the shell so cards and sidebar are paper too. Keep it barely perceptible; if you notice it, it's too strong.
+
+**Foxing:** `body::after` — a fixed radial vignette in `--foxing`, multiply blend: the page browns very slightly toward its edges. Same rule: if you notice it, it's too strong.
+
+**Gutter:** `.main` carries a soft inset shadow on its left edge where the page meets the spine. Off on phones.
 
 **Dark mode:** none in V1. The book is ivory.
 
@@ -47,7 +52,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 - **Shell:** CSS grid `272px minmax(0,1fr)`, **viewport-height** (`.shell { height: 100dvh }`); sidebar `.sidebar` scrolls internally, with an inner 10px inset frame line (`::after`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
 - **Content width:** `max-w-[1080px]`, left-aligned within main.
 - **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right; the footer aside and numerals are hidden.
-- **Radii:** cards `10px`; chips, icon buttons, composer, send `999px`.
+- **Radii:** cards `6px` (a plate, not a bubble); user notes `8px` with a `2px` tail corner; chips, icon buttons, composer, send `999px`.
 - **Shadow:** one token, `--shadow` (two soft layers). Nothing else casts.
 
 ---
@@ -57,8 +62,12 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | Class | What it does |
 |---|---|
 | `.label` / `.label-mute` | Tracked small caps (see Typography) |
-| `.rule` / `.rule-short` | 1px full rule / 34px short rule (`!w-[18px]` variant used under kickers) |
-| `.card` | Card surface: `--card` bg, rule border, 10px radius, `--shadow` |
+| `.rule` / `.rule-short` | 1px full rule / 34px short rule |
+| `.rule-double` | Thick-thin "Oxford" rule under the running head (top bar) |
+| `.divider` / `.tailpiece` | Ornament layouts: hairline · diamond · hairline under every kicker; hairline · hedera · hairline closing a page with nothing more to say (see Ornaments) |
+| `.plate` | Adds a second hairline set 6px in from a `.card`'s edge — an engraving's frame. Greeting card only |
+| `.medallion` | Brass hairline ring around a `LumiAvatar`, set off by a 2px paper gap |
+| `.card` | Card surface: `--card` bg, rule border, 6px radius, `--shadow` |
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
 | `.icon-btn` | 44px round icon button on paper-deep |
 | `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it |
@@ -83,6 +92,9 @@ Forest circle with the hooded head. Props: `size` (default 68) and `expression` 
 ### Lumi companion (`components/shell/LumiCompanion.tsx`)
 Lumi, full figure, standing on the bottom-right edge of every page (`.companion`, fixed, 150px tall). Idle life: a slow breathing bob (`@keyframes breathe`, 4s), a blink every 3–7 s with an occasional double, and a moment (perk / tilt / wave / lean) cross-faded over the standing pose for 2–3 s — the first 3–6 s after arriving, then every 8–18 s. All of it stops under `prefers-reduced-motion`. `.main` reserves a bottom band (168px desktop, 110px mobile where she is scaled to 62%) so she never sits on the composer row. `pointer-events: none`, `aria-hidden` — she is company, not a control.
 
+### Ornaments (`components/ui/Ornament.tsx`)
+Printer's marks, the engraved vocabulary an old book uses instead of icons. Inline SVG in brass (`.ornament`), hairline weight, `aria-hidden`; they decorate, never carry meaning. Three glyphs: **Diamond** ✦ (the smallest mark: dividers, visit rules), **Fleuron** ❦ (the hedera, an ivy leaf with a curled stem: tailpieces, the sidebar foot), **Asterism** ⁂ (reserved for a pause in the text). Two layouts: `Divider` (replaces the short rule under every kicker) and `Tailpiece` (closes an empty page). **One flourish per surface** — a plate has its frame, a page has its tailpiece, a sitting break has its diamonds. If a surface already has one, it does not get another.
+
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.
 
@@ -90,7 +102,7 @@ Four chips + a round "another way in" button. They are starting points, not mode
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
 ### Sidebar (`components/shell/Sidebar.tsx`)
-Wordmark, tagline label, short rule, numbered nav (`01 Chat` …), italic footer aside between two short rules. Active route from `usePathname`.
+Wordmark, tagline label, divider ornament, nav numbered like chapters in display-face roman numerals (`I Chat` … ; the active numeral turns brass), italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
 
 ### Clock (`components/ui/Clock.tsx`)
 Viewer-local date + time as a `.label`, top right. Renders empty on the server and fills on mount (no hydration mismatch).
@@ -98,11 +110,15 @@ Viewer-local date + time as a `.label`, top right. Renders empty on the server a
 ### Icons
 Inline SVG, `stroke="currentColor"`, 1.4–1.6 stroke, round caps. No icon font, no icon library.
 
+### Favicon (`app/icon.svg`)
+Lumi's hooded head in the forest circle with a brass hairline ring, drawn as flat SVG shapes (the raster sprite does not survive 16px). Replaces the default Next favicon.
+
 ---
 
 ## Accessibility
 
 - Every icon-only button has an `aria-label`.
 - Nav uses `aria-current="page"`.
-- Focus: rely on the browser ring for now; define a brass focus ring once forms exist (M1).
+- Focus: one ring for the whole book — `:focus-visible` is a 1px brass outline offset 3px. The composer textarea suppresses it (the pill's `.is-listening`/border carries state).
+- Selection is brass-soft on ink. Scrollbars are thin and translucent brass, never the browser grey.
 - Contrast: ink on paper ≈ 14:1; ink-mute on paper ≈ 3.4:1 — mute is for non-essential text only.

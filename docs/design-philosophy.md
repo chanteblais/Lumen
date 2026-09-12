@@ -21,7 +21,7 @@ In order of permission:
 3. **Micro-interactions.** A chip that nudges 1px, text that streams, a check-in that appears and waits. Quiet, physical.
 4. **Rali himself.** Small, sparing, expressive through eyes and posture. A circular avatar beside his lines; never a full-body illustration in the working UI.
 
-Decorative imagery is not on this list.
+Decorative imagery is not on this list. **Printer's ornaments are not imagery:** the diamond, hedera and asterism, hairline rules, crossed corners and plate frames are part of the typography, the way a chapter head's fleuron is. They are drawn in brass at hairline weight and rationed to one flourish per surface (`design-system.md` § Ornaments).
 
 ## 3. Principles
 
