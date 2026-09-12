@@ -51,7 +51,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 
 - **Shell:** CSS grid `272px minmax(0,1fr)`, **viewport-height** (`.shell { height: 100dvh }`); sidebar `.sidebar` scrolls internally, with an inner 10px inset frame line (`::after`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
 - **Content width:** `max-w-[1080px]`, left-aligned within main.
-- **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right; the footer aside and numerals are hidden.
+- **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right; the footer aside and dividers are hidden.
 - **Radii:** cards `6px` (a plate, not a bubble); user notes `8px` with a `2px` tail corner; chips, icon buttons, composer, send `999px`.
 - **Shadow:** one token, `--shadow` (two soft layers). Nothing else casts.
 
@@ -74,7 +74,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on |
 | `.send` | 64px forest circle; disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
-| `.nav-item` | Sidebar link; `[aria-current="page"]` gets the soft highlight; `.num` / `.name` children |
+| `.nav-item` | Sidebar link; `[aria-current="page"]` gets the soft highlight; `.name` child |
 
 ---
 
@@ -102,7 +102,7 @@ Four chips + a round "another way in" button. They are starting points, not mode
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
 ### Sidebar (`components/shell/Sidebar.tsx`)
-Wordmark, tagline label, divider ornament, nav numbered like chapters in display-face roman numerals (`I Chat` … ; the active numeral turns brass), italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
+Wordmark, tagline label, divider ornament, nav of plain names (no numerals), italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
 
 ### Clock (`components/ui/Clock.tsx`)
 Viewer-local date + time as a `.label`, top right. Renders empty on the server and fills on mount (no hydration mismatch).

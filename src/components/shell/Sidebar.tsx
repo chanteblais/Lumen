@@ -12,9 +12,6 @@ const NAV = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-/** Chapters are numbered the way a book numbers them. */
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
-
 export function Sidebar() {
   const pathname = usePathname();
   return (
@@ -32,11 +29,10 @@ export function Sidebar() {
       </div>
 
       <nav className="mt-8 flex flex-col gap-1" aria-label="Primary">
-        {NAV.map((item, i) => {
+        {NAV.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? "page" : undefined}>
-              <span className="num">{ROMAN[i]}</span>
               <span className="name">{item.label}</span>
             </Link>
           );
