@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import { buildContextBlock, type SessionEventNow } from "@/core/ai/context";
+import { buildContextBlock, type SessionEventNow, type StartNow } from "@/core/ai/context";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
 import { reflectAfterSession } from "@/core/ai/reflect";
@@ -106,6 +106,17 @@ export async function POST(req: Request) {
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
   if (snap.session.last?.outcome === "abandoned") abandonedSessionId = snap.session.last.id;
 
+  // "Start with Lumi" from Today is a button, not a question: tell Lumi so, with
+  // the first step Today's path already chose, so she opens the session instead of asking.
+  let startNow: StartNow | undefined;
+  if (meta?.kind === "start_intention" && isUuid(meta.intentionId)) {
+    const i = snap.openIntentions.find((x) => x.id === meta.intentionId);
+    if (i) {
+      const fromPlan = snap.plan?.rightNow?.intentionId === i.id ? snap.plan.rightNow.firstStep : undefined;
+      startNow = { intentionId: i.id, title: i.title, firstStep: fromPlan ?? i.nextAction, estimateMinutes: i.estimateMinutes };
+    }
+  }
+
   const tools = buildTools({
     db: db(),
     userId: user.id,
@@ -146,6 +157,7 @@ export async function POST(req: Request) {
           session: snap.session.active,
           lastSession: snap.session.last,
           sessionEventNow,
+          startNow,
         }),
       },
     ],
@@ -155,7 +167,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${endedSessionId ? " reflect=pending" : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
       }
     },
   });

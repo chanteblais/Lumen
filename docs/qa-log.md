@@ -25,6 +25,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 - **`reflection.ran` was stamped with the run's start time**, so it appeared before the ops it counted. Stamped at the end now.
 - **"Pick it back up" didn't.** With the abandoned session's start still visible in the transcript, Lumi answered "Already running." The context block now leads with "No focus session is running now — even if the transcript above shows one being started" and spells out that a yes means `start_focus_session` again with the same goal and first step.
 - **A short session heard nothing at its end.** Chanté's own first session (compost, 5 min) with the default 15-minute interval would have had its first check-in at minute 15. The planned end now counts as a check-in when it comes before the next interval.
+- **Start with Lumi didn't reliably start.** Chanté's own test (compost, 5 min): the first tap opened a session, but with the old timer nothing asked her anything at 5 min; she tapped again from Today and Lumi only talked ("Still running…", correct but invisible from Today); after the sweep closed it as abandoned her next tap got "Something's looping on your end. Want me to close it and start fresh…?" — the route never told Lumi the message was a button, so the repeated "Let's start" lines read as a loop. The route now hands the context block a *Just now* line for `start_intention` (title, Today's first step, estimate, "this is the start itself — call start_focus_session"), with the running-on-this / running-on-another cases spelled out. Verified by replaying the exact turn server-side against her account with the real tools (`scripts/_sim-start.mjs` pattern, not committed): Lumi called `start_focus_session` ("Fresh one running. Tie the bag — I'm here.").
 - **Abandoned sessions were never reflected on** (the sweep isn't a chat turn). The Chat page and the next chat turn now hand a just-abandoned session to reflection, which runs once per session.
 
 ### Known and deliberate
@@ -34,6 +35,8 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 - The check-in timer lives in the tab: a backgrounded tab fires late, a closed tab not at all; the server's only view is the abandonment sweep. Fine for V1.
 - Message metadata (`session_event`, `declined`, …) is not persisted; a reloaded transcript shows the visible words only. The events table holds what happened.
 - The Next dev overlay showed "1 issue" during the sweep: a transient HMR error between two edits of `reflect.ts`, gone on reload.
+- Lumi may call `end_focus_session` on a session that is already closed (she did, on the abandoned one, before starting fresh); the tool answers `no session running` and nothing else happens.
+- The browser test was cut short: another session's Google sign-in switched the shared automation browser to a second account, which created a second `users` row (`62d0a68a…`, "Chanté", 12:17Z, one two-message conversation). Left in place — it is a real sign-in, not test data. The Today Right now card does not show that a session is running (Chat only, by decision); a second *Start with Lumi* tap therefore looks like nothing happened until Chat opens — worth a UX-review row.
 - Deleting the sweep's rows is the one exception to append-only, for test data only.
 
 ### Open

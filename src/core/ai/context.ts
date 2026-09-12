@@ -11,6 +11,15 @@ import type { DayPlanJson, FocusSession, Intention, MemoryNote } from "@/db/sche
 /** A tap on the session bar or a check-in that arrived as this very message. */
 export type SessionEventNow = { response: Exclude<SessionEventResponse, "ok">; goal: string; minute: number; intentionId?: string | null };
 
+/** "Start with Lumi" on Today arrived as this very message. */
+export type StartNow = {
+  intentionId: string;
+  title: string;
+  /** The first step Today's path gave them, or the intention's own next action. */
+  firstStep?: string | null;
+  estimateMinutes?: number | null;
+};
+
 export type ContextInput = {
   displayName: string;
   timezone: string;
@@ -37,6 +46,8 @@ export type ContextInput = {
   lastSession?: FocusSession;
   /** This very message was a tap on the session's check-in or End. */
   sessionEventNow?: SessionEventNow;
+  /** This very message was Start with Lumi on Today. */
+  startNow?: StartNow;
 };
 
 const MAX_INTENTIONS = 25;
@@ -110,6 +121,22 @@ export function buildContextBlock(input: ContextInput): string {
       `- No focus session is running now — even if the transcript above shows one being started. The last one: "${s.goal}" (first step: ${s.firstStep}${s.approach ? `; approach: ${s.approach}` : ""}) · ${how} · ended ${describeGap(endedAt, now)}.${
         s.outcome === "abandoned" ? ' The page offered to pick it back up or let it go; "pick it back up" (or a yes) means start_focus_session again with the same goal and first step.' : ""
       }`,
+    );
+  }
+
+  if (input.startNow) {
+    const s = input.startNow;
+    const running = input.session;
+    const step = s.firstStep ? `the first step Today gave them is "${s.firstStep}"` : "no first step is set — name the smallest physical action yourself";
+    const mins = s.estimateMinutes ? `${s.estimateMinutes} min from the estimate` : "their usual length";
+    lines.push(
+      "",
+      "## Just now",
+      !running
+        ? `- They tapped Start with Lumi on "${s.title}" (${s.intentionId}) from Today. This is the start itself, not a question — don't ask whether to begin, and ignore any earlier "Let's start" lines in the transcript. ${step}; call start_focus_session now (goal "${s.title}", that first step, intention_id ${s.intentionId}, ${mins}) and say one line: the first step, and that you're here. Ask something only if the first step is genuinely unclear.`
+        : running.intentionId === s.intentionId
+          ? `- They tapped Start with Lumi on "${s.title}" again while its session is already running (above). Don't start another; one line — the first step, and that you're here.`
+          : `- They tapped Start with Lumi on "${s.title}" (${s.intentionId}) while a session on "${running.goal}" is running. Switching is fine: start_focus_session for "${s.title}" (${step}, ${mins}) — the old one closes as stopped early on its own — and say one line.`,
     );
   }
 

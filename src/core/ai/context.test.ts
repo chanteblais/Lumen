@@ -66,6 +66,18 @@ describe("buildContextBlock", () => {
     expect(after).toMatch(/No focus session is running now.*"Edit chapter 3".*left open with no end signal, so the app closed it · ended 30 minutes ago\./);
     expect(after).toContain("start_focus_session again with the same goal");
   });
+  it("treats Start with Lumi as the start itself, with Today's first step", () => {
+    const base = { displayName: "C", timezone: "UTC", now };
+    const start = { intentionId: "i1", title: "Take out compost", firstStep: "Tie the compost bag", estimateMinutes: 5 };
+    const fresh = buildContextBlock({ ...base, startNow: start });
+    expect(fresh).toMatch(/## Just now\n- They tapped Start with Lumi on "Take out compost" \(i1\)/);
+    expect(fresh).toContain('first step Today gave them is "Tie the compost bag"');
+    expect(fresh).toContain("call start_focus_session now");
+    expect(fresh).toContain("5 min from the estimate");
+    const running = { id: "s1", goal: "Take out compost", firstStep: "Tie the compost bag", approach: null, plannedMinutes: 5, startedAt: new Date(now.getTime() - 60_000), endedAt: null, outcome: null, intentionId: "i1" } as unknown as FocusSession;
+    expect(buildContextBlock({ ...base, startNow: start, session: running })).toContain("again while its session is already running");
+    expect(buildContextBlock({ ...base, startNow: { ...start, intentionId: "i2", title: "Email Priya" }, session: running })).toContain('Switching is fine: start_focus_session for "Email Priya"');
+  });
   it("tells Lumi what a check-in tap was, and that the closing already happened", () => {
     const base = { displayName: "C", timezone: "UTC", now };
     expect(buildContextBlock({ ...base, sessionEventNow: { response: "stuck", goal: "Edit chapter 3", minute: 15 } })).toMatch(/## Just now\n- They tapped Stuck.*smallest next physical action/);
