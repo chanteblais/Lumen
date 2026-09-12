@@ -10,7 +10,7 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   sway: 560, // nine frames ≈ five seconds, per the sheet
-  foot: 120, // fourteen in-betweened frames ≈ 1.7 s: one scuff out and back
+  foot: 120, // twenty-one in-betweened frames ≈ 2.5 s: a glance toward the foot, one scuff, the glance back
 };
 /** Loops mixed into the breathing now and then, one pass at a time. */
 const VARIATIONS: LumiLoop[] = ["sway", "foot"];

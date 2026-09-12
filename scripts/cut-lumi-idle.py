@@ -5,13 +5,16 @@
 Sources:
 - art/lumi-slow-idle.png — the breath loop (nine frames), the blink row,
   and the sway loop (nine frames).
-- art/lumi-idle.png — the playful-foot loop: sixteen in-betweened frames
-  (two rows of eight) of one drawing where only the foot and the kicked-up
-  dirt move, on a flat grey-blue ground. Drawn larger than the slow-idle
-  sheet, so it is scaled down until her hood top and chin land where the
-  breath loop's do. The sheet is two scuffs with a full return to rest in the
-  middle (frame 8) — FOOT_ORDER takes frames 1–7 and 10–16 so the cut is one
-  eased kick out and back, fourteen frames.
+- art/lumi-idle-foot.png — the playful foot with a glance: 24 in-betweened
+  frames (three rows of eight) of one drawing on a flat grey-blue ground.
+  Row 1: rest, then the head turns a little toward the foot she is about to
+  kick with (frames 3–7; frame 8 is a stray rest frame, unused). Row 2: the
+  kick, head held turned — drawn ~3.5% smaller than the other rows, so each
+  row is scaled on its own until the figure stands as tall as the breath rest
+  frame. Row 3: eight rest frames — the turn back was not drawn, so the loop
+  plays the glance in reverse instead. The sheet keeps the fifteen unique
+  cells (FOOT_CELLS); the order they play in, forward then back, lives with
+  the other loops in LumiSprite (LUMI_LOOP_CELLS).
 
 Each figure is matted by flood-filling paper from *outside* the figure, so the
 cream hood (which is close to the paper colour) is never eaten. The soft
@@ -26,8 +29,8 @@ the face read differently frame to frame.)
 
 Output rows, each loop with open / half-shut / shut eyes (the blink row's
 half-shut and shut eyes are pasted onto every frame, aligned by the face):
-breath ×3, sway ×3, foot ×3. Fourteen columns (the longest loop); shorter
-loops leave their trailing columns empty.
+breath ×3, sway ×3, foot ×3. Fifteen columns (the most cells in a loop);
+shorter loops leave their trailing columns empty.
 """
 from PIL import Image
 import numpy as np
@@ -37,11 +40,13 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public/lumi-idle.webp')
 W, H = 144, 208
-COLS = 14             # the longest loop
+COLS = 15             # the most cells in a loop
 FEET_Y = 200          # feet baseline inside the cell
 TOL = 45              # paper tolerance for the flood fill
-FOOT_SCALE = 0.71     # foot sheet → slow-idle sheet: hood top 27 / hood x 18–127 vs the breath loop's 27 / 17–126
-FOOT_ORDER = [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15]  # sheet frames (0-based) → one kick out and back
+# The foot sheet's cells, as (row, column): rest and the glance in (row 1,
+# frames 1–7), then the kick (row 2). Cell 6 is the last glance frame; the
+# kick holds its head, and the way back replays cells 6..1 (LumiSprite).
+FOOT_CELLS = [(0, c) for c in range(7)] + [(1, c) for c in range(8)]
 HEAD_ROWS = 122       # cell rows above this are hood + face — the part of her that holds still
 SHADOW_RGB = (228, 218, 204)  # the slow-idle sheet's shadow tone; applied to every sheet so shadows match
 
@@ -196,11 +201,18 @@ def cut(sheet, bbox):
     return place(rgba, main, (xs.min() + xs.max()) / 2)
 
 
-def cut_foot(sheet, bbox):
-    """Playful foot: scaled to size, the dirt kept, centred on the figure like the rest (then settled)."""
-    rgba, main = scale(*sheet.matte(bbox, specks=True), FOOT_SCALE)
+def cut_foot(sheet, bbox, s):
+    """Playful foot: scaled by `s`, the dirt kept, centred on the figure like the rest (then settled)."""
+    rgba, main = scale(*sheet.matte(bbox, specks=True), s)
     xs = np.where(main.any(axis=0))[0]
     return place(rgba, main, (xs.min() + xs.max()) / 2)
+
+
+def figure_height(sheet, bbox, specks=False):
+    """Hood top to feet of the main body (the shadow and dirt excluded)."""
+    _, main = sheet.matte(bbox, specks)
+    ys = np.where(main.any(axis=1))[0]
+    return ys.max() - ys.min()
 
 
 def head(cell):
@@ -271,12 +283,15 @@ def hold_head(cells, donor, top=112, bottom=124):
 
 
 def with_eyes(target, donor):
-    """Copy the donor's eye area onto the target, aligned by the face."""
-    tf, td, tc = face(target); df, dd, dc = face(donor)
-    def eye_rect(f, dk, c):
+    """Copy the donor's eye area onto the target, aligned on the eyes themselves
+    (the glance slides them within the face, so the face's centre is no guide)."""
+    tf, td, _ = face(target); df, dd, _ = face(donor)
+    def eyes(f, dk):
         ys, xs = np.where(f & ~dk)
-        return (xs.min() - c[0], ys.min() - c[1], xs.max() - c[0], ys.max() - c[1])
-    a, b = eye_rect(tf, td, tc), eye_rect(df, dd, dc)
+        return (xs.mean(), ys.mean()), (xs.min(), ys.min(), xs.max(), ys.max())
+    tc, ta = eyes(tf, td); dc, da = eyes(df, dd)
+    rel = lambda r, c: (r[0] - c[0], r[1] - c[1], r[2] - c[0], r[3] - c[1])
+    a, b = rel(ta, tc), rel(da, dc)
     rx0, ry0 = min(a[0], b[0]) - 4, min(a[1], b[1]) - 4
     rx1, ry1 = max(a[2], b[2]) + 4, max(a[3], b[3]) + 4
     out = target.copy()
@@ -295,14 +310,22 @@ sway = [cut(slow, b) for b in slow.frames(695, 885, 200, 1285, 9)]
 blink = slow.frames(440, 620, 200, 1285, 9)
 half, shut = cut(slow, blink[2]), cut(slow, blink[3])
 
-playful = Sheet('lumi-idle.png', ((5, 25), (5, 25)), contrast=True)
-boxes = playful.frames(140, 410, 0, 1774, 8) + playful.frames(490, 760, 0, 1774, 8)
-foot = [cut_foot(playful, boxes[i]) for i in FOOT_ORDER]
-# The head holds still while the foot kicks: settle frame 0 onto the breath
-# rest pose (so the hand-over doesn't step sideways), then the rest onto frame 0.
+playful = Sheet('lumi-idle-foot.png', ((5, 25), (5, 25)), contrast=True)
+rows = [playful.frames(y0, y1, 0, 1774, 8) for y0, y1 in ((40, 315), (320, 590), (595, 870))]
+# Each row scaled on its own so the figure stands as tall as the breath rest
+# frame (the kick row is drawn ~3.5% smaller than the others).
+rest_h = figure_height(slow, slow.frames(168, 362, 200, 1285, 9)[0])
+scales = [rest_h / np.median([figure_height(playful, b, specks=True) for b in row]) for row in rows]
+print('foot row scales', [round(s, 3) for s in scales])
+foot = [cut_foot(playful, rows[r][c], scales[r]) for r, c in FOOT_CELLS]
+# Settle cell 0 onto the breath rest pose (so the hand-over doesn't step
+# sideways), then every other cell onto cell 0. Then the holds: the second rest
+# cell keeps cell 0's head; the kick keeps the last glance frame's turned head,
+# so the head is one drawing from the end of the glance in to its start back.
 foot[0] = settle(foot[0], breath[0])
 foot[1:] = [settle(c, foot[0]) for c in foot[1:]]
-foot = hold_head(foot, breath[0])
+foot[1] = hold_head([foot[1]], foot[0])[0]
+foot[7:] = hold_head(foot[7:], foot[6])
 
 loops = [breath, sway, foot]
 sheet = np.zeros((H * 3 * len(loops), W * COLS, 4), dtype=np.uint8)
