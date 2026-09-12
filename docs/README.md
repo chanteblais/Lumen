@@ -11,6 +11,7 @@
 | [Features](features.md) | Every page and feature — who it's for, what it does, key states |
 | [Design System](design-system.md) | Tokens, typography, CSS classes, component patterns |
 | [Design Philosophy](design-philosophy.md) | What the interface *is* and *is never*; how personality enters the app (draft — validate against Chanté's reactions) |
+| [Animation Pipeline](animation-pipeline.md) | **Claude's working doc for Lumi's animations** — read first in any animation session, updated at its end: session-start checklist, the measure gates (reject a sheet by numbers), the seven-stage path, touch points, the cost ledger per animation, the ranked efficiency backlog. The *how* of the cut stays in `art/README.md` |
 | [Branching](branching.md) | Branch rules, the docs audit before every merge and push, parallel sessions, dev servers and ports, commit guards, Claude-session guardrails |
 | [EF-Burden Log](ef-burden-log.md) | **Standing ledger:** every place the app asks the user to maintain, decide, rate or tidy something. The dogfood ledger for the one question |
 | [Voice Eval Log](voice-eval-log.md) | Scripted scenarios run against Lumi's persona, what was off, what changed in the prompt |
