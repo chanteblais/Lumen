@@ -41,13 +41,17 @@ export function isSessionEventResponse(s: unknown): s is SessionEventResponse {
 
 /**
  * The next check-in boundary strictly after `now`: every `checkInMinutes`
- * from the start. Returns the instant and which minute of the session it is.
+ * from the start, and the planned end itself when that comes first (a
+ * five-minute session with fifteen-minute check-ins still hears "that's the
+ * time we set" at five). Returns the instant and which minute of the session it is.
  */
-export function nextCheckIn(session: Pick<SessionView, "startedAt" | "checkInMinutes">, now: Date = new Date()): { at: Date; minute: number } {
+export function nextCheckIn(session: Pick<SessionView, "startedAt" | "checkInMinutes" | "plannedMinutes">, now: Date = new Date()): { at: Date; minute: number } {
   const start = new Date(session.startedAt).getTime();
-  const step = Math.max(1, session.checkInMinutes) * 60_000;
-  const n = Math.floor((now.getTime() - start) / step) + 1;
-  return { at: new Date(start + n * step), minute: n * Math.max(1, session.checkInMinutes) };
+  const step = Math.max(1, session.checkInMinutes);
+  const elapsed = (now.getTime() - start) / 60_000;
+  const nextInterval = (Math.floor(elapsed / step) + 1) * step;
+  const minute = session.plannedMinutes > elapsed && session.plannedMinutes < nextInterval ? session.plannedMinutes : nextInterval;
+  return { at: new Date(start + minute * 60_000), minute };
 }
 
 /** The question for a check-in at `minute`: the plain one, or the time's-up one at or past the planned length. */

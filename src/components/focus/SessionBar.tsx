@@ -43,11 +43,11 @@ export function SessionBar({ session, busy = false, quietKey = 0, onEvent, onGon
 
   // Check-ins at every interval from the start, strictly in the future — a
   // page opened mid-session waits for the next boundary rather than showing a stale one.
-  const { id, startedAt, checkInMinutes } = session;
+  const { id, startedAt, checkInMinutes, plannedMinutes } = session;
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
-      const { at, minute } = nextCheckIn({ startedAt, checkInMinutes });
+      const { at, minute } = nextCheckIn({ startedAt, checkInMinutes, plannedMinutes });
       t = setTimeout(() => {
         setFired({ minute, quiet: quietRef.current });
         setNow(Date.now());
@@ -56,7 +56,7 @@ export function SessionBar({ session, busy = false, quietKey = 0, onEvent, onGon
     };
     schedule();
     return () => clearTimeout(t);
-  }, [id, startedAt, checkInMinutes]);
+  }, [id, startedAt, checkInMinutes, plannedMinutes]);
 
   const due = fired && fired.quiet === quietKey ? fired : null;
 

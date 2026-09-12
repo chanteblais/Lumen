@@ -24,6 +24,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 - **Approach ↔ belief matching missed inflections** ("read the last paragraph first" vs "Reading the last paragraph first…"). Matching is now on lightly stemmed content words.
 - **`reflection.ran` was stamped with the run's start time**, so it appeared before the ops it counted. Stamped at the end now.
 - **"Pick it back up" didn't.** With the abandoned session's start still visible in the transcript, Lumi answered "Already running." The context block now leads with "No focus session is running now — even if the transcript above shows one being started" and spells out that a yes means `start_focus_session` again with the same goal and first step.
+- **A short session heard nothing at its end.** Chanté's own first session (compost, 5 min) with the default 15-minute interval would have had its first check-in at minute 15. The planned end now counts as a check-in when it comes before the next interval.
 - **Abandoned sessions were never reflected on** (the sweep isn't a chat turn). The Chat page and the next chat turn now hand a just-abandoned session to reflection, which runs once per session.
 
 ### Known and deliberate

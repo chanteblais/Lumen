@@ -23,6 +23,12 @@ describe("check-ins", () => {
     expect(nextCheckIn(view({ startedAt: minutesAgo(15) }), now)).toEqual({ at: new Date(now.getTime() + 15 * 60_000), minute: 30 });
     expect(nextCheckIn(view({ startedAt: minutesAgo(16) }), now)).toEqual({ at: new Date(now.getTime() + 14 * 60_000), minute: 30 });
   });
+  it("counts the planned end as a check-in when it comes before the next interval", () => {
+    expect(nextCheckIn(view({ startedAt: minutesAgo(2), plannedMinutes: 5 }), now)).toEqual({ at: new Date(now.getTime() + 3 * 60_000), minute: 5 });
+    expect(nextCheckIn(view({ startedAt: minutesAgo(5), plannedMinutes: 5 }), now)).toEqual({ at: new Date(now.getTime() + 10 * 60_000), minute: 15 });
+    expect(nextCheckIn(view({ startedAt: minutesAgo(10), plannedMinutes: 20 }), now)).toEqual({ at: new Date(now.getTime() + 5 * 60_000), minute: 15 });
+    expect(nextCheckIn(view({ startedAt: minutesAgo(16), plannedMinutes: 20 }), now)).toEqual({ at: new Date(now.getTime() + 4 * 60_000), minute: 20 });
+  });
   it("asks the same question until the time we set, then asks whether to keep going", () => {
     expect(checkInQuestion(view(), 15)).toBe(CHECK_IN_QUESTION);
     expect(checkInQuestion(view(), 45)).toBe(CHECK_IN_TIME_UP);
