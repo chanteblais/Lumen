@@ -65,4 +65,4 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** the deployed app is used daily for a week without opening the code.
 
 ## After V1 (not now)
-Embeddings + `recall` tool once beliefs exceed the cap · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · Insights (only if it can be framed without scores).
+Embeddings + `recall` tool once beliefs exceed the cap · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · ~~Insights (only if it can be framed without scores)~~ — landed 2026-09-12 as one question over what Lumi noticed in the mail, no scores, no counts (`features.md` → Insights).

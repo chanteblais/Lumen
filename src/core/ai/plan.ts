@@ -23,7 +23,12 @@ export type PlanInputs = {
   /** "Not this" today, newest first. Reason is a key from core/declines.ts, free text, or null. */
   declined?: { intentionId: string; reason?: string | null }[];
   lastSeenAt?: Date;
+  /** What they asked for in chat just now ("something easy"), and the thing Lumi already named for right now, if any. */
+  ask?: PlanAsk;
 };
+
+/** A shape asked for in conversation. `rightNowId` is Lumi's pick from her reply: Today must show the same thing. */
+export type PlanAsk = { text: string; rightNowId?: string; firstStep?: string };
 
 const PlanSchema = z.object({
   dayLine: z.string().max(200).describe("One or two short sentences in Lumi's voice about the shape of today. Name what's time-sensitive; say what can wait. No counts."),
@@ -42,6 +47,7 @@ You are choosing a path through the day for the person, from their open intentio
 - The dayLine names what is time-sensitive and says what can wait. Never a count ("you have eight things"). Never guilt. Never inspirational.
 - firstStep is a physical action ("Open the doc and read the last paragraph"), never "work on X".
 - Anything they declined today ("not this") is never rightNow again today. Read the reason: too big → something smaller now; the declined thing may sit in afterThat only if a tinier way in exists. Too tired → the easiest win, and a shorter path. Don't know how → something clearer now; the unclear one waits. Don't feel like it, or just nope → a different thing, no comment, and leave the declined one off the path. Something else is more important → the likely candidate, if one is obvious.
+- If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
 - Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
 
@@ -80,21 +86,33 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     providerOptions: { anthropic: { effort: "medium" } },
   });
 
-  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds);
+  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;
+  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
-/** Pure guardrails over whatever the model returned. Tested. */
+/**
+ * Pure guardrails over whatever the model returned. Tested.
+ * `pin` is the thing Lumi already named for right now in her reply: Today must
+ * show the same thing, so it wins over the model's pick — and over a decline
+ * earlier today, since the ask is the user's later word.
+ */
 export function clampPlan(
   raw: { dayLine: string; rightNow: { intentionId: string; firstStep: string } | null; afterThat: { intentionId: string }[]; closingLine?: string },
   candidates: Pick<Intention, "id" | "nextAction">[],
   fixed: Pick<Intention, "id">[],
   capacity?: "low" | "normal" | "high",
   declinedIds: ReadonlySet<string> = new Set(),
+  pin?: { intentionId: string; firstStep?: string },
 ): DayPlanJson {
   const ids = new Set(candidates.map((c) => c.id));
   const used = new Set<string>();
   // Right now must be open and not declined today — "not this" means not this, today.
   let rightNow = raw.rightNow && ids.has(raw.rightNow.intentionId) && !declinedIds.has(raw.rightNow.intentionId) ? raw.rightNow : null;
+  if (pin && ids.has(pin.intentionId)) {
+    const modelStep = raw.rightNow?.intentionId === pin.intentionId ? raw.rightNow.firstStep : undefined;
+    const nextAction = candidates.find((c) => c.id === pin.intentionId)?.nextAction ?? undefined;
+    rightNow = { intentionId: pin.intentionId, firstStep: pin.firstStep || modelStep || nextAction || FALLBACK_FIRST_STEP };
+  }
   if (!rightNow) {
     const c = candidates.find((x) => !declinedIds.has(x.id));
     if (c) rightNow = { intentionId: c.id, firstStep: c.nextAction ?? FALLBACK_FIRST_STEP };
@@ -145,6 +163,11 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     if (c.dueAt) flags.push(`due ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, month: "short", day: "numeric" }).format(c.dueAt)}`);
     if (c.note) flags.push(`note: ${c.note.slice(0, 80)}`);
     lines.push(`- ${c.id} · "${c.title}" · ${c.list ?? "—"} · ${c.estimateMinutes ? `~${c.estimateMinutes}m` : "—"}${flags.length ? ` · ${flags.join("; ")}` : ""}`);
+  }
+  if (inputs.ask) {
+    const named = inputs.ask.rightNowId ? candidates.find((c) => c.id === inputs.ask!.rightNowId) : undefined;
+    lines.push("", "## What they asked for just now (in chat)", `- "${inputs.ask.text.slice(0, 120)}" — shape the path around this.`);
+    if (named) lines.push(`- Lumi already answered with "${named.title}" for right now. Keep it there; choose After that to match the ask.`);
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");
   if (strategies.length) {

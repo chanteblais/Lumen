@@ -269,7 +269,9 @@ body::after {
   opacity: 1;
   z-index: 1;
 }
-.companion-frame.on { z-index: 2; animation: companion-fade 260ms ease-in-out; }
+/* The fade lasts most of the current loop's frame time (`--fade`, set by the
+   component): 260ms on the breath's 320ms frames, ~100ms on the foot's 120ms. */
+.companion-frame.on { z-index: 2; animation: companion-fade var(--fade, 260ms) ease-in-out; }
 @keyframes companion-fade {
   from { opacity: 0; }
   to { opacity: 1; }

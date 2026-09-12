@@ -1,7 +1,8 @@
-// The server-side auth boundary. This file and src/lib/auth-ui.tsx are the
-// only places outside the sign-in/sign-up pages that import Clerk.
-// Everything else works with the internal `User` row from src/db/schema.
-import { auth, currentUser } from "@clerk/nextjs/server";
+// The server-side auth boundary. This file, src/lib/auth-ui.tsx and
+// src/lib/auth-mail.tsx are the only places outside the sign-in/sign-up pages
+// that import Clerk. Everything else works with the internal `User` row from
+// src/db/schema.
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
@@ -43,6 +44,23 @@ export async function requireUser(): Promise<User> {
  */
 export async function recordVisit(user: User): Promise<Date> {
   return touchLastSeen(db(), user);
+}
+
+/**
+ * The user's Google OAuth access token, minted and refreshed by Clerk from
+ * the Google account connected to their Clerk user. Undefined when no Google
+ * account is connected (or Clerk can't say). Scopes are what Google granted;
+ * src/lib/email.ts checks for the mail one.
+ */
+export async function googleAccessToken(user: User): Promise<{ token: string; scopes: string[] } | undefined> {
+  try {
+    const client = await clerkClient();
+    const { data } = await client.users.getUserOauthAccessToken(user.clerkUserId, "google");
+    const t = data[0];
+    return t ? { token: t.token, scopes: t.scopes ?? [] } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function displayNameFromClerk(): Promise<string> {

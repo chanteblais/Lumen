@@ -85,7 +85,7 @@ describe("recutTodaysPlan", () => {
     const build = vi.fn(async () => lowPlan);
     const r = await recutTodaysPlan(db, user, "capacity", { load: async () => snapshot({ plan: fullPlan, planRow, capacity: { level: "low", at: new Date() } }), build, save });
     expect(r.plan).toBe(lowPlan);
-    expect(save).toHaveBeenCalledWith(db, "u1", "2026-09-12", lowPlan, "capacity", "low");
+    expect(save).toHaveBeenCalledWith(db, "u1", "2026-09-12", lowPlan, "capacity", "low", undefined);
   });
   it("leaves the one thing alone when normal-ish matches what the plan assumed", async () => {
     const build = vi.fn();
@@ -101,7 +101,15 @@ describe("recutTodaysPlan", () => {
     const declinedToday = [{ intentionId: "a", reason: "too_big", at: new Date() }];
     await recutTodaysPlan(db, user, "declined", { load: async () => snapshot({ plan: fullPlan, planRow, openIntentions: [intention("a"), intention("b")], declinedToday }), build, save });
     expect(build.mock.calls[0]?.[0].declined).toBe(declinedToday);
-    expect(save).toHaveBeenCalledWith(db, "u1", "2026-09-12", lowPlan, "declined", undefined);
+    expect(save).toHaveBeenCalledWith(db, "u1", "2026-09-12", lowPlan, "declined", undefined, undefined);
+  });
+  it("re-cuts around an ask from chat, handing the planner the ask and Lumi's pick, and keeps the ask on the row's event", async () => {
+    const build = vi.fn<(inputs: PlanInputs) => Promise<DayPlanJson>>(async () => lowPlan);
+    const save = vi.fn(async () => ({}) as never);
+    const ask = { text: "something easy", rightNowId: "b", firstStep: "Open the tab." };
+    await recutTodaysPlan(db, user, { reason: "asked", ask }, { load: async () => snapshot({ plan: fullPlan, planRow, openIntentions: [intention("a"), intention("b")] }), build, save });
+    expect(build.mock.calls[0]?.[0].ask).toBe(ask);
+    expect(save).toHaveBeenCalledWith(db, "u1", "2026-09-12", lowPlan, "asked", undefined, "something easy");
   });
 });
 

@@ -13,12 +13,15 @@ import { dueOn } from "@/core/domain/intentions";
 import { savePlan } from "@/core/domain/plans";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { visitBeforeSitting } from "@/core/domain/users";
-import { buildDayPlan, type PlanInputs } from "./plan";
+import { buildDayPlan, type PlanAsk, type PlanInputs } from "./plan";
 
 export type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
 
 /** Why an existing plan is cut again. The rest of `PlanReason` is code-derived (new_day, first_items, advanced). */
 export type RecutReason = "capacity" | "declined" | "reentry" | "asked";
+
+/** A re-cut with what shaped it: `asked` carries the ask from chat (and Lumi's pick, so Today matches her reply). */
+export type Recut = { reason: RecutReason; ask?: PlanAsk };
 
 type Deps = {
   load: typeof loadSnapshot;
@@ -56,15 +59,16 @@ export async function ensureTodaysPlan(db: Db, user: User, deps: Partial<Deps> =
  * it does. A capacity answer that matches what the plan already assumed
  * (normal-ish on a plan cut without a report) changes nothing.
  */
-export async function recutTodaysPlan(db: Db, user: User, reason: RecutReason, deps: Partial<Deps> = {}): Promise<TodaysPlan> {
+export async function recutTodaysPlan(db: Db, user: User, recut: RecutReason | Recut, deps: Partial<Deps> = {}): Promise<TodaysPlan> {
   const d = { ...live, ...deps };
+  const { reason, ask } = typeof recut === "string" ? { reason: recut, ask: undefined } : recut;
   const now = d.now();
   const snap = await d.load(db, user, now);
   if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
     return { snap, plan: snap.plan };
   }
-  const plan = await d.build(planInputs(user, snap, now));
-  await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level);
+  const plan = await d.build(planInputs(user, snap, now, ask));
+  await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level, ask?.text);
   return { snap, plan };
 }
 
@@ -73,7 +77,7 @@ export async function recutTodaysPlan(db: Db, user: User, reason: RecutReason, d
  * path is already there. With a reason, the path is re-cut instead. Never
  * throws — a failed prime just means Today generates on demand, as before.
  */
-export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason): Promise<void> {
+export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason | Recut): Promise<void> {
   try {
     if (recut) await recutTodaysPlan(db, user, recut);
     else await ensureTodaysPlan(db, user);
@@ -83,8 +87,9 @@ export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason): 
 }
 
 /** Everything the planner sees, from one snapshot. */
-export function planInputs(user: User, snap: Snapshot, now: Date): PlanInputs {
+export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk): PlanInputs {
   return {
+    ask,
     displayName: user.displayName,
     timezone: user.timezone,
     localDate: snap.today,

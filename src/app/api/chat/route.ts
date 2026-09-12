@@ -5,7 +5,7 @@ import { buildContextBlock, type SessionEventNow, type StartNow } from "@/core/a
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
 import { reflectAfterSession } from "@/core/ai/reflect";
-import { primeTodaysPlan, type RecutReason } from "@/core/ai/today-plan";
+import { primeTodaysPlan, type Recut } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import { isDeclineReason } from "@/core/declines";
 import { listRecentActivity } from "@/core/domain/activity";
@@ -17,12 +17,14 @@ import {
 } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { declineIntention } from "@/core/domain/intentions";
+import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { elapsedMinutes, endFocusSession, getSession, recordCheckIn } from "@/core/domain/sessions";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { isSessionEventResponse } from "@/core/focus";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
+import { lazyMailReader } from "@/lib/email";
 
 export const maxDuration = 60;
 
@@ -38,8 +40,11 @@ export async function POST(req: Request) {
   const previous = await recordVisit(user);
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
-  // (a "not this", a capacity report, letting things go on the way back).
-  let recut: RecutReason | undefined;
+  // (a "not this", a capacity report, letting things go on the way back, an ask
+  // for a different shape of day). An ask carries Lumi's pick and wins over
+  // the plain reasons; declines and capacity reach the planner from the
+  // snapshot regardless of which reason is recorded.
+  let recut: Recut | undefined;
   after(() => primeTodaysPlan(db(), user, recut));
   // A session that closed during this turn (Done / End tap, end_focus_session, or
   // replaced by a new one) is reflected on once the reply has streamed — as is
@@ -74,7 +79,7 @@ export async function POST(req: Request) {
     const row = await declineIntention(db(), user.id, meta.intentionId, reason);
     if (row) {
       declinedNow = { title: row.title, reason };
-      recut = "declined";
+      recut = { reason: "declined" };
     }
   }
 
@@ -97,10 +102,12 @@ export async function POST(req: Request) {
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick on Lists a minute ago is in Lumi's context before she reads the message.
-  const [history, snap, recentActivity] = await Promise.all([
+  const [history, snap, recentActivity, leads, mailScan] = await Promise.all([
     loadRecentMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
+    listSuggestedLeads(db(), user.id, 8),
+    latestMailScan(db(), user.id),
   ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
@@ -123,12 +130,13 @@ export async function POST(req: Request) {
     timezone: user.timezone,
     preferences: user.preferences,
     reentry: isReentry(snap.sitting),
-    onPlanChange: (reason) => {
-      recut ??= reason;
+    onPlanChange: (change) => {
+      if (!recut || change.reason === "asked") recut = change;
     },
     onSessionEnd: (id) => {
       endedSessionId ??= id;
     },
+    mail: lazyMailReader(user),
   });
 
   const result = streamText({
@@ -158,6 +166,8 @@ export async function POST(req: Request) {
           lastSession: snap.session.last,
           sessionEventNow,
           startNow,
+          mailScan: mailScan ? { at: mailScan.at } : null,
+          leads,
         }),
       },
     ],
@@ -167,7 +177,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
       }
     },
   });

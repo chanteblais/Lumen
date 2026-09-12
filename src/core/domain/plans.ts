@@ -17,9 +17,16 @@ export async function getPlanForDate(db: Db, userId: string, localDate: string):
   return row;
 }
 
-export async function savePlan(db: Db, userId: string, localDate: string, plan: DayPlanJson, reason: PlanReason, capacity?: string): Promise<DayPlanRow> {
+/** `ask`: what the user asked for in chat when the reason is `asked` — kept on the event, since asks are a learning signal ("easy", three days running). */
+export async function savePlan(db: Db, userId: string, localDate: string, plan: DayPlanJson, reason: PlanReason, capacity?: string, ask?: string): Promise<DayPlanRow> {
   const [row] = await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning();
-  await appendEvent(db, { userId, type: reason === "advanced" ? "plan.advanced" : "plan.generated", subjectType: "user", subjectId: userId, payload: { reason, localDate, rightNow: plan.rightNow?.intentionId ?? null } });
+  await appendEvent(db, {
+    userId,
+    type: reason === "advanced" ? "plan.advanced" : "plan.generated",
+    subjectType: "user",
+    subjectId: userId,
+    payload: { reason, localDate, rightNow: plan.rightNow?.intentionId ?? null, ...(ask ? { ask } : {}) },
+  });
   return row;
 }
 

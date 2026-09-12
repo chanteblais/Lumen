@@ -26,6 +26,8 @@ function line(p: ToolPart): string | null {
       return `Together · ${out.goal ?? inp.goal ?? ""}${out.plannedMinutes ? ` · ${out.plannedMinutes} min` : ""}`;
     case "tool-end_focus_session":
       return `Session closed · ${out.goal ?? ""}`;
+    case "tool-reshape_today":
+      return `Reshaped Today · ${String(out.ask ?? inp.ask ?? "").slice(0, 60)}`;
     case "tool-remember":
       return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
     case "tool-confirm_belief":
@@ -36,6 +38,12 @@ function line(p: ToolPart): string | null {
       return "Reworded something I know";
     case "tool-forget_belief":
       return "Forgotten";
+    case "tool-look_at_email":
+      return "Looked through your mail";
+    case "tool-keep_lead":
+      return `Noted · ${out.title ?? ""}`;
+    case "tool-dismiss_lead":
+      return `Let go · ${out.title ?? ""}`;
     default:
       return null;
   }

@@ -1,6 +1,6 @@
 # Lumen — Domain Model (V1)
 
-Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
+Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
 
 ## Tables
 
@@ -107,6 +107,8 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below |
 | `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
 | `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }` |
+| `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
+| `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
 
 ## Derived (never stored)
@@ -123,6 +125,8 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `lastSession` | the most recently ended session if it ended in the last 36h — continuity for the context block ("pick it back up") and the abandoned greeting |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
+| `mailScan` | the newest `email.scanned`: when Lumi last looked and the watermark (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
+| `suggestedLeads` | `leads.status = suggested`, newest first (≤ 12 on Insights, ≤ 8 in the context block). Never counted anywhere |
 
 ## Added in M3 (migration `0001`)
 `intentions.list` (free label from the user's lists; `users.preferences.lists` holds the ordered names, default School · Work · Personal · Later), `intentions.estimate_minutes`, and:
@@ -135,13 +139,35 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked` is reserved for "replan" in chat (not wired) |
+| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
-Events added: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
+Events added: `plan.generated {reason, ask?}` (`ask`: the user's words when the reason is `asked` — a learning signal, e.g. "easy" three days running), `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
+
+## Added 2026-09-12 (migration `0002`) — mail
+
+### `leads`
+Something Lumi noticed that might need doing — in the user's recent mail, for now (`source = 'email'`; a calendar could be a second source) — that they haven't confirmed. Not an intention yet: it becomes one when kept. Not an inbox: a lead is gone once answered, and nothing counts them.
+
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk | |
+| source | text | `email` |
+| source_ref | text | the provider's message id (Gmail); index `(user_id, source_ref)` so a message is never read into a lead twice |
+| title | text | what might need doing, in the user's terms ("Reply to Priya about the draft") |
+| why | text null | Lumi's one line on where it came from |
+| list | text null | the list it would land in if kept — Lumi's guess, constrained to the user's lists |
+| due_at | timestamptz null | only when the mail named a real day or time |
+| from_name, subject, received_at | text null / text null / timestamptz null | the mail's identifying line — **the body is never stored** |
+| status | text | `suggested | kept | dismissed` |
+| intention_id | fk null | set when kept (`set null` if the intention ever goes) |
+| suggested_at, resolved_at | timestamptz | |
+
+Index `(user_id, status, suggested_at)`.
 
 ## Deliberately absent
-Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration).
+Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
 
 ## Storage
 None in V1. (Voice audio never leaves the browser; file attachments are post-V1.)
@@ -152,5 +178,6 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0002_leads.sql` | `leads` table (what Lumi noticed in the mail: title, why, list, due, sender/subject/received, status, `intention_id` when kept) + two indexes | No (create-only) | **Yes** — 2026-09-12, applied by Claude with `npm run db:migrate` on `feat/email-insights` (additive, per `branching.md` → Claude sessions) |
 | `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **Yes** — 2026-09-13 (applied by Chanté; journaled) |
 | `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | **Yes** — 2026-09-11, run by hand in the Supabase SQL editor; recorded in `drizzle.__drizzle_migrations` afterwards so `npm run db:migrate` is a no-op. Future migrations: `npm run db:migrate` only |

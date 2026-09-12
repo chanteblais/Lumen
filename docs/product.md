@@ -70,4 +70,4 @@ Two sections beyond the conversation, specified in `today.md`: **Lists** holds t
 That's it. The question is the *first* landing; once there is a conversation to pick up, the second line continues it instead ("Where did we end up?", "Picking up from yesterday. What's first today?") — see `features.md` → Greeting card.
 
 ## Explicitly not in V1
-Teams, collaboration, projects/Kanban, calendar or email integration, analytics, gamification, streaks, social, mobile apps, elaborate onboarding.
+Teams, collaboration, projects/Kanban, calendar integration, analytics, gamification, streaks, social, mobile apps, elaborate onboarding. (Email came in on 2026-09-12 as a *look*, not an inbox — Lumi reads recent mail read-only and Insights asks "do any of these still need doing?"; see `features.md` → Insights and `decisions.md`.)

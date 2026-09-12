@@ -6,7 +6,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
-## Sweep 2026-09-12 (7) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
+## Sweep 2026-09-12 (8) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
 
 ### Verified (live, against the real database; `check_in_minutes` set to 1 for the sweep and restored to 15 after; the sweep's sessions, their events, and the two beliefs it created were removed afterwards)
 - **Start → bar.** "Stay with me while I work on the lineage section? First step… Say 4 minutes." → Lumi called `start_focus_session` (goal, first step, `approach: read the last paragraph first`, the intention's id, 5 min) and said one line; ledger *Together · Intellectual lineage section of practicum paper · 5 min*; the bar appeared above the composer with *0 of 5 min* and End. Dev log: `tools=start_focus_session`.
@@ -48,6 +48,29 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 1. From Today, *Start with Lumi* on the Right now card → Lumi settles the three things from what she already knows → a 45-minute session with the 15-minute check-ins; Yep twice, Done once.
 2. Leave a session open, close the tab, come back after twice its length → greeting offers it back; say "pick it back up" → a new session with the same goal.
 3. Say "I'm done" in words during a session → `end_focus_session` → ledger *Session closed · goal*.
+
+## Sweep 2026-09-12 (7) — Mail + Insights (`feat/email-insights`, shared checkout, port 3005)
+
+### Verified
+- `npm run check` (63 unit tests incl. `clampLeads` and Gmail parsing) and a production build compile every route. Signed-in pages could not be clicked through by Claude (the automation browser has no session); Chanté connected Google end to end and Insights read her mail live.
+- Migration `0002_leads` applied by Claude (additive).
+
+### Fixed (setup, not code)
+- **Google "This app is blocked" on Connect Google.** Not the app: `.env.local` carried the old *rali* Clerk application's test keys, so every OAuth request went out under Clerk's shared Google client, which Google refuses for Gmail. Also a live key pair had been appended below the test pair (last line wins → "Production keys are only allowed for domain burlyman.ca" on localhost). Fixed with `clerk env pull --app <Lumen>` for the dev keys, the live pair commented out, and the `users` row re-keyed to the new Clerk user in one guarded transaction (the auto-created empty row deleted). See `architecture.md` → Env.
+- On the way there, each of these also had to be true and was checked: Google consent screen in Testing with the account as a test user; both Clerk instances' callback URLs on the Google client; custom credentials on for the Development instance (Clerk's free plan briefly disabled one instance's connection when the other was enabled).
+
+### Known and deliberate
+- Google's Testing mode expires the refresh token after 7 days: Insights will show the connect chip again about weekly. One tap; not a bug.
+- Insights looks at most once per 30 minutes per open; there is no refresh button on purpose (`ef-burden-log.md`).
+- A lead's mail body is sent to the model once and never stored; only sender · subject · received-at · Lumi's line are kept.
+
+### Open
+- Lead quality (does Lumi pick the right things, phrase them as actions, skip noise) has had one live look; tune `core/ai/leads.ts` rules from real use.
+- Chat side (`look_at_email`, `keep_lead`, `dismiss_lead`) verified by types and build only; try "anything in my email I need to handle?" and "did X reply?".
+
+### Highest-value manual tests
+- Insights → *Still needs doing* lands the item on Lists with the subject in the note; *Let it go* removes it; both gone on reload.
+- After a week: the connect chip returns, one tap restores mail.
 
 ## Sweep 2026-09-12 (6) — M4 capacity, Not this, re-entry (`feat/m4-capacity`, worktree, port 3006)
 

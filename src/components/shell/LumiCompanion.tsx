@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_LOOP_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
@@ -10,10 +10,20 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   sway: 560, // nine frames ≈ five seconds, per the sheet
-  foot: 200, // eight frames ≈ 1.6 s, the sheet's calmer suggestion
+  foot: 120, // twenty-one in-betweened frames ≈ 2.5 s: a glance toward the foot, one scuff, the glance back
 };
 /** Loops mixed into the breathing now and then, one pass at a time. */
 const VARIATIONS: LumiLoop[] = ["sway", "foot"];
+/**
+ * How long a frame fades in over the last: most of the frame time of the
+ * faster of the two loops involved, so it is fully in before the next arrives.
+ * A fixed 260ms on the foot's 120ms frames left every frame a third of the way
+ * in when it was replaced and snapped to full — a soft doubling of the hood
+ * wherever frames differed. A hand-over fades at the variation's pace in both
+ * directions: the way out was crisp, the way back (at the breath's 260ms)
+ * read as a slow, blurry turn of the head.
+ */
+const fadeMs = (a: LumiLoop, b: LumiLoop) => Math.min(260, Math.round(Math.min(FRAME_MS[a], FRAME_MS[b]) * 0.8));
 
 type Pose = { loop: LumiLoop; frame: number };
 const REST: Pose = { loop: "breath", frame: 0 };
@@ -150,7 +160,7 @@ export function LumiCompanion() {
           aria-label={onChat ? "Message Lumi" : "Say something to Lumi"}
           aria-expanded={onChat ? undefined : open}
         >
-          <span className="companion-figure" style={cellSize("body", HEIGHT)} aria-hidden>
+          <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(pose.cur.loop, pose.prev.loop)}ms` } as CSSProperties} aria-hidden>
             {stack.map((p, i) => (
               <LumiSprite
                 key={key(p)}
