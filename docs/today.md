@@ -26,8 +26,8 @@ Top to bottom, on paper, in the shell:
 - **Greeting line** (deterministic, `core/ai/greeting.ts`): "Good morning, Chanté."
 - **Lumi's day line** (from the plan, one or two sentences, in voice): "You've got practicum at 5. Nothing else is especially time-sensitive." Lumi's bust beside it, small.
 - **Capacity prompt** — only when today has no capacity report and the plan hasn't been accepted yet: *How much have we got today?* Not much · Normal-ish · Lots · (skip). Answering regenerates the plan. Asked at most once per day, dismissable, never blocking.
-- **RIGHT NOW** — the dominant card: title (display serif, large), quiet pills (list · ~minutes), the next action in one line, **Start with Lumi** (primary), **Not this** (secondary). Quiet links beneath: *Break it down* (opens chat with that intent). One card. No carousel, no "1 of 3".
-- **AFTER THAT** — up to three rows, each: title · list pill · ~minutes. Complete/reopen circle. Nothing else. If the plan holds more, a single collapsed line — *A few more, when you get there* — no number.
+- **RIGHT NOW** — the dominant card: title (display serif, large), a quiet marginal note beneath it in small caps (list · ~minutes; `.pill`, no box), the next action in one line, **Start with Lumi** (primary), **Not this** (secondary). Quiet links beneath: *Break it down* (opens chat with that intent). One card. No carousel, no "1 of 3".
+- **AFTER THAT** — up to three rows, each: title · list · ~minutes (the last two as one marginal note). Complete/reopen circle. Nothing else. If the plan holds more, a single collapsed line — *A few more, when you get there* — no number.
 - **LATER** — fixed-time commitments only (things with a `due_at` today): "Practicum · 5:00 pm". Reads as the shape of the day, not a list.
 - **Everything else can wait.** One closing line from the plan when there are open intentions not on the path.
 - **Lumi** — the corner companion already present in the shell. Tap her for a speech bubble and say a thing ("add take out compost") without leaving the page; the path refreshes once she's done. Nothing else.

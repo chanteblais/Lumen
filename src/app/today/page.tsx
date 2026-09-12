@@ -1,10 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PlanSection } from "@/components/today/PlanSection";
 import { LumiAvatar } from "@/components/chat/LumiAvatar";
+import { Divider } from "@/components/ui/Ornament";
 import { dayPart } from "@/core/time";
 import { recordVisit, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Today" };
 
 /** What should I be doing right now? One thing, then a short path. docs/today.md */
 export default async function TodayPage() {
@@ -16,8 +19,12 @@ export default async function TodayPage() {
 
   return (
     <div className="mx-auto w-full max-w-[880px] px-1 pb-14">
+      <p className="label">Today</p>
+      <div className="my-4">
+        <Divider />
+      </div>
       <div className="mb-8 flex items-start gap-6">
-        <LumiAvatar size={48} className="mt-1" />
+        <LumiAvatar size={48} className="medallion mt-1" />
         <div className="min-w-0">
           <h1 className="font-display text-[34px] leading-[1.2] text-ink sm:text-[40px]">
             {hello}, {user.displayName}.
@@ -35,12 +42,12 @@ export default async function TodayPage() {
   );
 }
 
+/** While the path is being cut: the card, its kicker, and Lumi's three slow dots — the same pause as in the chat, not grey bars. */
 function PlanSkeleton() {
   return (
-    <section className="card px-8 py-8 sm:px-10">
+    <section className="card px-8 py-8 sm:px-10" aria-label="Right now" aria-busy>
       <p className="label">Right now</p>
-      <div className="mt-6 h-9 w-2/3 rounded bg-paper-deep" />
-      <div className="mt-4 h-5 w-1/3 rounded bg-paper-deep" />
+      <p className="thinking-dots mt-5"><span>·</span><span>·</span><span>·</span></p>
     </section>
   );
 }

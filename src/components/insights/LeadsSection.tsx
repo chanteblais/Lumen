@@ -57,7 +57,7 @@ export async function LeadsSection({ user, reader }: { user: User; reader: Email
 export function Opener({ line, children }: { line: string; children?: React.ReactNode }) {
   return (
     <div className="flex items-start gap-6">
-      <LumiAvatar size={48} className="mt-1" />
+      <LumiAvatar size={48} className="medallion mt-1" />
       <div className="min-w-0">
         <h1 className="font-display text-[30px] leading-[1.2] text-ink sm:text-[36px]">{line}</h1>
         {children}

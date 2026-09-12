@@ -39,7 +39,7 @@ export function CompleteCircle({ id, done = false, label, size = 26 }: Props) {
     >
       {isDone && (
         <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
+          <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} />
         </svg>
       )}
     </button>
