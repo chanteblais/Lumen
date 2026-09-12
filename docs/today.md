@@ -92,6 +92,6 @@ Each is a real user message in the one transcript (decision #11 in `architecture
 - **M6/M7** unchanged.
 
 ## Open questions for Chanté
-1. **The product is "Lumen" now?** The brief and mockup say Lumen; the wordmark, `<title>`, docs and repo still say Rali. If yes, it's a rename pass (cheap now, expensive after launch). The character stays Lumi either way.
+1. **The product is "Lumen" now?** The brief and mockup say Lumen; the wordmark, `<title>`, docs and repo still say Lumi. If yes, it's a rename pass (cheap now, expensive after launch). The character stays Lumi either way.
 2. **Nav:** the mockup shows Today · Lists · Focus · Chat · Insights · Archive. Proposal: **Today · Lists · Chat · Settings** in V1 (Focus lives inside Chat/sessions; Insights and Archive post-V1), Today first as the landing page once it exists — Chat remains the landing until M3 ships.
 3. **Should Today become the landing page** at M3, with the conversation one click away? The brief implies yes.

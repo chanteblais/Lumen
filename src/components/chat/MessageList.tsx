@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { RaliUIMessage } from "@/core/domain/conversations";
+import type { LumenUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { LumiAvatar } from "./LumiAvatar";
 
-type Props = { messages: RaliUIMessage[]; thinking?: boolean; error?: string };
+type Props = { messages: LumenUIMessage[]; thinking?: boolean; error?: string };
 
 const SIX_HOURS = 6 * 3_600_000;
 
@@ -38,7 +38,7 @@ export function MessageList({ messages, thinking, error }: Props) {
           <p>{text}</p>
         </div>
       ) : (
-        <div key={m.id} className="msg msg-rali">
+        <div key={m.id} className="msg msg-lumi">
           <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body">
             {text.split(/\n{2,}/).map((para, i) => (
@@ -54,13 +54,13 @@ export function MessageList({ messages, thinking, error }: Props) {
     <section className="mt-10 flex flex-col gap-7" aria-live="polite" aria-label="Conversation">
       {items}
       {thinking && (
-        <div className="msg msg-rali" aria-label="Lumi is thinking">
+        <div className="msg msg-lumi" aria-label="Lumi is thinking">
           <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
         </div>
       )}
       {error && (
-        <div className="msg msg-rali">
+        <div className="msg msg-lumi">
           <LumiAvatar size={36} className="msg-avatar" />
           <div className="msg-body"><p className="text-ink-soft">{error}</p></div>
         </div>

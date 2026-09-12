@@ -1,4 +1,4 @@
-# Rali — Domain Model (V1)
+# Lumen — Domain Model (V1)
 
 Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
 
@@ -9,7 +9,7 @@ Seven tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 |---|---|---|
 | id | uuid pk | internal id — everything references this, never the Clerk id |
 | clerk_user_id | text unique | auth provider id |
-| display_name | text | what Rali calls you |
+| display_name | text | what Lumi calls you |
 | timezone | text | IANA, captured from the browser on first visit |
 | preferences | jsonb | `{ v: 1, session_minutes: 45, check_in_minutes: 15 }` — tone is *learned* as a `preference` belief, not set here |
 | created_at, last_seen_at | timestamptz | `last_seen_at` bumped on every turn and page open |

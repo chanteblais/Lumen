@@ -1,6 +1,6 @@
-# Rali — Session Brief
+# Lumen — Session Brief
 
-AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.** Read `docs/product.md` once; it holds the brief and Rali's voice guide.
+**Lumen** (the product; the companion character is **Lumi**) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.** Read `docs/product.md` once; it holds the brief and Lumi's voice guide.
 
 **The question that overrides everything:** does this reduce the user's executive-function burden, or accidentally create more of it? Ask it before adding any field, control, count, or setting.
 
@@ -18,7 +18,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 ## Conventions
 - `src/core` is framework-free (no `next`/`react` imports; ESLint enforces). Domain logic and AI assembly live there and are unit-tested.
 - The model **reads** state via the context block and **writes** only via tools. Every tool write appends an `events` row. Never parse prose for state.
-- Greeting and focus check-ins are deterministic (no LLM call). Rali speaks unprompted only for check-ins.
+- Greeting and focus check-ins are deterministic (no LLM call). Lumi speaks unprompted only for check-ins.
 - Store facts and events; derive judgements (stale, avoided, gap) at read time. Never persist derived flags.
 - **Understanding layer is first-class:** beliefs (`memory_notes`) carry confidence + evidence; the model proposes belief ops, `core/domain/memory.ts` applies them with guardrails; outcomes (sessions, completions) are the feedback signal. The user never rates or tags anything.
 - Persona prompt (`src/core/ai/persona.ts`) + tool descriptions are the cached prefix — keep them byte-stable; volatile context goes after.

@@ -1,6 +1,6 @@
 # EF-Burden Log
 
-A **running ledger of every place Rali asks the user to maintain, decide, categorise, rate, or tidy something** — the raw material for the one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* Mirrors Glåüm's generalizability log: captured from reality as we build, not guessed.
+A **running ledger of every place Lumi asks the user to maintain, decide, categorise, rate, or tidy something** — the raw material for the one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* Mirrors Glåüm's generalizability log: captured from reality as we build, not guessed.
 
 > **Why this exists:** productivity systems accrete maintenance. The only defence is to notice each increment as it appears. Some burden is fine (typing a message). The point is that every increment is *seen* and *chosen*.
 
@@ -9,7 +9,7 @@ A **running ledger of every place Rali asks the user to maintain, decide, catego
 During **any** work on this codebase, whenever you write, propose, or read code or copy that:
 - asks the user to **set** something (a status, priority, category, tag, due date, setting, tone),
 - asks the user to **keep** something current (a list to groom, an inbox to clear, a session to close),
-- asks the user to **rate** or **confirm** something Rali could infer from behaviour,
+- asks the user to **rate** or **confirm** something Lumi could infer from behaviour,
 - shows the user a **count** of undone things,
 - or requires the user to **remember** to do something in the app for the app to work,
 
@@ -40,7 +40,7 @@ During **any** work on this codebase, whenever you write, propose, or read code 
 | 2026-09-12 | *Not this* quick answers | rate | Six reasons for declining the current task | Kept: it's the opposite of pressure — the user corrects Lumi in one tap, and the reason is the best learning signal we have | accepted |
 | 2026-09-12 | Lists membership (`intentions.list`) | set | Which list a thing belongs to | Lumi infers on capture; the user only ever corrects. Never a required field | accepted (derived by default) |
 
-| 2026-09-11 | Tone preference | set | A tone picker in Settings | Learned as a `preference` belief; visible/correctable in "What Rali knows" | derived |
+| 2026-09-11 | Tone preference | set | A tone picker in Settings | Learned as a `preference` belief; visible/correctable in "What Lumi knows" | derived |
 | 2026-09-11 | Focus check-ins | rate | "Still with it?" Yep / Stuck / Distracted / Done at intervals | Kept: it's the body-double contract the user agreed to; "Yep" costs one tap and no reply | accepted |
 | 2026-09-12 | Quick-start chip text, `core/ai/persona.ts` | choose | The chip sends its label as the user's message | Considered a hidden canned prompt per chip; rejected — the transcript would show words the user didn't say. The persona interprets the four labels instead | accepted |
 | 2026-09-12 | "Another way in" button, `components/chat/QuickStarts.tsx` | choose | Sends "I don't know where to start." | Kept: one tap for the person with the least capacity to type | accepted |

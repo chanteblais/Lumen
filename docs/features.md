@@ -9,13 +9,13 @@ Every page and feature: who it's for, what it does, key states. Grows with each 
 Sidebar (`components/shell/Sidebar.tsx`), numbered, present on every page:
 
 ```
-Rali   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
+Lumi   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 ```
 
 - Active route highlighted via `aria-current="page"`.
 - Mobile (<768px): sidebar collapses to a top strip with the wordmark and nav names.
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
-- Open question (2026-09-12): the Today mockup shows Today · Lists · Focus · Chat · Insights · Archive. Proposal in `today.md`: **Today · Lists · Chat · Settings** for V1, Today becoming the landing page at M3.
+- Decided 2026-09-12: V1 nav is **Chat · Today · Lists · Settings**; Chat stays the homepage (`today.md` → Decisions). Library and Insights leave the nav when Lists lands (M3).
 
 **Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then a slow sway — one pose, small movements. Decorative only — no clicks, no state. Still under reduced-motion.
 
@@ -30,15 +30,15 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 ### Chat (`/`) — the soft landing
 
 **Who:** Signed-in users.
-**What:** The conversation with Rali. The only surface that matters in V1.
+**What:** The conversation with Lumi. The only surface that matters in V1.
 
 - **Greeting card** — two lines from `core/ai/greeting.ts` (deterministic, no model call): recognition ("Good to see you, Chanté.") + somewhere to begin. Variants: default ("What are we working with today?"), long gap (≥7 days: "It's been a minute…"), abandoned session ("Looks like we left a session open on…").
 - **Quick starts** — Help me choose · Break it down · Body double · Just talk, plus "another way in" (sends "I don't know where to start."). Each chip sends its own label as the user message — the user sees exactly what they tapped — and the persona knows what each means. Shown until you've said something *this sitting* (no message in the last six hours — `isInSitting`, same threshold as the visit rules), then the card compacts; they return next time you come back.
-- **Conversation** (`components/chat/Conversation.tsx`, `useChat`) — the transcript below the greeting card. User lines right-aligned on paper-deep; Rali lines with a 36px avatar. A fine rule with "Yesterday" / "3 days ago" separates messages more than six hours apart. While Rali is thinking, three slow dots. Errors render as one line in Rali's voice ("I lost the thread for a second. Say that again?"). The last 30 messages load on page open; the client sends only the new message and the server holds the transcript.
+- **Conversation** (`components/chat/Conversation.tsx`, `useChat`) — the transcript below the greeting card. User lines right-aligned on paper-deep; Lumi lines with a 36px avatar. A fine rule with "Yesterday" / "3 days ago" separates messages more than six hours apart. While Lumi is thinking, three slow dots. Errors render as one line in Lumi's voice ("I lost the thread for a second. Say that again?"). The last 30 messages load on page open; the client sends only the new message and the server holds the transcript.
 - **Composer** — pinned to the bottom of the viewport; the transcript above scrolls in its own region (`.chat-page` / `.chat-scroll` / `.composer-dock`), so the input is always in reach and the layout is identical on first load, after a turn, and after navigating away and back. Auto-growing textarea, `+`, send. Enter sends, Shift+Enter newlines; disabled while a turn streams.
-- **Voice** (`useVoiceInput`, Web Speech API) — the mic link under the composer toggles listening; the composer border turns brass and the placeholder says "Listening…". Transcribed text lands in the textarea (appended to anything already typed) for the user to read and send — nothing is sent automatically. Hidden in browsers without `SpeechRecognition` (Firefox). Microphone blocked → one line in Rali's voice under the composer. "Add file" and "Tools" are gone until they do something.
+- **Voice** (`useVoiceInput`, Web Speech API) — the mic link under the composer toggles listening; the composer border turns brass and the placeholder says "Listening…". Transcribed text lands in the textarea (appended to anything already typed) for the user to read and send — nothing is sent automatically. Hidden in browsers without `SpeechRecognition` (Firefox). Microphone blocked → one line in Lumi's voice under the composer. "Add file" and "Tools" are gone until they do something.
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
-- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Rali says so if asked to remember or track something. Avatar is Lumi's head (neutral) from `mockups/lumi.png` as of 2026-09-11.
+- **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Lumi says so if asked to remember or track something. Avatar is Lumi's head (neutral) from `mockups/lumi.png` as of 2026-09-11.
 
 ### Today (`/today`) — spec: `today.md`
 
@@ -60,7 +60,7 @@ Placeholder. Only ships if it can be framed without scores, streaks, or charts o
 
 ### Settings (`/settings`)
 
-Placeholder. M1: name, timezone. M6: session defaults. **"What Rali knows"** (`/knows`, M6) — beliefs grouped by kind, confidence as words, correct/delete inline.
+Placeholder. M1: name, timezone. M6: session defaults. **"What Lumi knows"** (`/knows`, M6) — beliefs grouped by kind, confidence as words, correct/delete inline.
 
 ---
 
