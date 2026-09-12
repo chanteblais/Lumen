@@ -218,11 +218,52 @@ def nudge(cell, dx):
     return out
 
 
-def settle(cell, ref, reach=12):
-    """Slide `cell` sideways so its head silhouette best overlaps `ref`'s."""
+def soft_head(cell):
+    """Alpha of the hood and face, 0–1."""
+    a = cell[:, :, 3].astype(float) / 255
+    a[HEAD_ROWS:] = 0
+    return a
+
+
+def shift(cell, dx, dy):
+    """The cell moved by a fractional (dx, dy): cubic resampling on premultiplied channels."""
+    a = cell[:, :, 3:4].astype(float) / 255
+    pre = np.dstack([cell[:, :, :3] * a, cell[:, :, 3:4].astype(float)])
+    out = np.dstack([ndi.shift(pre[:, :, i], (dy, dx), order=3, mode='constant') for i in range(4)])
+    a2 = np.clip(out[:, :, 3:4], 0, 255)
+    rgb = np.clip(out[:, :, :3] / np.maximum(a2 / 255, 1e-3), 0, 255)
+    return np.dstack([rgb, a2]).astype(np.uint8)
+
+
+def settle(cell, ref, reach=12, fine=1.0, step=0.25):
+    """Move `cell` so its head silhouette best overlaps `ref`'s: whole pixels sideways
+    first, then a quarter-pixel refinement in both axes (a frame that sits half a
+    pixel off its neighbour doubles the hood's edge under the crossfade)."""
     r, c = head(ref), head(cell)
     dx = max(range(-reach, reach + 1), key=lambda d: (np.roll(c, d, axis=1) & r).sum())
-    return nudge(cell, dx)
+    cell = nudge(cell, dx)
+    rs, cs = soft_head(ref), soft_head(cell)
+    steps = np.arange(-fine, fine + step / 2, step)
+    score = lambda fx, fy: (lambda s: np.minimum(s, rs).sum() / np.maximum(s, rs).sum())(ndi.shift(cs, (fy, fx), order=1))
+    fx, fy = max(((fx, fy) for fx in steps for fy in steps), key=lambda p: score(*p))
+    return cell if fx == 0 and fy == 0 else shift(cell, fx, fy)
+
+
+def hold_head(cells, top=112, bottom=124):
+    """An animation hold: every frame keeps frame 0's head. The sheet is one
+    drawing with only the foot moving, but the generator still redrew the hood
+    rim and its sun a little each frame, which the crossfade showed as a soft
+    shimmer around her head. Blended in over the collar rows (`top`..`bottom`)
+    on premultiplied channels, so the seam sits under the chin, inside the figure."""
+    def pre(c):
+        a = c[:, :, 3:4].astype(float) / 255
+        return np.dstack([c[:, :, :3] * a, c[:, :, 3:4].astype(float)])
+    def straight(p):
+        a = np.clip(p[:, :, 3:4], 0, 255)
+        return np.dstack([np.clip(p[:, :, :3] / np.maximum(a / 255, 1e-3), 0, 255), a]).astype(np.uint8)
+    w = np.clip((np.arange(H) - top) / (bottom - top), 0, 1)[:, None, None]  # 0 = frame 0's head, 1 = the frame's own
+    p0 = pre(cells[0])
+    return [cells[0]] + [straight((1 - w) * p0 + w * pre(c)) for c in cells[1:]]
 
 
 def with_eyes(target, donor):
@@ -257,6 +298,7 @@ foot = [cut_foot(playful, boxes[i]) for i in FOOT_ORDER]
 # rest pose (so the hand-over doesn't step sideways), then the rest onto frame 0.
 foot[0] = settle(foot[0], breath[0])
 foot[1:] = [settle(c, foot[0]) for c in foot[1:]]
+foot = hold_head(foot)
 
 loops = [breath, sway, foot]
 sheet = np.zeros((H * 3 * len(loops), W * COLS, 4), dtype=np.uint8)
