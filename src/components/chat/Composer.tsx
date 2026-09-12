@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useVoiceInput } from "./useVoiceInput";
 
-type Props = { onSend?: (text: string) => void; busy?: boolean };
+type Props = { onSend?: (text: string) => void; busy?: boolean; initialValue?: string };
 
 /** Join typed text and a transcript with one space, no leading space. */
 function join(base: string, spoken: string) {
@@ -14,8 +14,8 @@ function join(base: string, spoken: string) {
   return `${b} ${s}`;
 }
 
-export function Composer({ onSend, busy = false }: Props) {
-  const [value, setValue] = useState("");
+export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
+  const [value, setValue] = useState(initialValue);
   const ref = useRef<HTMLTextAreaElement>(null);
   const baseRef = useRef("");
 

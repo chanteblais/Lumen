@@ -25,9 +25,12 @@ export type UserPreferences = {
   v: 1;
   session_minutes: number;
   check_in_minutes: number;
+  /** Ordered list names for Lists. Absent → DEFAULT_LISTS. */
+  lists?: string[];
 };
 
 export const DEFAULT_PREFERENCES: UserPreferences = { v: 1, session_minutes: 45, check_in_minutes: 15 };
+export const DEFAULT_LISTS = ["School", "Work", "Personal", "Later"] as const;
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -89,6 +92,10 @@ export const intentions = pgTable(
     nextAction: text("next_action"),
     note: text("note"),
     status: text("status").$type<IntentionStatus>().notNull().default("open"),
+    /** Lists membership — a free label from the user's lists. Lumi infers; the user corrects. */
+    list: text("list"),
+    /** "~40 min". Lumi's guess unless the user said. */
+    estimateMinutes: integer("estimate_minutes"),
     effortHint: text("effort_hint").$type<EffortHint>(),
     dueAt: ts("due_at"),
     sourceMessageId: uuid("source_message_id"),
@@ -153,6 +160,33 @@ export const memoryNotes = pgTable(
   (t) => [index("memory_notes_user_active_idx").on(t.userId, t.retiredAt)],
 );
 
+/* ------------------------------------------------------------ day_plans */
+
+/** One persisted path per local day. See docs/today.md → How the plan is built. */
+export type DayPlanJson = {
+  dayLine: string;
+  rightNow: { intentionId: string; firstStep: string } | null;
+  afterThat: { intentionId: string }[];
+  later: { intentionId: string }[];
+  restCanWait: boolean;
+  closingLine?: string;
+};
+export type PlanReason = "new_day" | "capacity" | "declined" | "asked" | "advanced";
+
+export const dayPlans = pgTable(
+  "day_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    localDate: text("local_date").notNull(),
+    capacity: text("capacity"),
+    plan: jsonb("plan").$type<DayPlanJson>().notNull(),
+    reason: text("reason").$type<PlanReason>().notNull(),
+    generatedAt: ts("generated_at").notNull().defaultNow(),
+  },
+  (t) => [index("day_plans_user_date_idx").on(t.userId, t.localDate, t.generatedAt)],
+);
+
 /* --------------------------------------------------------------- events */
 
 export const events = pgTable(
@@ -177,3 +211,4 @@ export type Intention = typeof intentions.$inferSelect;
 export type FocusSession = typeof focusSessions.$inferSelect;
 export type MemoryNote = typeof memoryNotes.$inferSelect;
 export type Event = typeof events.$inferSelect;
+export type DayPlanRow = typeof dayPlans.$inferSelect;

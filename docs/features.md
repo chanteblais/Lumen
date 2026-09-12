@@ -34,29 +34,22 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 
 - **Greeting card** — two lines from `core/ai/greeting.ts` (deterministic, no model call): recognition ("Good to see you, Chanté.") + somewhere to begin. Variants: default ("What are we working with today?"), long gap (≥7 days: "It's been a minute…"), abandoned session ("Looks like we left a session open on…").
 - **Quick starts** — Help me choose · Break it down · Body double · Just talk, plus "another way in" (sends "I don't know where to start."). Each chip sends its own label as the user message — the user sees exactly what they tapped — and the persona knows what each means. Shown until you've said something *this sitting* (no message in the last six hours — `isInSitting`, same threshold as the visit rules), then the card compacts; they return next time you come back.
+- **Ledger lines** (`components/chat/Ledger.tsx`) — under a reply, a quiet ✦ line per thing Lumi did: *Noted · title · list*, *Done · title*, *Let go · title*, *Remembered · …*, *Today · not much*. Rendered from tool parts.
 - **Conversation** (`components/chat/Conversation.tsx`, `useChat`) — the transcript below the greeting card. User lines right-aligned on paper-deep; Lumi lines with a 36px avatar. A fine rule with "Yesterday" / "3 days ago" separates messages more than six hours apart. While Lumi is thinking, three slow dots. Errors render as one line in Lumi's voice ("I lost the thread for a second. Say that again?"). The last 30 messages load on page open; the client sends only the new message and the server holds the transcript.
 - **Composer** — pinned to the bottom of the viewport; the transcript above scrolls in its own region (`.chat-page` / `.chat-scroll` / `.composer-dock`), so the input is always in reach and the layout is identical on first load, after a turn, and after navigating away and back. Auto-growing textarea, `+`, send. Enter sends, Shift+Enter newlines; disabled while a turn streams.
 - **Voice** (`useVoiceInput`, Web Speech API) — the mic link under the composer toggles listening; the composer border turns brass and the placeholder says "Listening…". Transcribed text lands in the textarea (appended to anything already typed) for the user to read and send — nothing is sent automatically. Hidden in browsers without `SpeechRecognition` (Firefox). Microphone blocked → one line in Lumi's voice under the composer. "Add file" and "Tools" are gone until they do something.
 - **Tool links** — Add file · Voice · Tools. M0: visual. Voice lands in M7; Add file and Tools are placeholders (may be cut).
 - **Status:** M0 built 2026-09-11 (static). M1: greeting uses the signed-in first name and the real visit gap. M2 (2026-09-12): live conversation with `claude-opus-5`, persisted; no tools yet — Lumi says so if asked to remember or track something. Avatar is Lumi's head (neutral) from `mockups/lumi.png` as of 2026-09-11.
 
-### Today (`/today`) — spec: `today.md`
+### Today (`/today`) — spec: `today.md` — **built M3 (2026-09-12)**
 
 **Who:** Signed-in.
-**What:** Answers *what should I be doing right now?* Greeting, Lumi's one-line read of the day, an optional capacity prompt, one dominant **Right now** card with **Start with Lumi** and **Not this**, up to three **After that** rows, **Later** (fixed-time commitments only), and "everything else can wait." Generated as a persisted `DayPlan` (model proposes, code guards), stable across reloads, advanced by code on completion. M0: placeholder line. Built in M3 (path), M4 (capacity + *Not this* regeneration).
+**What:** Answers *what should I be doing right now?* Greeting by time of day, Lumi's one-line read of the day, one dominant **Right now** card (title, list + estimate pills, the first physical step, **Start with Lumi**, **Not this**, *Break it down*), up to three **After that** rows, **Later** (fixed-time commitments only), and "everything else can wait." The plan is generated once on the first open of the day (streamed in under Suspense with a skeleton), persisted, and stable across reloads; ticking the circle on any row completes it and advances the path. **Start with Lumi / Not this / Break it down** are links into Chat that send a visible message ("Let's start: *title*") with the intention id in metadata. M4 adds the capacity prompt and *Not this* regeneration with reasons.
 
-### Lists (`/lists`) — spec: `today.md` → Lists
+### Lists (`/lists`) — spec: `today.md` → Lists — **built M3 (2026-09-12), minimum**
 
 **Who:** Signed-in.
-**What:** The pile: the user's broader structure in named lists (School · Work · Personal · Later by default). Lumi files intentions here conversationally; the user can move and reorder. No per-list counts, no due date unless one was set, one Add affordance. Minimum in M3 (assignment + per-list view); reorder later.
-
-### Library (`/library`)
-
-Placeholder. Proposed to leave the V1 nav (2026-09-12) in favour of Lists; the "what works for you" idea folds into *What Lumi knows*.
-
-### Insights (`/insights`)
-
-Placeholder. Only ships if it can be framed without scores, streaks, or charts of effort. Post-V1.
+**What:** The pile. Open intentions grouped by list (School · Work · Personal · Later by default; `users.preferences.lists`), two columns; each row is a complete circle, the title, the next action if any, and estimate/due pills. No per-list counts. One **Add something** chip → Chat with the composer prefilled ("Add to my list: "). Moving between lists and renaming lists happen in conversation for now; drag/reorder later.
 
 ### Settings (`/settings`)
 
@@ -66,4 +59,11 @@ Placeholder. M1: name, timezone. M6: session defaults. **"What Lumi knows"** (`/
 
 ## Supporting Features
 
-*(None yet. Coming: Intentions (M3), Understanding layer / beliefs (M3, M5, M6), Focus Together (M5), Voice input (M7).)*
+### Intentions (M3)
+"Intention", not task: something the user meant to do. Created, updated, completed and dropped by Lumi through tools (`docs/architecture.md` → Tools) or ticked on Today/Lists. Fields: title, next action, note, list, estimate, due. Status open/done/dropped; stale (14 days untouched) is derived. Every change is an event.
+
+### Beliefs — the understanding layer (M3 tools; reflection in M5/M6)
+`memory_notes` with kind · confidence · evidence. Lumi calls `remember` for durable things the user says (`user_said`) or notices (`lumi_inferred`, modest confidence), and `confirm/contradict/revise/forget` as evidence arrives; `core/domain/memory.ts` applies the ops with guardrails (caps, user-said beliefs untouchable by Lumi, retire below 0.2). Injected into every turn's context with confidence and "tentative" markers. "What Lumi knows" page in M6.
+
+### Capacity (M3 tool; Today prompt in M4)
+`report_capacity` when the user says how much they've got. Today's capacity is the latest report in the local day; it shapes the plan (≤1 after-that on a low day).

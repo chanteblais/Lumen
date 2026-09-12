@@ -44,3 +44,5 @@ During **any** work on this codebase, whenever you write, propose, or read code 
 | 2026-09-11 | Focus check-ins | rate | "Still with it?" Yep / Stuck / Distracted / Done at intervals | Kept: it's the body-double contract the user agreed to; "Yep" costs one tap and no reply | accepted |
 | 2026-09-12 | Quick-start chip text, `core/ai/persona.ts` | choose | The chip sends its label as the user's message | Considered a hidden canned prompt per chip; rejected — the transcript would show words the user didn't say. The persona interprets the four labels instead | accepted |
 | 2026-09-12 | "Another way in" button, `components/chat/QuickStarts.tsx` | choose | Sends "I don't know where to start." | Kept: one tap for the person with the least capacity to type | accepted |
+| 2026-09-12 | Lists "Add something" chip, `app/lists/page.tsx` | choose | One affordance to add, which opens Chat prefilled | Kept: one, and it routes through the conversation so Lumi files it | accepted |
+| 2026-09-12 | Today "First" line (first step) | — | Shows Lumi's chosen first physical action | Not an ask — but if it ever becomes editable it becomes maintenance. Keep read-only | accepted |

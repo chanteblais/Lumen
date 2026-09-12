@@ -388,6 +388,56 @@ body::after {
 .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
 
+/* ---------- Rows, pills, circles (Today + Lists) ---------- */
+.row { display: flex; align-items: center; gap: 16px; padding: 12px 4px; border-bottom: 1px solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+.row-quiet { padding: 8px 4px; }
+.pill {
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px 11px;
+  white-space: nowrap;
+}
+.circle {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  border: 1.5px solid var(--rule-strong);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.circle:hover { border-color: var(--brass); }
+.circle.is-done { background: var(--forest); border-color: var(--forest); }
+.circle:disabled { opacity: 0.6; cursor: default; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 22px;
+  color: #f3efe7; background: var(--forest);
+  border-radius: 8px; padding: 12px 28px; text-decoration: none;
+  transition: transform 120ms ease;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-ghost {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-display); font-size: 22px;
+  color: var(--ink); background: transparent;
+  border: 1px solid var(--rule-strong); border-radius: 8px; padding: 12px 28px; text-decoration: none;
+}
+.btn-ghost:hover { background: var(--paper-deep); }
+
+/* ---------- Ledger: what Lumi did, under her reply ---------- */
+.ledger { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.ledger li { font-size: 14px; letter-spacing: 0.02em; color: var(--ink-mute); }
+.ledger-mark { color: var(--brass); margin-right: 8px; font-size: 11px; vertical-align: 1px; }
+
 /* ---------- Mobile: sidebar becomes a top strip ---------- */
 @media (max-width: 767px) {
   .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
