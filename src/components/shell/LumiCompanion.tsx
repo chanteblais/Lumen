@@ -41,7 +41,7 @@ const DEBUG = process.env.NODE_ENV === "development";
  * Lumi in the corner of the screen, keeping you company. Full figure, standing
  * a little in from the bottom edge. Click her and a speech bubble opens so you
  * can say one thing from wherever you are ("add take out compost") without
- * leaving the page (`CompanionBubble`). On the chat page she just hands you the
+ * leaving the page (`CompanionBubble`). On Home she just hands you the
  * composer. No state of her own to maintain.
  *
  * Idle life, all of it off under `prefers-reduced-motion`:
@@ -56,9 +56,9 @@ const DEBUG = process.env.NODE_ENV === "development";
  */
 export function LumiCompanion() {
   const pathname = usePathname();
-  const onChat = pathname === "/";
+  const onHome = pathname === "/";
   // The bubble remembers which page it opened on, so leaving the page closes
-  // it (the conversation is there in Chat anyway) without an effect.
+  // it (the conversation is there on Home anyway) without an effect.
   const [openedOn, setOpenedOn] = useState<string | null>(null);
   const open = openedOn === pathname;
   const close = useCallback(() => setOpenedOn(null), []);
@@ -146,7 +146,7 @@ export function LumiCompanion() {
   const stack = key(pose.prev) === key(pose.cur) ? [pose.cur] : [pose.prev, pose.cur];
 
   const tap = () => {
-    if (onChat) {
+    if (onHome) {
       document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
       return;
     }
@@ -156,13 +156,13 @@ export function LumiCompanion() {
   return (
     <>
       <div className="companion">
-        {open && !onChat && <CompanionBubble onClose={close} onSend={() => ack.current?.()} />}
+        {open && !onHome && <CompanionBubble onClose={close} onSend={() => ack.current?.()} />}
         <button
           type="button"
           className="companion-btn"
           onClick={tap}
-          aria-label={onChat ? "Message Lumi" : "Say something to Lumi"}
-          aria-expanded={onChat ? undefined : open}
+          aria-label={onHome ? "Message Lumi" : "Say something to Lumi"}
+          aria-expanded={onHome ? undefined : open}
         >
           <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(pose.cur.loop, pose.prev.loop)}ms` } as CSSProperties} aria-hidden>
             {stack.map((p, i) => (

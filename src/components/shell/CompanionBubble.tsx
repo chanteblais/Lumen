@@ -14,8 +14,8 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 /**
  * A speech bubble above the corner companion: say one thing to Lumi from any
  * page without leaving it. The message goes through the same `/api/chat`
- * route as the chat page (the server owns the transcript, so it lands in the
- * main conversation and is there when you next open Chat). Lumi's reply
+ * route as Home (the server owns the transcript, so it lands in the
+ * main conversation and is there when you next open Home). Lumi's reply
  * shows here, with the ledger of what she did; once the turn has landed the
  * page refreshes so Today / Lists reflect any writes. Nothing to maintain:
  * Escape, a click outside or a click on Lumi closes it.

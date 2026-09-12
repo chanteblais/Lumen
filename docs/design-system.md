@@ -28,7 +28,21 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 **Gutter:** `.main` carries a soft inset shadow on its left edge where the page meets the spine. Off on phones.
 
-**Dark mode:** none in V1. The book is ivory.
+**Dark mode:** none in V1. The book is ivory — with one exception, below.
+
+**Home: the room** (2026-09-12). Home is the one page not set on ivory: it is set *in* a painted room (`art/home-background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
+
+| Token | By lantern light | Usage on Home |
+|---|---|---|
+| Paper | `#1a120c` | The dock's fade, the medallion gap, the fleuron's vein |
+| Paper deep | `rgba(241,230,207,.08)` | Chips, icon buttons, your lines' tint |
+| Card | `rgba(26,18,12,.72)` + `backdrop-filter: blur` | Lumi's plates, the composer, the check-in — dark glass |
+| Ink / soft / mute | `#f1e6cf` / `#d6c8aa` / `#a89a80` | Parchment type |
+| Brass / soft | `#d9ac5f` / `#f0d9a6` | The lamp's gold: ornaments, the send button, focus ring, thinking dots |
+| Rule / strong | parchment at .16 / .40 | Every hairline |
+| Shadow | two black layers (.25 / .35) | Plates and the scroll |
+
+The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Every other page stays ivory; the room is not a theme, it is where Home is.
 
 ---
 
@@ -48,7 +62,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 Heading defaults: none imposed. Headings are display-font lines set per surface; there is no `h1` style to fight.
 
-**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Lumen*, *Lists · Lumen*; Chat is just *Lumen*.
+**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Lumen*, *Lists · Lumen*; Home is just *Lumen*.
 
 ---
 
@@ -76,6 +90,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
 | `.icon-btn` | 44px round icon button on paper-deep |
 | `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it |
+| `.home-scene` | Home only: the painted room, fixed behind the shell, with its dimming `::after`; its presence (`.shell:has(.home-scene)`) re-lights every token on the page (see Color Palette → Home: the room) |
 | `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on |
 | `.send` | 64px forest circle; disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
@@ -92,7 +107,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 ## Component Patterns
 
 ### Greeting (`components/chat/Greeting.tsx`)
-A chapter opening, not a card (2026-09-12: the boxed `.card.plate` read as a widget dropped onto the page). Set on the paper itself the way a chapter begins in a book: a headpiece across the measure (hairline · asterism · hairline, `.opening-head`), Lumi's portrait medallion in the margin, the first line as the title (38px display), the second beneath it in the softer ink (26px), then the quick-start chips. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component. It is the chapter mark of the transcript (`MessageList`): everything from before this page open above it, this visit below; the page opens scrolled to it. No rule or box between the earlier messages and the greeting — the headpiece and the white space are the break. Within a sitting (`compact`) it is a running head: the same headpiece, a 44px portrait, 26/20px lines, no chips. It matches Today's opener (portrait medallion beside a display-serif greeting on bare paper), so the two pages open the same way.
+A chapter opening, not a card (2026-09-12: the boxed `.card.plate` read as a widget dropped onto the page). Set on the paper itself the way a chapter begins in a book: a headpiece across the measure (hairline · asterism · hairline, `.opening-head`), Lumi's portrait medallion in the margin, the first line as the title (38px display), the second beneath it in the softer ink (26px), then the quick-start chips. Lines come from `core/ai/greeting.ts` — never hardcode copy in the component. It is the chapter mark of the transcript (`MessageList`): everything from before this page open above it, this visit below; the page opens scrolled to it. No rule or box between the earlier messages and the greeting — the headpiece and the white space are the break. Within a sitting (`compact`) it is a running head: the same headpiece, a 44px portrait, 26/20px lines, no chips. It matches Today's opener (portrait medallion beside a display-serif greeting on bare paper), so the two pages open the same way. On Home (2026-09-12) the same opening hangs on the room's wall as a parchment scroll — ink on paper inside it, wooden rods past its edges — because it is the one light thing in a lamplit room, the way the tagline hangs on a scroll in the mockup; the markup is unchanged, only the tokens under `.shell:has(.home-scene) .opening`.
 
 ### Lumi sprites (`components/chat/LumiSprite.tsx`)
 The single source of Lumi's drawings, both cut from `art/lumi-lantern-idle.png` — the lantern character (2026-09-12) — by `scripts/cut-lumi-idle.py`. `public/lumi-heads.png`: one row of 176px square cells, the hood 172px wide with its bottom on row 161 — neutral · blink · happy · curious · excited · sleepy, each from one of the sheet's sixteen cells (1 · 1 with the eyes shut · 6 · 11 · 12 · 7), cut under the chin where the hood's rim wraps beneath it. `public/lumi-idle.webp`: a 9×3 grid of 160×208 cells (wider than the earlier 144 for the lantern's light on the ground), three rows per loop (open, half-shut and shut eyes, so blinking and the loop run together): rows 0–2 the nine-cell **breath** loop. **A loop is an order over its row's cells** (`LUMI_LOOP_CELLS`; `LUMI_LOOP_FRAMES` is its length) and a cell may play more than once; every loop starts and ends at or next to the rest frame, so they hand over there. The sheet's sixteen cells are sixteen drawings — a pose set with expressions, not in-betweens (head IoU 0.83–0.96 per step against the 0.975 gate) — so played in sequence they would boil the way the first foot sheet did, and only the rest cell is cut for the body. Her idle life is made from that one drawing: the breath is the rest cell stretched up to 2px at the hood top with the feet held (`breathe`: a cubic resample on premultiplied channels anchored on the feet baseline, the rise eased over nine frames — the 1–2px the slow-idle sheet drew, from one drawing, so nothing else moves); the blink rows bring a lid down over her own eyes (`eyes_shut`: the lid is the face's black, half-shut keeps the bottom half of each eye, shut a thin bright lens, and the eye's halo on the face goes with the lid so no ring is left). The matte flood-fills the ground from outside the figure (so the cream hood survives); on the grey-blue ground the 2px edge band is de-matted against the ground using the nearest interior pixel as the figure's own colour, the shadow under the feet is read by its blue cast and redrawn in the cream sheets' warm tone (`SHADOW_RGB`), and the lantern's light on the ground — a warm blend of the ground and an orange light — is lifted off as a translucent warm glow (`GLOW_RGB`, ≤ 0.55 alpha), so on the paper she lights it a little. She stands `FIGURE_H` = 173px tall in the cell, what the earlier breath rest frame stood at, so she keeps her size on the page. The earlier character's loops (the slow-idle breath and sway, the playful foot with its per-row scaling, quarter-pixel settle and per-phase head hold) are retired with her; the techniques stay in git history and `art/README.md`. `LumiSprite` draws one cell at a height via `background-position`; `headCell` / `idleCell` address them. A new state is a new cell, never a new component. Adding a sheet — the prompt, `scripts/measure-lumi-sheet.py`, `scripts/preview-lumi-loop.py` and what the cut corrects — is written up in `art/README.md`; the process in `docs/animation-pipeline.md`.
@@ -119,7 +134,7 @@ Focus Together on screen, Chat only, pinned between the transcript and the compo
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
 ### Sidebar (`components/shell/Sidebar.tsx`)
-Wordmark, tagline label, divider ornament, nav of plain names (no numerals) with a brass diamond marking the open chapter, italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`.
+Wordmark, tagline label, divider ornament, nav of plain names (no numerals) with a brass diamond marking the open chapter, italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`. The first item is **Home** (was *Chat* until 2026-09-12). On Home the plate is a translucent wood panel over the painting (dark glass, 16px blur) with parchment type; the frame and crossed corners keep their rules in parchment.
 
 ### Clock (`components/ui/Clock.tsx`)
 Viewer-local date + time as a `.label`, top right. Renders empty on the server and fills on mount (no hydration mismatch).
