@@ -1,4 +1,4 @@
-"""Cut public/lumi-idle.webp from mockups/lumi-slow-idle.png.
+"""Cut public/lumi-idle.webp from art/lumi-slow-idle.png.
 
     python3 scripts/cut-lumi-idle.py
 
@@ -16,7 +16,7 @@ from scipy import ndimage as ndi
 
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'mockups/lumi-slow-idle.png')
+SRC = os.path.join(ROOT, 'art/lumi-slow-idle.png')
 OUT = os.path.join(ROOT, 'public/lumi-idle.webp')
 W, H = 144, 208
 FEET_Y = 200          # feet baseline inside the cell

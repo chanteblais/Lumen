@@ -138,6 +138,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 ```
 lumen/
 ├── CLAUDE.md                     session brief (short; points here)
+├── art/                          Lumi's source drawings (animation sheets); public/ sprites are cut from these
 ├── docs/
 │   ├── product.md                brief, voice guide, visual direction
 │   ├── architecture.md           this file
@@ -169,6 +170,8 @@ lumen/
 │   ├── lib/                      auth.ts (server boundary → ensureUser) · auth-ui.tsx (provider, auth controls)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
+├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
+├── scripts/                      cut-lumi-idle.py (art/ → public/) · check-route-auth.mjs · voice-eval.mjs
 ├── drizzle.config.ts
 ├── .env.example
 └── package.json
