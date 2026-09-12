@@ -40,6 +40,15 @@ function getCtor(): RecognizerCtor | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
+/**
+ * Brave exposes the API but ships without the speech-service keys Chrome's
+ * recognition needs, so every session fails with `network`. Treat it as
+ * unsupported (like Firefox) rather than show a button that never works.
+ */
+function isBrave(): boolean {
+  return typeof navigator !== "undefined" && "brave" in navigator;
+}
+
 export type VoiceInput = {
   supported: boolean;
   listening: boolean;
@@ -73,7 +82,7 @@ const noSubscribe = () => () => {};
 
 export function useVoiceInput({ onTranscript, onEnd }: Options): VoiceInput {
   // Server renders "unsupported"; the client snapshot flips it after hydration.
-  const supported = useSyncExternalStore(noSubscribe, () => Boolean(getCtor()), () => false);
+  const supported = useSyncExternalStore(noSubscribe, () => Boolean(getCtor()) && !isBrave(), () => false);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string>();
   const recRef = useRef<Recognizer | null>(null);

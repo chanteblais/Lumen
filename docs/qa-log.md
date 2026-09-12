@@ -14,7 +14,11 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 ### Known and deliberate
 - Chrome allows one recognition session per browser: tapping Voice in a second tab takes the mic from the first, which now says so. The first tab does not reclaim it.
 - After `no-speech` Lumi stops rather than restarting forever: a mic that hears nothing should be noticed, not masked by a breathing icon.
-- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error.
+- Not reproduced on Chanté's machine directly — the fix covers the two silent paths the browser can take; if the button still drops, the `[voice]` console warning names the error. Chanté's follow-up: Chrome works; Brave failed every time with "Voice needs a network connection right now" (Brave ships no speech-service keys). Voice is now hidden in Brave (`navigator.brave`), like Firefox.
+- Chrome picked Chanté's iPhone as the microphone: macOS Continuity offers a nearby iPhone as an input device and the Web Speech API always uses the browser's default input. Change it under Chrome → Settings → Privacy → Site settings → Microphone, or System Settings → Sound → Input. No in-app picker (one more thing to set).
+
+### Open
+- Voice is Chrome/Safari/Edge only while it rides on the browser's cloud recognition. A server-side transcriber (the hook's surface was designed for the swap) would bring Brave and Firefox in.
 
 ### Highest-value manual tests
 - Allow the mic, tap Voice, say nothing for ten seconds → "I didn't hear anything…" line, button off.
