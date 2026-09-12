@@ -7,7 +7,8 @@ import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
 
-export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string };
+/** `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down). */
+export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string };
 export type LumenUIMessage = UIMessage<LumenMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;
@@ -51,8 +52,13 @@ export async function messageCount(db: Db, conversationId: string): Promise<numb
   return rows.length;
 }
 
-/** A "sitting": messages within this window of each other belong to one visit. */
-export const SITTING_GAP_MS = 6 * 3_600_000;
+/**
+ * A "sitting": messages within this window of each other belong to one visit.
+ * Thirty minutes — the same gap that writes `app.opened` (`touchLastSeen`),
+ * so "a new visit" means one thing everywhere. The date rules between
+ * messages keep their own, wider window (they are about days, not pauses).
+ */
+export const SITTING_GAP_MS = 30 * 60_000;
 
 /** True when the newest message is from this sitting — quick starts hide, the greeting compacts. */
 export function isInSitting(messages: LumenUIMessage[], now = Date.now()): boolean {

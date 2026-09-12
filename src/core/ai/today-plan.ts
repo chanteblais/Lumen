@@ -1,17 +1,24 @@
 /**
- * Today's path: read it, or generate it once per local day. Shared by the
- * Today page and the background priming on app open, so the model call
- * (several seconds) usually happens before anyone is waiting on it.
+ * Today's path: read it, generate it once per local day, or re-cut it when
+ * something that shapes it changes (capacity, a "not this", the coming-back
+ * pass). Shared by the Today page, the capacity route and the background
+ * priming after every page open and chat turn, so the model call (several
+ * seconds) usually happens before anyone is waiting on it.
  * See docs/today.md → How the plan is built.
  */
 import type { Db } from "@/db/client";
 import type { DayPlanJson, User } from "@/db/schema";
+import { capacityChangesPlan } from "@/core/domain/capacity";
 import { dueOn } from "@/core/domain/intentions";
 import { savePlan } from "@/core/domain/plans";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
-import { buildDayPlan } from "./plan";
+import { visitBeforeSitting } from "@/core/domain/users";
+import { buildDayPlan, type PlanInputs } from "./plan";
 
 export type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
+
+/** Why an existing plan is cut again. The rest of `PlanReason` is code-derived (new_day, first_items, advanced). */
+export type RecutReason = "capacity" | "declined" | "reentry" | "asked";
 
 type Deps = {
   load: typeof loadSnapshot;
@@ -34,16 +41,7 @@ export async function ensureTodaysPlan(db: Db, user: User, deps: Partial<Deps> =
   let pending = inFlight.get(key);
   if (!pending) {
     pending = (async () => {
-      const plan = await d.build({
-        displayName: user.displayName,
-        timezone: user.timezone,
-        localDate: snap.today,
-        now,
-        capacity: snap.capacity,
-        openIntentions: snap.openIntentions,
-        beliefs: snap.beliefs,
-        lastSeenAt: user.lastSeenAt,
-      });
+      const plan = await d.build(planInputs(user, snap, now));
       await d.save(db, user.id, snap.today, plan, snap.plan ? "first_items" : "new_day", snap.capacity?.level);
       return plan;
     })().finally(() => inFlight.delete(key));
@@ -53,16 +51,51 @@ export async function ensureTodaysPlan(db: Db, user: User, deps: Partial<Deps> =
 }
 
 /**
- * Fire-and-forget version for `after()` on app open: by the time Today is
- * opened the path is already there. Never throws — a failed prime just means
- * Today generates on demand, as before.
+ * Cut today's path again because something that shapes it changed. The one
+ * thing may move — that is the point of these triggers, and the only times
+ * it does. A capacity answer that matches what the plan already assumed
+ * (normal-ish on a plan cut without a report) changes nothing.
  */
-export async function primeTodaysPlan(db: Db, user: User): Promise<void> {
+export async function recutTodaysPlan(db: Db, user: User, reason: RecutReason, deps: Partial<Deps> = {}): Promise<TodaysPlan> {
+  const d = { ...live, ...deps };
+  const now = d.now();
+  const snap = await d.load(db, user, now);
+  if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
+    return { snap, plan: snap.plan };
+  }
+  const plan = await d.build(planInputs(user, snap, now));
+  await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level);
+  return { snap, plan };
+}
+
+/**
+ * Fire-and-forget version for `after()`: by the time Today is opened the
+ * path is already there. With a reason, the path is re-cut instead. Never
+ * throws — a failed prime just means Today generates on demand, as before.
+ */
+export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason): Promise<void> {
   try {
-    await ensureTodaysPlan(db, user);
+    if (recut) await recutTodaysPlan(db, user, recut);
+    else await ensureTodaysPlan(db, user);
   } catch (e) {
     console.error("[plan] background generation failed", e);
   }
+}
+
+/** Everything the planner sees, from one snapshot. */
+export function planInputs(user: User, snap: Snapshot, now: Date): PlanInputs {
+  return {
+    displayName: user.displayName,
+    timezone: user.timezone,
+    localDate: snap.today,
+    now,
+    capacity: snap.capacity,
+    openIntentions: snap.openIntentions,
+    beliefs: snap.beliefs,
+    declined: snap.declinedToday,
+    // The gap this sitting began after, not the seconds since the last request.
+    lastSeenAt: snap.sitting ? visitBeforeSitting(snap.sitting) : user.lastSeenAt,
+  };
 }
 
 /**

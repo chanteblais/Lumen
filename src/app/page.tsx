@@ -6,6 +6,7 @@ import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
 import { primeTodaysPlan } from "@/core/ai/today-plan";
 import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
+import { currentSitting, visitBeforeSitting } from "@/core/domain/users";
 import { db } from "@/db/client";
 import { recordVisit, requireUser } from "@/lib/auth";
 
@@ -13,13 +14,22 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const user = await requireUser();
-  const lastSeenAt = await recordVisit(user);
+  const previous = await recordVisit(user);
   // Cut today's path now, off the response, so Today opens with it ready.
   after(() => primeTodaysPlan(db(), user));
   const conversation = await ensureMainConversation(db(), user.id);
-  const [initialMessages, open] = await Promise.all([loadRecentMessages(db(), conversation.id), listOpenIntentions(db(), user.id)]);
+  const [initialMessages, open, sitting] = await Promise.all([
+    loadRecentMessages(db(), conversation.id),
+    listOpenIntentions(db(), user.id),
+    currentSitting(db(), user.id),
+  ]);
   const intentionTitles = Object.fromEntries(open.map((i) => [i.id, i.title]));
-  const lines = greeting({ displayName: user.displayName, lastSeenAt });
+  const inSitting = isInSitting(initialMessages);
+  // The greeting reads the gap this sitting began after — so coming back via
+  // Today still counts — until they've said something since the sitting began.
+  const lastSaid = initialMessages.at(-1)?.metadata?.createdAt;
+  const saidThisSitting = sitting ? Boolean(lastSaid && new Date(lastSaid) >= sitting.openedAt) : inSitting;
+  const lines = greeting({ displayName: user.displayName, lastSeenAt: sitting && !saidThisSitting ? visitBeforeSitting(sitting) : previous });
 
   // Keyed: an element passed as a prop across the server/client boundary
   // arrives lazily, and React dev then treats it as an unkeyed list child.
@@ -42,7 +52,7 @@ export default async function Home() {
         initialMessages={initialMessages}
         greetingLines={lines}
         kicker={kicker}
-        initialInSitting={isInSitting(initialMessages)}
+        initialInSitting={inSitting}
         intentionTitles={intentionTitles}
       />
     </Suspense>

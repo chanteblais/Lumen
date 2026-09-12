@@ -2,8 +2,9 @@
  * Append-only events. Every state change writes one — this is the raw
  * material for the understanding layer. Never update or delete rows.
  */
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { type Db } from "@/db/client";
-import { events } from "@/db/schema";
+import { events, type Event } from "@/db/schema";
 
 export type EventInput = {
   userId: string;
@@ -28,3 +29,27 @@ export async function appendEvent(db: Db, input: EventInput) {
     .returning({ id: events.id });
   return row;
 }
+
+/** Recent events of the given types, newest first. Bounded by `since` so the (user, occurred_at) index does the work. */
+export async function listEventsSince(db: Db, userId: string, types: string[], since: Date, limit = 50): Promise<Event[]> {
+  return db
+    .select()
+    .from(events)
+    .where(and(eq(events.userId, userId), inArray(events.type, types), gte(events.occurredAt, since)))
+    .orderBy(desc(events.occurredAt))
+    .limit(limit);
+}
+
+/** The newest event of one type, if any. */
+export async function latestEvent(db: Db, userId: string, type: string): Promise<Event | undefined> {
+  const [row] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.userId, userId), eq(events.type, type)))
+    .orderBy(desc(events.occurredAt))
+    .limit(1);
+  return row;
+}
+
+/** Nothing older than 36 hours can be "today" in any timezone — the cheap bound for today-derived views. */
+export const TODAY_BOUND_MS = 36 * 3_600_000;

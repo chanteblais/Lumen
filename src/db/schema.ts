@@ -171,7 +171,8 @@ export type DayPlanJson = {
   restCanWait: boolean;
   closingLine?: string;
 };
-export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "asked" | "advanced";
+/** Why a plan row exists. `reentry`: re-cut after the coming-back pass let things go. */
+export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "reentry" | "asked" | "advanced";
 
 export const dayPlans = pgTable(
   "day_plans",
