@@ -17,7 +17,7 @@ Rali   01 Chat · 02 Today · 03 Library · 04 Insights · 05 Settings
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
 - Open question (2026-09-11): the Lists mockup shows an icon nav with **Focus** in place of Library. Decide before M5.
 
-**Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — breathing, blinking, and now and then perking up, tilting, waving or leaning. Decorative only — no clicks, no state. Still under reduced-motion.
+**Lumi in the corner** (`components/shell/LumiCompanion.tsx`): full figure standing on the bottom-right edge of every page — playing the sheet's idle loop (breathe + sway), blinking, and now and then a micro variation (head tilt, look up, fidget…). Decorative only — no clicks, no state. Still under reduced-motion.
 
 ---
 

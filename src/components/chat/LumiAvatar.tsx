@@ -1,4 +1,4 @@
-import { LumiSprite, type LumiExpression } from "./LumiSprite";
+import { LumiSprite, headCell, type LumiExpression } from "./LumiSprite";
 
 export { LUMI_EXPRESSIONS, type LumiExpression } from "./LumiSprite";
 
@@ -20,8 +20,7 @@ export function LumiAvatar({ size = 68, expression = "neutral", className = "" }
       style={{ width: size, height: size }}
     >
       <LumiSprite
-        sheet="head"
-        cell={expression}
+        cell={headCell(expression)}
         height={cell}
         className="absolute"
         style={{ left: (size - cell) / 2, top: (size - cell) / 2 - cell * 0.03 }}
