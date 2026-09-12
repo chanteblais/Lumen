@@ -10,7 +10,7 @@ Deliberately chill (inherited from Glåüm, 2026-09-11). `main` always deploys c
 4. **Merge with `--no-ff`, then delete the branch.** `git log --first-parent main` reads as a changelog.
 5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `LUMEN_ALLOW_MAIN=1` on those.
 6. **Migrations ride the branch that needs them.** Apply to prod at merge+deploy time; note the migration in the merge commit message.
-7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy.
+7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy. A pushed branch may also go up as a **pull request** (first one: #1, 2026-09-12): CI runs on it, and the desktop app can watch it and auto-fix CI failures. Merge a PR with **Create a merge commit** — never squash or rebase-merge — so `git log --first-parent main` stays the changelog; delete the branch after. Local `--no-ff` merge and PR merge are interchangeable; the merge commit is the invariant. (`gh` must be on the personal account for this repo — `gh auth switch --user chanteblais`; the work account can push over the `github-personal` SSH alias but can't open PRs here.)
 
 ## Parallel sessions — one checkout is ONE git context
 
@@ -30,6 +30,16 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 5. **Commit work-in-progress to the feature branch; never leave the shared checkout dirty between turns.** Sign-off triggers the merge, not the first commit.
 6. **Never `git stash` in the shared checkout.**
 7. **Release `main` the moment you're done with it.** A branch can only be checked out in one worktree at a time.
+8. **Renaming or moving the project directory is a coordinated stop** (learned 2026-09-12, `rali` → `lumen`): every active session's cwd goes stale and any dev server keeps serving the old path. Message every session first (commit in flight, stop servers, no git for a few minutes), move, run `git worktree repair` from the new main checkout, then tell them the new path. A session that lands in a deleted cwd must restart in the new path before touching anything.
+
+## Dev servers and ports
+
+- **3005 is this project's review port.** 3000–3004 belong to other projects on this machine (3000 is Chanté's own — never start or stop anything there).
+- **Check before you start:** `PID=$(lsof -nP -iTCP:3005 -sTCP:LISTEN -t)` then `lsof -a -p $PID -d cwd` tells you which checkout a running server serves (a detached `rali-main`/`lumen-main` view, a worktree, the shared checkout…). If it already serves the checkout + branch you need, reuse it. If it serves something else, take the next free port (3006, 3007, …) and serve from your own worktree. **Never kill a server you didn't start.**
+- **One server per checkout.** Two `next dev` processes in one directory share `.next` and corrupt each other.
+- **A server serves the working tree, not a branch.** Switching branches in that checkout switches what the browser shows — say so in the review checklist, and stop your server before switching away from the branch under review.
+- **Worktrees have no `.env.local`** (untracked). Copy or symlink it from the main checkout before starting a server there.
+- **Review server lifecycle:** start it when the change is implemented, leave it running with a review checklist (pages, what to look for, preconditions, which port serves which branch), stop it once the change is merged. Servers started only for Claude's own verification are stopped as soon as verification is done.
 
 ## Commit guards (pre-commit hook)
 
