@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock } from "@/core/ai/context";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { primeTodaysPlan } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import {
   ensureMainConversation,
@@ -26,6 +28,9 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 export async function POST(req: Request) {
   const user = await requireUser();
   const lastSeenAt = await recordVisit(user);
+  // Once the turn has streamed (and any tool writes have landed), make sure
+  // today's path exists — or re-cut it if it was empty and the turn added intentions.
+  after(() => primeTodaysPlan(db(), user));
 
   const body = (await req.json()) as { message?: LumenUIMessage };
   const incoming = body.message;

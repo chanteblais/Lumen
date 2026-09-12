@@ -16,6 +16,9 @@ export const TIMEZONE_COOKIE = "lumen_tz";
  * Creates the row on first visit (name from Clerk, timezone from the cookie)
  * and keeps the timezone current afterwards. Server components and route
  * handlers only.
+ *
+ * `auth()` verifies the session cookie locally; the Clerk profile (a network
+ * call) is fetched only when the row has to be created.
  */
 export async function requireUser(): Promise<User> {
   const { userId: clerkUserId } = await auth();
@@ -24,7 +27,7 @@ export async function requireUser(): Promise<User> {
   const tz = (await cookies()).get(TIMEZONE_COOKIE)?.value;
   const existing = await ensureUser(db(), {
     clerkUserId,
-    displayName: await displayNameFromClerk(),
+    displayName: displayNameFromClerk,
     timezone: tz,
   });
   if (tz && tz !== existing.timezone) {

@@ -128,7 +128,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | capacity | declined | asked | advanced` |
+| reason | text | `new_day | first_items | capacity | declined | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
 Events added: `plan.generated {reason}`, `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
