@@ -64,6 +64,7 @@ Chanté: "the app is quite slow, particularly Today." Measured from her machine:
 
 ### Open
 - Dev console: one React "unique key" warning attributed to `Conversation` ("passed a child from Home"). Every `.map` in the chat components is keyed; source not found yet. Dev-only, no visible effect.
+  → Closed 2026-09-12 in `2ab2f3b`: the kicker element passed from Home across the server/client boundary arrives as a lazy node; keying it silenced the warning.
 
 ## Sweep 2026-09-12 (2) — M2 review findings (`feat/m2-voice-layout`, worktree)
 

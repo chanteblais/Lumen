@@ -2,19 +2,19 @@
 
 Small milestones, each shippable to Vercel. Every milestone ends with the question: **did this reduce executive-function burden or add to it?** Estimates assume AI-assisted sessions.
 
-## M0 — Shell (½ day) — **built 2026-09-11, branch `feat/m0-shell`, pending review**
+## M0 — Shell (½ day) — **done 2026-09-11 (`feat/m0-shell`), merged**
 - `create-next-app` (TS, App Router, Tailwind 4, `src/`), Vitest, ESLint rule forbidding `next`/`react` imports inside `src/core`.
 - Design tokens + paper texture + serif fonts via `next/font`; the landing page **static**, matching the mockup: sidebar (Chat / Today / Library / Insights / Settings — Library and Insights are placeholders), greeting card, quick-start chips, composer.
 - Deploy to Vercel (empty env).
 - **Done when:** the page loads in < 1s, says one thing, and looks like the mockup on desktop and acceptable at 390px.
 - **EF check:** nothing on the page asks the user to decide or maintain anything.
 
-## M1 — Identity & persistence (½ day) — **built 2026-09-11 (`feat/m0-shell` Clerk + `feat/m1-db` schema/auth wiring); migration pending apply**
+## M1 — Identity & persistence (½ day) — **done 2026-09-11 (`feat/m0-shell` Clerk + `feat/m1-db`), merged; migration `0000` applied**
 - Clerk sign-in; `lib/auth.ts → requireUser()` creates the `users` row lazily and captures browser timezone on first visit.
 - Drizzle schema for all seven tables (`docs/domain.md`), `drizzle-kit generate` + `migrate`, Supabase pooler connection.
 - **Done when:** signing in creates a user row; `npm run check` (tsc + vitest) passes; migrations apply cleanly to a fresh database.
 
-## M2 — The conversation (1 day) — **built + voice-evaluated 2026-09-12 on `feat/m2-conversation`, pending review**
+## M2 — The conversation (1 day) — **done 2026-09-12 (`feat/m2-conversation` + `feat/m2-voice-layout`), merged**
 - `POST /api/chat`: `streamText` with the persona system prompt (cached prefix) and a minimal context block (name, local time, visit gap). No tools yet.
 - Persist user + assistant `UIMessage`s; load the last 30 on page open; render history with date rules between visits.
 - Server-rendered greeting (`core/ai/greeting.ts`) replaces the static card; quick-start chips send canned first messages.
@@ -25,7 +25,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 
 > **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions.
 
-## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days) — **built 2026-09-12 on `feat/m3-intentions`; migration `0001` pending; review pending**
+## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days) — **done 2026-09-12 (`feat/m3-intentions`), merged; migration `0001` applied; QA'd 2026-09-13; latency pass PR #3**
 - Tools: `create_intention`, `update_intention`, `complete_intention`, `drop_intention`; every call writes an `events` row.
 - Belief tools from the same day: `remember`, `confirm`, `contradict`, `revise`, `forget`, applied through `core/domain/memory.ts` (the same op-applier reflection will use). Beliefs injected into the context block with confidence and evidence.
 - Ledger lines under assistant messages rendered from tool parts (✦ Noted · … / ✦ Done · …), with undo for complete → reopen.
@@ -36,7 +36,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** a brain dump becomes intentions without the user confirming each one; completing from chat, Today and Lists all write events; "I hate being given options" becomes a `preference` belief and the next reply respects it; opening Today shows one dominant task within a second and the same one after a reload.
 - **EF check:** the user never has to "file" anything; Today is a view, not a chore.
 
-## M4 — Capacity, *Not this*, re-entry (1 day)
+## M4 — Capacity, *Not this*, re-entry (1 day) — **next.** `report_capacity` and the *Not this* → Chat handoff already exist from M3; the rest below is open.
 - `report_capacity` tool + the Today capacity prompt (once a day, skippable); the plan regenerates on capacity. *Not this* → six quick answers → `intention.declined {reason}` → Lumi replies → plan regenerates with the reason. Greeting variants for gap ≥ 7 days and abandoned sessions.
 - Stale intentions flagged in context; persona guidance for the "what's still relevant?" pass (offer to drop in bulk, never list counts).
 - `app.opened` events; `last_seen_at` on every turn.
