@@ -53,7 +53,8 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
           {earlier}
         </div>
       )}
-      <div ref={cardRef}>{card}</div>
+      {/* data-opens-here: OPEN_ON_CARD_SCRIPT scrolls here before the first paint, ahead of the effect above. */}
+      <div ref={cardRef} data-opens-here="">{card}</div>
       <div className="chat-now mt-10 flex flex-col gap-7" aria-live="polite">
         {current}
         {thinking && (

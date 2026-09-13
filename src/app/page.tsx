@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { after } from "next/server";
 import { Conversation } from "@/components/chat/Conversation";
 import { LibraryDebug } from "@/components/library/LibraryDebug";
@@ -69,7 +68,7 @@ export default async function Home() {
   );
 
   return (
-    <Suspense>
+    <>
       {/* Home is set in the room: the painting fills the viewport behind the shell
           (globals.css → Home: the room); everything else on the page is the same
           conversation, re-lit for the evening. */}
@@ -84,6 +83,6 @@ export default async function Home() {
         intentionTitles={intentionTitles}
         initialSession={session.active ? toSessionView(session.active) : null}
       />
-    </Suspense>
+    </>
   );
 }
