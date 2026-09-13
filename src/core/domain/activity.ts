@@ -1,6 +1,6 @@
 /**
  * Recent changes to the user's things, wherever they happened — a tick on
- * Today or Lists, a tool call in chat — so Lumi knows what "the one I just
+ * Today or in the Library, a tool call in chat — so Lumi knows what "the one I just
  * checked off" means without asking. Derived from events at read time; the
  * intention's current status rides along because it may have moved again.
  */

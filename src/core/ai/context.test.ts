@@ -45,8 +45,8 @@ describe("buildContextBlock", () => {
       recentlyDone: [{ id: "i9", title: "Take out compost", completedAt: new Date(now.getTime() - 2 * 60_000) } as unknown as Intention],
     });
     expect(block).toContain("## Recent changes");
-    expect(block).toMatch(/just now · they ticked "Take out compost" done on Today or Lists · i9 · now done/);
-    expect(block).toMatch(/40 minutes ago · they unticked "Email Priya" on Today or Lists — open again · i8 · now open/);
+    expect(block).toMatch(/just now · they ticked "Take out compost" done on Today or in the Library · i9 · now done/);
+    expect(block).toMatch(/40 minutes ago · they unticked "Email Priya" on Today or in the Library — open again · i8 · now open/);
     expect(block).toMatch(/3 hours ago · you changed "Grant report" \(list\) · i7 · now open/);
     expect(block).toMatch(/4 hours ago · you saved "Buy stamps" · i6 · now dropped/);
     expect(block).toMatch(/## Recently done.*\n- i9 · "Take out compost" · just now/);

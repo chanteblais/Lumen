@@ -3,7 +3,7 @@ import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { db } from "@/db/client";
 import { requireUser } from "@/lib/auth";
 
-/** Complete or reopen from Today / Lists. Everything else goes through the conversation. */
+/** Complete or reopen from Today / Library. Everything else goes through the conversation. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;

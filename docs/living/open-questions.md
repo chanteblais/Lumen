@@ -20,7 +20,7 @@ The vision places Focus in the Study. EP§11 describes Lumi there: breathing, re
 
 **3. How does the Library hold *where have I been*?** *(2026-09-12; mostly answered by V§14, EP§14)*
 Lists lives in the Library ("organize and retrieve"), which "may expand because the user's life has accumulated more threads, knowledge, and history" (EP§14). Still open: how that record appears (finished things, sessions, what Lumi noticed and remembers) without becoming a report card, or visual richness becoming "a judgment of how productive the user has been" (EP§14). *2026-09-13:* [`spaces.md`](../product/spaces.md) §11–15 has the Library holding accumulated threads. Sections grow from what exists in the user's life, never unlocked (§13); things stay manipulable (§14); it stays navigable through Lumi's retrieval, never a taxonomy to maintain (§15). It asks *What am I holding, and where does it belong?*, with *Where did this thread begin?* and *What became of that idea?* as what it answers later (§12). The decided question is *Where have I been?* Which one the Library answers, or both, is Chanté's call.
-*Meanwhile:* Lists is a plain page. *Related:* questions 12 and 20.
+*Meanwhile:* the Library (renamed from Lists, 2026-09-13) is only its painted room; no page shows the lists ([decision](decisions.md)). *Related:* questions 12 and 20.
 
 **4. Where does Insights (the mail) belong?** *(2026-09-12)*
 Neither foundation document places it. Candidates: the Library (what arrived and is being held), the Garden (something that may need planting), or Home, through Lumi. It is already an inbox that needs no processing, so EP§1's worry doesn't apply.
@@ -31,8 +31,8 @@ The concepts are named (planting an intention, tending active work, letting some
 *Meanwhile:* the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens.
 
 **15. Which names does the user see?** *(2026-09-12)*
-The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary. *2026-09-13, mostly answered by [`spaces.md`](../product/spaces.md) §3:* primary navigation stays plain (*Home · Today · Lists · Focus*), Garden, Library and Study are the internal names, and the labels evolve through testing ("Poetry should deepen clarity, not replace it"). Still open: Insights and Settings, which §3 leaves out, and a *Focus* item before there is a Study (question 2).
-*Meanwhile:* Home · Today · Lists · Insights · Settings.
+The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary. *2026-09-13, mostly answered by [`spaces.md`](../product/spaces.md) §3:* primary navigation stays plain (*Home · Today · Lists · Focus*), Garden, Library and Study are the internal names, and the labels evolve through testing ("Poetry should deepen clarity, not replace it"). Still open: Insights and Settings, which §3 leaves out, and a *Focus* item before there is a Study (question 2). Since then the nav says *Library*, a place name, where §3 has *Lists*: Chanté chose it on review, so the Library departs from §3 on purpose and *Today* keeps the function name.
+*Meanwhile:* Home · Today · Library · Insights · Settings — *Library* is the first place name in the nav (Chanté, 2026-09-13); *Today* stays.
 
 ## Rewards and growth
 
@@ -128,7 +128,7 @@ Which of these become structure, and which become derived views over events?
 
 **24. What does context assembly need beyond one block?** *(2026-09-13; from [AI & IA](../product/ai-and-information-architecture.md) §22–23, §25–26, §30, §49, §52–53)*
 The canon wants context chosen for the moment: by space, compressed further in the Study, fading with time, inspectable, and reconciled when memory and state disagree. Today:
-- **No space context.** The block is the same at Home and when the user taps Lumi on Today or Lists; a message from the bubble doesn't say where it came from.
+- **No space context.** The block is the same at Home and when the user taps Lumi on Today or in the Library; a message from the bubble doesn't say where it came from.
 - **No Study compression.** During a focus session the block still carries every open intention.
 - **Only intentions fade.** Stale after 14 days untouched is derived. A belief weakens only when contradicted, or is retired by the user, and never with time.
 - **Not observable.** `context.test.ts` tests assembly, but nothing records what a given turn included or left out.
@@ -148,6 +148,6 @@ The strategy wants Lumi to "move fluidly between practical and reflective conver
 
 **13. What survives of the book?** *(2026-09-12)*
 Ivory paper, serif type, fine rules, rationed ornaments and paper plates over paintings. In inhabited places, is the book the interface's language, or does it fade? EP§12 (empty space does work) holds either way.
-*Meanwhile:* the shipped UI is still the book; Lists, Insights and Settings are plain ivory.
+*Meanwhile:* the shipped UI is still the book; Insights and Settings are plain ivory, and the Library is its painting with nothing on it.
 
 **Art questions** (companion or resident, a layered "puppet" Lumi, the model sheet) are tracked in [`art-direction.md`](../art-direction.md) §6, §8 and §9, and not repeated here.

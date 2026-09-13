@@ -47,6 +47,8 @@ That's the page. When *Right now* is completed, the path advances (code, not the
 | "Small steps still move the world." (sidebar) | **Keep as the sidebar aside** if it stays the *only* line of its kind | Borderline inspirational; the brief's own rule says warmth comes from Lumi, not copy. One aside is the ceiling |
 
 ## Lists (the pile)
+*In the nav as the **Library** since 2026-09-13 (`/library`, `product/spaces.md` §3); the lists inside it are still lists, and this spec keeps the name. The same day the list view came off the page — the Library is only its painted room for now — so the rows below describe the data and the view as it was, not what the page shows.*
+
 Introduced by this brief as a first-class section: the user's broader structure, in named lists (School · Work · Personal · Later by default; user-editable). Rows: title, optional next action, optional estimate, optional due date. Lumi files new intentions into a list conversationally; the user can move/reorder. Lists is where planning-brain lives so Today doesn't have to. Full spec when it's built (M3 minimum: list assignment + a plain per-list view; reorder and drag later). It reverses the 2026-09-11 "not built" verdict on the Lists mockup: the *interaction model* concerns stand (no per-column counts, no due-date on every row unless set, one "Add" affordance, not five), the *section* is in.
 
 ## How the plan is built

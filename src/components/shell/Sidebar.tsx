@@ -7,7 +7,7 @@ import { Diamond, Divider, Fleuron } from "@/components/ui/Ornament";
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/today", label: "Today" },
-  { href: "/lists", label: "Lists" },
+  { href: "/library", label: "Library" },
   { href: "/insights", label: "Insights" },
   { href: "/settings", label: "Settings" },
 ] as const;

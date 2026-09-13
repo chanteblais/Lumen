@@ -559,7 +559,7 @@ body::after {
 .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
 
-/* ---------- Rows, pills, circles (Today + Lists) ---------- */
+/* ---------- Rows, pills, circles (Today + Library) ---------- */
 .row { display: flex; align-items: center; gap: 16px; padding: 12px 4px; border-bottom: 1px solid var(--rule); }
 .row:last-child { border-bottom: 0; }
 .row-quiet { padding: 8px 4px; }
@@ -868,12 +868,13 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
     linear-gradient(to right, rgba(44, 30, 16, 0.34) 0, rgba(44, 30, 16, 0.14) 272px, rgba(44, 30, 16, 0.02) 40%, rgba(44, 30, 16, 0.04) 62%, rgba(44, 30, 16, 0.24) 100%),
     linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
 }
-body:has(.today-scene)::before { opacity: 0.14; } /* the grain stays, lightly */
-body:has(.today-scene)::after { display: none; } /* no foxing on a painting */
-.shell:has(.today-scene) .main { box-shadow: none; }
+body:has(.today-scene, .library-scene)::before { opacity: 0.14; } /* the grain stays, lightly */
+body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on a painting */
+.shell:has(.today-scene, .library-scene) .main { box-shadow: none; }
 
-/* The sidebar is a plate of paper with the garden faintly through it. */
-.shell:has(.today-scene) .sidebar {
+/* The sidebar is a plate of paper with the garden faintly through it (the
+   Library's room too). */
+.shell:has(.today-scene, .library-scene) .sidebar {
   background: rgba(239, 234, 226, 0.84);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -882,14 +883,14 @@ body:has(.today-scene)::after { display: none; } /* no foxing on a painting */
 
 /* The top bar is set straight on the painting: parchment type with a breath
    of shadow, and a short rule under the clock instead of one across the room. */
-.shell:has(.today-scene) .main > header {
+.shell:has(.today-scene, .library-scene) .main > header {
   --ink: #f5efe3;
   --ink-soft: #f1e6cf;
   --rule: rgba(245, 239, 227, 0.3);
   --rule-strong: rgba(245, 239, 227, 0.6);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 0, 0, 0.35);
 }
-.shell:has(.today-scene) .main > header .rule-double { width: 240px; margin-left: auto; }
+.shell:has(.today-scene, .library-scene) .main > header .rule-double { width: 240px; margin-left: auto; }
 
 /* The page fills .main so the slip can sit at the bottom of it. */
 .today-page {
@@ -955,20 +956,48 @@ body:has(.today-scene)::after { display: none; } /* no foxing on a painting */
    the window resizes. Only where that spot is clear of the sidebar and the
    panel; elsewhere she keeps her corner. The bubble still opens above her. */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
-  body:has(.today-scene) {
+  body:has(.today-scene, .library-scene) {
     --px: max(calc(100vw / 1536), calc(100vh / 1024));
-    --lumi-x: 630;
-    --lumi-y: 346;
     --lumi-right: calc(50vw - (var(--lumi-x) - 768) * var(--px) - 58px);
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
-  body:has(.today-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
-  body:has(.today-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
+  body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
+  body:has(.library-scene) { --lumi-x: 520; --lumi-y: 870; } /* see Library: the reading room */
+  body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
+  body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
 
 @media (max-width: 767px) {
-  .shell:has(.today-scene) .sidebar { border-bottom-color: rgba(27, 26, 23, 0.1); }
+  .shell:has(.today-scene, .library-scene) .sidebar { border-bottom-color: rgba(27, 26, 23, 0.1); }
   .today-panel { padding: 20px 20px 16px; }
   .today-now-title { font-size: 26px; }
   .today-aside { align-self: stretch; max-width: none; }
 }
+
+/* ---------- Library: the reading room ----------
+   The Library (the Lists page until 2026-09-13) is set in a painted reading
+   room (art/scenery/library-background.png → public/library-room.webp). For
+   now the room is the whole page: nothing sits on the painting, and Lumi
+   stands on the rug in front of the reading table. The sidebar, the top bar,
+   the grain and the way her spot is mapped are shared with Today (the
+   selectors above name both scenes). Nothing for the user to keep. */
+.library-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #5b4128 url("/library-room.webp") center / cover no-repeat;
+}
+/* The same warm veil as the garden: heaviest under the sidebar and along the
+   top, clear over the room. */
+.library-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(44, 30, 16, 0.34) 0, rgba(44, 30, 16, 0.14) 272px, rgba(44, 30, 16, 0.02) 40%, rgba(44, 30, 16, 0.04) 62%, rgba(44, 30, 16, 0.24) 100%),
+    linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
+}
+.library-page { flex: 1 0 auto; }
+/* Lumi's spot (--lumi-x/y above) is on the rug at the front-left corner of the
+   reading table: she covers the near chair and the table's end, both further
+   back than her feet. */

@@ -58,7 +58,7 @@ A tiny hooded figure: an oversized ivory cloak, a hood embroidered with a sun, a
 Rejected: cute, "teenage girl", wellness-app, live-laugh-love, cluttered, over-illustrated, corporate SaaS, generic AI startup.
 
 ## Today and Lists (added 2026-09-12)
-Two sections beyond the conversation, specified in `today.md`: **Lists** holds the user's broader structure (the pile); **Today** answers *what should I be doing right now?* with one dominant task, a short path (Right now → After that → Later), and the line "everything else can wait." Lumi proposes; the user decides (*Not this* is never a failure). Capacity shapes the plan. *Start with Lumi* leads into initiation. Everything on Today passes one test: does seeing this right now help the user take the next action?
+Two sections beyond the conversation, specified in `today.md`: **Lists** holds the user's broader structure (the pile); **Today** answers *what should I be doing right now?* with one dominant task, a short path (Right now → After that → Later), and the line "everything else can wait." Lumi proposes; the user decides (*Not this* is never a failure). Capacity shapes the plan. *Start with Lumi* leads into initiation. Everything on Today passes one test: does seeing this right now help the user take the next action? Since 2026-09-13 Lists is called the **Library** (`product/spaces.md`).
 
 ## Landing page (V1)
 ```

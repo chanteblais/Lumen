@@ -17,7 +17,7 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
  * route as Home (the server owns the transcript, so it lands in the
  * main conversation and is there when you next open Home). Lumi's reply
  * shows here, with the ledger of what she did; once the turn has landed the
- * page refreshes so Today / Lists reflect any writes. Nothing to maintain:
+ * page refreshes so Today / Library reflect any writes. Nothing to maintain:
  * Escape, a click outside or a click on Lumi closes it.
  *
  * Sending has to feel like it landed: what you said appears as a bubble that
