@@ -405,7 +405,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
 
     shelve_thread: tool({
       description:
-        "They told you where a thread belongs in the Library: under another thread ('that goes with the book') — a thread with threads under it is a section — or off its shelf ('it's its own thing'). thread_id and under_id from the context, open_thread or search_library; new_section, a title, when what it goes under isn't a thread yet; neither, to take it off its shelf. Three levels at most: section, shelf, book. their_words: what they said, copied exactly (checked).",
+        "They told you where a thread belongs in the Library: under another thread ('that goes with the book') — a thread with threads under it is a section, like a category of their life (yoga, cooking, the book) — or off its shelf ('it's its own thing'). thread_id and under_id from the context, open_thread or search_library; new_section, a title, when what it goes under isn't a thread yet; neither, to take it off its shelf. Three levels at most: section, shelf, book. their_words: what they said, copied exactly (checked).",
       inputSchema: z.object({
         thread_id: z.string().uuid(),
         under_id: z.string().uuid().optional(),
