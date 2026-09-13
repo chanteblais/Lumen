@@ -25,8 +25,13 @@ Seven stages. The cost of the first two animations sat almost entirely in stages
 ### 1 · Brief (2 min, before any generation)
 Write down, in the ledger row you open for this animation: the movement in one line, which part moves and which parts hold, where it plays (a variation on the breath loop · a reaction · a state), the frame budget (twelve or more in-betweens per motion; 120 ms a frame for a quick gesture, 320–560 ms for a slow one), and how it starts and ends (at or next to the breath rest frame, always — loops hand over there). Name its **tier** on the ladder in `docs/art-direction.md` §4; if a cheaper tier can carry the movement (light, synthesised from one drawing, layered), brief that tier instead of a generated sheet.
 
-### 2 · Generate (Chanté does this; give her the prompt ready to paste)
-ChatGPT image generation, with `art/lumi/lumi-lantern-idle.png` attached as the pose and style reference (its frame 1 is the rest pose; say the lantern holds unless it is the moving part). The recipe that worked is in `art/README.md`; the template below is that recipe as a fill-in prompt. **Save the exact prompt used** as `art/prompts/<sheet>.md` next to the sheet (backlog #5) so the next one is a copy, not a rewrite.
+### 2 · Generate (Claude does this, unattended; since 2026-09-13)
+```bash
+python3 scripts/gen-lumi-sheet.py art/prompts/<sheet>.md [--model …] [--n 2]
+```
+OpenAI's image API (`OPENAI_API_KEY` in `.env.local`; copy it into a worktree), with the prompt file's references attached. Each candidate lands in `art/candidates/<sheet>/` (gitignored), is measured on arrival (stage 3) and gets a row in the prompt file's *Runs* table. Start a new sheet by copying the latest prompt file in `art/prompts/` — brief, settings, the prompt verbatim, what changed, runs — and iterate its words by the *Prompt lab* method below until a candidate passes the gates. Chanté sees the first candidate that passes, never the ones that failed, and approves it before it is cut; it then moves to `art/lumi/<sheet>.png`. (Until 2026-09-12 Chanté generated each sheet in ChatGPT by hand from a prompt Claude wrote — the courier step this replaces.)
+
+The reference is the lantern sheet's rest cell alone, cropped off the sheet so its title, frame numbers and other poses are not there to copy (`art/lumi/lumi-lantern-idle.png crop=15,135,250,405 scale=2`; say the lantern holds unless it is the moving part). The template below is the recipe from `art/README.md` as a fill-in prompt; once a prompt file passes, that file is the better template.
 
 ```
 One base drawing of this character; in every frame only <THE MOVING PART> changes.
@@ -47,13 +52,13 @@ Ask for the turn *back* explicitly and separately (the generator skipped it once
 ```bash
 python3 scripts/measure-lumi-sheet.py art/<sheet>.png
 ```
-(On a sheet with a title or notes, crop to the rows of cells first — the lantern sheet's are at y 151–393 and 444–687 — or the text is counted as figures.) Read the numbers, then flip through the aligned strip it writes. **Reject the sheet, and say why in one line, when any of these fails** — a cut cannot fix them, only hide them for a round or two:
+(On a sheet with a title or notes, crop to the rows of cells first — the lantern sheet's are at y 151–393 and 444–687 — or the text is counted as figures.) Read the numbers, then flip through the aligned strip it writes, then watch the `-motion.gif` beside it (the raw frames as motion, before any cut). A hand raised beside the hood enters the measured head region and moves the hood centre and the eyes' dx; read those against the strip before calling it drift. **Reject the sheet, and say why in one line, when any of these fails** — a cut cannot fix them, only hide them for a round or two:
 
 | Gate | Pass | Fail → what to ask for |
 |---|---|---|
 | Frames found | equals rows × columns asked for | a merged or split figure: wider margins, plainer ground |
 | Height per frame, within a row | spread ≤ 2% | figures boil: "one base drawing, only X changes" |
-| Scale per row | each within 5% of 1.0 (the cut rescales; more than that softens her) | rows drawn at different sizes: "identical cell size" |
+| Scale per row | rows within 5% of each other (the numbers are against the retired breath sheet's height, so a sheet drawn larger reads ~0.7 — fine, the cut scales down; above 1.05 the cut scales up and softens her) | rows drawn at different sizes: "identical cell size" |
 | Head IoU per step, in a held phase | ≥ 0.975 | < 0.95 is a pop: a phase redrawn from scratch |
 | Head IoU per step, in a turn | 0.95–0.975, monotone | jumps: too few in-betweens for that phase |
 | Eyes dx | moves only in a glance phase | stray eye drift: hold the face |
@@ -109,17 +114,50 @@ Rank by (rounds or minutes saved per animation) ÷ (effort once). Re-rank at ses
 1. **The cut takes a sheet spec, not code edits.** Cheaper now the script holds one loop (2026-09-12). Give `scripts/cut-lumi-idle.py` a list of specs — `{sheet, contrast, rows (found by segmentation the way the measure script does, not hard-coded y-ranges), cells, holds: [(span, donor)], settle_to}` — so a new loop is one dict entry and one run. *Saves* ~30 min and the row-coordinate hunting per sheet; removes the "expect N frames" assertion failures. *Done when* the current three loops re-cut byte-identical (or visually identical) from the spec form and `lumi-stretch.png` cuts from a spec alone.
 2. **One command each.** `npm run lumi:measure -- art/lumi/x.png`, `lumi:cut`, `lumi:preview`; `lumi:measure` exits non-zero and prints the failed gate from the table above, so a bad sheet is rejected by the tool, not by the fifth review round. *Saves* a few minutes and, more, the temptation to cut a sheet that should be rejected.
 3. **A loop is one entry.** Move `FRAME_MS` next to `LUMI_LOOP_CELLS` (a `{cells, ms, variation}` record per loop in `LumiSprite.tsx`), derive `LUMI_IDLE_FRAMES` from the widest row, and have the cut script read the same table (or write it). Touch points for a new loop: 3 → 1 code file plus docs.
-4. **Prompts are files.** `art/prompts/<sheet>.md` holds the verbatim prompt and the attachments used, saved the moment a sheet is added. The template above is reconstructed from the recipe; the first saved prompt replaces it.
+4. **Reaction states, not only idles.** Now needed: the wave is a reaction to the user arriving, not a variation. Decide once how a reaction is triggered (an event from the page the way `lumi:cue` works today) so it plugs into the same sprite/loop tables; design it before the wave is wired.
 5. **Compare in one round.** A cue-strip convention for candidate loops (`foot-a`, `foot-b`) that never ship: cut alternatives as extra rows, review once, delete the losers before merge.
-6. **Reaction states, not only idles.** When a first non-idle animation is wanted (a nod, a look-up when a message lands), decide once how it is triggered (an event from the page the way `lumi:cue` works today) so it plugs into the same sprite/loop tables. Design it before generating a sheet for it.
+6. **Gates in the generator.** `gen-lumi-sheet.py` records frames found but leaves the verdict to Claude reading `-measure.txt`; once #2 makes the measure script print pass/fail per gate, write that into the *Runs* row so a round needs no reading until something passes.
 
-**Next animation, not a backlog move:** an in-betweened sheet *of the lantern character* — her breath as drawn in-betweens first, then a lantern lift (the sheet's cell 12 shows the pose) as a variation — from the prompt in `art/README.md`. `VARIATIONS` is empty until then.
+**In progress, not a backlog move:** the wave (`art/prompts/lumi-wave.md`, first passing sheet with Chanté, 2026-09-13). After it, her breath as drawn in-betweens, then a lantern lift (the lantern sheet's cell 12 shows the pose). `VARIATIONS` is empty until then.
 
 ### Landed
+- 2026-09-13 — **Claude generates the sheets** (`scripts/gen-lumi-sheet.py`, OpenAI's image API) and **prompts are files** (`art/prompts/<sheet>.md`, old backlog #4) with the *Prompt lab* method; the measure script writes a **motion GIF** of the raw frames for approval before the cut. Saved on the wave: Chanté's courier trip per sheet; the first run of four candidates took ~30 s and gave a sheet that passed every gate.
 - 2026-09-12 — `scripts/preview-lumi-loop.py` (a contact strip and a GIF of a loop as the page plays it, the fade in four steps a frame). Saved the server-and-port dance for the first look at the lantern cut; Claude verified from the strip and the numbers, Chanté got the GIF before a server. Not yet checked against the page frame for frame.
 - 2026-09-12 — `scripts/measure-lumi-sheet.py` (measure before judging; the aligned strip). `LUMI_LOOP_CELLS` (orders over cells, so reversals and repeats cost no sheet space). Per-row scale, quarter-pixel settle, per-phase head hold, the contrast-ground matte. The dev cue strip (a variation on demand instead of a 20–45 s wait). Written up in `art/README.md`.
 
 ---
+
+## Prompt lab — the words get the pipeline's treatment
+
+Bad sheets were the most expensive line in the ledger, so the prompt is iterated the way the pipeline is: measured, one change at a time, written down, and faster every session (Chanté, 2026-09-13).
+
+- **One prompt file per sheet,** `art/prompts/<sheet>.md`: the brief, the settings (`version`, `model`, `size`, `quality`, `n`, `grid`, `reference` lines), the prompt verbatim under `## Prompt`, *What changed* per version, and *Runs*, appended by the script. The file's git history keeps the old words.
+- **A round:** run → read each candidate's `-measure.txt` and aligned strip against the stage 3 gates → write the verdict in its *Runs* row (*pass*, or the first failed gate in a few words) → change **one** thing, say what and why under *What changed* → bump `version:` → run again. Two changes in one round teach nothing.
+- **Cheapest lever first:** the reference (what is attached, cropped how) → the structure (frames per sheet, rows, one phase per sheet) → the words aimed at the failed gate (the gate table's *Fail* column) → the model → quality and size.
+- **Budget:** the script stops at 4 images a run. Stop and tell Chanté after six runs or about $10 on one sheet without a pass: the movement may want a cheaper tier (`docs/art-direction.md` §4), not more words.
+- **What Chanté sees:** the first passing candidate's aligned strip (a GIF once it is cut). She approves the sheet before the cut.
+- **Findings compound below.** A finding that held on two sheets moves into the stage 2 template and gets a *Landed* line; one that held once stays a row. A finding that failed to repeat is struck, with the run that broke it.
+
+### Findings
+
+Newest first. *Evidence* names the runs (prompt file · version · candidate).
+
+| Date | Finding | Evidence | Status |
+|---|---|---|---|
+| 2026-09-13 | **The generator can hold one drawing now.** The stage 2 template with the rest cell as the only reference gave in-betweens on the first run: head IoU 0.986–0.997 on every step of a 24-frame sheet, against 0.83–0.96 for the hand-made ChatGPT lantern sheet. The prompt, not the model's limits, was the bottleneck. | lumi-wave · v1 · `sunburst-…-1` | held once |
+| 2026-09-13 | **`gpt-image-2.5-sunburst` for a movement with phases.** Both 2.5 models held the drawing (flare 0.967+), but flare compressed the rise and fall into one step each (the hand jumps from the hem to the chest) and in one candidate moved the lantern between rows; sunburst drew the six-frame rise and fall as asked. Same token cost, both ~30 s. | lumi-wave · v1 · all four | held once |
+| 2026-09-13 | **Crop the reference to the one cell.** No titles, numbers, notes or stray poses in four of four candidates, and 24 of 24 frames found in each. | lumi-wave · v1 · all four | held once |
+| 2026-09-13 | **Name the hand's shape.** One of two sunburst candidates waved a fist. "A small dark hand" is not enough; v2 says an open palm. | lumi-wave · v1 · `sunburst-…-2` | open |
+
+### Prompt backlog — experiments, ranked
+
+Rank by how many failed gates it could fix across sheets ÷ what a run costs. Re-rank at session end.
+
+1. ~~**Model: `gpt-image-2.5-sunburst` against `-flare`**~~ — done on lumi-wave v1: sunburst (Findings).
+2. **One motion per sheet.** The wave's rise, waves and fall as three short sheets that share a pose at the joins, against 24 frames on one sheet — fewer frames per image may hold the drawing better.
+3. **Describe what the gates measure.** "The hood's outline is the same shape in every frame" against "pixel for pixel" — the generator may not read the second as a constraint.
+4. **A second reference.** The rest cell plus the first passing sheet of the same character, for the grid and the in-between spacing.
+5. **Bigger cells.** Sizes up to 3840 wide are accepted (multiples of 16); the measure script's canvases are sized for ~250px figures (300×320, head rows 140), so scale those or downscale the candidate first.
 
 ## Pitfalls that are not in `art/README.md`
 
@@ -138,12 +176,15 @@ Everything the generator gets wrong and the cut already corrects is in the READM
 
 1. Fill or update the ledger row: sheets, rounds, wall clock from `git log`, what cost the most, what it taught and where that is now written.
 2. Move the landed backlog item to *Landed* with what it actually saved; re-rank the rest; add any new move with a one-line reason for its rank.
+2a. *Prompt lab:* every *Runs* row has a verdict; each finding the session produced is a row under *Findings* (or moved into the stage 2 template once it held twice); the prompt backlog is re-ranked.
 3. Fix anything in this doc that turned out wrong (a gate threshold, a stage's time, a touch point). Delete what did not help.
 4. Open `docs/art-direction.md`: name the tier the animation used in its ledger row, move any bet it tested (§8), add a §1 row for any new sheet or mockup, and add a line to that doc's change log.
 5. Append one line to the *Change log* below.
 6. This doc is a doc: it goes in the same commit as the animation, and the docs audit before merge checks it like any other.
 
 ## Change log
+
+- 2026-09-13 — Stage 2 is Claude's now: `scripts/gen-lumi-sheet.py` and prompt files in `art/prompts/`; the *Prompt lab* section (method, findings, prompt backlog) and a session-end step for it; the scale gate reads rows against each other, not against 1.0; the measure script's motion GIF; backlog renumbered (prompts-as-files landed, reactions moved up for the wave, gates-in-the-generator added). The wave's first sheet passed on the first run, awaiting Chanté's approval.
 
 - 2026-09-12 — Linked to `docs/art-direction.md`, the evolving art direction and animation strategy: read its tiers and bets at session start, name the tier in the brief, move a bet at session end. No animation cut.
 - 2026-09-12 — `art/` split into `lumi/` (her sheets), `scenery/` (the rooms) and `archived/` (the earlier character, renamed `rali-*`); the cut and measure scripts, the README table and every doc path follow. No animation cut.

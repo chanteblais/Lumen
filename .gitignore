@@ -46,3 +46,6 @@ next-env.d.ts
 .claude/*
 !.claude/launch.json
 __pycache__/
+
+# generated sheet candidates (scripts/gen-lumi-sheet.py); the kept one moves to art/lumi/
+/art/candidates/

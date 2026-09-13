@@ -146,3 +146,19 @@ for c in range(per): dr.line([(c * CW + CW // 2, 0), (c * CW + CW // 2, CH * n)]
 out = os.path.join(OUT, os.path.splitext(os.path.basename(SRC))[0] + '-aligned.png')
 strip.save(out)
 print('wrote', out)
+
+# The frames as motion, before any cut: anchored on the hood's right edge (the lantern hangs below the head,
+# and a hand raised on her free side reaches only the left edge) and on the feet baseline. For judging the
+# sheet's motion and for Chanté's approval; the cut's settle and holds are not applied.
+GW, GH = 300, 340
+motion = []
+for (x0, x1, y0, y1), f in zip(frames, info):
+    cell = Image.new('RGB', (GW, GH), tuple(int(v) for v in paper))
+    ox = int(GW * 0.72) - (f['hood'][1] - (x0 - 6))
+    oy = (GH - 30) - (f['bottom'] - f['Y0'])
+    cell.paste(Image.fromarray(f['rgb'].astype(np.uint8)), (ox, oy))
+    motion.append(cell)
+gif = os.path.join(OUT, os.path.splitext(os.path.basename(SRC))[0] + '-motion.gif')
+ms = int(os.environ.get('LUMI_MS', 120))
+motion[0].save(gif, save_all=True, append_images=motion[1:], duration=ms, loop=0)
+print(f'wrote {gif} ({ms} ms a frame; LUMI_MS to change)')

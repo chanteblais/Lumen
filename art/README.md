@@ -1,8 +1,10 @@
 # art/
 
-Source art, never served. Four folders:
+Source art, never served. Five folders, and one that is not committed:
 
 - `lumi/` — Lumi's source drawings, the sheets her sprites are cut from. Kept in the repo so the cut can be redone.
+- `prompts/` — one file per generated sheet (`<sheet>.md`): the brief, the settings, the prompt verbatim, what changed version to version, and every run with its verdict. `scripts/gen-lumi-sheet.py` reads it, calls OpenAI's image API and appends the runs; the method is `docs/animation-pipeline.md` → Prompt lab.
+- `candidates/` — gitignored: what the generator returned, with each candidate's measurements and aligned strip. The approved sheet moves to `lumi/`.
 - `scenery/` — the painted rooms. `scenery/home-background.png` is the room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room). Regenerate after a repaint with `python3 -c "from PIL import Image; Image.open('art/scenery/home-background.png').convert('RGB').save('public/home-room.webp','WEBP',quality=84,method=6)"` (repainted 2026-09-12 to give Lumi more floor to wander). `scenery/today-background.png` is the greenhouse behind Today (served as `public/today-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Today: the garden) — the same command with `today-background` / `today-room`.
 - `mockups/` — the page mockups the scenes are built toward (`home.png`, `today-mockup.png`); reference only, never served.
 - `archived/` — the earlier character (Rali) and the scene mockups; nothing here is cut or served. The scripts still read `archived/rali-slow-idle.png` as the height reference (`scripts/measure-lumi-sheet.py` → `REF`).
@@ -22,7 +24,7 @@ Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The
 
 ## Adding a sheet (what the playful foot taught us, 2026-09-12)
 
-**Ask for in-betweens of one drawing, not poses.** A sheet where every frame is a fresh drawing never reads as motion, whatever the cut does: the hood, ribbon and folds boil, and the moving part covers its travel in one step. The lantern sheet is such a sheet (a pose set with expressions), which is why its body is one cell plus a synthesised breath. The prompt that worked for the foot (ChatGPT image generation, with `lumi-lantern-idle.png` attached as the pose/style reference — frame 1 is the rest pose):
+**Ask for in-betweens of one drawing, not poses.** A sheet where every frame is a fresh drawing never reads as motion, whatever the cut does: the hood, ribbon and folds boil, and the moving part covers its travel in one step. The lantern sheet is such a sheet (a pose set with expressions), which is why its body is one cell plus a synthesised breath. The prompt that worked for the foot (then ChatGPT image generation by hand, now `scripts/gen-lumi-sheet.py` with the prompt in `art/prompts/`; the lantern sheet's rest cell, cropped off the sheet, as the pose/style reference):
 
 - ONE base drawing; change only what moves in each phase. Name the phases and their frame ranges, and say which parts hold "pixel for pixel" during each.
 - Twelve or more frames per motion, small even steps, "slow in, slow out"; frame 1 = the rest pose; last frame = frame 1.
@@ -30,7 +32,7 @@ Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The
 - A flat, untextured, contrasting ground (the grey-blue of the current sheets); no titles, labels, numbers or notes anywhere.
 - Same style, line weight, palette, lighting and costume as the reference — the sun on the hood, the ribbon with its brass medallions, the boots, the lantern, and no scarf (the canon costume, `docs/art-direction.md` §2); highest resolution, landscape.
 
-**Measure before judging** — `python3 scripts/measure-lumi-sheet.py art/lumi/<sheet>.png` prints per-frame geometry, the eye position (a glance), the per-step head change (IoU) and the scale per row, and writes an aligned strip to flip through. Crop the sheet to its rows of cells first if it carries a title or notes (the lantern sheet does: rows at y 151–393 and 444–687). What the generator gets wrong, and what the cut already fixes:
+**Measure before judging** — `python3 scripts/measure-lumi-sheet.py art/lumi/<sheet>.png` prints per-frame geometry, the eye position (a glance), the per-step head change (IoU) and the scale per row, and writes an aligned strip to flip through and a motion GIF (the frames anchored on the hood's right edge and the feet, 120 ms a frame, `LUMI_MS` to change) — the sheet's motion before any cut, which is what Chanté approves. Crop the sheet to its rows of cells first if it carries a title or notes (the lantern sheet does: rows at y 151–393 and 444–687). What the generator gets wrong, and what the cut already fixes:
 
 | Seen on every sheet so far | Fix, in `scripts/cut-lumi-idle.py` |
 |---|---|
