@@ -27,7 +27,7 @@ Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The
 - Twelve or more frames per motion, small even steps, "slow in, slow out"; frame 1 = the rest pose; last frame = frame 1.
 - A regular grid (2 or 3 rows of 8), same cell size, generous margins, the figure in the same place in every cell, feet on one baseline.
 - A flat, untextured, contrasting ground (the grey-blue of the current sheets); no titles, labels, numbers or notes anywhere.
-- Same style, line weight, palette, lighting, hood ornament and lantern as the reference; highest resolution, landscape.
+- Same style, line weight, palette, lighting and costume as the reference — the sun on the hood, the ribbon with its brass medallions, the boots, the lantern, and no scarf (the canon costume, `docs/art-direction.md` §2); highest resolution, landscape.
 
 **Measure before judging** — `python3 scripts/measure-lumi-sheet.py art/lumi/<sheet>.png` prints per-frame geometry, the eye position (a glance), the per-step head change (IoU) and the scale per row, and writes an aligned strip to flip through. Crop the sheet to its rows of cells first if it carries a title or notes (the lantern sheet does: rows at y 151–393 and 444–687). What the generator gets wrong, and what the cut already fixes:
 

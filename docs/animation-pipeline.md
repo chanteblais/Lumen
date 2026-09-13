@@ -38,7 +38,7 @@ Phases, in frame order:
 <n> frames in total, small even steps, slow in and slow out; frame 1 is the attached rest pose; the last frame equals frame 1.
 Layout: a regular grid of <rows> rows × 8 columns, identical cell size, generous margins, the figure in the same place in every cell, feet on one baseline.
 Ground: flat, untextured grey-blue (as in the attached sheet). No titles, labels, numbers or notes anywhere.
-Same style, line weight, palette, lighting, hood ornament and lantern as the reference. Highest resolution, landscape.
+Same style, line weight, palette, lighting and costume as the reference: the sun on the hood, the ribbon with its brass medallions, the boots, the lantern; no scarf. Highest resolution, landscape.
 ```
 
 Ask for the turn *back* explicitly and separately (the generator skipped it once and drew rest frames instead); if it is skipped again, the loop replays the way in reversed — that is fine and costs no sheet space.

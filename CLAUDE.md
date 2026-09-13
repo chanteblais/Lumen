@@ -2,7 +2,7 @@
 
 Loaded automatically at the start of every Claude session in this repo (root `CLAUDE.md`; worktrees carry it too). Deliberately short; the detailed docs in `docs/` are read on demand. Same shape as the Glåüm and All Hands briefs, so sessions behave the same way across projects.
 
-**Lumen** (the product; the companion character is **Lumi**) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.** Read `docs/product.md` once; it holds the brief and Lumi's voice guide.
+**Lumen** (the product, renamed **Coherence** on 2026-09-12 — the code and most docs still say Lumen until the rename lands; the companion character is **Lumi**, she/her) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.** Read `docs/product.md` once; it holds the brief and Lumi's voice guide.
 
 **The question that overrides everything:** does this reduce the user's executive-function burden, or accidentally create more of it? Ask it before adding any field, control, count, or setting.
 

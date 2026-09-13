@@ -1,6 +1,6 @@
-# Lumen art direction — the evolving strategy
+# Coherence art direction — the evolving strategy
 
-*v0.1 — DRAFT · 2026-09-12 · written from the sheets, paintings and mockups in `art/` and three days of animation work. Hypotheses, not rules: each bet in §8 moves to Settled or Dropped as it is tested, and a settled one gets its entry in `decisions.md`.*
+*v0.2 — DRAFT · 2026-09-12 · written from the sheets, paintings and mockups in `art/` and three days of animation work. Hypotheses, not rules: each bet in §8 moves to Settled or Dropped as it is tested, and a settled one gets its entry in `decisions.md`.*
 
 **Who this is for:** Chanté and Claude, whenever the work changes what Lumi or a scene looks like or how Lumi moves — a new sheet, a painting, a mockup, a new kind of motion. Read §2, §3 and §8 before generating anything.
 
@@ -18,7 +18,7 @@ Three directions in three days. Each move kept something and dropped something; 
 | 2026-09-12 | `scenery/home-background.png` | An isometric cutaway of a lamplit cabin room, repainted for more open floor for Lumi to wander | served behind Home as `public/home-room.webp` | whether Lumi walks in it (§6); its projection differs from the eye-level mockups (bet 5) |
 | 2026-09-12 | `archived/scene_mockups/cohernece-mockup.png` | A *Coherence* Home: a painted hero with Lumi reading at a desk near a cat, chat below, a right rail with *Lumi's World — a cozy place to grow*, notes on a reward system, plant care loops and a Rive exploration | the painted room behind Home; the greeting | Lumi's World, rewards, care loops, due-date labels, the sidebar motto (§3) |
 | 2026-09-12 | `archived/scene_mockups/home-mockup.png`, `background-mockup.png` | Eye-level painted rooms at dusk and at night, no Lumi; banners reading *Small steps still move the world* and *A quieter way forward* | the palette and the light | the banners |
-| 2026-09-12 | `lumi/lumi-ref.png` | An *interaction animation sheet*: idle, look around, happy, walk left and right, run, sit, read, write, think, tend plant, inspect, hold lantern, celebrate, rest, return, observe, stretch, sit from behind | the behaviour vocabulary (§5) | its costume differs from the cut source — a fringed scarf, no medallions (§7) |
+| 2026-09-12 | `lumi/lumi-ref.png` | An *interaction animation sheet*: idle, look around, happy, walk left and right, run, sit, read, write, think, tend plant, inspect, hold lantern, celebrate, rest, return, observe, stretch, sit from behind | the behaviour vocabulary (§5) | its costume is off-model — a fringed scarf, no medallions; the medallions are canon (§2) |
 | 2026-09-12 | `lumi/lumi.png`, `lumi/lumi-lantern-idle.png` | The lantern character: a sun-embroidered hood, ribbon and medallions, boots, a lantern; eight eye expressions; a storybook render | the character in the app today — the corner companion and the avatar heads | its sixteen cells are poses, not in-betweens, so one cell carries the body |
 | ≤ 2026-09-11 | `archived/rali.png` and the `rali-*` sheets | Rali: a paper-grain hooded figure in ivory, ink and brass, no feet, one button; eight eye expressions | the silhouette, the void face, the warm eyes, expressions made of eyes alone | the name, the paper render, the minimal costume |
 
@@ -35,13 +35,13 @@ These have survived every drawing so far. Treat them as the character and everyt
 - **Small.** Never bigger than the thing the user is doing. The largest Lumi in the app is 150px tall, in a corner.
 - **Quiet.** The reference sheet's own margin note: *Small movements. A quieter world. A kinder way forward.*
 
-**Costume, not canon yet:** the lantern, the sun embroidery, the ribbon and medallions, the scarf, the boots. They have changed between sheets and will keep changing until §7 is done.
+**Costume, canon since 2026-09-12:** the sun-embroidered hood, the ribbon with its brass medallions, the boots and the lantern — the lantern character as cut (`lumi/lumi-lantern-idle.png`, `lumi/lumi.png`). The fringed scarf in `lumi/lumi-ref.png` is off-model: use that sheet for its behaviours, not its costume. The costume can still change, but only through a new model sheet (§7), never through a generated frame.
 
 ## 3. The open tension: the book or the world
 
 The written canon and the art are pulling apart, and neither is wrong.
 
-**What the docs say.** `design-philosophy.md` §2 puts Lumi fourth in order of permission — "small, sparing … a circular avatar beside his lines; never a full-body illustration in the working UI" — and leaves decorative imagery off the list. Its §3 says *never cute, gamified, cluttered*. `product.md` rules out gamification and streaks, and names "A calmer mind creates a brighter tomorrow" as the anti-example of copy on the walls. `CLAUDE.md`: the user never rates or tags anything.
+**What the docs say.** `design-philosophy.md` §2 puts Lumi fourth in order of permission — "small, sparing … a circular avatar beside her lines; never a full-body illustration in the working UI" — and leaves decorative imagery off the list. Its §3 says *never cute, gamified, cluttered*. `product.md` rules out gamification and streaks, and names "A calmer mind creates a brighter tomorrow" as the anti-example of copy on the walls. `CLAUDE.md`: the user never rates or tags anything.
 
 **What the art does.** The corner companion shipped full-body on every page. Home is a painted room, repainted to give Lumi floor to walk on. The mockups add a cat, a garden of tasks, progress bars, a reward system, care loops, *Lumi's World*, and mottos on banners and wall boards — one of them, "A calmer mind can do remarkable things", a close relative of the named anti-example.
 
@@ -101,7 +101,7 @@ Motion is part of Lumi's voice, so it follows the voice guide in `product.md`: c
 
 **Resident, the room's invitation.** Standing on the floor of Home's painted room, moving between the desk, the armchair and the rug. That needs things the companion does not:
 
-- **Projection.** The room is an isometric cutaway seen from above; Lumi's sheets are drawn near eye level. A resident needs drawings at the room's angle, and walking in an isometric room needs four diagonal directions, not the reference sheet's left and right.
+- **Projection: isometric, decided 2026-09-12.** Every room is an isometric cutaway seen from above, like the served Home room. Lumi's sheets are drawn near eye level, so a resident needs drawings at the rooms' angle, and walking in an isometric room needs four diagonal facings, not the reference sheet's left and right. Still open: whether the corner companion moves to the same angle, since on Home she already stands over an isometric room.
 - **Scale and light.** A size relative to the furniture; a contact shadow that works on dark wood (the cut's baked cream shadow reads as a pale smudge on a ground as dark as the room's); a lantern glow that lights the room, not the paper.
 - **Depth and paths.** Lumi passes behind the table and in front of the chair, so the walkable floor has to be marked on the painting.
 - **Attention.** The room is dimmed behind the conversation; whatever Lumi does there must not pull the eye from it.
@@ -112,7 +112,7 @@ Motion is part of Lumi's voice, so it follows the voice guide in `product.md`: c
 
 The generator redraws Lumi every time. Between the cut source and the reference sheet the medallions became a scarf; between Rali and the lantern everything but the silhouette changed. Every sheet pays for a consistency check, and every drawn loop inherits the drift.
 
-- **One model sheet as canon.** Front, three-quarter both ways, side, back and the eye shapes, chosen by Chanté and committed to `art/lumi/`, with the costume written beside it and counted: which ornament on the hood, ribbon or scarf, how many medallions, boots or not.
+- **One model sheet as canon.** The costume is decided (the medallions, §2); the sheet itself is still to draw: front, three-quarter both ways, side and back, the four isometric facings seen from above at the rooms' angle, and the eye shapes. It is committed to `art/lumi/` with the costume counted beside it: the hood's ornaments, how many medallions, the boots, the lantern.
 - **Every prompt attaches it and lists the costume,** and the prompt is saved as a file (`animation-pipeline.md` backlog #4).
 - **Measure against it.** The measure script compares heads frame to frame; comparing a new sheet's silhouette and palette to the model sheet is the natural next gate.
 - **Draw the character once.** The strongest consistency move is tier 2: the generator supplies one drawing and code does the rest.
@@ -127,19 +127,19 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 | 2 | Frequent motion is layered (tier 2); drawn sheets only for signature moments | the ladder's costs and the drift (§4, §7) | one evening: split the rest cell into hood, face, eyes, lantern and body; animate a blink, a glance and a lantern sway; show it beside the current sprite on the review port | Chanté can tell it is a rig and it looks cheaper than the sprite | open |
 | 3 | The world responds to what happened, never to what didn't | §3; the one question | any care-loop or reward idea gets an `ef-burden-log.md` row first and one question: *does a bad week make the world sadder?* | a version that fades gently and still lowers burden in dogfooding | proposed |
 | 4 | Lumi is the companion everywhere and, one day, a resident on Home | §6 | a still placed at room scale on Home's floor | the room reads busier and the conversation loses the eye | open |
-| 5 | Every room Lumi can enter shares one projection | walking depends on it (§6) | choose between the isometric cutaway (served) and the eye-level mockups before a second room is painted | — | open |
+| 5 | Every room Lumi can enter shares one projection | walking depends on it (§6) | — | — | **settled 2026-09-12: isometric** |
 | 6 | A focus session shows Lumi working alongside | body doubling made visible (§5) | a still of Lumi reading near the session bar, then a tier-1 page turn | it reads as a distraction during focus | open |
 
-**Settled:** none yet. **Dropped:** none yet.
+**Settled:** bet 5, isometric rooms (Chanté, 2026-09-12; `decisions.md`). **Dropped:** none yet.
 
 ## 9. Questions for Chanté
 
-1. **Lumen or Coherence?** Three mockups carry *Coherence*; the app and the docs say Lumen. Is the art directing toward a rename?
-2. **Which costume is canon?** The cut source's ribbon and medallions, or the reference sheet's scarf?
-3. **Lumi's pronoun.** `product.md` and `design-philosophy.md` say *he*; the animation docs and the code comments say *she*.
-4. **Is Lumi's World in scope,** and if it is, on §3's terms?
-5. **Isometric or eye-level** for the rooms Lumi can walk in?
-6. **Worth a tier-2 spike,** and if so Rive or layered images with no new dependency?
+**Answered 2026-09-12:** the product is **Coherence** · the canon costume is **the medallions** (§2) · Lumi is **she** · rooms are **isometric** (§6, bet 5). Recorded in `decisions.md`.
+
+**Still open:**
+
+1. **Is Lumi's World a feature?** The Coherence mockup has a *Lumi's World* nav item and card, "a cozy place to grow", beside notes on a reward system and plant care loops. Is the plan a place in the app that grows or changes as the user makes progress, or was it mood in the mockup? If it is a feature, §3's rules decide how it may work; if not, the painted rooms stay places Lumi lives, with nothing in them that tracks progress.
+2. **Try a puppet version of Lumi?** Today every movement is a set of whole drawings, one per frame, redrawn by the image generator, which draws her a little differently every time. The alternative cuts one drawing into pieces — hood, face, each eye, lantern, body — and lets code move the pieces: the eyes change shape, the lantern swings, the head tilts. The test is one throwaway evening, shown beside today's Lumi on the review server, to see whether it looks alive or like a cheap puppet. Isometric raises the stakes: walking needs four facings, so four sets of pieces instead of four drawn sheets for every movement. (Bet 2.)
 
 ## 10. How this doc evolves
 
@@ -150,4 +150,5 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 ## Change log
 
+- 2026-09-12 — v0.2: Chanté's answers — the product is Coherence, the medallions are canon, Lumi is she, rooms are isometric (bet 5 settled). §2 costume, §6 projection, §7 model sheet and §9 rewritten; the two open questions reworded plainly.
 - 2026-09-12 — v0.1: written after the lantern character, the Home room and the art reorganisation. Where the art has been, the invariants, the book-or-world tension with a proposed synthesis, the ladder of animation costs, motion principles and a behaviour map, companion and resident, character consistency, six bets, six questions.
