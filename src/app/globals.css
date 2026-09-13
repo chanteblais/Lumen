@@ -314,8 +314,25 @@ body::after {
 /* Settings is a utility, not a space: set 64px further down, apart from the
    places. On a short window the rail's foot (and the moon's button) is already
    close under the last row, so the gap gives way first — none at a rail of
-   584px or less, the full 64px from 648px. */
-.nav-utility { margin-top: clamp(0px, calc(var(--rail-h) - 584px), 64px); }
+   584px or less, the full 64px from 648px. A soft brass hairline on the rail,
+   fading at both ends, sits in the middle of the gap, centred on the icons; it
+   narrows with the gap and is gone when the gap is. */
+.nav-utility {
+  --utility-gap: clamp(0px, calc(var(--rail-h) - 584px), 64px);
+  margin-top: var(--utility-gap);
+}
+.nav-utility::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * (var(--utility-gap) + 4px) / 2); /* the gap and the list's 4px */
+  left: calc(var(--rail-x) + var(--rail-w) / 2);
+  width: clamp(0px, calc(var(--rail-h) - 584px), 30px);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(to right, transparent, #d4ad6c, transparent); /* the painted brass */
+  opacity: 0.55;
+  pointer-events: none;
+}
 .nav-item {
   position: relative;
   display: flex;
