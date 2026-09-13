@@ -340,7 +340,8 @@ async function runScenario(scenario, { brief, now, dry }) {
 
 /* ------------------------------------------------------------- reporting */
 
-const mark = (c) => (c.ok ? "✓" : c.kind === "must" ? "✗" : "⚑");
+/** A must: ✓ held / ✗ missed. A flag: ⚑ the sign showed / "not seen" — so "✓ flag: counted the pile back" can't read as though it happened. */
+const checkLine = (c) => (c.kind === "must" ? `- ${c.ok ? "✓" : "✗"} must: ${c.label}` : c.ok ? `- · not seen: ${c.label}` : `- ⚑ sign: ${c.label}`);
 
 function transcript(result, { blindLabel } = {}) {
   const s = SCENARIOS.find((x) => x.id === result.id);
@@ -353,7 +354,7 @@ function transcript(result, { blindLabel } = {}) {
     if (t.tools?.length) lines.push(`  ↳ ${t.tools.join(" · ")}`, "");
     if (!blindLabel && t.usage) lines.push(`  \`${t.usage}\``, "");
   }
-  if (result.checks.length) lines.push("**Checks** (✓ held · ✗ a must missed · ⚑ a sign for the grader):", ...result.checks.map((c) => `- ${mark(c)} ${c.kind}: ${c.label}`), "");
+  if (result.checks.length) lines.push("**Checks** (must: ✓ held · ✗ missed — sign: ⚑ showed · not seen):", ...result.checks.map(checkLine), "");
   if (blindLabel) lines.push("**Grade:** Voice ☐ · Use ☐ · Notes:", "");
   return lines.join("\n");
 }

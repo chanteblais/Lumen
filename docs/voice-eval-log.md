@@ -42,7 +42,7 @@ Note why beside every ~ and ✗.
 - `--dry` seeds each scenario and prints its first context block, with no model calls.
 - Transcripts go to the OS temp dir. Paste highlights and grades below, newest first.
 
-**Checks:** `must` is an action the right conversation needs, checked in code (✓ held · ✗ missed). `flag` (⚑) is a sign for the grader, never a verdict on its own. Voice and Use are graded as above.
+**Checks:** a `must` is an action the right conversation needs, checked in code (✓ held · ✗ missed). A sign is something for the grader to look at, never a verdict on its own: ⚑ when it showed, *not seen* when it didn't. Voice and Use are graded as above.
 
 | Scenario | Seeded | What it tests |
 |---|---|---|
