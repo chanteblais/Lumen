@@ -191,9 +191,9 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 | 5 | Every room Lumi can enter shares one projection | walking depends on it (§6) | — | — | **settled 2026-09-12: isometric** |
 | 6 | A focus session shows Lumi working alongside | body doubling made visible (§5) | a still of Lumi reading near the session bar, then a tier-1 page turn | it reads as a distraction during focus | open |
 | 7 | Movement is built as poses and paths: finished poses drawn from one hub, joined by short in-betweened sheets generated with both ends attached (§4a) | a pose library alone flickers; the loop order already reverses and repeats cells | one pick-up path from the hub, played forward and backward | the generator can't land a path on a drawn end pose, so every join needs the cut to force it | open — the pick-up (2026-09-13) plays forward and backward from one sheet with its hood and boots within 0.5px; its end pose was described, not attached, so landing on a drawn pose is still untested |
-| 8 | Lumi is hands-free by default; the lantern, like a book or a cup, is something she picks up (§4a) | Chanté, 2026-09-13; handling things in her world makes her a resident, not an emblem | the hub drawn without the lantern, then a pick-up | without a light in hand she loses the warmth §2 gets from it | open — Chanté's direction; `PROJECT-CANON.md` → Lumi still describes her with a lantern |
+| 8 | Lumi is hands-free by default; the lantern, like a book or a cup, is something she picks up (§4a) | Chanté, 2026-09-13; handling things in her world makes her a resident, not an emblem | the hub drawn without the lantern, then a pick-up | without a light in hand she loses the warmth §2 gets from it | **settled 2026-09-13** (Chanté: "Lumi will be hands free often"): hands-free is her usual state and the lantern is a thing she can pick up, not part of her. The lantern body stays served beside the hands-free one for now; retiring it is `animation-pipeline.md` backlog #2 |
 
-**Settled:** bet 3, continuity-based growth (2026-09-13); bet 5, isometric rooms (Chanté, 2026-09-12; `decisions.md`). **Dropped:** none yet.
+**Settled:** bet 3, continuity-based growth (2026-09-13); bet 5, isometric rooms (Chanté, 2026-09-12; `decisions.md`); bet 8, hands-free by default (Chanté, 2026-09-13; `decisions.md`). **Dropped:** none yet.
 
 ## 9. Questions for Chanté
 
@@ -213,6 +213,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 ## Change log
 
+- 2026-09-13 — Bet 8 settled: Lumi is hands-free often, the lantern a prop (Chanté). §4a's hands-free work is no longer a proposal; bet 2 (pieces) stays open.
 - 2026-09-13 — Merged with the reconciliation: bets 3 and 4 and §9 question 1 take the reconciled text; bets 1 and 2 and question 2 keep the hands-free session's evidence.
 - 2026-09-13 — v0.2, no bet moved: §6 *Scale and light* notes her shadow and light are drawn by the page now; a §4a progress row for it, with Chanté's first look (looks okay; open to puppeting).
 - 2026-09-13 — v0.2, no bet moved: §1 rows for the hub, the model sheet, the three hands-free sheets and the pieces page; §4a progress (wired for review; the pieces test built); evidence on bets 1, 2 and 7.
