@@ -29,6 +29,16 @@ rows = (count + cols - 1) // cols
 out_dir = os.path.join(HERE, 'out')
 os.makedirs(out_dir, exist_ok=True)
 
+if '--audit' in sys.argv:
+    # the page's ?audit=1 mode: facing against movement, turns and flips, measured over the tour and 60 random clicks
+    dom = subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--virtual-time-budget=120000', '--dump-dom',
+                          'file://' + os.path.join(HERE, 'index.html') + '?audit=1'], check=True, capture_output=True,
+                         text=True, timeout=300).stdout
+    import re
+    found = re.search(r'<pre id="audit">(.*?)</pre>', dom, re.S)
+    print(found.group(1) if found else 'no audit in the page (did it throw?)')
+    sys.exit(0)
+
 if '--page' in sys.argv:
     # the whole page as a visitor first sees it (`--page [WxH]`), for one look at the layout before publishing
     size = arg('--page', '1280x1480')

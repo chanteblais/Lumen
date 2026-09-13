@@ -160,7 +160,7 @@
 
   // ---- tuning: painting px at her height of 120 (scaled with her), seconds -------------------------
   var T = {
-    speed: 36,        // px a second at full pace: about a third of her height
+    speed: 36,        // px a second at full pace along an isometric diagonal; other directions scale with the ground's foreshortening
     step: 0.44,       // one step; a stride (two steps) covers speed × 2 × step
     lift: 3.2,        // how high a boot lifts mid-step
     bob: 1.5,         // the body rises between steps
@@ -173,10 +173,9 @@
     hemSwing: 1.5,
     stopDist: 18,     // she slows over this distance before a corner she has to turn at
     accel: 0.3,       // seconds to reach full pace
-    turnLead: 0.05,   // from stopping to the first new drawing
-    turnStep: 0.09,   // each drawing she turns through
-    turnSettle: 0.1,  // after the last, before she walks on
-    pulse: 0.14,      // the small squash that carries each change of drawing
+    turnStep: 0.2,    // standing, each eighth of a turn is a small step in place; the drawing changes as the boot lifts
+    turnSettle: 0.08, // after the last step, before she walks on
+    pulse: 0.16,      // the small squash that carries each change of drawing
     breath: 1.3,      // px at the hood top, resting
     breathS: 3.2,
     clearance: 24,    // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
@@ -321,18 +320,31 @@
     var nodes = [];
     for (var s2 = found; s2 >= 0; s2 = prev[s2]) nodes.unshift(Math.floor(s2 / 8));
     var pts = nodes.map(function (m) { return fromUV(G.u0 + (m % G.nu) * T.cell, G.v0 + Math.floor(m / G.nu) * T.cell); });
+    // join her exact start and end to the grid with two straight moves each (a diagonal on the ground, then along an
+    // axis), so the first and last few pixels also run in one of the eight directions she has drawings for — joined
+    // with a straight line, she walked those stretches sideways
+    var octile = function (p, r) {
+      var s1 = toUV(p.x, p.y), s2 = toUV(r.x, r.y), du = s2.u - s1.u, dv = s2.v - s1.v, kk = Math.min(Math.abs(du), Math.abs(dv));
+      return fromUV(s1.u + Math.sign(du) * kk, s1.v + Math.sign(dv) * kk);
+    };
+    // points closer than 6px to the last are dropped: a stretch that short was walked without turning, sometimes
+    // backwards (the audit found it); the end is always exactly where she was sent
+    var full = [];
+    var add = function (p) { var l = full.length ? full[full.length - 1] : a; if (Math.hypot(p.x - l.x, p.y - l.y) > 6) full.push(p); };
+    add(octile(a, pts[0]));
+    pts.forEach(function (p) { add(p); });
+    add(octile(pts[pts.length - 1], b));
+    var end = { x: b.x, y: b.y }, lastPt = full.length ? full[full.length - 1] : a;
+    if (full.length && Math.hypot(lastPt.x - b.x, lastPt.y - b.y) <= 6) full[full.length - 1] = end; else full.push(end);
     // keep only the corners
     var out = [];
-    for (var q = 1; q < pts.length; q++) {
-      var last = q === pts.length - 1;
-      if (last) { out.push(pts[q]); break; }
-      var d1 = dirFor({ x: pts[q].x - pts[q - 1].x, y: pts[q].y - pts[q - 1].y }, 0), d2 = dirFor({ x: pts[q + 1].x - pts[q].x, y: pts[q + 1].y - pts[q].y }, 0);
-      if (d1 !== d2) out.push(pts[q]);
+    for (var q = 0; q < full.length; q++) {
+      if (q === full.length - 1) { out.push(full[q]); break; }
+      var p0 = q ? full[q - 1] : a;
+      var d1 = dirFor({ x: full[q].x - p0.x, y: full[q].y - p0.y }, 0), d2 = dirFor({ x: full[q + 1].x - full[q].x, y: full[q + 1].y - full[q].y }, 0);
+      if (d1 !== d2) out.push(full[q]);
     }
-    if (!out.length) out.push(pts[0]);
-    out[out.length - 1] = { x: b.x, y: b.y };
-    if (Math.hypot(pts[0].x - a.x, pts[0].y - a.y) > 2) out.unshift(pts[0]);
-    return out;
+    return out.length ? out : [{ x: b.x, y: b.y }];
   }
 
   // ---- state ----------------------------------------------------------------------------------------------
@@ -345,7 +357,8 @@
     S = {
       x: start[0], y: start[1], dirIdx: 1,
       path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
-      r: 0, phi: 0, turnQueue: [], turnT: 0, pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]],
+      r: 0, phi: 0, turnQueue: [], turnT: 0, turnP: 0, turnSwapped: false, turnFoot: 0, L: T.speed * T.step,
+      pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]],
       feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, nextBlink: 1.2, blinks: [], cam: null
     };
   }
@@ -359,13 +372,16 @@
     if (path) startWalk(path, t.rest); else { S.hold = Math.max(0.5, t.rest); S.waiting = true; }
   }
   function beginTurn(to) {
+    // from a walk the boots settle first; from standing she starts stepping round at once
+    var fromWalk = Math.abs(S.feet[0][0]) + Math.abs(S.feet[1][0]) + S.feet[0][1] + S.feet[1][1] > 1;
     S.r = 0;
     S.settleFrom = S.feet.map(function (f) { return f.slice(); });
-    S.settle = 0.24;
+    S.settle = fromWalk ? 0.24 : 0;
     var d = ringDist(S.dirIdx, to), sgn = d > 0 ? 1 : -1;
     S.turnQueue = [];
     for (var k = 1; k <= Math.abs(d); k++) S.turnQueue.push(((S.dirIdx + sgn * k) % 8 + 8) % 8);
-    S.turnT = T.turnLead;
+    S.turnT = fromWalk ? 0.24 : 0.02;
+    S.turnP = 0; S.turnSwapped = false;
   }
   function footOffsets(phi, L, liftPx) {
     var out = [];
@@ -379,7 +395,7 @@
   }
 
   function step(dt) {
-    var m = sizeMul(), L = T.speed * m * T.step;
+    var m = sizeMul();
     S.time += dt;
     if (S.time >= S.nextBlink) {
       S.blinks.push(S.time);
@@ -390,15 +406,21 @@
     if (S.pulse > 0) S.pulse = Math.max(0, S.pulse - dt);
 
     if (turning()) {
-      S.turnT -= dt;
-      if (S.turnT <= 0 && S.turnQueue.length) {
-        S.dirIdx = S.turnQueue.shift();
-        S.pulse = T.pulse;
-        S.turnT = S.turnQueue.length ? T.turnStep : T.turnSettle;
+      if (S.turnT > 0) S.turnT -= dt;
+      else if (S.turnQueue.length) {
+        // one eighth of a turn is one small step in place: a boot lifts, the drawing changes, the boot sets down
+        // (Chanté: standing, "she flips instantly to walk in the other direction")
+        S.turnP += dt / T.turnStep;
+        if (!S.turnSwapped && S.turnP >= 0.4) { S.dirIdx = S.turnQueue[0]; S.pulse = T.pulse; S.turnSwapped = true; }
+        if (S.turnP >= 1) {
+          S.turnQueue.shift(); S.turnP = 0; S.turnSwapped = false; S.turnFoot = 1 - S.turnFoot;
+          if (!S.turnQueue.length) S.turnT = T.turnSettle;
+        }
       }
     } else if (S.path.length) {
       var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
       if (d < 0.4) {
+        S.snapped = (S.snapped || 0) + d;   // the audit counts how far corners are jumped rather than walked
         S.x = tgt.x; S.y = tgt.y; S.path.shift();
         if (!S.path.length) {
           S.settleFrom = S.feet.map(function (f) { return f.slice(); });
@@ -419,11 +441,16 @@
           if (nl > 6 && Math.abs(ringDist(prevDir, ndir)) > 1) break;
           remain += nl; prevPt = S.path[i]; prevDir = ndir;
         }
+        // pace and stride are set on the ground: walking up or down the page (where the ground is foreshortened) she
+        // covers fewer pixels, across it more. Set on the page instead, an up-and-down stride pushed a boot under the hem
+        var D8 = DIRS[S.dirIdx], fore = D8.len / Math.hypot(D8.step[0], D8.step[1]) / UV_PX;
+        var speed = T.speed * m * fore;
+        S.L = speed * T.step;
         var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
         S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
-        var move = Math.min(d, T.speed * m * S.r * dt);
+        var move = Math.min(d, speed * S.r * dt);
         S.x += dx / d * move; S.y += dy / d * move;
-        S.phi = frac(S.phi + move / (2 * L));
+        S.phi = frac(S.phi + move / (2 * S.L));
       }
     } else if (S.waiting) {
       // resting at a stop (a rest of 0 is a corner: she goes on at once)
@@ -435,12 +462,15 @@
     var moving = S.path.length > 0 && !turning();
     var walkW = smooth(S.r / 0.35);
     if (moving && S.r > 0) {
-      S.feet = footOffsets(S.phi, L, T.lift * m).map(function (f) { return [f[0] * walkW, f[1] * walkW]; });
+      S.feet = footOffsets(S.phi, S.L, T.lift * m).map(function (f) { return [f[0] * walkW, f[1] * walkW]; });
     } else if (S.settle > 0) {
       var e = smooth(1 - S.settle / 0.24);
       S.feet = S.settleFrom.map(function (f) {
         return [f[0] * (1 - e), Math.max(f[1] * (1 - e), Math.abs(f[0]) > 2 ? Math.sin(Math.PI * e) * T.lift * m * 0.6 : 0)];
       });
+    } else if (S.turnQueue.length && S.turnT <= 0) {
+      S.feet = [[0, 0], [0, 0]];
+      S.feet[S.turnFoot] = [0, T.lift * m * 0.8 * Math.sin(Math.PI * S.turnP)];
     } else {
       S.feet = [[0, 0], [0, 0]];
       S.phi = 0;
@@ -551,7 +581,8 @@
     var still = reduced;
     var bob = still ? 0 : -T.bob * m * Math.sin(Math.PI * c2) * w * D;
     var squash = still ? 0 : T.squash * Math.exp(-Math.pow(Math.min(c2, 1 - c2) / 0.11, 2)) * w;
-    var sway = T.sway * m * Math.sin(TAU * phi) * w * D;
+    var stepIn = S.turnQueue.length && S.turnT <= 0 && !still ? Math.sin(Math.PI * S.turnP) : 0;   // stepping round on the spot
+    var sway = (T.sway * m * Math.sin(TAU * phi) * w + (S.turnFoot ? 1 : -1) * T.sway * m * 0.7 * stepIn) * D;
     var roll = T.roll * P.height * Math.sin(TAU * phi) * w;
     var head = T.sway * m * 0.8 * Math.sin(TAU * (phi - T.headLag)) * w * D;
     var hem = -T.hemSwing * m * Math.sin(TAU * (phi - T.hemLag)) * w * D;
@@ -594,8 +625,10 @@
     fctx.clearRect(0, 0, W, H);
     var dl = { x: dir.mirror ? -dir.v.x : dir.v.x, y: dir.v.y };
     var feet = [0, 1].map(function (k) {
-      var s = S.feet[k][0] * D, l = S.feet[k][1] * D;
-      return { k: k, x: dl.x * s, y: dl.y * s - l, ground: P.contact[k][1] + dl.y * s };
+      var s = S.feet[k][0] * D, l = S.feet[k][1] * D, y = dl.y * s - l;
+      // a boot may tuck up toward the hem but never vanish under it (Chanté's screenshot: a boot gone under the cloak)
+      if (R.legs) y = Math.max(y, -Math.max(0, (R.legs[k].ankle[1] - R.hem) * P.sy - 0.015 * P.height));
+      return { k: k, x: dl.x * s, y: y, ground: P.contact[k][1] + dl.y * s };
     });
     // legs first: from a hip under the cloak (moving with the body) to the ankle (moving with the boot), every frame,
     // so a step never leaves a boot floating or a gap under the hem
@@ -725,9 +758,60 @@
     document.title = 'ready';
   }
 
+  // ---- headless audit: does she face the way she walks, and does she ever change facing standing without a step? ----
+  // `?audit=1` walks the tour for two minutes and then 60 seeded random clicks on the floor, measuring every frame, and
+  // writes the numbers into <pre id="audit"> (capture.py --audit prints them). Motion judged by numbers, not by eye.
+  function runAudit() {
+    document.body.classList.add('chromeless');
+    var dt = 1 / 60, pick = rng(11);
+    var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0 };
+    function run(frames) {
+      for (var i = 0; i < frames; i++) {
+        var x0 = S.x, y0 = S.y, d0 = S.dirIdx, r0 = S.r, inTurn = turning(), snap0 = S.snapped || 0;
+        step(dt);
+        if (S.dirIdx !== d0) {
+          if (inTurn) log.stepTurns++;
+          else if (r0 > 0.3) log.walkingTurns++;
+          else log.standingFlips++;
+        }
+        if ((S.snapped || 0) !== snap0) { log.snappedPx += (S.snapped || 0) - snap0; continue; }
+        var mx = S.x - x0, my = S.y - y0, len = Math.hypot(mx, my);
+        if (len < 1e-6) continue;
+        var v = DIRS[S.dirIdx].v, ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
+        log.walkedPx += len;
+        if (ang > 25) log.sidewaysPx += len;
+        if (ang > log.worstDeg) { log.worstDeg = ang; log.worstAt = { x: Math.round(S.x), y: Math.round(S.y), facing: DIRS[S.dirIdx].id, t: +S.time.toFixed(2) }; }
+      }
+    }
+    run(120 * 60);
+    ui.tour = false;
+    for (var c = 0; c < 60; c++) {
+      var p = null;
+      for (var tries = 0; tries < 200 && !p; tries++) {
+        var q = { x: 250 + pick() * 1150, y: 360 + pick() * 600 };
+        if (standable(q)) p = q;
+      }
+      if (!p) continue;
+      var path = findPath({ x: S.x, y: S.y }, p);
+      log.clicks++;
+      if (!path) { log.unreachable++; continue; }
+      S.hold = 0; S.waiting = false;
+      startWalk(path, Infinity);
+      for (var f = 0; f < 60 * 40 && (S.path.length || turning()); f += 30) run(30);
+      run(30);
+    }
+    ['walkedPx', 'sidewaysPx', 'worstDeg', 'snappedPx'].forEach(function (k) { log[k] = Math.round(log[k] * 10) / 10; });
+    var pre = document.createElement('pre');
+    pre.id = 'audit';
+    pre.textContent = JSON.stringify(log);
+    document.querySelector('main').appendChild(pre);
+    document.title = 'ready';
+  }
+
   // ---- the page --------------------------------------------------------------------------------------------------
   function start() {
     resetSim();
+    if (params.get('audit')) { runAudit(); return; }
     if (GRID) { runGrid(); return; }
     var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
     var readout = document.getElementById('readout'), hint = document.getElementById('hint');
