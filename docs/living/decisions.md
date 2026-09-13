@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-09-13 · Recent conversation lives on, and what mattered is filed in the Library
+
+**Decision.** Lumi's memory keeps recent conversation after it scrolls away and keeps revising it: a short memory of each visit and, for the subjects that run through the user's life, a Library thread with a summary Lumi rewrites and a growing archive of notes. When a subject comes up again, Lumi has its summary and the parts of the archive that bear on the moment. Threads are life-model objects. Forgetting something never scrubs the conversation.
+**Rationale.** Chanté: "recent conversations should live on in lumi's memory … periodically revised, with things that are meaningful getting recorded in their rightful category (this will be the library). For instance if I talk to lumi about a book I'm writing very often, when I bring it up interesting things about it she should record those thoughts in a growing archive. Then when I bring up the topic next time, she should have access to a quick summary, and any other relevant parts of that archive." And: "Forgetting should not scrub the conversation." *(Claude's reading: this is the canon's Thread — persistent context across fragmented activity, AI & IA §3 and §41, Library §12–16 — arriving through conversation first, before any room presents it.)*
+**Implications.**
+- The first answer to open question 22: threads become structure first. Collections, Thread Groups, shelves and a Library page stay open (question 3; the presentation half of spatial-map question 7).
+- Structure emerges conservatively (Library §55): a thread appears only for a subject the user spent real time on or came back to. Nothing is filed, named or reviewed by the user.
+- Current understanding and history stay distinct (Library §33): a note that changed is superseded, not overwritten.
+- Privacy waits (Chanté: "let's not worry about privacy yet"): personal details are kept like anything else. Secrets and instruction-like text are still never stored.
+- Recall is by words for now. Meaning-based recall is the next layer, grown and refined as development goes (Chanté: "something I would like to grow and refine as we develop").
+
+**Principle.** V§16–17, EP§18; *Coherence remembers, Lumi understands*; AI & IA §24–26; Library §12–16, §20–24, §33, §55.
+**Replaces.** The M6 plan's rolling conversation summary ([engineering log](../decisions.md), same date).
+**Confirmed.** Chanté, 2026-09-13, after it landed.
+
+## 2026-09-13 · Lists is in the nav again, as a sheet over the page you're on
+
+**Decision.** A sixth icon on the rail, **Lists**, brings up everything on the user's lists on one sheet over whatever page they're on: the lists as tabs and a side column, Completed, two quick views (Today, Due soon), search, a ⋯ on each row to move it to another list or let it go, and **Add task**, which is one line to Lumi, who files it. There are no counts, no Overdue view, no sort or filter. The Library keeps its name and stays its room.
+**Rationale.** Chanté's ask, with `art/mockups/lists-mockup.png`: "a new icon to the nav bar for lists, that brings up all your todos." Asked where the mockup met settled decisions, she chose: a sheet over the page rather than its own page or a panel inside the Library; counts and Overdue left out (*Never a count of what's undone*, *no overdue debt*); search plus Add through Lumi rather than a form, sort and filter; the icon after Today. On review she moved it below the Library, with a soft divider between them: "I'd like to separate the rooms from the tools."
+**Implications.**
+- Full lists are visible somewhere again, which answers the canon difference noted on *Lists is called the Library* (EP§18: full lists live in Lists rather than appearing everywhere).
+- The nav is grouped: the rooms (Home, Today, Library), then the tools (Lists, Insights), then Settings, a utility, each group set apart by a soft break. A new entry is placed by which it is: a place to be, or something to use from any place.
+- Lists and the Library are both in the nav. *(Claude's reading: Lists is not a new space but a sheet over the place you're in (spaces §44–45); the Library remains where the broader shape — Threads, history — becomes navigable, open question 3.)* Open question 15 now reads Home / Today / Lists / Library / Insights / Settings.
+- A date that has gone by is only its date: it isn't red, isn't collected in a view, and doesn't top the list.
+- Moving a row and letting it go are corrections (EP§6, EP§16): each is an event marked as the user's, and Lumi sees it in her next turn. Adding goes through Lumi, so the user never sets a list or a date.
+- Lumi steps out of view while the sheet is open; she is one line away through Add task. Whether she should stay visible beside it is Chanté's to review.
+- The mockup's closing quote ("Small steps still move the stars") was left off (Principle 13, `today.md` → Cut from the mockup); an ornament sits there.
+
+**Principle.** EP§18 (one understanding across spaces), EP§2–4 and V§11 (show less than you know), V§3 and V§12 (no red counts or failure states), EP§5–6 and EP§16 (correction beats configuration).
+**Replaces.** The list-view half of *Lists is called the Library, and for now it is only its room*, below: "no page shows them; filing, ticking and correcting happen in conversation." The Library's name and room stand.
+
 ## 2026-09-13 · The lantern is Lumi's
 
 **Decision.** Lumi stays hands-free most of the time, but the lantern is hers, not one prop among many: she often picks it up, and often sets it down again. Beyond the lantern, she engages with and picks up many things in her world.

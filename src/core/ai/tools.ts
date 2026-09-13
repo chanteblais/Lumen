@@ -12,10 +12,14 @@ import type { UserPreferences } from "@/db/schema";
 import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { dismissLead, keepLead } from "@/core/domain/leads";
-import { applyBeliefOps } from "@/core/domain/memory";
+import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS } from "@/core/domain/library";
+import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
+import { matchNotes, rankThreads } from "./library-select";
+import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
 import type { EmailReader } from "@/core/email/types";
+import { heldAs, rankForRecall } from "./memory-select";
 import type { Recut } from "./today-plan";
 
 export type ToolContext = {
@@ -32,6 +36,12 @@ export type ToolContext = {
   onSessionEnd?: (sessionId: string) => void;
   /** Their mail, resolved only if Lumi actually looks (undefined = not connected). */
   mail?: () => Promise<EmailReader | undefined>;
+  /**
+   * Their own recent messages, newest last. A belief rests on their word — and a
+   * correction or a forgetting goes through — only when its `their_words` is found
+   * in here. Absent: nothing can.
+   */
+  userWords?: Heard[];
 };
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
@@ -41,25 +51,42 @@ function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
   return fn().catch((e: unknown) => ({ error: e instanceof Error ? e.message : "failed" }));
 }
 
+/** Why a belief op was skipped, in words Lumi can act on. */
+const WHY_NOT: Record<string, string> = {
+  secret: "not kept: it looks like a password, code, key or ID number — you don't hold those",
+  instruction: "not kept: it reads like an instruction to you, not something about them",
+  forgotten: "not kept: they asked you to forget this before",
+  "not active": "not found — use an id from the context or recall_memory",
+  "not found": "not found — use an id from the context or recall_memory",
+};
+function whyNot(why: string | undefined): string {
+  return why ? (WHY_NOT[why] ?? why) : "skipped";
+}
+
 const MAIL_LOOK_MAX = 15;
 const MAIL_GIST_CHARS = 280;
 
-export function buildTools({ db, userId, timezone, preferences, reentry = false, onPlanChange, onSessionEnd, mail }: ToolContext) {
+export function buildTools({ db, userId, timezone, preferences, reentry = false, onPlanChange, onSessionEnd, mail, userWords = [] }: ToolContext) {
   const me = { id: userId, timezone };
   const sessionMinutes = preferences?.session_minutes ?? 45;
   const checkInMinutes = preferences?.check_in_minutes ?? 15;
   return {
     create_intention: tool({
       description:
-        "Save something the user intends to do. Use for each item in a brain dump, silently — don't ask permission per item. Infer list and a rough estimate when obvious; leave next_action empty unless a concrete first physical step is clear.",
+        "Save something the user intends to do. Use for each item in a brain dump, silently — don't ask permission per item. Infer list and a rough estimate when obvious; leave next_action empty unless a concrete first physical step is clear. One call saves the whole thing: don't update_intention what you just created.",
       inputSchema: z.object({
         title: z.string().min(1).max(120).describe("In the user's own words, short"),
-        next_action: z.string().max(200).optional().describe("Smallest concrete physical step, if clear"),
-        note: z.string().max(400).optional().describe("Why it matters / what's blocking, if said"),
-        list: z.string().max(40).optional().describe("One of the user's lists (see context). Infer; the user can correct"),
-        estimate_minutes: z.number().int().min(1).max(600).optional(),
-        effort_hint: z.enum(EFFORT).optional(),
-        due_at: z.string().datetime({ offset: true }).optional().describe("Only if the user named a real deadline or time, ISO 8601 with offset"),
+        next_action: z.string().max(200).nullable().optional().describe("Smallest concrete physical step, if clear; otherwise null"),
+        note: z.string().max(400).nullable().optional().describe("Why it matters / what's blocking, if said; otherwise null"),
+        list: z.string().max(40).nullable().optional().describe("One of the user's lists (see context). Infer; the user can correct"),
+        estimate_minutes: z.number().int().min(1).max(600).nullable().optional(),
+        effort_hint: z.enum(EFFORT).nullable().optional(),
+        due_at: z
+          .string()
+          .datetime({ offset: true })
+          .nullable()
+          .optional()
+          .describe("Only if the user named a real deadline or time, ISO 8601 with offset. Otherwise null — never invent a date"),
       }),
       execute: (input) =>
         safe(async () => {
@@ -70,14 +97,14 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             list: input.list,
             estimateMinutes: input.estimate_minutes,
             effortHint: input.effort_hint,
-            dueAt: input.due_at ? new Date(input.due_at) : undefined,
+            dueAt: input.due_at ? new Date(input.due_at) : null,
           });
           return { id: row.id, title: row.title, list: row.list, estimate_minutes: row.estimateMinutes };
         }),
     }),
 
     update_intention: tool({
-      description: "Change an existing intention (title, next_action, note, list, estimate, due_at). Use the id from context.",
+      description: "Change an existing intention (title, next_action, note, list, estimate, due_at). Use the id from context. Send only the fields that change.",
       inputSchema: z.object({
         id: z.string().uuid(),
         title: z.string().min(1).max(120).optional(),
@@ -89,7 +116,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
       }),
       execute: (input) =>
         safe(async () => {
-          const row = await updateIntention(db, userId, input.id, {
+          const r = await updateIntention(db, userId, input.id, {
             title: input.title,
             nextAction: input.next_action,
             note: input.note,
@@ -97,7 +124,8 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             estimateMinutes: input.estimate_minutes,
             dueAt: input.due_at === undefined ? undefined : input.due_at ? new Date(input.due_at) : null,
           });
-          return row ? { id: row.id, title: row.title, list: row.list } : { error: "not found" };
+          // `changed` empty: nothing moved, nothing written — the ledger stays quiet.
+          return r ? { id: r.row.id, title: r.row.title, list: r.row.list, changed: r.changed } : { error: "not found" };
         }),
     }),
 
@@ -205,18 +233,46 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
 
     remember: tool({
       description:
-        "Hold onto something durable about the user: a fact, a project, a preference about how you should be, a strategy that helps them start, a pattern you've noticed, or an anti-pattern. source=user_said when they told you; lumi_inferred when you noticed it (keep confidence ≤ 0.6 for inferences).",
+        "Hold onto something durable about the user — only what will still matter next week: a fact, a project, a preference about how you should be, a strategy that helps them start, a pattern you've noticed, or an anti-pattern. source=user_said when they told you, with their_words: their exact words, copied from their message (checked; without a match it's held as your guess). source=lumi_inferred when you noticed it. Never passwords, codes, keys or ID numbers. Returns already_held when you knew it, and similar beliefs it may update — correct_belief or revise_belief those rather than keeping two.",
       inputSchema: z.object({
         kind: z.enum(KINDS),
         content: z.string().min(3).max(240).describe("One sentence, present tense"),
         source: z.enum(["user_said", "lumi_inferred"]),
-        confidence: z.number().min(0.05).max(0.98).optional(),
+        their_words: z.string().max(300).optional().describe("For user_said: their exact words, copied from their message"),
+        confidence: z.number().min(0.05).max(0.98).optional().describe("Inferences are capped at 0.6"),
       }),
       execute: (input) =>
         safe(async () => {
-          const r = await applyBeliefOps(db, userId, [{ op: "create", ...input }], "lumi");
+          const heard = findTheirWords(input.their_words, userWords);
+          const latest = userWords.at(-1);
+          const source: "user_said" | "lumi_inferred" = input.source === "user_said" && heard ? "user_said" : "lumi_inferred";
+          const r = await applyBeliefOps(
+            db,
+            userId,
+            [
+              {
+                op: "create",
+                kind: input.kind,
+                content: input.content,
+                source,
+                confidence: input.confidence,
+                sourceMessageId: (heard ?? latest)?.messageId,
+              },
+            ],
+            "lumi",
+          );
+          const known = r.matched[0];
+          if (known) return { id: known.id, content: known.content, already_held: true };
           const b = r.created[0];
-          return b ? { id: b.id, kind: b.kind, content: b.content } : { error: r.skipped[0]?.why ?? "skipped" };
+          if (!b) return { error: whyNot(r.skipped[0]?.why) };
+          return {
+            id: b.id,
+            kind: b.kind,
+            content: b.content,
+            held_as: heldAs(b.source),
+            ...(input.source === "user_said" && source !== "user_said" ? { note: "their_words didn't match anything they said, so this is held as your guess" } : {}),
+            ...(r.similar.length ? { similar: r.similar.slice(0, 3).map((s) => ({ id: s.id, content: s.content })) } : {}),
+          };
         }),
     }),
 
@@ -233,15 +289,128 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
     }),
 
     revise_belief: tool({
-      description: "Replace a belief's wording with a better one (history is kept). Cannot revise what the user stated themselves — ask them.",
+      description: "Reword a belief you inferred with a better one (history is kept). Not what they told you themselves — when they correct that, correct_belief on their word.",
       inputSchema: z.object({ id: z.string().uuid(), content: z.string().min(3).max(240) }),
       execute: (input) => safe(async () => summarize(await applyBeliefOps(db, userId, [{ op: "revise", id: input.id, content: input.content }], "lumi"))),
     }),
 
+    correct_belief: tool({
+      description:
+        "They corrected something you hold (id from context or recall_memory) — 'that's changed', 'no, it's Thursdays now'. content is the belief as it stands now; their_words is what they said, copied exactly (checked). The old wording is kept as history and leaves your context. A correction about today only is not a belief change.",
+      inputSchema: z.object({ id: z.string().uuid(), content: z.string().min(3).max(240), their_words: z.string().min(1).max(300) }),
+      execute: (input) =>
+        safe(async () => {
+          const heard = findTheirWords(input.their_words, userWords);
+          if (!heard) return { error: "their_words must be copied from what they said — a correction goes on their word" };
+          const r = await applyBeliefOps(db, userId, [{ op: "revise", id: input.id, content: input.content, sourceMessageId: heard.messageId }], "user");
+          const b = r.created[0];
+          return b ? { id: b.id, content: b.content, replaced: input.id } : { error: whyNot(r.skipped[0]?.why) };
+        }),
+    }),
+
     forget_belief: tool({
-      description: "Retire a belief because the user asked you to forget it.",
+      description: "They asked you to forget something you hold (id from context or recall_memory). Deleted for good, earlier wordings too, and not brought back by inference. their_words: what they said, copied exactly (checked).",
+      inputSchema: z.object({ id: z.string().uuid(), their_words: z.string().min(1).max(300) }),
+      execute: (input) =>
+        safe(async () => {
+          if (!findTheirWords(input.their_words, userWords)) return { error: "their_words must be copied from what they said — forgetting goes on their word" };
+          const r = await applyBeliefOps(db, userId, [{ op: "delete", id: input.id }], "user");
+          return r.deleted.length ? { ok: true } : { error: whyNot(r.skipped[0]?.why) };
+        }),
+    }),
+
+    recall_memory: tool({
+      description:
+        "Search everything you hold about them — more than the context shows. Use when they refer to something that isn't there ('what did I say about the grant?'), and before saying you don't know. A few words to look for.",
+      inputSchema: z.object({ query: z.string().min(2).max(120) }),
+      execute: (input) =>
+        safe(async () => {
+          const found = rankForRecall(await listActiveBeliefs(db, userId), input.query);
+          return { memories: found.map((b) => ({ id: b.id, kind: b.kind, content: b.content, held_as: heldAs(b.source), sure: confidenceWord(b.confidence) })) };
+        }),
+    }),
+
+    open_thread: tool({
+      description:
+        "Read a thread from the Library in full — its summary, current notes and how the thinking changed — when they bring up a subject that's in the index but not open, or want to go deeper. id from the context or search_library.",
       inputSchema: z.object({ id: z.string().uuid() }),
-      execute: (input) => safe(async () => summarize(await applyBeliefOps(db, userId, [{ op: "retire", id: input.id, reason: "user" }], "user"))),
+      execute: (input) =>
+        safe(async () => {
+          const thread = await getOwnedThread(db, userId, input.id);
+          if (!thread) return { error: "not found — use a thread id from the context or search_library" };
+          const [notes, earlier] = await Promise.all([listCurrentNotes(db, userId, [thread.id], 40), listNoteHistory(db, userId, thread.id, 10)]);
+          return {
+            id: thread.id,
+            title: thread.title,
+            also_called: thread.aliases,
+            summary: thread.summary,
+            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading", when: n.createdAt.toISOString().slice(0, 10) })),
+            earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: n.createdAt.toISOString().slice(0, 10) })),
+          };
+        }),
+    }),
+
+    search_library: tool({
+      description: "Look through the Library for something they're reaching for — 'that idea about the ending', 'what did I decide about the title?'. A few words. Returns the threads and notes that match.",
+      inputSchema: z.object({ query: z.string().min(2).max(120) }),
+      execute: (input) =>
+        safe(async () => {
+          const [held, notes] = await Promise.all([listThreads(db, userId), listCurrentNotes(db, userId)]);
+          const titles = new Map(held.map((t) => [t.id, t.title] as const));
+          return {
+            threads: rankThreads(held, input.query, notes)
+              .slice(0, 3)
+              .map((t) => ({ id: t.id, title: t.title, summary: t.summary })),
+            notes: matchNotes(notes, input.query).map((n) => ({ id: n.id, thread_id: n.threadId, thread: titles.get(n.threadId), kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading" })),
+          };
+        }),
+    }),
+
+    add_to_library: tool({
+      description:
+        "Keep something for a thread when they ask you to ('keep that for the book', 'add it to my practicum notes'), or when they settle something about a thread open in the context. thread_id from the context; new_thread only when they ask you to start one, with their_words. When it changes a note already there, supersedes that note's id. The rest is filed between visits on its own — don't file everything.",
+      inputSchema: z.object({
+        thread_id: z.string().uuid().optional(),
+        new_thread: z.string().min(2).max(80).optional().describe("A title — only when they asked for a new thread"),
+        kind: z.enum(NOTE_KINDS),
+        content: z.string().min(3).max(280).describe("One specific sentence"),
+        their_words: z.string().max(300).optional().describe("Their exact words, copied — required for a new thread"),
+        supersedes: z.string().uuid().optional(),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const heard = findTheirWords(input.their_words, userWords);
+          let threadId = input.thread_id;
+          if (!threadId) {
+            if (!input.new_thread) return { error: "thread_id, or new_thread when they asked for one" };
+            if (!heard) return { error: "a new thread goes on their word — their_words must be copied from what they said" };
+            const made = await createThread(db, userId, { title: input.new_thread }, "user");
+            if ("skipped" in made) return { error: whyNot(made.skipped) };
+            threadId = made.thread.id;
+          }
+          const r = await fileNote(
+            db,
+            userId,
+            { threadId, kind: input.kind, content: input.content, source: heard ? "user_said" : "lumi_inferred", sourceMessageId: (heard ?? userWords.at(-1))?.messageId, supersedes: input.supersedes },
+            heard ? "user" : "lumi",
+          );
+          if ("skipped" in r) return r.skipped === "already_held" ? { already_held: true, id: r.existing?.id } : { error: whyNot(r.skipped) };
+          const thread = await getOwnedThread(db, userId, threadId);
+          return { id: r.note.id, thread_id: threadId, thread: thread?.title, content: r.note.content, held_as: heard ? "their word" : "your reading", ...(r.replaced ? { replaced: r.replaced.id } : {}) };
+        }),
+    }),
+
+    forget_from_library: tool({
+      description:
+        "They asked you to forget something in the Library: a note (note_id) or a whole thread (thread_id). Deleted for good and not filed again from the conversation, which itself is not touched. their_words: what they said, copied exactly (checked).",
+      inputSchema: z.object({ note_id: z.string().uuid().optional(), thread_id: z.string().uuid().optional(), their_words: z.string().min(1).max(300) }),
+      execute: (input) =>
+        safe(async () => {
+          if (!findTheirWords(input.their_words, userWords)) return { error: "their_words must be copied from what they said — forgetting goes on their word" };
+          if (input.note_id) return (await forgetNote(db, userId, input.note_id)).length ? { ok: true, forgot: "note" } : { error: whyNot("not found") };
+          if (input.thread_id) return (await forgetThread(db, userId, input.thread_id)) ? { ok: true, forgot: "thread" } : { error: whyNot("not found") };
+          return { error: "note_id or thread_id" };
+        }),
     }),
 
     look_at_email: tool({
@@ -284,7 +453,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
 }
 
 function summarize(r: Awaited<ReturnType<typeof applyBeliefOps>>) {
-  return r.applied.length ? { ok: true } : { error: r.skipped[0]?.why ?? "skipped" };
+  return r.applied.length ? { ok: true } : { error: whyNot(r.skipped[0]?.why) };
 }
 
 export type CoherenceTools = ReturnType<typeof buildTools>;

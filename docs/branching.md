@@ -64,6 +64,8 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 6. **Never `git stash` in the shared checkout.**
 7. **Nobody parks on `main`** — not the shared checkout, not a worktree, not for a minute (*Landing on main*, above). Done in the shared checkout? Leave it on your branch until it lands, then `git switch --detach main`.
 8. **Renaming or moving the project directory is a coordinated stop** (learned 2026-09-12, `rali` → `lumen`): every active session's cwd goes stale and any dev server keeps serving the old path. Message every session first (commit in flight, stop servers, no git for a few minutes), move, run `git worktree repair` from the new main checkout, then tell them the new path. A session that lands in a deleted cwd must restart in the new path before touching anything.
+9. **Remove your worktree when its branch lands — or when you drop the work — as soon as it's safe, without asking.** Chanté's standing ask (2026-09-13): don't leave it for her to approve each time. **Safe** means all of: every branch you worked in it has landed (or you dropped the work on purpose), `git status` is clean, no server or shell of yours is still running in it, and no ignored file in it is worth keeping (sheet candidates, keys, an `.env.local` that differs from the shared checkout's). Then: `git switch --detach`, `git branch -d <branch>`, and remove it — `git worktree remove <path>` from outside it, or, for a Claude session standing in its own worktree, the ExitWorktree tool with `action: "remove"` (this rule is the user's say-so the tool asks for). **Not safe** — uncommitted work, commits not on `main`, a review still open on its server, a file worth keeping — keep it and name it and the reason in your final summary. A worktree left behind keeps a ~500 MB `node_modules`, a copy of `.env.local` and a branch or a detached HEAD nobody remembers; on 2026-09-13 fifteen had piled up. The census (10) catches what slips through.
+10. **The census is how worktrees get cleared.** `npm run worktrees` lists every worktree and why it stays; `npm run worktrees -- --prune` removes only those that are safe: under `.claude/worktrees`, not locked, nothing running inside (session, shell or dev server), idle for an hour, no uncommitted changes, HEAD already on `main`, and no ignored file worth keeping (sheet candidates, keys, an `.env.local` that differs from the shared checkout's). It never touches the shared checkout, the checkout you run it from, or another tool's worktree, and deletes a branch only when it's merged. Run it at session end (`dev-hygiene.md` → Session end). Anything it keeps for a reason only its owner can settle — uncommitted work, unmerged commits, a differing `.env.local` — goes to Chanté, not to `--force`.
 
 ## Dev servers and ports
 
@@ -77,7 +79,7 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 
 ## Commit guards (pre-commit hook)
 
-A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). On this machine the path is set absolute, to the shared checkout's `.githooks`, so every worktree runs the shared checkout's copy — a hook changed on a branch isn't live until that checkout has it, and a parked checkout has it only once it's caught up to `main` (`dev-hygiene.md` → Traps, Backlog). It enforces:
+A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). The path is **relative** (since 2026-09-13; it was the shared checkout's absolute path), so every checkout — the shared one and each worktree — runs its own branch's copy: a hook changed on a branch is live in that branch's checkout at once, and in the others as they merge `main`. Keep it relative; an absolute path makes every worktree run whatever the shared checkout has out. It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
 2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here and stops loudly. Emergencies only: `COHERENCE_ALLOW_MAIN=1 git commit …`.
@@ -87,7 +89,7 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 
 ## Claude sessions
 
-**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. After verification, merge `main` into the branch if it has moved, land with `npm run land`, delete the branch, and **push `main`** — Chanté's approval to merge covers the deploy. Guardrails on the push:
+**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. After verification, merge `main` into the branch if it has moved, land with `npm run land`, delete the branch, remove the worktree (Parallel sessions 9), and **push `main`** — Chanté's approval to merge covers the deploy. End every session with `npm run worktrees -- --prune`. Guardrails on the push:
 
 - **Approval first.** Landing + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
@@ -105,8 +107,10 @@ git add <paths> && git commit -m "Fix thing"
 git merge main                     # if main moved: conflicts get resolved here, on the branch; npm run check again
 git diff main...HEAD --stat        # docs audit: does every doc these files touch still read true? fix on the branch first
 npm run land -- fix/thing -m "Merge branch 'fix/thing' — fix thing"
-git switch --detach main           # in the shared checkout: park; in a worktree: remove it instead
+git switch --detach main           # in the shared checkout: park
+git worktree remove <path>         # in a worktree: remove it once landed (from outside it)
 git branch -d fix/thing
+npm run worktrees -- --prune       # session end: clears every worktree that's safe to remove
 git log --first-parent origin/main..main   # what rides along — audit its docs too
 git push origin main               # on approval — approval to merge = approval to deploy
 ```

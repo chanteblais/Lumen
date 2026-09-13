@@ -18,6 +18,7 @@ import { appendEvent, listEventsSince, reflectedOn } from "@/core/domain/events"
 import { applyBeliefOps, listActiveBeliefs, MAX_OPS_PER_RUN, type BeliefOp } from "@/core/domain/memory";
 import { getSession } from "@/core/domain/sessions";
 import { describeGap, dayPart } from "@/core/time";
+import { contentWords, normalizeText } from "@/core/words";
 import { chatModel, effortOptions } from "./model";
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
@@ -49,30 +50,10 @@ Rules:
 - Operations already applied by code (listed) are done — don't repeat them.`;
 
 /** Lower-case, unpunctuated, single-spaced: the same strategy said two ways still matches. */
-export function normalizeStrategy(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-const STOPWORDS = new Set(["the", "a", "an", "to", "of", "and", "or", "in", "on", "at", "for", "with", "by", "it", "its", "is", "be", "her", "him", "them", "their", "she", "he", "they", "i", "me", "my", "you", "your", "that", "this", "what", "gets", "get", "got", "helps", "help", "then"]);
+export const normalizeStrategy = normalizeText;
 
 /** Content words, lightly stemmed ("reading" ≈ "read", "sentences" ≈ "sentence"), so two wordings of one strategy line up. */
-export function strategyTokens(s: string): Set<string> {
-  const out = new Set<string>();
-  for (const w of normalizeStrategy(s).split(" ")) {
-    if (!w || STOPWORDS.has(w)) continue;
-    let t = w;
-    if (t.length > 5 && t.endsWith("ing")) t = t.slice(0, -3);
-    else if (t.length > 4 && t.endsWith("ed")) t = t.slice(0, -2);
-    if (t.length > 3 && t.endsWith("s")) t = t.slice(0, -1);
-    if (t.length > 4 && t.endsWith("e")) t = t.slice(0, -1); // write ≈ writing, sentence ≈ sentences
-    out.add(t);
-  }
-  return out;
-}
+export const strategyTokens = contentWords;
 
 /**
  * Does a session's approach name this strategy belief? The approach's content

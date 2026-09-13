@@ -41,12 +41,16 @@ describe("buildContextBlock", () => {
         { type: "intention.reopened", at: new Date(now.getTime() - 40 * 60_000), via: "app", intentionId: "i8", title: "Email Priya", status: "open" },
         { type: "intention.updated", at: new Date(now.getTime() - 3 * 3_600_000), via: "chat", intentionId: "i7", title: "Grant report", status: "open", fields: ["list"] },
         { type: "intention.created", at: new Date(now.getTime() - 4 * 3_600_000), via: "chat", intentionId: "i6", title: "Buy stamps", status: "dropped" },
+        { type: "intention.updated", at: new Date(now.getTime() - 5 * 3_600_000), via: "app", intentionId: "i5", title: "Order rug", status: "open", fields: ["list"] },
+        { type: "intention.dropped", at: new Date(now.getTime() - 6 * 3_600_000), via: "app", intentionId: "i4", title: "Old errand", status: "dropped" },
       ],
       recentlyDone: [{ id: "i9", title: "Take out compost", completedAt: new Date(now.getTime() - 2 * 60_000) } as unknown as Intention],
     });
     expect(block).toContain("## Recent changes");
-    expect(block).toMatch(/just now · they ticked "Take out compost" done on Today or in the Library · i9 · now done/);
-    expect(block).toMatch(/40 minutes ago · they unticked "Email Priya" on Today or in the Library — open again · i8 · now open/);
+    expect(block).toMatch(/just now · they ticked "Take out compost" done on Today or in Lists · i9 · now done/);
+    expect(block).toMatch(/40 minutes ago · they unticked "Email Priya" on Today or in Lists — open again · i8 · now open/);
+    expect(block).toMatch(/5 hours ago · they moved "Order rug" in Lists \(list\) · i5 · now open/);
+    expect(block).toMatch(/6 hours ago · they let "Old errand" go in Lists · i4 · now dropped/);
     expect(block).toMatch(/3 hours ago · you changed "Grant report" \(list\) · i7 · now open/);
     expect(block).toMatch(/4 hours ago · you saved "Buy stamps" · i6 · now dropped/);
     expect(block).toMatch(/## Recently done.*\n- i9 · "Take out compost" · just now/);

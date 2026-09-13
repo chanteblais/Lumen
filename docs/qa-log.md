@@ -6,6 +6,100 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (4) — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
+
+Chanté, from Today's speech bubble: "I need to buy new headphones and also call Kendra" got *Noted · Buy new headphones · Personal*, *Noted · Call Kendra · Personal*, then *Updated · Buy new headphones*, *Updated · Call Kendra*. And Lumi's shadow was clipping the bubble.
+
+### Fixed
+- **Two ledger lines for one thing.** The stored parts show why: `gpt-6-astra` filled every field of `create_intention` (empty strings for note and next step, and `due_at: 2026-01-01T00:00:00Z` — a date nobody named), then in a second step called `update_intention` on both with `due_at: null` to take it back. Three layers, so the class is covered and not just this case: every optional field of `create_intention` now takes `null` and says so (*otherwise null — never invent a date*), and the description says one call saves the whole thing; `updateIntention` patches only what differs from the row (`intentionChanges`, pure, tested) and writes and appends nothing for a no-op, returning `changed`; and the ledger (`core/ai/ledger.ts`, pure, tested — `Ledger.tsx` renders it) folds an update to a thing noted in the same reply into its *Noted* line and says nothing for an update that changed nothing. Old messages without `changed` render as before.
+- **Her shadows painted over the bubble.** The bubble is rendered before her button, so the button (and the cast and contact shadows inside her figure) painted on top of it where the bubble opens beside her on Today. `.companion-bubble` now sits at `z-index: 2` in the `.companion` stacking context, over the figure.
+
+### Known and deliberate
+- The ledger still shows *Updated · title* for a real change to something from an earlier reply — that is what happened.
+- A no-op update no longer bumps `last_touched_at`: re-saying a thing isn't touching it.
+
+### Verified (live, port 3007, the shared checkout on the branch; the two test intentions, their events and the two messages were removed afterwards)
+- "test item for Claude: water the fern, and also test item two: oil the gate" from Today's bubble: two `create_intention` calls in one step, both with `due_at: null`, no `update_intention`, two *Noted* lines. The nullable schema is enough on its own; the no-op guard and the ledger fold are the belt to its braces.
+- The bubble stretched to 540px beside her (a `min-height` set in devtools): her cast shadow runs under its edge, the tail is clean.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- On Today, tap Lumi and say "I need to buy X and also call Y": two *Noted* lines and nothing else; the Library shows both with no due date.
+- Ask her to move one of them to another list: one *Updated* line.
+- On Today, with the bubble open beside her: her shadow stays under her and the bubble's tail and left edge are clean.
+
+## Sweep 2026-09-13 (3) — a smoother first load: the pool opens whole, paintings start with the HTML (`fix/first-load-smoother`, worktree, port 3006)
+
+Chanté asked what would make the first load feel smoother and chose: warm the database connections, load the paintings sooner with a fade, trim the fonts.
+
+### Verified
+- **Warm pool.** A fresh pool, a first query and then nine parallel reads (Today's fan-out), three runs each from Vancouver: none warmed, the nine took ~490–550ms (they each opened a connection); 6 warmed, no better (~470–530ms, the rest still connected); all 10 warmed, ~90ms. The first query takes ~50–100ms longer while all ten open. Net ~0.3–0.4s off a cold first load.
+- **Idle connections survive the pooler.** Three connections held idle 6 minutes answered in 68ms with no reconnect.
+- **Paintings start with the HTML.** Before: Today's painting started ~400ms after the HTML finished, once the stylesheet had loaded. After: a preload link in the head and the `img` in the page; it started at 968ms against the HTML's 980ms. Home, Today and the Library each render the image, its preload and the fade script.
+- **Fade only when not already loaded.** A cached painting is marked `data-instant` and shows at once (no fade on navigation); a cache-busted one was marked shown on load without `data-instant` and took the 450ms transition. No hydration warnings in the console.
+- `npm run check` passes.
+
+### Known and deliberate
+- **Fonts unchanged.** Both are variable fonts: the ten declared weights are four files (one per family and style), preloaded and done within ~25ms of the HTML. Trimming weights would save nothing.
+- **The painting shows after 3s regardless**, should the inline script not run.
+- **Screenshots from the automation tab can be stale** (see `dev-hygiene.md` → Traps): Today looked like a flat brown room in two captures while the painting was loaded, shown and at opacity 1; a style change forced a fresh frame and the painting was there.
+
+### Open
+- The fade on a truly first visit (empty browser cache) wasn't watched live; its path was exercised with a cache-busted image.
+
+### Highest-value manual tests
+- In a private window, sign in and open Today: the garden's colour first, the painting fading in over it, and no pop.
+- Move between Home, Today and the Library: each painting appears at once, with no fade.
+- After 10+ minutes away, open Today: noticeably less wait than before.
+
+## Sweep 2026-09-13 (2) — page load: fewer round trips, and fresh on Back and on return (`fix/page-load-round-trips`, worktree, port 3006)
+
+Chanté chose fewer waits over loading screens, "but make sure we reload when anything changes".
+
+### Verified (dev server, signed in, from Vancouver against us-east-2; three warm runs each, same method as the sweep below)
+- **Library** 0.32s → **0.17s**. **Today** first byte 0.35s → **0.24s** (complete 0.67s → 0.53s). **Home** 0.85s → **0.51s**. Each page still carried its content (Home's composer and greeting, Today's Right now card, the Library's scene); no errors in the server log.
+- **The visit query returns the previous visit.** `UPDATE users … FROM users AS before … RETURNING before.last_seen_at`, run in a rolled-back transaction: the returned previous equalled the row's value before the update, the new stamp was now.
+- **Back re-reads.** Library → Today by the nav link, then Back: the Library was shown and a fresh `/library?_rsc` request followed.
+- `npm run check`: types, lint, 89 tests, route-auth (accepts `requireVisit()`), CSS prefixes.
+
+### Fixed
+- **Today's card arrived a beat after the page** (Chanté, reviewing). Streamed timing: header at ~0.22s, the plan parts at ~0.52s, and React holds a placeholder swap at least 300ms (`FALLBACK_THROTTLE_MS`). The plan was already primed, so nothing needed to stream: Today now renders whole when `planIsReady`, and keeps Suspense (the dots) only while a path is being generated.
+
+### Known and deliberate
+- **Today's first byte waits for the snapshot** (~0.3s here, a few ms beside the database) so the page can arrive in one piece; there is no loading screen, by Chanté's preference.
+- **No cookie or token copy of the user.** Folding the lookup into the visit write took the round trip away without keeping a copy that could go stale.
+- **Returning to a tab re-reads after a minute away, not every time.** Flicking between tabs doesn't cost a server render and a visit each time.
+- The first request ever still takes the old two-step path (create the row, then stamp it).
+
+### Open
+- The refresh on returning to a tab isn't exercised by the automation tab (it is always hidden); read, not clicked.
+
+### Highest-value manual tests
+- On Today, open Home, tell Lumi you've done Today's Right now thing, press Back: Today shows the path without it (a moment after it appears).
+- Leave a tab on the Library, use the companion bubble in another tab, come back after a minute: the page is re-read.
+- A first visit after 30+ minutes away: Home still greets you as coming back.
+
+## Sweep 2026-09-13 — page load: the database pool and the function region (`fix/db-pool-stall`, worktree)
+
+Chanté: "the page loading is quite slow." Measured from her machine against the real pooler (scripts in the session scratchpad, not committed).
+
+### Fixed
+- **Queries over the pool size hung.** With every connection of a warm pool busy, `postgres` pipelines the next query onto a busy connection, and Supabase's transaction pooler (6543) never answers it. A warm pool of 5 given 6 parallel queries stalled in every trial with a 50ms query (75s+ when left), and in 3 of 4 with `select 1`; a cold pool (connections still opening) never stalled, and the session pooler (5432) never stalled. `max_pipeline: 1` still pipelines one query and still stalled. The snapshot (Today, and Home's background plan prime) sends 7 at once, and resolving a session 2 more. Now `max_pipeline: 0` and `max: 10`: 9 of 9 trials fine, including 16 queries on 10 connections and 14 chained sequences, the overflow waiting ~0.1–0.2s.
+- **Functions ran in `iad1` (Virginia), the database is in us-east-2 (Ohio).** `vercel.json` → `regions: ["cle1"]` (Cleveland), from the next production deploy.
+
+### Known and deliberate
+- A page still makes 2–4 queries one after another before it renders (`requireUser`, `recordVisit`, then the page's own). Parallelising them or moving the visit write off the response is proposed to Chanté, not done: the visit write feeds the sitting that Home and Today read.
+- Every page is rebuilt on every visit (`force-dynamic`, `staleTimes.dynamic` 0). Also proposed, not done.
+
+### Open
+- Lumi's sheet (`lumi-free.webp`, 866 KB) — Chanté is working on it.
+
+### Highest-value manual tests
+- Open Home, then Today straight away (Home's background prime and Today's snapshot overlap on the pool): Today shows its card without a long pause.
+- Leave the app for 5+ minutes, come back to Today: one slow first page (the pool reopens), then quick.
+
 ## Sweep 2026-09-12 (8) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
 
 ### Verified (live, against the real database; `check_in_minutes` set to 1 for the sweep and restored to 15 after; the sweep's sessions, their events, and the two beliefs it created were removed afterwards)

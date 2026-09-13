@@ -2,7 +2,7 @@
  * The one continuous conversation per user, and its messages stored as
  * AI SDK UIMessage parts. Load a window; the rest is summarised later (M6).
  */
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
@@ -16,9 +16,13 @@ export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;
 
+/** The user's main conversation: the oldest, should a race on a first visit ever have made two (nothing in the schema prevents it). */
+const mainConversationOf = (userId: string) => and(eq(conversations.userId, userId), eq(conversations.kind, "main"));
+
 export async function ensureMainConversation(db: Db, userId: string) {
   const existing = await db.query.conversations.findFirst({
-    where: and(eq(conversations.userId, userId), eq(conversations.kind, "main")),
+    where: mainConversationOf(userId),
+    orderBy: asc(conversations.createdAt),
   });
   if (existing) return existing;
   const [created] = await db.insert(conversations).values({ userId, kind: "main" }).returning();
@@ -33,6 +37,27 @@ export async function loadRecentMessages(db: Db, conversationId: string, limit =
     .where(eq(messages.conversationId, conversationId))
     .orderBy(desc(messages.createdAt))
     .limit(limit);
+  return toUIMessages(rows);
+}
+
+/**
+ * The same window of the main conversation, found by user rather than by id, so
+ * a page can load it alongside `ensureMainConversation` instead of after it.
+ * Empty on a first visit, before the conversation exists.
+ */
+export async function loadRecentMainMessages(db: Db, userId: string, limit = MESSAGE_WINDOW): Promise<CoherenceUIMessage[]> {
+  const main = db.select({ id: conversations.id }).from(conversations).where(mainConversationOf(userId)).orderBy(asc(conversations.createdAt)).limit(1);
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(inArray(messages.conversationId, main))
+    .orderBy(desc(messages.createdAt))
+    .limit(limit);
+  return toUIMessages(rows);
+}
+
+/** Rows newest first → UIMessages oldest first. */
+function toUIMessages(rows: (typeof messages.$inferSelect)[]): CoherenceUIMessage[] {
   return rows.reverse().map((r) => ({
     id: r.id,
     role: r.role,
@@ -68,4 +93,13 @@ export function isInSitting(messages: CoherenceUIMessage[], now = Date.now()): b
   const last = messages[messages.length - 1];
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;
+}
+
+/** The words of a message — its text parts joined — without tool calls or metadata. */
+export function messageText(m: Pick<CoherenceUIMessage, "parts">): string {
+  return m.parts
+    .filter((p): p is Extract<CoherenceUIMessage["parts"][number], { type: "text" }> => p.type === "text")
+    .map((p) => p.text.trim())
+    .filter(Boolean)
+    .join(" ");
 }

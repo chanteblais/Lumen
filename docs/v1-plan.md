@@ -55,8 +55,8 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 
 ## M6 — Reflection daily + "What Lumi knows" (1 day)
 - Lazy daily reflection: on the first turn of a new local day, reflect over events and messages since `last_reflected_at` (in `after()`). Covers patterns (time of day, capacity rhythm) and anti-patterns (intentions touched repeatedly, never started).
-- `/knows`: beliefs grouped by kind, confidence shown as words (sure / fairly sure / guessing), correct or delete inline. Corrections supersede at 0.95.
-- Rolling summary: when the window exceeds 30 messages, summarise the overflow into `conversations.summary` and inject it.
+- ~~`/knows`: beliefs grouped by kind, confidence shown as words (sure / fairly sure / guessing), correct or delete inline. Corrections supersede at 0.95.~~ **Built 2026-09-13 (`feat/lumi-memory`) as Settings → *What Lumi knows*** (no page or nav item of its own; open question 12), with the memory brief around it: their word checked in code, per-turn selection instead of all beliefs, `correct_belief` / `forget_belief` / `recall_memory`, forgetting deletes. The "deleting a belief removes it from the next turn's context" check below is covered by `memory.db.test.ts`.
+- ~~Rolling summary: when the window exceeds 30 messages, summarise the overflow into `conversations.summary` and inject it.~~ **Replaced 2026-09-13 (`feat/lumi-library`)** by consolidation: an episode per visit (recent memory that rides along once its messages leave the window) and notes filed under Library threads, with their summaries rewritten (`architecture.md` → The Library).
 - **Done when:** after three simulated days, Lumi holds at least one correct pattern belief nobody typed in; deleting a belief removes it from the next turn's context; a project named on day 1 is known on day 3 after 60+ messages.
 - **EF check:** the user never sets up, tags, or rates anything; learning is invisible until they look.
 
@@ -67,4 +67,4 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** the deployed app is used daily for a week without opening the code.
 
 ## After V1 (not now)
-Embeddings + `recall` tool once beliefs exceed the cap · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · ~~Insights (only if it can be framed without scores)~~ — landed 2026-09-12 as one question over what Lumi noticed in the mail, no scores, no counts (`features.md` → Insights).
+Embeddings once lexical belief selection stops being enough (the `recall_memory` tool landed 2026-09-13) · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · ~~Insights (only if it can be framed without scores)~~ — landed 2026-09-12 as one question over what Lumi noticed in the mail, no scores, no counts (`features.md` → Insights).

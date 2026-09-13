@@ -16,6 +16,7 @@
     "check:routes": "node scripts/check-route-auth.mjs",
     "check:css": "node scripts/check-css-prefixes.mjs",
     "land": "node scripts/land.mjs",
+    "worktrees": "node scripts/worktrees.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
     "db:studio": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs studio"
@@ -35,6 +36,7 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.2",
     "@types/react": "^19",
