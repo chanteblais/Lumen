@@ -97,19 +97,42 @@ col0 = int((hx.min() + hx.max()) / 2)
 face_left = int(np.where(face(rest)[0][:head_rows].any(axis=0))[0].min())
 feet_right = int(np.where((rest[FEET_Y - 10:FEET_Y, :, 3] > 200).any(axis=0))[0].max())
 print(f'rest: hood centre col {col0}, head rows < {head_rows}, face from col {face_left}, boots to col {feet_right}')
+# The boots below the hem, held in every cell of every loop. With the baked shadow gone their edge sits on the
+# floor with nothing under it, and Chanté saw her feet jitter: the loops took the boots' upper rows from each
+# cell's own drawing (the holds stopped 8px above the feet), and the breath resampled them by up to 0.2px a frame.
+hem = int(np.where(((rest[:, :, 0] > 190) & (rest[:, :, 1] > 170) & (rest[:, :, 3] > 200)).any(axis=1))[0].max())
+boot_cols = np.where(((rest[FEET_Y - 4:FEET_Y + 1, :, :3].astype(int).sum(axis=2) < 200) & (rest[FEET_Y - 4:FEET_Y + 1, :, 3] > 200)).any(axis=0))[0]
+# Only the boots and legs — the opaque parts below the hem that reach the ground — never her hands hanging at the
+# hem, which leave in the hands and pick-up loops (a box over the boots brought a stub of the resting hand back).
+# The whole strip below the hem around the boots is REST's — boots, legs and the floor between and beside them — so
+# a sheet that draws a leg further out (the pick-up's, 1.5px) can't step either. The hands end at the hem, and a
+# prop stands right of `feet_right`, outside the strip.
+feet = np.zeros((H, W), bool)
+feet[hem + 1:, max(0, boot_cols.min() - 12):min(boot_cols.max() + 3, feet_right + 3)] = True
+feet_w = ndi.gaussian_filter(feet.astype(float), 1.0)[:, :, None]
+print(f'feet held: rows from {hem + 1}, cols {max(0, boot_cols.min() - 12)}–{min(boot_cols.max() + 2, feet_right + 2)}')
+
+
+def hold_feet(cell, base):
+    """`cell` with `base`'s boots below the hem, feathered — except where the cell's own cloak hangs over them (a hem
+    drawn lower in a pose), which stays in front; pasting the rest pose's leg there left a dark smudge on the cream."""
+    cloak = (cell[:, :, 0] > 190) & (cell[:, :, 1] > 170) & (cell[:, :, 3] > 200)
+    w = feet_w * (1 - ndi.gaussian_filter(ndi.binary_dilation(cloak, iterations=1).astype(float), 0.8))[:, :, None]
+    return straight(w * premul(base) + (1 - w) * premul(cell))
 
 
 def allowed(region):
     """Where a loop's moving part may be."""
     m = np.zeros((H, W), bool)
+    # Down to the ground: a hand hanging at the hem reaches below the boots' tops, and a region that stopped 8px above
+    # the feet kept the bottom of the resting hand after it had left. The boots are held separately (`hold_feet`).
     if region == 'left':          # her right arm, on the viewer's left, beside the hood but never over the face
-        m[:FEET_Y - 8, :col0] = True
+        m[:, :col0] = True
         m[:head_rows, face_left - 2:] = False
     elif region == 'front':       # both hands, below the chin
-        m[head_rows:FEET_Y - 8] = True
+        m[head_rows:] = True
     elif region == 'below-head':  # arms, hands and what they carry, and a prop standing beside her
-        m[head_rows:FEET_Y - 8] = True
-        m[head_rows:, feet_right + 3:] = True
+        m[head_rows:] = True
     return m
 
 
@@ -219,12 +242,13 @@ for spec in LOOPS:
         joins += [(moving[-1] - k, k) for k in range(spec.get('ease', 0))]
     for i, k in joins:
         cells[i] = ease(cells[i], base, (k + 1) / (spec['ease'] + 1))
+    cells[:] = [hold_feet(c, base) for c in cells]
     if with_prop:
         cells[:0] = [with_prop(t) for t in PROP_FADE]
 
 rises = [BREATH_RISE * (1 - np.cos(2 * np.pi * i / BREATH_FRAMES)) / 2 for i in range(BREATH_FRAMES)]
 lids = lambda cell, keep: cell if keep is None else eyes_shut(cell, keep)
-rows = [[breathe(lids(rest, keep), r, FEET_Y, FIGURE_H) for r in rises] for keep in (None, 0.5, 0.2)]
+rows = [[hold_feet(breathe(lids(rest, keep), r, FEET_Y, FIGURE_H), rest) for r in rises] for keep in (None, 0.5, 0.2)]
 rows += [cut[spec['name']] for spec in LOOPS]
 cols = max(len(r) for r in rows)
 body = np.zeros((H * len(rows), W * cols, 4), dtype=np.uint8)

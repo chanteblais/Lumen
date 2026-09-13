@@ -72,12 +72,17 @@ def offset(ref, a, mask):
 
 
 head = np.zeros((H, W), bool); head[:HEAD_ROWS, held_from:] = True
-boots = np.zeros((H, W), bool); boots[FEET_Y - 10:FEET_Y + 2] = True
+# the boots from just below the hem: rows closer to the feet alone missed boots taken from each cell's drawing,
+# which jittered once no baked shadow hid their edge (2026-09-13)
+boots = np.zeros((H, W), bool); boots[FEET_Y - 14:FEET_Y + 2] = True
+if '--feet-only' in sys.argv:   # a loop whose head moves by design (the breath)
+    head[:] = False
 ref = cell(cells[0])[:, :, 3].astype(float) / 255
 worst = 0.0
 for c in sorted(set(cells)):
     a = cell(c)[:, :, 3].astype(float) / 255
-    (hx, hy), (bx, by) = offset(ref, a, head), offset(ref, a, boots)
+    (hx, hy) = offset(ref, a, head) if head.any() else (0.0, 0.0)
+    (bx, by) = offset(ref, a, boots)
     m = max(abs(hx), abs(hy), abs(bx), abs(by))
     worst = max(worst, m)
     if m > 0:
