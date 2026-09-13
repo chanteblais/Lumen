@@ -34,6 +34,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 
 | First seen | Symptom | Cause | Caught by | Fix |
 |---|---|---|---|---|
+| 2026-09-13 | A page 404s on a long-running dev server (the app shell renders, *This page could not be found*) though its `page.tsx` exists | the server, orphaned from an earlier session and up since the day before, had lived through branch switches, a route rename and a merge-conflict reverse in its checkout, and its route table lost the page | by hand: the same route on a fresh server works; `ps -o lstart -p $PID` shows the old one's age | review from your own fresh server in your own worktree; stop the stale one only with Chanté's say (it isn't yours) |
 | 2026-09-13 | Lumi fails in a worktree's dev server after the OpenAI switch | `.env.local` was copied into the worktree before `main` started needing `OPENAI_API_KEY` | preflight (keys against `.env.example`) | copy the key from the main checkout's `.env.local` |
 | 2026-09-13 | `tsc`: *Cannot find module '@ai-sdk/openai'* right after merging `main` | the merge added a package; the worktree's `node_modules` predates it | preflight (installed versions against the lockfile) | `npm ci` |
 | 2026-09-13 | `tsc`: *Cannot find module '../../../src/app/lists/page.js'* in `.next/dev/types/validator.ts` | Lists was renamed the Library; `next typegen` rewrites `.next/types` but not `.next/dev/types`, and `tsconfig.json` includes both | preflight (removes the stale types) | automatic; by hand, `rm -rf .next/dev/types` once no server of this checkout is running |
@@ -65,3 +66,4 @@ Only these; everything else Claude decides, does and records here.
 
 ## Change log
 - 2026-09-13 — Started, from the stale `.next/dev/types` and the missing `@ai-sdk/openai` hit while merging `docs/today-spec-as-built`. Preflight landed; review links are always clickable (`CLAUDE.md` → Review server).
+- 2026-09-13 — Trap: a stale dev server 404s a route that exists (the Library spatial-map session, which also merged `main` mid-branch and needed `npm ci` from the preflight, as the doc predicted).
