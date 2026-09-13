@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-13 · Lumi sees roughly the last 30 to 40 messages
+
+**Decision.** Each turn, Lumi sees roughly the last 30 to 40 messages of the conversation, not a fixed 30. What's older reaches her as recent memory and through the Library, as before.
+**Rationale.** From the code review (B9): a window that drops its oldest message every turn changes every request, so none of the conversation could be reused between turns and each reply waited on the whole history again. Letting the window move in steps keeps it the same for several turns, so replies come sooner and cost less. Chanté chose to update the canon to match (2026-09-13).
+**Implications.**
+- She never sees less than she did; sometimes up to nine messages more.
+- The canon states the window as a range (`philosophy/lumi.md` §6). The principle of *Coherence remembers; Lumi understands* stands: when a cap bites, add retrieval, never a bigger window.
+
+**Principle.** *Coherence remembers; Lumi understands* (below).
+**Replaces.** "The last 30 messages" in `philosophy/lumi.md` and in *Coherence remembers; Lumi understands*.
+
 ## 2026-09-13 · Their word has to be theirs, and only their word brings back what was forgotten
 
 **Decision.** Lumi treats something as the person's own word only when what she quotes carries what they meant: a real phrase of theirs (three words that say something), or most of a short message ("forget that", "keep that for the book"). A couple of words lifted out of a longer message are her reading, not their word. Something they asked her to forget comes back only when they ask for it again in their own words; her inferences and the between-visits filing never bring it back.
@@ -268,7 +279,7 @@ Chanté approved the conceptual comparison and consolidation structure. **Previo
 **Decision.** Coherence, not the language model, holds the user's life as durable structured context. Each turn assembles the subset Lumi needs, and Lumi's job is to interpret it and respond. ([model strategy](../product/lumi-model-strategy.md))
 **Rationale.** A model that "remembers" through long histories or huge context windows makes continuity depend on that model and its limits. Structured context survives a model change and can be retrieved on purpose.
 **Implications.**
-- Already the shape of the system: tables and events are the truth, a capped context block and the last 30 messages feed each turn, and a summary (M6) holds older conversation. When a cap bites, add retrieval or a read tool, never a bigger window.
+- Already the shape of the system: tables and events are the truth, a capped context block and the last 30 messages (since the same day, roughly 30 to 40: *Lumi sees roughly the last 30 to 40 messages*, above) feed each turn, and a summary (M6) holds older conversation. When a cap bites, add retrieval or a read tool, never a bigger window.
 - New features ask: *what does this allow Lumi to understand, and how does it help her help?*
 - The structured context the strategy names but Coherence doesn't yet hold (Library threads, Garden state, relationships between things, a clear record of what was moved without being chosen) is open question 22.
 
