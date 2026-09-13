@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
 import { isPublicPath } from "@/lib/public-paths";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
@@ -16,7 +16,7 @@ const NAV = [
   { href: "/settings", label: "Settings", Icon: GearIcon },
 ] as const;
 
-/** Where the parchment can be pinned (the CSS breakpoint); below it, the compass star opens it for one visit. */
+/** Where the rail and its parchment are (the CSS breakpoint); below it, the nav is a bar along the bottom with the names on it. */
 const PINS = "(min-width: 768px)";
 
 /**
@@ -32,8 +32,8 @@ const PINS = "(min-width: 768px)";
  *   reopen it until the pointer has left, or it looks stuck open);
  * - `locked` in — a click on the bottom half of the rail (the moon's half):
  *   hover never opens it; the same again, or a pin, lets it out.
- * On a phone there is no hover: the compass star opens it over the page,
- * and a tap on a place, outside it or Escape folds it away.
+ * On a phone the rail lies down as a bar along the bottom, every icon with its
+ * name under it: nothing opens, pins or locks there (CSS does the layout).
  * Not on the sign-in and sign-up pages: the nav belongs to the space you
  * enter once signed in (decided by the path, so it never flashes while the
  * session loads).
@@ -41,25 +41,8 @@ const PINS = "(min-width: 768px)";
 export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   const pathname = usePathname();
   const [mode, setMode] = useState<NavMode>(modeAtLoad);
-  const [open, setOpen] = useState(false);
   const [resting, setResting] = useState(false);
   const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const outside = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const escape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [open]);
 
   function remember(next: NavMode) {
     setMode(next);
@@ -67,20 +50,18 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   }
 
   function togglePin() {
-    if (!window.matchMedia(PINS).matches) return setOpen((o) => !o);
     const pinning = mode !== "pinned";
     remember(pinning ? "pinned" : "hover");
     setResting(!pinning);
   }
 
   function toggleLock() {
-    setOpen(false);
     remember(mode === "locked" ? "hover" : "locked");
     setResting(true); // unlocked under the pointer, it waits for the pointer to leave before hover opens it
   }
 
   function onNavClick(e: MouseEvent) {
-    if ((e.target as Element).closest("a, button")) return;
+    if ((e.target as Element).closest("a, button") || !window.matchMedia(PINS).matches) return;
     // Judged by where the click lands, not what it lands on: the gaps between the icons belong to the list over the rail.
     const rail = ref.current?.querySelector(".nav-rail")?.getBoundingClientRect();
     if (rail && e.clientX <= rail.right && e.clientY > rail.top + rail.height / 2) return toggleLock();
@@ -91,14 +72,12 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
 
   const pinned = mode === "pinned";
   const locked = mode === "locked";
-  const shown = open || pinned;
   return (
     <aside
       ref={ref}
       className="nav"
       data-pinned={pinned || undefined}
       data-locked={locked || undefined}
-      data-open={open || undefined}
       data-resting={resting || undefined}
       onPointerLeave={() => setResting(false)}
       onClick={onNavClick}
@@ -108,8 +87,8 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
         type="button"
         className="nav-toggle"
         onClick={togglePin}
-        aria-expanded={shown}
-        aria-label={shown ? "Fold the names away" : "Keep the names open"}
+        aria-expanded={pinned}
+        aria-label={pinned ? "Fold the names away" : "Keep the names open"}
       />
       <button
         type="button"
@@ -143,7 +122,6 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
                 className="nav-item"
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
-                onClick={() => setOpen(false)}
               >
                 <span className="nav-icon">
                   <Icon />
