@@ -1226,6 +1226,10 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   position: relative;
   text-shadow: none;
   margin-top: 8px;
+  /* The rods reach 9px past the parchment (below); this keeps them inside
+     .chat-scroll, which otherwise overflows sideways and lets a finger drag
+     the greeting left and right on a phone. */
+  margin-inline: 9px;
   padding: 20px 34px 22px;
   background: linear-gradient(180deg, rgba(246, 234, 208, 0.74) 0%, rgba(240, 222, 188, 0.72) 55%, rgba(233, 211, 172, 0.74) 100%);
   border-radius: 14px;
@@ -1513,6 +1517,9 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 
 @media (max-width: 767px) {
+  /* The voice's shadow reaches 22px past its sides, and a phone's page has only 20px of padding:
+     at -22px it spilled 2px past .main, and the whole page dragged sideways under a finger. */
+  .today-voice::before { inset: -10px -20px -6px; }
   .today-now { padding: 22px 20px 20px; }
   .today-now-title { font-size: 28px; }
   .today-rest { padding: 14px 18px; }
