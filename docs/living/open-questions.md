@@ -104,6 +104,8 @@ Related: [Garden](../product/today-garden.md).
 
 **Status: Open.** No burden-inducing tally of unfinished things. Whether a contextual count or elapsed gap usefully explains a pattern remains a behavioural choice. Do not silently loosen the current persona while adopting product examples.
 
+**Tension recorded 2026-09-13 (voice eval run 5).** The persona says never say how long it's been. The model strategy's own example names the gap: *"You disappeared for four days. We don't need to reconstruct the four days."* In run 5 Lumi echoed the user's "two weeks" while declining to reconstruct them. That shows the documents disagreeing, not clearly a bad reply. **A recommendation to decide on** (review feedback Chanté relayed): allow elapsed time when it helps orient the user, and avoid anything that makes absence feel like a debt; "We can start with what matters today" would still be the cleaner line there. More generally, a number, a time reference or an explanation should be judged by whether it adds burden or costs agency, not banned for appearing. The persona is unchanged until Chanté decides.
+
 Related: [Lumi](../philosophy/lumi.md).
 
 ## 18. What should check-in defaults be?
@@ -126,7 +128,9 @@ Related: [Motion & Interaction](../design/motion-and-interaction.md).
 
 ## 21. How do we evaluate Lumi’s model?
 
-**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. The new voice-evaluation run is ungraded. Runtime choices do not establish product philosophy.
+**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. Voice-eval runs 4 and 5 carry Claude's provisional grades, not blind ([log](../voice-eval-log.md)). Runtime choices do not establish product philosophy.
+
+**Method, from review feedback Chanté relayed (2026-09-13); proposed until she settles it:** a grader who is involved grades blind on consistent criteria rather than abstaining, and every run records its grader. Voice and usefulness are graded separately. Rules about numbers, time and explaining herself serve burden and agency; they aren't prohibitions. The largest gap is judgement across short conversations with tools: does Lumi use what she knows, respond well to correction, leave reflection alone when appropriate, and make the next move easier? The nine single-reply scenarios can't show this, and a paired same-clock run is needed before any conclusion about the brief.
 
 Related: [Model strategy](../product/lumi-model-strategy.md).
 

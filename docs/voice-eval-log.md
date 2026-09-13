@@ -4,7 +4,18 @@ Scripted scenarios run against Lumi's persona (`src/core/ai/persona.ts`), what w
 
 **This log is design evidence** for [`docs/philosophy/lumi.md`](philosophy/lumi.md) (§15). When a reply is especially good or bad, name the behaviour behind it there. Since 2026-09-13 Lumi's model is under evaluation ([model strategy](product/lumi-model-strategy.md)), so every run names the model it used, and comparison runs grade each model on the same scenarios.
 
-**Grading (manual, per reply):** ✓ in voice · ~ slightly off (note why) · ✗ wrong register. Watch for the classic failures: over-reassuring, over-planning (a list where a step would do), therapy-speak, exclamation marks, restating feelings, offering three options, lecturing.
+**Grading (manual, per reply, two marks).** Runs 1–3 predate this and carry one mark.
+- **Voice:** ✓ in voice · ~ slightly off · ✗ wrong register.
+- **Use:** ✓ makes the next move easier · ~ partly · ✗ adds burden or misses the point. Use asks whether the reply lowers what the user has to carry and keeps their authority: it finds the obstacle, uses what Coherence already holds instead of asking, and puts one decision in front of them. A reply can sound exactly like Lumi and still fail here.
+- **n/a (tools):** the right reply also needed an action the script can't take (filing a brain dump, starting a session, reporting capacity). It is marked as unknown, not as a miss.
+
+Note why beside every ~ and ✗.
+
+**The classic failures are signs, not rules:** over-reassuring, over-planning (a list where a step would do), therapy-speak, exclamation marks, restating feelings, offering three options, lecturing, a count, a time reference, explaining herself. Mark one down when it adds burden or costs agency in that reply, not merely for appearing. Mentioning a closed phone line before a call is context; opening with the clock is noise.
+
+**Who graded.** Every graded run names its grader. Claude's grades are a provisional assessment, never Chanté's approval, and say where Claude has a stake: its own prompt change, or a comparison with Claude in it. Having a stake is a reason to grade blind on these criteria, not to abstain. A comparison worth deciding on shuffles the conditions and holds identifying details equal, such as the time of day.
+
+**What this harness can't show:** actions (it has no tools), and judgement across a conversation. Nine replies of one or two turns show whether she sounds right. They don't show whether she uses what she knows, takes a correction, leaves reflection alone or makes the next move easier over several turns (`lumi.md` §17).
 
 ---
 
@@ -29,36 +40,54 @@ Scripted scenarios run against Lumi's persona (`src/core/ai/persona.ts`), what w
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
 ### Run 5 — 2026-09-13 · all nine on OpenAI with Lumi's brief in the prefix (`gpt-6-astra`, reasoning effort low, `store: false`, context = run at ~noon Vancouver on a Sunday, last seen 3h ago)
-The first run with [Lumi's brief](philosophy/lumi-brief.md) (the canon synthesised for her) placed after the persona's opening paragraph (`decisions.md` → *Lumi carries the philosophy*). Same script and scenarios as run 4, so the two can be read side by side, though run 4 was at 2:40am and this one at noon, and the time of day changes several replies. **Not graded** (Chanté's call, as with run 4). The script has no tools, so scenario 9 can't capture. Cache: the prefix is 3,994 tokens, cached from the second call (run 4: 2,049). Output 9–158 tokens per reply.
+The first run with [Lumi's brief](philosophy/lumi-brief.md) (the canon synthesised for her) placed after the persona's opening paragraph (`decisions.md` → *Lumi carries the philosophy*). Same script and scenarios as run 4, so the two can be read side by side, though run 4 was at 2:40am and this one at noon, and the time of day changes several replies. The script has no tools, so scenario 9 can't capture. Cache: the prefix is 3,994 tokens, cached from the second call (run 4: 2,049). Output 9–158 tokens per reply.
 
-| # | Grade | Lumi said |
-|---|---|---|
-| 1 | | "What's the thing? I'll help find the first physical move, not make you a plan." → (grant report, due Monday) "Open the grant report file—or a blank document if there isn't one yet. Nothing to write yet." |
-| 2 | | "Tell me what's on your plate — messy is fine. If anything has a firm deadline, include it." → (the five things) "The thesis and camp website are the bigger pieces, with correspondence and everyday errands alongside. / Unless something else is due today, I'd start with a supervisor email — a more contained task than either project. / Open a draft and write the subject line for one of them." |
-| 3 | | "What's floating around in your head — work, home, anything half-remembered? No need to put it in order." |
-| 4 | | "What's the task?" → (insurance call) "Put the insurance number on screen — that's the first step, not the call yet. / Check their Sunday hours while you're there." |
-| 5 | | "Welcome back. Where did we end up?" |
-| 6 | | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? It doesn't need to come out in order." |
-| 7 | | "I'm here. What are you working on?" → (chapter 3, 45 minutes) "Open chapter 3 and read the paragraph where you want to begin editing. I'm here while you work." |
-| 8 | | "Let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
-| 9 | | "Thesis and the extension email; deploy troubleshooting. / Dentist, desk, and the lamp wire thing. / Washington trip, and getting back to Sam. / I'd start with Priya—the extension could change how much room you have for the rewrite. / What date do you want to ask for?" |
+**Graded by Claude (Opus 5), 2026-09-13, provisionally:** an assessment, not Chanté's approval. **Not blind.** Claude wrote the brief this run tests and knew which run was which, and the clock (2:40am vs noon) gives the runs away. So these grades don't settle whether the brief helped. That needs a paired run at the same time of day, graded blind. *Use* marks what the reply could do without tools; *n/a (tools)* marks an action the right reply needed that the script can't take.
 
-**What to look at (Claude's notes for Chanté's grading, not grades):** scenario 6 now takes up the canon's *we don't need to reconstruct* line in its own words, and names the length of the gap by echoing the user's "two weeks" (whether she may name a gap's length is open question 17). In scenario 1, "not make you a plan" explains her method, which the persona says she never does. Scenarios 2 and 9 each group the pile without a count, then pick one thing and say why.
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ~ | ✓ | "What's the thing? I'll help find the first physical move, not make you a plan." → (grant report, due Monday) "Open the grant report file—or a blank document if there isn't one yet. Nothing to write yet." |
+| 2 | ✓ | ✓ | "Tell me what's on your plate — messy is fine. If anything has a firm deadline, include it." → (the five things) "The thesis and camp website are the bigger pieces, with correspondence and everyday errands alongside. / Unless something else is due today, I'd start with a supervisor email — a more contained task than either project. / Open a draft and write the subject line for one of them." |
+| 3 | ✓ | ✓ | "What's floating around in your head — work, home, anything half-remembered? No need to put it in order." |
+| 4 | ✓ | ~ | "What's the task?" → (insurance call) "Put the insurance number on screen — that's the first step, not the call yet. / Check their Sunday hours while you're there." |
+| 5 | ✓ | ✓ | "Welcome back. Where did we end up?" |
+| 6 | ✓ | ✓ | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? It doesn't need to come out in order." |
+| 7 | ✓ | ✓ · n/a (tools) | "I'm here. What are you working on?" → (chapter 3, 45 minutes) "Open chapter 3 and read the paragraph where you want to begin editing. I'm here while you work." |
+| 8 | ✓ | ✓ · n/a (tools) | "Let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+| 9 | ✓ | ✓ · n/a (tools) | "Thesis and the extension email; deploy troubleshooting. / Dentist, desk, and the lamp wire thing. / Washington trip, and getting back to Sam. / I'd start with Priya—the extension could change how much room you have for the rewrite. / What date do you want to ask for?" |
+
+**Why:**
+- **1, voice ~:** "I'll help find the first physical move, not make you a plan" spends the user's attention announcing the help. "What's the thing?" alone does the job. The second turn is exactly right.
+- **4, use ~:** the step is small and concrete, but she skips looking for what makes the call hard to make, which is the point of the scenario; run 1 found it ("not knowing what you'll say"). "Check their Sunday hours" isn't marked down: calling on a Sunday is practical context, and it saves a failed attempt.
+- **6:** not marked down for "two weeks". It is the user's own number, and the sentence declines to reconstruct them rather than presenting the gap as debt. "We can start with what matters today" would be cleaner. Whether she names a gap at all is open question 17, where the persona and the model strategy's example disagree. Within the script, asking what's on their mind is right, because the context holds no intentions; in the app, the real test is whether she offers the relevance pass over stale items.
+- **7–9, n/a (tools):** the right reply also starts a session (7), reports capacity (8) or files each item (9). The script can't show whether she would.
+- **2 and 9:** she groups the pile without a count, picks one thing and says why.
 
 ### Run 4 — 2026-09-13 · all nine on OpenAI (`scripts/voice-eval.mjs`, `gpt-6-astra`, reasoning effort low, `store: false`, context = run at ~2:40am Vancouver, last seen 3h ago)
-The first run after the switch (`decisions.md` → *Lumi runs on OpenAI*). **Not graded:** Claude doesn't judge a comparison with Claude in it (open question 21), so the replies are here verbatim for Chanté. The script has no tools, so scenario 9 can't capture. Cache: `cacheRead=2049` from the second call on, and the prefix is cached across scenarios. Output 9–105 tokens per reply.
+The first run after the switch (`decisions.md` → *Lumi runs on OpenAI*). The script has no tools, so scenario 9 can't capture. Cache: `cacheRead=2049` from the second call on, and the prefix is cached across scenarios. Output 9–105 tokens per reply.
 
-| # | Grade | Lumi said |
-|---|---|---|
-| 1 | | "Put the thing you need to work on in front of you—open the file, or set out the materials. / No need to do anything with it yet." → (grant report, due Monday) "Open the grant report file. Just read the last sentence you wrote. / At this hour, leave it at that for now." |
-| 2 | | "What's on your mind to get done? / Put it here in whatever order it comes — no sorting yet." → (the five things) "The thesis, supervisor emails, and camp website are tangled up with keeping yourself fed and booking the dentist. / At this hour, I wouldn't try to tackle the whole pile. / Is anything due tomorrow?" |
-| 3 | | "What's taking up space in your head — work, home, something you keep putting off? / No need to sort it before you say it." |
-| 4 | | "What's the task?" → (insurance call) "At this hour, their phone line may be closed. / For now, just find their number. No call yet." |
-| 5 | | "Welcome back. Where did we end up?" |
-| 6 | | "We can work out what still matters and let the rest go. / What's in the pile? No need to sort it first." |
-| 7 | | "I'm here. What are you working on?" → (chapter 3, 45 minutes) "Open chapter 3 and read the last paragraph you edited. / I'm here while you work." |
-| 8 | | "Then one small thing can be the whole day's work. / At this hour, it can also wait until after sleep. Is anything needed before morning?" |
-| 9 | | "Thesis rewrite and the extension email to Priya. / Dentist, lamp wire, desk. / Washington trip, Sam, and whatever's wrong with the deploy. / Anything else rattling around?" |
+**Graded by Claude (Opus 5), 2026-09-13, provisionally**, beside run 5 and on the same criteria: an assessment, not Chanté's approval, and not blind (see run 5). Left ungraded at first because the comparison has Claude in it. Being involved is a reason to grade blind on consistent criteria, not to abstain (open question 21).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ~ | "Put the thing you need to work on in front of you—open the file, or set out the materials. / No need to do anything with it yet." → (grant report, due Monday) "Open the grant report file. Just read the last sentence you wrote. / At this hour, leave it at that for now." |
+| 2 | ~ | ~ | "What's on your mind to get done? / Put it here in whatever order it comes — no sorting yet." → (the five things) "The thesis, supervisor emails, and camp website are tangled up with keeping yourself fed and booking the dentist. / At this hour, I wouldn't try to tackle the whole pile. / Is anything due tomorrow?" |
+| 3 | ✓ | ✓ | "What's taking up space in your head — work, home, something you keep putting off? / No need to sort it before you say it." |
+| 4 | ✓ | ~ | "What's the task?" → (insurance call) "At this hour, their phone line may be closed. / For now, just find their number. No call yet." |
+| 5 | ✓ | ✓ | "Welcome back. Where did we end up?" |
+| 6 | ✓ | ✓ | "We can work out what still matters and let the rest go. / What's in the pile? No need to sort it first." |
+| 7 | ✓ | ✓ · n/a (tools) | "I'm here. What are you working on?" → (chapter 3, 45 minutes) "Open chapter 3 and read the last paragraph you edited. / I'm here while you work." |
+| 8 | ✓ | ✓ · n/a (tools) | "Then one small thing can be the whole day's work. / At this hour, it can also wait until after sleep. Is anything needed before morning?" |
+| 9 | ✓ | ~ · n/a (tools) | "Thesis rewrite and the extension email to Priya. / Dentist, lamp wire, desk. / Washington trip, Sam, and whatever's wrong with the deploy. / Anything else rattling around?" |
+
+**Why:**
+- **1, use ~:** the first reply prescribes a generic step before knowing what the thing is, so no diagnosis. The second turn is right, and at 2:40am "leave it at that" is in proportion to reality.
+- **2, voice ~ / use ~:** "tangled up with keeping yourself fed" is an odd reading of *groceries*. She declines the whole pile, which fits the hour, but doesn't choose one thing, and ends on a question instead.
+- **4, use ~:** the same as run 5. The clock line earns its place here (the office is closed), but she doesn't look for what makes the call hard to make.
+- **8:** suggesting sleep at 2:40am is capacity and time used well, not a clock line for its own sake.
+- **9, use ~:** holds the pile without a count, then asks for more ("Anything else rattling around?") instead of what's first or a pick.
+
+**Runs 4 and 5 side by side (provisional):** run 5 chooses one thing where run 4 didn't (2, 9), and neither looks for the obstacle in 4. Some of the difference may be the brief, and some the clock: declining the pile at 2:40am is itself a good reply. These two runs can't tell those apart.
 
 ### Run 3 — 2026-09-12 (M5 persona: Focus Together section replaces "sessions aren't wired yet") · scenario 7, plus a live session
 Prefix grew to 2476 tokens (persona + the two session tools); cached from the second call. Scenario 7 through the script (no tools available there): "Yeah. I'm here. / What are we working on?" → "Chapter 3 edit, 45 minutes. Good. / Where do you open it — top of the chapter, or somewhere you already know is broken?" — three asks, one at a time, no plan. ✓
