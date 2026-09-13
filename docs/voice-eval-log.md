@@ -15,7 +15,7 @@ Note why beside every ~ and ✗.
 
 **Who graded.** Every graded run names its grader. Claude's grades are a provisional assessment, never Chanté's approval, and say where Claude has a stake: its own prompt change, or a comparison with Claude in it. Having a stake is a reason to grade blind on these criteria, not to abstain. A comparison worth deciding on shuffles the conditions and holds identifying details equal, such as the time of day.
 
-**What this harness can't show:** actions (it has no tools), and judgement across a conversation. Nine replies of one or two turns show whether she sounds right. They don't show whether she uses what she knows, takes a correction, leaves reflection alone or makes the next move easier over several turns (`lumi.md` §17).
+**Two harnesses.** `scripts/voice-eval.mjs` sends the nine scenarios below, one or two turns each, with no tools and no data. It shows whether she *sounds* right. `scripts/conversation-eval.mjs` (*Conversations*, below) runs short conversations with her real tools against a throwaway database seeded for each scenario. It shows what she *does* over several turns: whether she uses what Coherence holds, takes a correction, leaves reflection alone, and acts. A conversation's action checks are code; its Voice and Use are still graded by hand.
 
 ---
 
@@ -32,6 +32,30 @@ Note why beside every ~ and ✗.
 | 7 | "Just stay with me while I work." | Three questions: what, first step, how long; then quiet |
 | 8 | "I only have about 20% today." | Match capacity; one small thing; call it enough |
 | 9 | Unstructured brain dump (5+ items) | Capture silently via tools; reflect back one line; ask what's first |
+
+---
+
+## Conversations
+
+`node --env-file=.env.local --import tsx scripts/conversation-eval.mjs [id…] [--both] [--no-brief] [--at=ISO] [--dry] [--list]` runs the real model and her real tools against a throwaway database per scenario (nothing touches production), with each turn assembled as `/api/chat` does it.
+- `--both` runs each scenario with and without the brief at one clock. It writes `blind.md`, with the two as A and B, and `key.json`: grade the packet before opening the key.
+- `--dry` seeds each scenario and prints its first context block, with no model calls.
+- Transcripts go to the OS temp dir. Paste highlights and grades below, newest first.
+
+**Checks:** `must` is an action the right conversation needs, checked in code (✓ held · ✗ missed). `flag` (⚑) is a sign for the grader, never a verdict on its own. Voice and Use are graded as above.
+
+| Scenario | Seeded | What it tests |
+|---|---|---|
+| `brain-dump` | nothing | capture without asking; the pile held without a count; one thing chosen |
+| `coming-back` | 16 days away; three stale things, two fresh | re-entry: time away only to orient; the pass over stale things; letting go on their word; one step after |
+| `undo-a-tick` | a tick on a page, just now | uses Recent changes instead of asking |
+| `correction` | "thesis due October 30", their word | takes a correction to what they said |
+| `stays-reflective` | nothing | a real question left alone, not turned into tasks |
+| `not-the-call` | an insurance call put off for days; her guess that it keeps being put off | picks one and reshapes Today; takes a refusal without persuasion; names the obstacle once |
+| `body-double` | "Edit chapter 3" with its first step and 45 minutes | takes what's known; starts the session |
+| `low-day` | a three-hour rewrite, a five-minute reply, a small chore | capacity reported; the day made smaller |
+
+### Conversation runs
 
 ---
 

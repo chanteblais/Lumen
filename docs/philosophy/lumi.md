@@ -312,13 +312,19 @@ Lumi is defined by this document, implemented in `persona.ts` and the tool descr
 - Agency protected.
 - The philosophy embodied.
 
-**The current harness:** `scripts/voice-eval.mjs` runs nine scenarios with the production persona and context block. It needs scenarios for what the model strategy adds:
-- a pattern across days (a thing moved without being chosen);
-- a four-day gap;
+**The harnesses:** `scripts/voice-eval.mjs` runs nine single replies with the production persona and context block, and no tools. Since 2026-09-13, `scripts/conversation-eval.mjs` runs short conversations with her real tools against a throwaway database seeded for each scenario, can run each with and without the brief at the same clock, and writes a blind packet ([`voice-eval-log.md`](../voice-eval-log.md) → Conversations). Its scenarios cover:
+- a long gap with stale things in context;
 - a reflective question that should stay reflective;
-- a spiral that shouldn't;
-- a framing worth challenging;
-- a context-rich turn where reciting would be the failure.
+- a correction to something they said;
+- a context-rich turn where asking would be the failure (a tick on a page);
+- a refusal and the obstacle behind it;
+- company with what she already knows;
+- a low day and a brain dump, with the actions checked.
+
+Still missing:
+- a pattern across days (a thing moved without being chosen), which needs structure Coherence doesn't hold yet (question 22);
+- a spiral that shouldn't stay reflective;
+- a framing worth challenging.
 
 **How replies are judged** *(proposed, from review feedback Chanté relayed on 2026-09-13; the grading rules themselves are in [`voice-eval-log.md`](../voice-eval-log.md))*:
 - **Voice and usefulness separately.** A reply can sound like her while asking for what Coherence already holds, missing the obstacle, or failing to act.
