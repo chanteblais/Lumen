@@ -31,20 +31,21 @@ export function CapacityPrompt() {
   };
 
   if (state === "answering") {
-    return <p className="today-capacity font-display text-[19px] italic leading-[1.3] text-ink-mute">Shaping the day around that…</p>;
+    return <p className="today-capacity font-display italic text-ink-mute">Shaping the day around that…</p>;
   }
 
+  // Part of Lumi's words on the painting: the question, then the answers as quiet words, not buttons.
   const busy = state === "skipping";
   return (
-    <section aria-label="Capacity" className="today-capacity flex flex-wrap items-center gap-x-4 gap-y-3">
-      <p className="font-display text-[19px] leading-[1.3] text-ink-soft">{state === "failed" ? "That didn't take. Once more?" : "How much have we got today?"}</p>
-      <div className="flex flex-wrap items-center gap-2">
+    <section aria-label="Capacity" className="today-capacity">
+      <p className="font-display text-ink">{state === "failed" ? "That didn't take. Once more?" : "How much have we got today?"}</p>
+      <div className="today-capacity-answers mt-1.5 flex flex-wrap items-center">
         {ANSWERS.map((a) => (
-          <button key={a.level} type="button" className="chip" disabled={busy} onClick={() => post({ level: a.level }, "answering")}>
+          <button key={a.level} type="button" className="tool-link" disabled={busy} onClick={() => post({ level: a.level }, "answering")}>
             {a.label}
           </button>
         ))}
-        <button type="button" className="tool-link ml-1" disabled={busy} onClick={() => post({ skip: true }, "skipping")}>
+        <button type="button" className="tool-link today-capacity-skip" disabled={busy} onClick={() => post({ skip: true }, "skipping")}>
           Skip
         </button>
       </div>

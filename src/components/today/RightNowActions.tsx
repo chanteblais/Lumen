@@ -17,6 +17,7 @@ export function RightNowActions({ id, title }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<DeclineReason | null>(null);
+  const [done, setDone] = useState<"idle" | "busy" | "failed">("idle");
 
   if (open) {
     return (
@@ -46,17 +47,35 @@ export function RightNowActions({ id, title }: Props) {
     );
   }
 
+  // Done is a quiet word beside the others, not a circle in front of the title:
+  // the card invites starting, and ticking it off is still one tap away.
+  const complete = async () => {
+    setDone("busy");
+    try {
+      const r = await fetch(`/api/intentions/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "complete" }) });
+      if (!r.ok) throw new Error(String(r.status));
+      router.refresh();
+    } catch {
+      setDone("failed");
+    }
+  };
+
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-3">
+    <div className="today-actions mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
       <Link href={{ pathname: "/", query: { start: id } }} className="btn-primary">
         Start with Lumi
       </Link>
-      <button type="button" className="btn-ghost cursor-pointer" onClick={() => setOpen(true)}>
-        Not this
-      </button>
-      <Link href={{ pathname: "/", query: { breakdown: id } }} className="tool-link ml-2">
-        Break it down
-      </Link>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <button type="button" className="tool-link" onClick={() => setOpen(true)}>
+          Not this
+        </button>
+        <Link href={{ pathname: "/", query: { breakdown: id } }} className="tool-link">
+          Break it down
+        </Link>
+        <button type="button" className="tool-link" disabled={done === "busy"} onClick={complete} aria-label={`Done: ${title}`}>
+          {done === "failed" ? "Done? Once more" : "Done"}
+        </button>
+      </div>
     </div>
   );
 }
