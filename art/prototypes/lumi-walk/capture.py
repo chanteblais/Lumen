@@ -1,0 +1,57 @@
+"""Render the walk test in headless Chrome and cut the frames — look at motion without a browser tab.
+
+    python3 art/prototypes/lumi-walk/capture.py [--start 2.5] [--step 0.0833] [--count 48] [--cols 6]
+                                                [--zoom 4] [--cell 420x340] [--size 120] [--plan] [--name walk]
+
+The page's `?grid=` mode steps the tour from t = 0 at a fixed 1/60 s, renders one follow-camera cell per
+frame and lays them out in one canvas; one screenshot holds them all (no animation clock, so the frozen
+automation-tab trap in docs/animation-pipeline.md can't bite). Writes out/<name>-grid.png, out/<name>.gif at
+the real frame time, and out/<name>-strip.png (every fourth frame in a row). Build index.html first.
+"""
+import os
+import subprocess
+import sys
+from PIL import Image
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+
+
+def arg(name, default):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+
+start, step = float(arg('--start', 2.5)), float(arg('--step', 1 / 12))
+count, cols = int(arg('--count', 48)), int(arg('--cols', 6))
+zoom, size, name = float(arg('--zoom', 4)), int(arg('--size', 120)), arg('--name', 'walk')
+cw, ch = (int(v) for v in arg('--cell', '420x340').split('x'))
+rows = (count + cols - 1) // cols
+out_dir = os.path.join(HERE, 'out')
+os.makedirs(out_dir, exist_ok=True)
+
+if '--page' in sys.argv:
+    # the whole page as a visitor first sees it (`--page [WxH]`), for one look at the layout before publishing
+    size = arg('--page', '1280x1480')
+    size = size if 'x' in size else '1280x1480'
+    shot = os.path.join(out_dir, f'{name}-page.png')
+    subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
+                    f'--window-size={size.replace("x", ",")}', '--virtual-time-budget=6000', f'--screenshot={shot}',
+                    'file://' + os.path.join(HERE, 'index.html')], check=True, capture_output=True, timeout=120)
+    print('wrote', os.path.relpath(shot, HERE))
+    sys.exit(0)
+grid_png = os.path.join(out_dir, f'{name}-grid.png')
+query = f'grid={start},{step},{count},{cols}&cell={cw}x{ch}&zoom={zoom}&size={size}' + ('&plan=1' if '--plan' in sys.argv else '')
+url = 'file://' + os.path.join(HERE, 'index.html') + '?' + query
+cmd = [CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
+       f'--window-size={cw * cols},{ch * rows}', '--virtual-time-budget=15000', f'--screenshot={grid_png}', url]
+subprocess.run(cmd, check=True, capture_output=True, timeout=180)
+grid = Image.open(grid_png).convert('RGB')
+frames = [grid.crop((i % cols * cw, i // cols * ch, i % cols * cw + cw, i // cols * ch + ch)) for i in range(count)]
+frames[0].save(os.path.join(out_dir, f'{name}.gif'), save_all=True, append_images=frames[1:],
+               duration=int(round(step * 1000)), loop=0)
+picked = frames[::4]
+strip = Image.new('RGB', (cw * len(picked), ch), (0, 0, 0))
+for i, f in enumerate(picked):
+    strip.paste(f, (i * cw, 0))
+strip.save(os.path.join(out_dir, f'{name}-strip.png'))
+print('wrote', os.path.relpath(grid_png, HERE), f'out/{name}.gif', f'out/{name}-strip.png', f'({count} frames, {step:.3f}s each, from {start}s)')

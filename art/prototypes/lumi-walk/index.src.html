@@ -1,0 +1,748 @@
+<title>Lumi walks Home</title>
+<meta name="description" content="Lumi rigged from one drawing per direction, walking through Home's painted room.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --paper: #efeae2;
+    --paper-deep: #e4ddd0;
+    --ink: #1b1a17;
+    --ink-soft: #3f3c36;
+    --ink-mute: #6f685d;
+    --brass: #8f7243;
+    --brass-soft: #c9b58c;
+    --forest: #2a342e;
+    --on-forest: #f1e6cf;
+    --rule: rgba(143, 114, 67, 0.42);
+    --focus: #2a342e;
+    --display: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+    --body: "EB Garamond", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1a120c;
+      --paper-deep: #251a11;
+      --ink: #f1e6cf;
+      --ink-soft: #d6c8aa;
+      --ink-mute: #a89a80;
+      --brass: #d9ac5f;
+      --brass-soft: #f0d9a6;
+      --forest: #34443a;
+      --on-forest: #f1e6cf;
+      --rule: rgba(217, 172, 95, 0.38);
+      --focus: #f0d9a6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1a120c;
+    --paper-deep: #251a11;
+    --ink: #f1e6cf;
+    --ink-soft: #d6c8aa;
+    --ink-mute: #a89a80;
+    --brass: #d9ac5f;
+    --brass-soft: #f0d9a6;
+    --forest: #34443a;
+    --on-forest: #f1e6cf;
+    --rule: rgba(217, 172, 95, 0.38);
+    --focus: #f0d9a6;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font: 18px/1.5 var(--body); }
+  main { max-width: 1180px; margin: 0 auto; padding: 30px 20px 60px; display: grid; gap: 16px; }
+  .eyebrow { margin: 0; color: var(--brass); font-variant-caps: all-small-caps; letter-spacing: 0.09em; font-size: 17px; }
+  h1 { margin: 0; font: 600 clamp(32px, 4.4vw, 46px)/1.02 var(--display); letter-spacing: -0.005em; text-wrap: balance; }
+  .lede { margin: 6px 0 0; max-width: 64ch; color: var(--ink-soft); }
+  .frame { background: var(--forest); padding: 7px; border-radius: 7px; position: relative; }
+  .frame::after { content: ""; position: absolute; inset: 3px; border: 1px solid var(--brass-soft); border-radius: 5px; opacity: 0.55; pointer-events: none; }
+  #stage { display: block; width: 100%; height: auto; border-radius: 3px; cursor: crosshair; background: #2a1d14; }
+  .readout { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 0; color: var(--ink-mute); font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-variant-numeric: tabular-nums; font-size: 17px; }
+  .readout b { color: var(--ink); font-weight: 500; }
+  .hint { margin: 0; min-height: 1.5em; color: var(--brass); font-style: italic; }
+  .below { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 34px; align-items: start; border-top: 1px solid var(--rule); padding-top: 18px; }
+  @media (max-width: 780px) { .below { grid-template-columns: 1fr; gap: 24px; } }
+  .controls { display: grid; gap: 12px; }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+  .label { min-width: 70px; color: var(--ink-mute); font-variant-caps: all-small-caps; letter-spacing: 0.08em; }
+  .seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rule); border-radius: 999px; }
+  .seg button, .tour { font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 3px 13px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--forest); color: var(--on-forest); }
+  .seg button:hover:not([aria-pressed="true"]) { background: var(--paper-deep); }
+  .tour { background: var(--forest); color: var(--on-forest); border: 1px solid var(--brass-soft); padding: 5px 18px; }
+  .tour[aria-pressed="false"] { background: transparent; color: var(--ink); border-color: var(--rule); }
+  .tour:disabled { opacity: 0.5; cursor: default; }
+  label.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  input[type="checkbox"] { accent-color: var(--forest); width: 16px; height: 16px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .notes h2 { margin: 0 0 8px; font: 600 24px/1.15 var(--display); }
+  .notes ul { margin: 0; padding-left: 1.05em; display: grid; gap: 7px; max-width: 60ch; color: var(--ink-soft); }
+  .notes li::marker { color: var(--brass); }
+  .notes .small { margin: 12px 0 0; font-size: 16px; color: var(--ink-mute); max-width: 60ch; }
+  body.chromeless { background: #000; }
+  body.chromeless main { padding: 0; max-width: none; display: block; }
+  body.chromeless header, body.chromeless .readout, body.chromeless .hint, body.chromeless .below, body.chromeless .frame { display: none; }
+  #grid { display: block; }
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Walk test · Home · isometric</p>
+    <h1>Lumi walks Home</h1>
+    <p class="lede">Two drawings of her, one turned toward you and one turned away, each mirrored for the other side. Code moves the pieces: her boots step, the cloak sways and the hood follows a beat late. Click the floor to send her somewhere, or let her walk the tour.</p>
+  </header>
+
+  <div class="frame"><canvas id="stage" aria-label="Home's painted room with Lumi walking in it. Click the floor to send her there."></canvas></div>
+  <p class="readout" id="readout" aria-live="off"></p>
+  <p class="hint" id="hint" role="status"></p>
+
+  <section class="below">
+    <div class="controls">
+      <div class="row">
+        <button type="button" class="tour" id="tour" aria-pressed="true">Walking the tour</button>
+      </div>
+      <div class="row">
+        <span class="label">Pace</span>
+        <div class="seg" id="pace" role="group" aria-label="Pace">
+          <button type="button" data-v="0.25">¼×</button>
+          <button type="button" data-v="0.5">½×</button>
+          <button type="button" data-v="1" aria-pressed="true">1×</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label">Height</span>
+        <div class="seg" id="size" role="group" aria-label="Her height in the painting">
+          <button type="button" data-v="100">100 px</button>
+          <button type="button" data-v="120" aria-pressed="true">120 px</button>
+          <button type="button" data-v="145">145 px</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label">View</span>
+        <div class="seg" id="view" role="group" aria-label="View">
+          <button type="button" data-v="room" aria-pressed="true">Whole room</button>
+          <button type="button" data-v="follow">Follow her</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"></span>
+        <label class="toggle"><input type="checkbox" id="plan"> Show the floor plan</label>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h2>What to look at</h2>
+      <ul>
+        <li>Her boots: each one stays put on the floor while it carries her, then lifts and steps.</li>
+        <li>Behind the low table, the tabletop, the lantern and the plant cover her; in front of the cushions, she covers them.</li>
+        <li>At a corner she stops, dips and changes drawing. Does that read as turning round?</li>
+        <li>The hood and the hem of the cloak trail her sway by a beat. Too much, too little?</li>
+      </ul>
+      <p class="small">Her height is in the painting's own pixels; the table stands about 65. Heights and pace here are for judging, not settings in the app.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var RIG = /*RIG*/null;
+  var ROOM = /*ROOM*/null;
+  var PARTS = /*PARTS*/null;
+  var ROOM_SRC = '__ROOM_URI__';
+  var PW = ROOM.size[0], PH = ROOM.size[1];
+
+  var params = new URLSearchParams(location.search);
+  var GRID = params.get('grid');
+  var STILL_T = params.has('t') ? parseFloat(params.get('t')) : null;
+  var HEADLESS = !!GRID || STILL_T !== null;
+  var reduceMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  var reduced = !HEADLESS && !!(reduceMq && reduceMq.matches);
+
+  // ---- tuning: painting px at her height of 120 (scaled with her), seconds -------------------------
+  var T = {
+    speed: 36,        // px a second at full pace: about a third of her height
+    step: 0.44,       // one step; a stride (two steps) covers speed × 2 × step
+    lift: 3.2,        // how high a boot lifts mid-step
+    bob: 1.5,         // the body rises between steps
+    squash: 0.02,     // and settles a little as each boot lands
+    sway: 1.1,        // weight shifts toward the boot on the floor
+    roll: 0.011,      // the same sway as a lean, share of her height at the hood top
+    lean: 0.03,       // into the walk, share of her height at the hood top
+    headLag: 0.12,    // the hood follows the sway this much of a stride later
+    hemLag: 0.2,      // the hem later still, swinging the other way
+    hemSwing: 1.5,
+    stopDist: 18,     // she slows over this distance before a stop
+    accel: 0.3,       // seconds to reach full pace
+    turn: 0.26,       // stop, dip, change drawing
+    breath: 1.3,      // px at the hood top, resting
+    breathS: 3.2,
+    clearance: 11     // how far her feet keep from the furniture's footprint box
+  };
+
+  // ---- small maths -------------------------------------------------------------------------------------
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+  function smooth(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+  function frac(x) { return x - Math.floor(x); }
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function inPoly(p, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  // ---- the room: isometric ground, furniture, paths ------------------------------------------------------
+  var B = ROOM.iso.slope;
+  function toUV(x, y) { return { u: (x + y / B) / 2, v: (y / B - x) / 2 }; }
+  function fromUV(u, v) { return { x: u - v, y: (u + v) * B }; }
+  var UV_PX = Math.sqrt(1 + B * B);   // screen px per ground unit along either axis
+  var OCC = ROOM.occluders.map(function (o) {
+    var uv = o.footprint.map(function (p) { return toUV(p[0], p[1]); });
+    return {
+      id: o.id, cutout: o.cutout, footprint: o.footprint,
+      u0: Math.min.apply(null, uv.map(function (q) { return q.u; })), u1: Math.max.apply(null, uv.map(function (q) { return q.u; })),
+      v0: Math.min.apply(null, uv.map(function (q) { return q.v; })), v1: Math.max.apply(null, uv.map(function (q) { return q.v; }))
+    };
+  });
+  function clearanceUV() { return T.clearance * sizeMul() / UV_PX; }
+  function blocked(p, extra) {
+    var q = toUV(p.x, p.y), c = clearanceUV() + (extra || 0);
+    for (var i = 0; i < OCC.length; i++) {
+      var o = OCC[i];
+      if (q.u > o.u0 - c && q.u < o.u1 + c && q.v > o.v0 - c && q.v < o.v1 + c) return true;
+    }
+    return false;
+  }
+  function standable(p) { return inPoly(p, ROOM.walkable) && !blocked(p); }
+  function segmentClear(a, b) {
+    var d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / 4));
+    for (var i = 1; i < n; i++) {
+      var p = { x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n };
+      if (!inPoly(p, ROOM.walkable) || blocked(p, -0.5)) return false;
+    }
+    return true;
+  }
+  function findPath(a, b) {
+    if (segmentClear(a, b)) return [b];
+    var nodes = [a, b];
+    var c = clearanceUV() + 4 / UV_PX;
+    OCC.forEach(function (o) {
+      [[o.u0 - c, o.v0 - c], [o.u1 + c, o.v0 - c], [o.u1 + c, o.v1 + c], [o.u0 - c, o.v1 + c]].forEach(function (uv) {
+        var p = fromUV(uv[0], uv[1]);
+        if (inPoly(p, ROOM.walkable) && !blocked(p, -1)) nodes.push(p);
+      });
+    });
+    var n = nodes.length, dist = new Array(n).fill(Infinity), prev = new Array(n).fill(-1), done = new Array(n).fill(false);
+    dist[0] = 0;
+    for (var it = 0; it < n; it++) {
+      var k = -1;
+      for (var i = 0; i < n; i++) if (!done[i] && (k < 0 || dist[i] < dist[k])) k = i;
+      if (k < 0 || dist[k] === Infinity) break;
+      done[k] = true;
+      for (var j = 0; j < n; j++) {
+        if (done[j]) continue;
+        var dd = dist[k] + Math.hypot(nodes[j].x - nodes[k].x, nodes[j].y - nodes[k].y);
+        if (dd < dist[j] && segmentClear(nodes[k], nodes[j])) { dist[j] = dd; prev[j] = k; }
+      }
+    }
+    if (prev[1] < 0) return null;
+    var path = [], at = 1;
+    while (at > 0) { path.unshift(nodes[at]); at = prev[at]; }
+    return path;
+  }
+
+  // ---- state ----------------------------------------------------------------------------------------------
+  var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: true };
+  function sizeMul() { return ui.size / 120; }
+  var random = rng(7);
+  var S;
+  function resetSim() {
+    var start = ROOM.tour[0].at;
+    S = {
+      x: start[0], y: start[1], facing: 'front', mirror: false, dir: { x: -0.87, y: 0.5 },
+      path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
+      r: 0, phi: 0, turnT: 0, pending: null, settle: 0, settleFrom: [[0, 0], [0, 0]],
+      feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, nextBlink: 1.2, blinks: [], cam: null
+    };
+  }
+
+  function startWalk(path, rest) {
+    S.path = path; S.legRest = rest;
+  }
+  function nextLeg() {
+    S.leg = (S.leg + 1) % ROOM.tour.length;
+    var t = ROOM.tour[S.leg], path = findPath({ x: S.x, y: S.y }, { x: t.at[0], y: t.at[1] });
+    // a leg with no way round is skipped after a moment, so the tour never stalls
+    if (path) startWalk(path, t.rest); else { S.hold = Math.max(0.5, t.rest); S.waiting = true; }
+  }
+  function facingFor(d) {
+    var f = d.y > 0.08 ? 'front' : d.y < -0.08 ? 'back' : S.facing;
+    return { facing: f, mirror: Math.abs(d.x) < 0.05 ? S.mirror : d.x > 0 };
+  }
+  function footOffsets(phi, L, liftPx) {
+    var out = [];
+    for (var k = 0; k < 2; k++) {
+      var p = frac(phi + k * 0.5), s, l;
+      if (p < 0.5) { s = L / 2 - L * (p / 0.5); l = 0; }
+      else { var q = (p - 0.5) / 0.5; s = -L / 2 + L * smooth(q); l = liftPx * Math.sin(Math.PI * q); }
+      out.push([s, l]);
+    }
+    return out;
+  }
+
+  function step(dt) {
+    var m = sizeMul(), L = T.speed * m * T.step;
+    S.time += dt;
+    if (S.time >= S.nextBlink) {
+      S.blinks.push(S.time);
+      if (random() < 0.2) S.blinks.push(S.time + 0.38);
+      S.nextBlink = S.time + 2.5 + random() * 4;
+    }
+    S.blinks = S.blinks.filter(function (b) { return S.time - b < 0.6; });
+
+    if (S.turnT > 0) {
+      S.turnT -= dt;
+      if (S.pending && S.turnT <= T.turn / 2) { S.facing = S.pending.facing; S.mirror = S.pending.mirror; S.pending = null; }
+    } else if (S.path.length) {
+      var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
+      if (d < 0.4) {
+        S.x = tgt.x; S.y = tgt.y; S.path.shift();
+        if (!S.path.length) {
+          S.settleFrom = S.feet.map(function (f) { return f.slice(); });
+          S.settle = 0.24; S.r = 0; S.hold = S.legRest; S.waiting = true;
+        }
+      } else {
+        var dir = { x: dx / d, y: dy / d }, want = facingFor(dir);
+        if (S.r < 0.02 && (want.facing !== S.facing || want.mirror !== S.mirror)) {
+          S.dir = dir;
+          if (reduced) { S.facing = want.facing; S.mirror = want.mirror; }
+          else { S.turnT = T.turn; S.pending = want; }
+        } else {
+          S.dir = dir;
+          // slow for the next stop: the end of the path, or a corner where she has to change drawing
+          var remain = d, prevPt = tgt;
+          for (var i = 1; i < S.path.length; i++) {
+            var nd = { x: S.path[i].x - prevPt.x, y: S.path[i].y - prevPt.y }, nl = Math.hypot(nd.x, nd.y) || 1;
+            var nf = facingFor({ x: nd.x / nl, y: nd.y / nl });
+            if (nf.facing !== want.facing || nf.mirror !== want.mirror) break;
+            remain += nl; prevPt = S.path[i];
+          }
+          var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
+          S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
+          var move = Math.min(d, T.speed * m * S.r * dt);
+          S.x += dir.x * move; S.y += dir.y * move;
+          S.phi = frac(S.phi + move / (2 * L));
+        }
+      }
+    } else if (S.waiting) {
+      // resting at a stop (a rest of 0 is a corner: she goes on at once)
+      S.hold -= dt;
+      if (S.hold <= 0 && ui.tour && !reduced) { S.waiting = false; nextLeg(); }
+    }
+    if (S.settle > 0) S.settle -= dt;
+
+    var walkW = smooth(S.r / 0.35);
+    if (S.path.length && S.turnT <= 0) {
+      S.feet = footOffsets(S.phi, L, T.lift * m).map(function (f) { return [f[0] * walkW, f[1] * walkW]; });
+    } else if (S.settle > 0) {
+      var e = smooth(1 - S.settle / 0.24);
+      S.feet = S.settleFrom.map(function (f) {
+        return [f[0] * (1 - e), Math.max(f[1] * (1 - e), Math.abs(f[0]) > 2 ? Math.sin(Math.PI * e) * T.lift * m * 0.6 : 0)];
+      });
+    } else {
+      S.feet = [[0, 0], [0, 0]];
+    }
+    if (!S.path.length || S.turnT > 0) S.phi = S.settle > 0 ? S.phi : 0;
+    // lean into the walk on a spring, so she rocks back a touch when she stops
+    var leanTarget = S.path.length && S.turnT <= 0 ? T.lean * S.r : 0;
+    S.leanV += (70 * (leanTarget - S.lean) - 9 * S.leanV) * dt;
+    S.lean += S.leanV * dt;
+  }
+
+  // ---- the pieces, scaled to the screen -------------------------------------------------------------------
+  var images = {}, prepared = { key: '' }, figCanvas = document.createElement('canvas'), bodyCanvas = document.createElement('canvas');
+  function prepare(D) {
+    var key = ui.size + '@' + D.toFixed(3);
+    if (prepared.key === key) return prepared;
+    prepared = { key: key };
+    ['front', 'back'].forEach(function (f) {
+      var R = RIG[f], q = ROOM.lumi.height * sizeMul() / R.height, sc = q * D;
+      var w = Math.max(1, Math.round(R.size[0] * sc)), h = Math.max(1, Math.round(R.size[1] * sc));
+      var layers = {};
+      ['body', 'foot-0', 'foot-1'].forEach(function (l) {
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var x = c.getContext('2d');
+        x.imageSmoothingEnabled = true;
+        x.imageSmoothingQuality = 'high';
+        x.drawImage(images[f + '-' + l], 0, 0, w, h);
+        layers[l] = c;
+      });
+      var raw = layers.body.getContext('2d').getImageData(0, 0, w, h).data, pre = new Float32Array(raw.length);
+      for (var i = 0; i < raw.length; i += 4) {
+        var a = raw[i + 3] / 255;
+        pre[i] = raw[i] * a; pre[i + 1] = raw[i + 1] * a; pre[i + 2] = raw[i + 2] * a; pre[i + 3] = raw[i + 3];
+      }
+      var sx = w / R.size[0], sy = h / R.size[1];
+      prepared[f] = {
+        R: R, w: w, h: h, sc: sc, sx: sx, sy: sy, layers: layers, pre: pre,
+        rootX: (R.contact[0][0] + R.contact[1][0]) / 2 * sx, feet: R.feet * sy, height: R.height * sy,
+        chin: R.chin * sy, neck: R.neck * sy, hem: R.hem * sy, contact: R.contact.map(function (c) { return [c[0] * sx, c[1] * sy]; }),
+        Yd: new Float64Array(h + 1)
+      };
+    });
+    return prepared;
+  }
+
+  function warp(P, out, W, H, mapY, xoff, sxScale, padX, padT) {
+    var data = out.data, src = P.pre, sw = P.w, sh = P.h, Yd = P.Yd, rootS = P.rootX;
+    data.fill(0);
+    for (var j = 0; j <= sh; j++) Yd[j] = padT + mapY(j);
+    var j0 = 0, inv = 1 / sxScale;
+    var y0 = Math.max(0, Math.floor(Yd[0])), y1 = Math.min(H - 1, Math.ceil(Yd[sh]));
+    for (var yd = y0; yd <= y1; yd++) {
+      var c = yd + 0.5;
+      if (c < Yd[0] || c > Yd[sh]) continue;
+      while (j0 < sh - 1 && Yd[j0 + 1] <= c) j0++;
+      var span = Yd[j0 + 1] - Yd[j0];
+      var ys = j0 + (span > 1e-6 ? (c - Yd[j0]) / span : 0);
+      var syv = ys - 0.5, yi = Math.floor(syv), fy = syv - yi, yA = yi < 0 ? 0 : yi, yB = yi + 1 >= sh ? sh - 1 : yi + 1;
+      var xo = xoff(ys);
+      var xs0 = padX + rootS - rootS * sxScale + xo, xs1 = padX + rootS + (sw - rootS) * sxScale + xo;
+      var xa = Math.max(0, Math.floor(xs0)), xb = Math.min(W - 1, Math.ceil(xs1));
+      var rowA = yA * sw, rowB = yB * sw, o = yd * W * 4;
+      for (var xd = xa; xd <= xb; xd++) {
+        var sxv = rootS + (xd + 0.5 - padX - rootS - xo) * inv - 0.5;
+        if (sxv < -0.5 || sxv > sw - 0.5) continue;
+        var xi = Math.floor(sxv), fx = sxv - xi, xA = xi < 0 ? 0 : xi, xB = xi + 1 >= sw ? sw - 1 : xi + 1;
+        var w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+        if (xi < 0) { w00 = 0; w01 = 0; }
+        if (xi + 1 >= sw) { w10 = 0; w11 = 0; }
+        if (yi < 0) { w00 = 0; w10 = 0; }
+        if (yi + 1 >= sh) { w01 = 0; w11 = 0; }
+        var p00 = (rowA + xA) * 4, p10 = (rowA + xB) * 4, p01 = (rowB + xA) * 4, p11 = (rowB + xB) * 4;
+        var A = src[p00 + 3] * w00 + src[p10 + 3] * w10 + src[p01 + 3] * w01 + src[p11 + 3] * w11;
+        if (A < 0.6) continue;
+        var k = 255 / A, q = o + xd * 4;
+        data[q] = (src[p00] * w00 + src[p10] * w10 + src[p01] * w01 + src[p11] * w11) * k;
+        data[q + 1] = (src[p00 + 1] * w00 + src[p10 + 1] * w10 + src[p01 + 1] * w01 + src[p11 + 1] * w11) * k;
+        data[q + 2] = (src[p00 + 2] * w00 + src[p10 + 2] * w10 + src[p01 + 2] * w01 + src[p11 + 2] * w11) * k;
+        data[q + 3] = A;
+      }
+    }
+  }
+
+  function blinkAmount() {
+    var a = 0;
+    S.blinks.forEach(function (b) {
+      var t = S.time - b, v = 0;
+      if (t < 0) return;
+      if (t < 0.09) v = smooth(t / 0.09); else if (t < 0.15) v = 1; else if (t < 0.28) v = 1 - smooth((t - 0.15) / 0.13);
+      a = Math.max(a, v);
+    });
+    return reduced ? 0 : a;
+  }
+
+  // Draw her into figCanvas; returns where the canvas goes, in painting px.
+  var bodyImage = null;
+  function drawFigure(D) {
+    var prep = prepare(D), P = prep[S.facing], m = sizeMul();
+    var padX = Math.ceil(P.w * 0.22), padT = Math.ceil(P.h * 0.08), padB = Math.ceil(P.h * 0.05);
+    var W = P.w + 2 * padX, H = P.h + padT + padB;
+    if (figCanvas.width !== W || figCanvas.height !== H) { figCanvas.width = W; figCanvas.height = H; }
+    if (bodyCanvas.width !== W || bodyCanvas.height !== H) { bodyCanvas.width = W; bodyCanvas.height = H; bodyImage = null; }
+    var bctx = bodyCanvas.getContext('2d');
+    if (!bodyImage) bodyImage = bctx.createImageData(W, H);
+
+    var walking = S.path.length > 0 && S.turnT <= 0;
+    var w = walking ? smooth(S.r / 0.35) : 0, phi = S.phi, c2 = frac(2 * phi), TAU = 2 * Math.PI;
+    var still = reduced;
+    var bob = still ? 0 : -T.bob * m * Math.sin(Math.PI * c2) * w * D;
+    var squash = still ? 0 : T.squash * Math.exp(-Math.pow(Math.min(c2, 1 - c2) / 0.11, 2)) * w;
+    var sway = T.sway * m * Math.sin(TAU * phi) * w * D;
+    var roll = T.roll * P.height * Math.sin(TAU * phi) * w;
+    var head = T.sway * m * 0.8 * Math.sin(TAU * (phi - T.headLag)) * w * D;
+    var hem = -T.hemSwing * m * Math.sin(TAU * (phi - T.hemLag)) * w * D;
+    var lean = -S.lean * P.height;
+    var dip = S.turnT > 0 && !still ? Math.sin(Math.PI * (1 - S.turnT / T.turn)) * 1.8 * m * D : 0;
+    var breath = still ? 0 : T.breath * m * (1 - Math.cos(TAU * S.time / T.breathS)) / 2 * (1 - w) * D;
+    var syAll = (1 - squash) * (1 + breath / P.height);
+    var hemTop = P.hem - 0.24 * P.height;
+    var wHead = function (y) { return 1 - smooth((y - P.chin) / Math.max(1, P.neck - P.chin)); };
+    var wHem = function (y) { return smooth((y - hemTop) / Math.max(1, P.feet - hemTop)); };
+    var headDY = -T.bob * m * 0.45 * Math.sin(Math.PI * frac(2 * (phi - 0.06))) * w * D - bob * 0.0;
+    var mapY = function (j) { return P.feet + (j - P.feet) * syAll + bob + dip + (headDY - bob * 0.25) * wHead(j) * (walking ? 1 : 0); };
+    var xoff = function (j) {
+      var h = clamp((P.feet - j) / P.height, 0, 1.1);
+      return sway * 0.6 + (roll + lean) * h + head * wHead(j) + hem * wHem(j);
+    };
+    var sxScale = 1 + squash * 0.7;
+    warp(P, bodyImage, W, H, mapY, xoff, sxScale, padX, padT);
+    bctx.putImageData(bodyImage, 0, 0);
+
+    // blinks: her own black drawn down over each eye
+    var R = P.R, a = blinkAmount();
+    if (R.eyes && a > 0.01) {
+      bctx.fillStyle = 'rgb(' + R.faceBlack.join(',') + ')';
+      R.eyes.forEach(function (e) {
+        var ys = e.cy * P.sy, cy = padT + mapY(ys), cx = padX + P.rootX + (e.cx * P.sx - P.rootX) * sxScale + xoff(ys);
+        // wide enough to take the painted rim and its glow too, or a shut eye leaves an orange ring
+        var rx = e.rx * P.sx * 1.7, ry = e.ry * P.sy * syAll * 1.4;
+        bctx.save();
+        bctx.beginPath();
+        bctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+        bctx.clip();
+        bctx.fillRect(cx - rx - 1, cy - ry - 1, 2 * rx + 2, 2 * ry * a + 1);
+        bctx.restore();
+      });
+    }
+
+    // feet first (the one nearer the bottom of the page last), then the body over them
+    var fctx = figCanvas.getContext('2d');
+    fctx.clearRect(0, 0, W, H);
+    var dl = { x: S.mirror ? -S.dir.x : S.dir.x, y: S.dir.y };
+    var feet = [0, 1].map(function (k) {
+      var s = S.feet[k][0] * D, l = S.feet[k][1] * D;
+      return { k: k, x: dl.x * s, y: dl.y * s - l, ground: P.contact[k][1] + dl.y * s };
+    }).sort(function (p, q) { return p.ground - q.ground; });
+    feet.forEach(function (f) { fctx.drawImage(P.layers['foot-' + f.k], padX + f.x, padT + f.y); });
+    fctx.drawImage(bodyCanvas, 0, 0);
+    return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D };
+  }
+
+  // ---- the scene ----------------------------------------------------------------------------------------------
+  function camera(wDev, hDev, zoom, snap) {
+    var D = wDev / PW * zoom, vw = wDev / D, vh = hDev / D;
+    var tx = S.x, ty = S.y - 55 * sizeMul();
+    if (zoom <= 1.001 && Math.abs(hDev / wDev - PH / PW) < 0.01) return { D: D, x0: 0, y0: 0 };
+    if (!S.cam || snap) S.cam = { x: tx, y: ty };
+    else { S.cam.x += (tx - S.cam.x) * 0.08; S.cam.y += (ty - S.cam.y) * 0.08; }
+    return { D: D, x0: clamp(S.cam.x - vw / 2, 0, PW - vw), y0: clamp(S.cam.y - vh / 2, 0, PH - vh) };
+  }
+
+  function polyPath(ctx, pts) {
+    ctx.beginPath();
+    pts.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+    ctx.closePath();
+  }
+
+  function render(ctx, wDev, hDev, cam) {
+    var D = cam.D;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, wDev, hDev);
+    ctx.setTransform(D, 0, 0, D, -cam.x0 * D, -cam.y0 * D);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(images.room, 0, 0, PW, PH);
+
+    var fig = drawFigure(D), m = sizeMul(), H = ROOM.lumi.height * m;
+    // her shadow: a soft contact shadow, a little toward the right (the window light comes from the left)
+    ctx.save();
+    ctx.translate(S.x + 3 * m, S.y + 1);
+    ctx.scale(1, 0.42);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, H * 0.24);
+    g.addColorStop(0, 'rgba(36, 20, 9, 0.46)');
+    g.addColorStop(0.55, 'rgba(36, 20, 9, 0.24)');
+    g.addColorStop(1, 'rgba(36, 20, 9, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, H * 0.24, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    if (S.mirror) { ctx.translate(S.x, 0); ctx.scale(-1, 1); ctx.translate(-S.x, 0); }
+    ctx.drawImage(figCanvas, S.x - fig.rootX, S.y - fig.feetY, fig.w, fig.h);
+    ctx.restore();
+
+    // furniture she is behind, cut from the painting and laid back over her
+    var q = toUV(S.x, S.y);
+    OCC.forEach(function (o) {
+      if (q.u >= o.u1 || q.v >= o.v1) return;
+      ctx.save();
+      polyPath(ctx, o.cutout);
+      ctx.clip();
+      ctx.drawImage(images.room, 0, 0, PW, PH);
+      ctx.restore();
+    });
+
+    if (ui.plan) {
+      var lw = 1.6 / D;
+      ctx.lineWidth = lw;
+      ctx.setLineDash([6 / D, 5 / D]);
+      ctx.strokeStyle = 'rgba(240, 217, 166, 0.95)';
+      polyPath(ctx, ROOM.walkable); ctx.stroke();
+      ctx.setLineDash([]);
+      OCC.forEach(function (o) {
+        // outlines only: a filled footprint would wash over her where she overlaps it on the page
+        ctx.strokeStyle = 'rgba(255, 244, 214, 0.75)';
+        polyPath(ctx, o.footprint); ctx.stroke();
+        ctx.strokeStyle = 'rgba(217, 172, 95, 0.9)';
+        polyPath(ctx, o.cutout); ctx.stroke();
+      });
+      if (S.path.length) {
+        ctx.strokeStyle = 'rgba(255, 244, 214, 0.95)';
+        ctx.lineWidth = 2.2 / D;
+        ctx.beginPath(); ctx.moveTo(S.x, S.y);
+        S.path.forEach(function (p) { ctx.lineTo(p.x, p.y); });
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#fff4d6';
+      ctx.beginPath(); ctx.arc(S.x, S.y, 3 / D, 0, 2 * Math.PI); ctx.fill();
+    }
+  }
+
+  // ---- headless: a grid of frames, or one still ----------------------------------------------------------------
+  function simulateTo(t) {
+    var dt = 1 / 60;
+    while (S.time + dt / 2 < t) step(dt);
+  }
+  function runGrid() {
+    document.body.classList.add('chromeless');
+    var g = GRID.split(',').map(parseFloat), cell = (params.get('cell') || '420x340').split('x').map(Number);
+    var zoom = parseFloat(params.get('zoom') || '4');
+    var start = g[0], stepS = g[1], count = g[2], cols = g[3], rows = Math.ceil(count / cols);
+    var big = document.createElement('canvas');
+    big.id = 'grid'; big.width = cell[0] * cols; big.height = cell[1] * rows;
+    document.querySelector('main').appendChild(big);
+    var bctx = big.getContext('2d'), c = document.createElement('canvas');
+    c.width = cell[0]; c.height = cell[1];
+    var cctx = c.getContext('2d');
+    for (var i = 0; i < count; i++) {
+      simulateTo(start + i * stepS);
+      render(cctx, cell[0], cell[1], camera(cell[0], cell[1], zoom, true));
+      bctx.drawImage(c, (i % cols) * cell[0], Math.floor(i / cols) * cell[1]);
+    }
+    document.title = 'ready';
+  }
+
+  // ---- the page --------------------------------------------------------------------------------------------------
+  function start() {
+    resetSim();
+    if (GRID) { runGrid(); return; }
+    var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
+    var readout = document.getElementById('readout'), hint = document.getElementById('hint');
+    var tourBtn = document.getElementById('tour');
+
+    function size() {
+      var dpr = Math.min(2.5, Math.max(1, window.devicePixelRatio || 1));
+      var cssW = stage.parentElement.clientWidth - 14;
+      stage.style.height = Math.round(cssW * PH / PW) + 'px';
+      var w = Math.round(cssW * dpr), h = Math.round(cssW * PH / PW * dpr);
+      if (stage.width !== w || stage.height !== h) { stage.width = w; stage.height = h; }
+    }
+    size();
+    if (window.ResizeObserver) new ResizeObserver(size).observe(stage.parentElement);
+    else window.addEventListener('resize', size);
+
+    if (STILL_T !== null) {
+      simulateTo(STILL_T);
+      render(sctx, stage.width, stage.height, camera(stage.width, stage.height, parseFloat(params.get('zoom') || '1'), true));
+      document.title = 'ready';
+      return;
+    }
+
+    function press(group, value) {
+      Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === String(value)));
+      });
+    }
+    function setTour(on) {
+      ui.tour = on && !reduced;
+      tourBtn.setAttribute('aria-pressed', String(ui.tour));
+      tourBtn.textContent = ui.tour ? 'Walking the tour' : 'Walk the tour';
+    }
+    tourBtn.addEventListener('click', function () {
+      if (ui.tour) { setTour(false); return; }
+      setTour(true);
+      hint.textContent = '';
+      if (!S.path.length) { S.leg = -1 + ROOM.tour.length; S.hold = 0; S.waiting = false; nextLeg(); }
+    });
+    if (reduced) {
+      tourBtn.disabled = true;
+      setTour(false);
+      hint.textContent = 'Reduced motion is on: she stays still, and a click on the floor moves her there at once.';
+    }
+    function group(id, fn) {
+      var el = document.getElementById(id);
+      el.addEventListener('click', function (ev) {
+        var b = ev.target.closest('button'); if (!b) return;
+        var v = b.getAttribute('data-v');
+        press(el, v); fn(v);
+      });
+    }
+    group('pace', function (v) { ui.pace = parseFloat(v); });
+    group('size', function (v) { ui.size = parseInt(v, 10); });
+    group('view', function (v) { ui.view = v; S.cam = null; });
+    var planEl = document.getElementById('plan');
+    planEl.checked = ui.plan;
+    planEl.addEventListener('change', function () { ui.plan = planEl.checked; });
+
+    var lastCam = { D: 1, x0: 0, y0: 0 };
+    stage.addEventListener('click', function (ev) {
+      var rect = stage.getBoundingClientRect(), k = stage.width / rect.width;
+      var p = { x: lastCam.x0 + (ev.clientX - rect.left) * k / lastCam.D, y: lastCam.y0 + (ev.clientY - rect.top) * k / lastCam.D };
+      if (!standable(p)) { hint.textContent = 'She can’t stand there. Try open floor, the rug, or the runner by the stairs.'; return; }
+      var path = findPath({ x: S.x, y: S.y }, p);
+      if (!path) { hint.textContent = 'There’s no way round to there from where she is.'; return; }
+      hint.textContent = '';
+      setTour(false);
+      if (reduced) {
+        var d = { x: p.x - S.x, y: p.y - S.y }, l = Math.hypot(d.x, d.y) || 1, f = facingFor({ x: d.x / l, y: d.y / l });
+        S.x = p.x; S.y = p.y; S.facing = f.facing; S.mirror = f.mirror; S.path = [];
+        return;
+      }
+      S.hold = 0; S.waiting = false;
+      startWalk(path, Infinity);
+    });
+
+    var FACING = { front: 'toward you', back: 'away from you' };
+    var last = performance.now(), lastText = '';
+    function frame(now) {
+      var dt = Math.min(0.05, (now - last) / 1000) * ui.pace;
+      last = now;
+      if (!reduced) {
+        var n = Math.max(1, Math.ceil(dt / (1 / 120)));
+        for (var i = 0; i < n; i++) step(dt / n);
+      }
+      lastCam = camera(stage.width, stage.height, ui.view === 'follow' ? 2.3 : 1, false);
+      render(sctx, stage.width, stage.height, lastCam);
+      var state = S.turnT > 0 ? 'turning' : S.path.length ? 'walking' : 'resting';
+      var text = '<span><b>' + state + '</b></span><span>' + FACING[S.facing] + ', to the ' + (S.mirror ? 'right' : 'left') + '</span>' +
+        '<span>' + Math.round(T.speed * sizeMul() * (S.path.length ? S.r : 0)) + ' px a second</span>' +
+        '<span>one step ' + T.step.toFixed(2) + ' s</span><span>height ' + ui.size + ' px</span>';
+      if (text !== lastText) { readout.innerHTML = text; lastText = text; }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function load(src) {
+    return new Promise(function (resolve, reject) {
+      var im = new Image();
+      im.onload = function () { resolve(im); };
+      im.onerror = reject;
+      im.src = src;
+    });
+  }
+  var names = Object.keys(PARTS);
+  Promise.all([load(ROOM_SRC)].concat(names.map(function (n) { return load(PARTS[n]); }))).then(function (imgs) {
+    images.room = imgs[0];
+    names.forEach(function (n, i) { images[n] = imgs[i + 1]; });
+    start();
+  }).catch(function (err) {
+    document.getElementById('hint').textContent = 'The drawings didn’t load, so there’s nothing to walk.';
+    if (window.console) console.error(err);
+  });
+})();
+</script>
