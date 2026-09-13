@@ -17,17 +17,12 @@
 // Removal is plain `git worktree remove` (git refuses anything dirty on its own), then the branch goes with
 // `git branch -D` once its tip is proven on main — `-d` would judge against this checkout's HEAD instead.
 
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { attempt, QUIET } from "./lib.mjs";
 
-const run = (cmd, args) => {
-  try {
-    return { ok: true, out: execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 }).trim() };
-  } catch (error) {
-    return { ok: false, out: `${error.stdout ?? ""}${error.stderr ?? ""}`.trim() };
-  }
-};
+// { ok, out } — never throws; stdin ignored, stderr captured, 64 MB buffer.
+const run = (cmd, args) => attempt(cmd, args, QUIET);
 const git = (...args) => run("git", args);
 const prune = process.argv.includes("--prune");
 const HOUR = 60 * 60 * 1000;
