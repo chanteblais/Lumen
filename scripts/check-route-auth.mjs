@@ -14,6 +14,7 @@ const API_DIR = join(ROOT, 'src/app/api')
 
 const GATES = [
   { name: 'requireUser()', re: /\brequireUser\s*\(/ },
+  { name: 'requireVisit()', re: /\brequireVisit\s*\(/ },
   { name: 'cron secret', re: /CRON_SECRET/ },
 ]
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ListsPanel } from "@/components/lists/ListsPanel";
-import { recordVisit, requireUser } from "@/lib/auth";
+import { requireVisit } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Lists" };
@@ -10,8 +10,7 @@ export const metadata: Metadata = { title: "Lists" };
  * From the nav it opens over whatever page you were on instead (app/@sheet/(.)lists).
  */
 export default async function ListsPage() {
-  const user = await requireUser();
-  await recordVisit(user);
+  const { user } = await requireVisit();
 
   return (
     <div className="library-page">

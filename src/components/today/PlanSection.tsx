@@ -1,11 +1,14 @@
 import { cache } from "react";
 import { CompleteCircle } from "@/components/lists/CompleteCircle";
-import { ensureTodaysPlan } from "@/core/ai/today-plan";
+import { ensureTodaysPlan, needsFirstItems } from "@/core/ai/today-plan";
 import { db } from "@/db/client";
 import type { DayPlanJson, Intention, User } from "@/db/schema";
-import type { Snapshot } from "@/core/domain/snapshot";
+import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { CapacityPrompt } from "./CapacityPrompt";
 import { RightNowActions } from "./RightNowActions";
+
+/** One snapshot per request, shared by the page's readiness check and its three parts. */
+const getTodaysSnapshot = cache((user: User) => loadSnapshot(db(), user));
 
 /**
  * Loads the persisted path — usually already primed in the background when
@@ -13,9 +16,19 @@ import { RightNowActions } from "./RightNowActions";
  * part of the page calls this; React's cache() makes it one computation per request.
  */
 const getTodaysPlan = cache(async (user: User): Promise<{ snap: Snapshot; plan: DayPlanJson; byId: Map<string, Intention> }> => {
-  const { snap, plan } = await ensureTodaysPlan(db(), user);
+  const { snap, plan } = await ensureTodaysPlan(db(), user, { load: () => getTodaysSnapshot(user) });
   return { snap, plan, byId: new Map(snap.openIntentions.map((i) => [i.id, i])) };
 });
+
+/**
+ * Today's path is already cut, so the page can render whole without waiting on
+ * the model. False when it still has to be generated (the day's first open
+ * before the background prime lands, or a plan cut before anything was filed).
+ */
+export async function planIsReady(user: User): Promise<boolean> {
+  const snap = await getTodaysSnapshot(user);
+  return Boolean(snap.plan && !needsFirstItems(snap, user.timezone));
+}
 
 /** The list and the estimate as a marginal note (two parted by a middle dot). */
 function Note({ i }: { i: Intention }) {

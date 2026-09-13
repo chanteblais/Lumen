@@ -100,7 +100,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 ## Events catalogue (V1)
 | type | payload |
 |---|---|
-| `app.opened` | `{ gap_seconds }` — written by `touchLastSeen` on any page open or turn that follows a gap ≥ 30 min; the newest one is the start of the current *sitting* (see Derived) |
+| `app.opened` | `{ gap_seconds }` — written by `visit` (`requireVisit`; `touchLastSeen` on the very first request) on any page open or turn that follows a gap ≥ 30 min; the newest one is the start of the current *sitting* (see Derived) |
 | `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` — from the chat tool or Today's prompt |
 | `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
 | `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
