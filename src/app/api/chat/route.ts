@@ -144,6 +144,7 @@ export async function POST(req: Request) {
           capacity: snap.capacity,
           plan: snap.plan,
           declinedToday: snap.declinedToday,
+          priorities: snap.priorities,
           // Mail off: undefined leaves Their mail out of the context altogether.
           mailScan: MAIL_ON ? (mailScan ? { at: mailScan.at } : null) : undefined,
           leads,

@@ -36,7 +36,7 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 | `docs/philosophy/lumi.md` | `1a2b185eb033` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `d614427cf048` |
+| `docs/living/decisions.md` | `1ab2be977a19` |
 | `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/priorities`): the product decisions gained *Plan with Lumi is scrapped; what they say matters this week is remembered*. What she should understand is already here: she proposes and they correct, what they told her outranks what she guessed, and a deadline isn't the same as importance. How she holds a stated priority is the *how*, in the persona and the tool descriptions. The places line still reads true: nothing on Today mentions planning with her.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/chat-files`): the product decisions gained *Files shared with Lumi are read, not kept*, and `lumi.md` §14 gained *A shared file*. What she does with a file is the *how*, and lives in the persona. The brief already carries the why: she carries the administration, and a thing to do is filed whether it's said or photographed.
 - **2026-09-13 · places: no focus sessions; Today's changes happen on its card** (`feat/today-in-place`): the product decisions gained *Today does its own organising, and focus sessions are set aside for now*, two foundation entries are marked partly superseded or suspended, and the canon map's Home and Study rows say sessions are gone. The brief's places line said "Focus sessions happen with you on Home" and its context list named sessions: both would have had her offering something that no longer exists. Now Today's first thing is turned down or broken into steps on its card, and company while someone works is a conversation. Voice eval run logged in `voice-eval-log.md` (scenario 7 is the body-double ask).
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.
