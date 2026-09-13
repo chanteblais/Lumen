@@ -13,6 +13,26 @@
 **Implications.** Every other canonical document answers to the vision. A change that contradicts it is surfaced to Chanté before anything is edited. [`PROJECT-CANON.md`](../../PROJECT-CANON.md) maps it to the rest.
 **Replaces.** [`product.md`](../product.md) as the statement of the philosophy. Its voice guide stays until `philosophy/lumi.md` exists.
 
+**Addendum, same day.** [`docs/philosophy/experience-principles.md`](../philosophy/experience-principles.md) joins the vision as canonical: the vision says why, the principles say how. Its *in practice* examples illustrate; they aren't specs. Its *watch for* lists and four tests (one-second, cognitive-load, maintenance, Coherence) apply to every review. It replaces [`design-philosophy.md`](../design-philosophy.md) §3 and [`today.md`](../today.md)'s general principles as the statement of interaction rules.
+
+## 2026-09-12 · Direct manipulation is correction that teaches Lumi
+
+**Decision.** The user can correct Lumi's organisation by hand, and every manual move tells Lumi something. In Lists, a vertical drag says relative priority, a horizontal drag says category, and moving something to *Later* says stop foregrounding it. Correcting is never required: Lumi organises first. (EP§5–6, EP§16)
+
+**Previous approach → why it changed → current approach.**
+- **Before (2026-09-11):** the Lists mockup's *drag-to-prioritise* was rejected with its per-column counts and five Add buttons, as maintenance the user would have to keep up ([`ef-burden-log.md`](../ef-burden-log.md)). Reorder was deferred ("later", [`today.md`](../today.md)). Moving things between lists happens in conversation.
+- **Why it changed:** the objection was to *required* sorting, where the user keeps order so the system works. EP§6 draws the line in a different place: a correction is cheaper than configuration, and a manual move is valuable "when it expresses judgment rather than administrative maintenance" (EP§16). A drag that also updates Lumi's understanding is the opposite of maintenance.
+- **Now:** optional correction by hand, reflected in Lumi's context. Counts, a due date on every row, and more than one Add stay out.
+
+**Implications.**
+- Not built. Lists has the tick only, and the planner doesn't treat *Later* as "don't foreground".
+- A manual move must reach Lumi as an event and, where it means something durable, a belief. Changes that aren't reflected in AI context are a *watch for* (EP§16, EP§18).
+- "Requiring manual sorting Lumi could perform" remains a *watch for*. Nothing may depend on the user dragging.
+- The design choices are open question 20.
+
+**Principle.** EP§5, EP§6, EP§16, EP§18.
+**Replaces.** The *drag-to-prioritise* rejection in the EF-burden log's Lists-board row, and "reorder and drag later".
+
 ## 2026-09-12 · Four places, each answering one question
 
 **Decision.** Coherence is organised as places that embody cognitive activities, each answering one question:
@@ -37,7 +57,7 @@
 
 ## 2026-09-12 · Rewards: earning coherence ⚠ contested
 
-> **Status: contested by the Product Vision.** Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. Nothing below is a requirement until Chanté reconciles the two ([open question 14](open-questions.md)).
+> **Status: contested by the Product Vision.** Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. The Experience Principles go further: EP§14, *"Growth reflects history, not achievement"*, lists points, currencies, unlock requirements and completion-based decoration as things to watch for, and EP§20 warns against "rewards intended to bring users back without functional reason". Nothing below is a requirement until Chanté reconciles them ([open question 14](open-questions.md)).
 
 **As described.** Coherence gamifies. The user earns *coherence* for completing tasks and for just showing up, and spends it on plants or little things for Lumi that she engages with. Always positive, with no negative consequences.
 

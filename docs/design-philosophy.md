@@ -2,7 +2,7 @@
 
 *v0.1 — DRAFT · 2026-09-11 · distilled from the brief and the two mockups (`mockups/`). Not yet validated against Chanté's reactions the way Glåüm's is (that doc passed a blind sort). Treat as a working hypothesis; promote to v1.0 after a naming/falsification pass.*
 
-> **Partly superseded (2026-09-12).** The direction has moved from *the book* to *inhabited, painted places* ([`living/decisions.md`](living/decisions.md); [Product Vision](philosophy/product-vision.md) §14), so §1–2's "no decorative imagery" order no longer holds. §3's principles still stand, "never gamified" included (Vision §14), though whether rewards exist is [open question 14](living/open-questions.md). What survives of the book is [open question 13](living/open-questions.md). It retires once `design/visual-language.md` replaces it.
+> **Partly superseded (2026-09-12).** The direction has moved from *the book* to *inhabited, painted places* ([`living/decisions.md`](living/decisions.md); [Product Vision](philosophy/product-vision.md) §14), so §1–2's "no decorative imagery" order no longer holds. §3's principles are carried, in fuller form, by the [Experience Principles](philosophy/experience-principles.md), "never gamified" included (EP§14); whether rewards exist is [open question 14](living/open-questions.md). What survives of the book is [open question 13](living/open-questions.md). It retires once `design/visual-language.md` replaces it.
 
 ---
 
