@@ -33,6 +33,15 @@ export async function appendEvent(db: Db, input: EventInput) {
   return row;
 }
 
+/** Several events in one insert — a batch of leads suggested at once. */
+export async function appendEvents(db: Db, inputs: EventInput[]): Promise<void> {
+  if (inputs.length === 0) return;
+  const now = new Date();
+  await db.insert(events).values(
+    inputs.map((i) => ({ userId: i.userId, type: i.type, subjectType: i.subjectType, subjectId: i.subjectId, payload: i.payload ?? {}, occurredAt: i.occurredAt ?? now })),
+  );
+}
+
 /** Recent events of the given types, newest first. Bounded by `since` (and `until`, when given) so the (user, occurred_at) index does the work. */
 export async function listEventsSince(db: Db, userId: string, types: string[], since: Date, limit = 50, until?: Date): Promise<Event[]> {
   return db
