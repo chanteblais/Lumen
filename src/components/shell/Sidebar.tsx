@@ -25,12 +25,12 @@ const PINS = "(min-width: 768px)";
  * keyboard focus is in it) and floats over the page; the page never moves
  * for it. Three ways it can be, remembered in a cookie:
  * - `hover`, the default;
- * - `pinned` open — the compass star, or a click anywhere on the rail or the
- *   parchment that isn't a link; the same again folds it, at once, even with
- *   the pointer still over it (hover can't reopen it until the pointer has
- *   left, or it looks stuck open);
- * - `locked` away — the moon: hover never opens it; the moon again, or a pin,
- *   lets it out.
+ * - `pinned` out — a click on the top half of the rail (the compass star's
+ *   half) or on the parchment, anywhere that isn't a link; the same again
+ *   folds it, at once, even with the pointer still over it (hover can't
+ *   reopen it until the pointer has left, or it looks stuck open);
+ * - `locked` in — a click on the bottom half of the rail (the moon's half):
+ *   hover never opens it; the same again, or a pin, lets it out.
  * On a phone there is no hover: the compass star opens it over the page,
  * and a tap on a place, outside it or Escape folds it away.
  */
@@ -77,6 +77,9 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
 
   function onNavClick(e: MouseEvent) {
     if ((e.target as Element).closest("a, button")) return;
+    // Judged by where the click lands, not what it lands on: the gaps between the icons belong to the list over the rail.
+    const rail = ref.current?.querySelector(".nav-rail")?.getBoundingClientRect();
+    if (rail && e.clientX <= rail.right && e.clientY > rail.top + rail.height / 2) return toggleLock();
     togglePin();
   }
 

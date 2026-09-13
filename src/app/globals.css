@@ -194,9 +194,10 @@ body::after {
   background: url("/nav-rail-body.webp") 0 0 / 100% 100% no-repeat;
 }
 
-/* The painted compass star and moon are buttons: the star pins the parchment
-   open (opens it, on a phone) and glows while it's kept open; the moon locks it
-   away from hover and glows while it's locked. The moon's centre is 101px up
+/* The painted compass star and moon are buttons (their halves of the rail do
+   the same, in Sidebar's click handler): the star pins the parchment out (opens
+   it, on a phone) and glows while it's kept out; the moon locks it in, away
+   from hover, and glows while it's locked. The moon's centre is 101px up
    from the rail's foot in the source's pixels. */
 .nav-toggle,
 .nav-lock {
