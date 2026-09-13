@@ -13,7 +13,7 @@
 **Implications.**
 - The first place name to reach the nav; *Today* stays *Today*. That answers question 15 for the Library only.
 - **Differs from the canon:** EP§18 says "full lists live in Lists rather than appearing everywhere", and EP§21 has the user reorder things in Lists. With no list view, full lists live nowhere the user can see. Raised with Chanté; until the Library shows what it holds, the conversation is the only way to see everything.
-- What the Library shows next is question 3; `art/mockups/book-mockup.png` and `book_layout-mockup.png` show a thread as an open book.
+- What the Library shows next is question 3; `art/mockups/book-mockup-1.png`, `book-mockup2.png` and `book_layout-mockup.png` show a thread as an open book, and Chanté's spatial IA for the Library is `art/scenery/library/library-spatial-information-architecture.md`.
 
 **Principle.** V§14, EP§15, EP§18, EP§19.
 **Replaces.** *Lists*, a plain page with the tick ([engineering log](../decisions.md), same date).

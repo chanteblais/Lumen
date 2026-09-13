@@ -30,7 +30,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 **Dark mode:** none in V1. The book is ivory — with two exceptions, below.
 
-**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home-background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
+**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home/background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
 
 | Token | By lantern light | Usage on Home |
 |---|---|---|
@@ -44,7 +44,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today and the Library have paintings of their own (below); Insights and Settings stay ivory. The room is not a theme, it is where Home is.
 
-**Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today-background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) and laid out after the mockup (`art/mockups/today-mockup.png`): the page is **one paper panel on the right**, the closing line a small green slip beneath it at the foot of the page, and the room left open — Lumi stands in it. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped to it) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory**. The veil (`::after`, `rgba(44,30,16,…)`) is heaviest under the sidebar and along the top, clear over the room.
+**Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today/background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) and laid out after the mockup (`art/mockups/today-mockup.png`): the page is **one paper panel on the right**, the closing line a small green slip beneath it at the foot of the page, and the room left open — Lumi stands in it. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped to it) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory**. The veil (`::after`, `rgba(44,30,16,…)`) is heaviest under the sidebar and along the top, clear over the room.
 
 | Piece | In the garden |
 |---|---|
@@ -58,14 +58,14 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 
 Not carried over from the mockup: the filter tabs, the plant per category, the *In Season* panel with step counts (its corner is left open), the *Plant something new* button and the quote's copy — `decisions.md` 2026-09-12 · Today, set in the garden.
 
-**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library-background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed). **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
+**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library/background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed). **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
 
 | Piece | In the reading room |
 |---|---|
 | `.library-page` | Fills `.main` (`flex: 1 0 auto`); holds the scene and the hidden heading, nothing else |
-| Lumi | From 1100px (landscape) she stands on the rug at the front-left of the reading table — `--lumi-x: 520; --lumi-y: 870` in the painting's pixels, mapped through the same cover fit as Today. She covers the near chair and the table's end, both further back than her feet. Below that, her corner |
+| Lumi | From 1100px (landscape) she stands on the rug in front of the reading table, between the floor cushion and the table's front leg — `--lumi-x: 700; --lumi-y: 900` in the painting's pixels, mapped through the same cover fit as Today. She covers the table's apron and runner, both further back than her feet. Below that, her corner |
 
-The painting carries words — signs over its bays (*Personal*, *Coherence*, *School*, *Glåüm*, *Lumi's Notes*, *Archive*, *Ideas*, *Psychology*) and a banner (*More Thoughtful Humans*). They are part of the painting, not the interface: nothing reads them, and they don't match the user's lists (`art-direction.md` §1).
+The painting's signs and banners are **blank** (repainted 2026-09-13; the first painting, with words on them, is `art/mockups/library-background.png`). The boards are the Library's architectural collection slots in Chanté's IA (`art/scenery/library/library-spatial-information-architecture.md`): fixed places whose names would come from the user's life. Nothing writes on them yet.
 
 ---
 
