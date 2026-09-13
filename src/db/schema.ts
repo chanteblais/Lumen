@@ -153,6 +153,8 @@ export const memoryNotes = pgTable(
     lastConfirmedAt: ts("last_confirmed_at"),
     lastContradictedAt: ts("last_contradicted_at"),
     supersedesId: uuid("supersedes_id"),
+    /** The user message it came from: where they said it, or the turn Lumi noticed it. Null from Settings and reflection. */
+    sourceMessageId: uuid("source_message_id"),
     retiredAt: ts("retired_at"),
     retiredReason: text("retired_reason").$type<RetiredReason>(),
     createdAt: ts("created_at").notNull().defaultNow(),

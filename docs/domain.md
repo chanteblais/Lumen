@@ -75,15 +75,18 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | kind | text | `fact | project | preference | strategy | pattern | anti_pattern` — *strategy* = what helps this user start; *anti_pattern* = what reliably doesn't |
 | content | text | one sentence, present tense |
 | source | text | `user_said | lumi_inferred | reflection` |
-| confidence | real | 0–1. `user_said` 0.9 (corrections 0.95), `lumi_inferred` 0.4–0.6, reflection sets per evidence |
-| evidence_for / evidence_against | int | incremented by `confirm` / `contradict` and by reflection ops |
+| confidence | real | 0–1. `user_said` 0.9 (corrections 0.95). Anything inferred (`lumi_inferred`, `reflection`) starts at ≤ 0.6, enforced in code (`boundConfidence`); confirmations can raise it later |
+| evidence_for / evidence_against | int | incremented by `confirm` / `contradict` and by reflection ops; a create of something already held counts as a confirm |
 | last_confirmed_at / last_contradicted_at | timestamptz null | |
-| supersedes_id | uuid null | set when `revise` replaces a belief; the old one is retired with reason `superseded` |
-| retired_at / retired_reason | timestamptz null / text null | `user | contradicted | superseded` — soft; visible history |
-| created_at | | |
-| *(later)* embedding | vector | pgvector, when active beliefs exceed the injection cap |
+| supersedes_id | uuid null | set when a new wording replaces a belief — Lumi's `revise`, the user's correction (chat or Settings), or the user saying what Lumi had only guessed; the old one is retired with reason `superseded` |
+| source_message_id | uuid null | the user message it came from: where they said it (their quoted words matched it), or the turn Lumi noticed it. Null from Settings and reflection. No FK, on purpose: a message may go before the belief does. Added in `0003` |
+| retired_at / retired_reason | timestamptz null / text null | `user | contradicted | superseded` — soft; visible history. The user's *forgetting* is not a retirement: it deletes the row and every version (see `memory.deleted`) |
+| created_at | | when this wording was first held |
+| *(later)* embedding | vector | pgvector, when lexical selection stops being enough |
 
 Active belief = `retired_at IS NULL`. Confidence drifts: each `contradict` lowers it; a belief that falls below 0.2 is retired as `contradicted` by reflection, never silently.
+
+What may be stored is decided in code before the insert (`core/domain/memory-rules.ts`): never secrets or instruction-like text; a sensitive detail only on the user's word with an explicit ask; one line, no markup. Which active beliefs a chat turn sees is derived at read time (`core/ai/memory-select.ts`): up to 5 preferences and 3 strategies always, then the ones the conversation is about, then the freshest projects and facts, ≤ 12. A guess below 0.5 that nothing has confirmed for 60 days *fades* — out of the block, still in `recall_memory` and Settings; nothing is stored for it.
 
 ### `events` (append-only)
 | column | type | notes |
@@ -108,7 +111,8 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `session.started` | `{ goal, first_step, planned_minutes, approach, intention_id }` (M5) |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below |
 | `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
-| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }` |
+| `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }`; `.noted` and `.revised` also carry `source`; `.contradicted` / `.retired` may carry a free-text `note`. No belief content in any of them |
+| `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`wasForgotten`); no words are kept |
 | `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
@@ -180,6 +184,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **No** — 2026-09-13 on `feat/lumi-memory`, for Chanté to apply. Until it is, beliefs can't be read or written (the column is selected): chat carries on without them and Settings says it can't reach them |
 | `0002_leads.sql` | `leads` table (what Lumi noticed in the mail: title, why, list, due, sender/subject/received, status, `intention_id` when kept) + two indexes | No (create-only) | **Yes** — 2026-09-12, applied by Claude with `npm run db:migrate` on `feat/email-insights` (additive, per `branching.md` → Claude sessions) |
 | `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **Yes** — 2026-09-13 (applied by Chanté; journaled) |
 | `0000_initial_schema.sql` | All seven tables (`users`, `conversations`, `messages`, `intentions`, `focus_sessions`, `memory_notes`, `events`), FKs (cascade on user delete; session→intention set null), indexes. `users.preferences` default `{v:1, session_minutes:45, check_in_minutes:15}` | No (create-only) | **Yes** — 2026-09-11, run by hand in the Supabase SQL editor; recorded in `drizzle.__drizzle_migrations` afterwards so `npm run db:migrate` is a no-op. Future migrations: `npm run db:migrate` only |

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock, type SessionEventNow, type StartNow } from "@/core/ai/context";
+import { selectBeliefs } from "@/core/ai/memory-select";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
 import { reflectAfterSession } from "@/core/ai/reflect";
@@ -12,6 +13,7 @@ import { listRecentActivity } from "@/core/domain/activity";
 import {
   ensureMainConversation,
   loadRecentMessages,
+  messageText,
   saveMessage,
   type CoherenceUIMessage,
 } from "@/core/domain/conversations";
@@ -136,6 +138,19 @@ export async function POST(req: Request) {
       endedSessionId ??= id;
     },
     mail: lazyMailReader(user),
+    // What they've actually said lately: a belief rests on their word only when its their_words is in here.
+    userWords: all
+      .filter((m) => m.role === "user")
+      .slice(-8)
+      .map((m) => ({ messageId: m.id, text: messageText(m) }))
+      .filter((w) => w.text),
+  });
+
+  // Not every belief rides along: what she always honours, what this turn is about, the freshest projects.
+  const memory = selectBeliefs(snap.beliefs, {
+    message: messageText(userMessage),
+    recent: all.slice(-7, -1).map(messageText),
+    focus: [snap.session.active?.goal, snap.session.active?.firstStep, startNow?.title],
   });
 
   const result = streamText({
@@ -159,7 +174,9 @@ export async function POST(req: Request) {
           openIntentions: snap.openIntentions,
           recentlyDone: snap.recentlyDone,
           recentActivity,
-          beliefs: snap.beliefs,
+          beliefs: memory.chosen,
+          memoryHeldBack: memory.heldBack,
+          memoryUnavailable: snap.memoryUnavailable,
           capacity: snap.capacity,
           plan: snap.plan,
           declinedNow,

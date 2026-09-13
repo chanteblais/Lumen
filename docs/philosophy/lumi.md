@@ -102,7 +102,7 @@ Also from canon: not a motivational speaker (`product.md`), not a replacement fo
 
 **Today** *(current)*:
 - **Structured state:** intentions, lists, capacity, focus sessions, day plans, beliefs, leads and events.
-- **A capped context block:** up to 25 intentions, 12 recent changes, 40 beliefs and 8 leads.
+- **A capped context block:** up to 25 intentions, 12 recent changes, 12 beliefs chosen for the turn (how they like her to be, what helps them start, what the conversation is about, the freshest projects; `recall_memory` finds the rest) and 8 leads.
 - **Conversation:** the last 30 messages, with older history folded into a summary once that is built (M6).
 
 When a cap bites, the answer is a read tool or retrieval, not a bigger block. Lumi reads through the block and writes only through tools.

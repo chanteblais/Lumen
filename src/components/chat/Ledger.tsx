@@ -29,7 +29,10 @@ function line(p: ToolPart): string | null {
     case "tool-reshape_today":
       return `Reshaped Today · ${String(out.ask ?? inp.ask ?? "").slice(0, 60)}`;
     case "tool-remember":
-      return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+      if (out.already_held) return null;
+      return `${out.held_as === "your guess" ? "Noticed" : "Remembered"} · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+    case "tool-correct_belief":
+      return `Corrected · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
     case "tool-confirm_belief":
       return "Noted · that held up";
     case "tool-contradict_belief":

@@ -1,0 +1,1 @@
+ALTER TABLE "memory_notes" ADD COLUMN "source_message_id" uuid;

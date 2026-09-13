@@ -94,3 +94,12 @@ export function isInSitting(messages: CoherenceUIMessage[], now = Date.now()): b
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;
 }
+
+/** The words of a message — its text parts joined — without tool calls or metadata. */
+export function messageText(m: Pick<CoherenceUIMessage, "parts">): string {
+  return m.parts
+    .filter((p): p is Extract<CoherenceUIMessage["parts"][number], { type: "text" }> => p.type === "text")
+    .map((p) => p.text.trim())
+    .filter(Boolean)
+    .join(" ");
+}

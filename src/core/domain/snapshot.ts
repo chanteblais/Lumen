@@ -7,17 +7,18 @@ import { localDate } from "@/core/time";
 import { CAPACITY_EVENT_TYPES, capacityStateFromEvents } from "./capacity";
 import { listEventsSince, TODAY_BOUND_MS } from "./events";
 import { DECLINE_EVENT_TYPE, declinesFromEvents, listOpenIntentions, listRecentlyDone } from "./intentions";
-import { listActiveBeliefs } from "./memory";
+import { loadBeliefsOrNothing } from "./memory";
 import { getPlanForDate, prunePlan } from "./plans";
 import { resolveSession } from "./sessions";
 import { currentSitting } from "./users";
 
 export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
   const today = localDate(now, user.timezone);
-  const [openIntentions, recentlyDone, beliefs, todayEvents, planRow, sitting, session] = await Promise.all([
+  const [openIntentions, recentlyDone, memory, todayEvents, planRow, sitting, session] = await Promise.all([
     listOpenIntentions(db, user.id),
     listRecentlyDone(db, user.id, 5),
-    listActiveBeliefs(db, user.id),
+    // Never throws: a turn or a page carries on without beliefs if they can't be read.
+    loadBeliefsOrNothing(db, user.id),
     // One query for everything "today" is derived from: capacity + declines.
     listEventsSince(db, user.id, [...CAPACITY_EVENT_TYPES, DECLINE_EVENT_TYPE], new Date(now.getTime() - TODAY_BOUND_MS), 40),
     getPlanForDate(db, user.id, today),
@@ -32,7 +33,10 @@ export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
     lists,
     openIntentions,
     recentlyDone,
-    beliefs,
+    /** Every active belief (up to ACTIVE_LIMIT); a chat turn selects from these (`core/ai/memory-select.ts`). */
+    beliefs: memory.beliefs,
+    /** Beliefs couldn't be read this time. */
+    memoryUnavailable: memory.unavailable,
     capacity: capacityState.report,
     /** The capacity prompt was skipped today — Today doesn't ask again. */
     capacitySkipped: capacityState.skipped,
