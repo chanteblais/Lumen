@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   description: "A quieter way forward.",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children, sheet }: LayoutProps<"/">) {
   const navMode = navModeFrom((await cookies()).get(NAV_MODE_COOKIE)?.value);
   return (
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
@@ -44,6 +44,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <TopBar />
               {children}
             </main>
+            {/* A sheet opened from the nav (Lists), over the page underneath: app/@sheet. */}
+            {sheet}
           </div>
           <LumiCompanion />
         </AuthProvider>

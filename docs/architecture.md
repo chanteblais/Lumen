@@ -168,7 +168,9 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
 │   │   ├── insights/page.tsx     what Lumi noticed in the mail — "do any of these still need doing?"
-│   │   ├── library/page.tsx      the Library's room, nothing on it yet (`/lists` redirects here, next.config.ts)
+│   │   ├── library/page.tsx      the Library's room, nothing on it yet
+│   │   ├── lists/page.tsx        Lists opened directly: the sheet over the Library's room
+│   │   ├── @sheet/               a parallel slot for sheets opened from the nav: (.)lists/page.tsx intercepts /lists so Lists opens over the page you were on; default.tsx and [...catchAll]/page.tsx keep it empty otherwise
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── knows/page.tsx        "What Lumi knows" — beliefs, grouped, correct/delete inline
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
@@ -176,15 +178,16 @@ lumen/                            the repo folder, still named for the product's
 │   │   └── api/
 │   │       ├── chat/route.ts     POST — one streamed turn
 │   │       ├── session/route.ts  POST — check-in ticks (non-LLM)
-│   │       ├── intentions/[id]/route.ts  PATCH — complete/reopen from Today
+│   │       ├── intentions/[id]/route.ts  PATCH — complete/reopen from Today and Lists; move/drop from Lists
 │   │       └── leads/[id]/route.ts  PATCH — keep/dismiss from Insights
 │   ├── components/
 │   │   ├── chat/                 Conversation, Message, Ledger, Composer, QuickStarts, LumiAvatar
 │   │   ├── insights/             LeadsSection (looks, then asks), LeadActions (Still needs doing · Let it go)
 │   │   ├── focus/                SessionBar (the bar + the check-in card + the client timer)
+│   │   ├── lists/                ListsPanel (server: loads the rows) · ListsSheet (the sheet, its rows, ⋯ menu and Add line) · ListGlyphs · CompleteCircle
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested
-│   │   ├── domain/               users.ts intentions.ts sessions.ts capacity.ts memory.ts events.ts activity.ts plans.ts snapshot.ts leads.ts
+│   │   ├── domain/               users.ts intentions.ts sessions.ts capacity.ts memory.ts events.ts activity.ts plans.ts snapshot.ts leads.ts lists-view.ts (the Lists sheet's rows: order, date labels, quick views — no counts)
 │   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts plan.ts today-plan.ts reflect.ts leads.ts (mail → leads, model proposes / clampLeads guards)
 │   │   ├── email/                types.ts (EmailReader) gmail.ts (REST + MIME parse) scan.ts (one look: watermark → read → infer → leads)
 │   │   ├── focus.ts              Focus Together client-side rules: check-in copy + timing, session-from-transcript
@@ -210,7 +213,7 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 |---|---|---|---|---|
 | `/api/chat` | POST | `requireUser()` | One streamed turn, for both clients (the chat page and the companion's speech bubble; each has its own `useChat`, the server holds the one transcript). Body `{ id, message }` — the new user `UIMessage` only; the server loads the last 30 from the database, persists the user message, streams Lumi's model (`gpt-6-astra`, from `model.ts`) with `instructions: [persona, context block]` at reasoning effort low with `store: false` (on `LUMI_MODEL=anthropic:…`, `cache_control` on the persona, `effort: low` and refusal fallbacks), and persists the assistant message in `onEnd`. The request's signal is the turn's `abortSignal`: the clients' Stop (the send button while she talks) cancels the fetch, the model stops and calls no further tools, and `onEnd` still saves what she had said (an aborted turn with no parts saves nothing). `maxDuration = 60`. Dev logs a `[chat] tokens …` line with cache read/write counts | M2 |
 
-| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Library. Complete also advances today's plan (`reflectClosedInPlan`). Both events carry `via: "app"`, which is how the chat context tells a tick on a page from a tool call | M3 |
+| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today and Lists; `{ action: "move", list }` (one of the user's lists, else 400) and `{ action: "drop" }` from the Lists sheet's ⋯ menu. Complete and drop also advance today's plan (`reflectClosedInPlan`). Every event carries `via: "app"`, which is how the chat context tells a change on a page from a tool call | M3; move/drop 2026-09-13 |
 | `/api/capacity` | POST | `requireUser()` | Today's capacity prompt. `{ level }` writes `capacity.reported` and re-cuts the path (`recutTodaysPlan(…, "capacity")` — skipped when the answer matches what the plan already assumed), returning `{ level, rightNow }`; `{ skip: true }` writes `capacity.asked {skipped}` so it isn't asked again today. `maxDuration = 60` (model call) | M4 |
 
 | `/api/session` | POST | `requireUser()` | The one check-in answer that needs no reply: `{ id, response: "ok" }` (Yep) writes `session.check_in {response: ok, minute}` — no model call, no message. Returns `{ ok: true }`, or `{ ok: false, ended: true }` when that session is no longer running (swept as abandoned, or ended elsewhere) so the client drops the bar. Stuck / Got distracted / Done / End go through `/api/chat` instead, because Lumi answers them | M5 |

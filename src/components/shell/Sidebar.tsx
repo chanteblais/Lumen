@@ -6,11 +6,12 @@ import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
 import { isPublicPath } from "@/lib/public-paths";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
-import { BookIcon, GearIcon, HomeIcon, SprigIcon, SunIcon } from "./NavIcons";
+import { BookIcon, GearIcon, HomeIcon, ListIcon, SprigIcon, SunIcon } from "./NavIcons";
 
 const NAV = [
   { href: "/", label: "Home", Icon: HomeIcon },
   { href: "/today", label: "Today", Icon: SunIcon },
+  { href: "/lists", label: "Lists", Icon: ListIcon }, // a sheet over the page you're on (app/@sheet), not a room
   { href: "/library", label: "Library", Icon: BookIcon },
   { href: "/insights", label: "Insights", Icon: SprigIcon },
   { href: "/settings", label: "Settings", Icon: GearIcon, utility: true }, // a utility, not a space: set a little apart
