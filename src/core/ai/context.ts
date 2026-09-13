@@ -5,6 +5,7 @@ import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
 import { isReentry, type Sitting } from "@/core/domain/users";
+import type { Where } from "@/core/places";
 import type { DayPlanJson, Episode, Intention, Lead, MemoryNote, Thread, ThreadNote } from "@/db/schema";
 import type { LibraryView } from "./library-select";
 import { capacityPhrase, localFormat } from "./format";
@@ -13,6 +14,8 @@ import { asQuoted, heldAs, noteHeldAs } from "./memory-select";
 export type ContextInput = {
   displayName: string;
   timezone: string;
+  /** The page they spoke from and which way in; undefined when the client didn't say (or it didn't parse). */
+  where?: Where;
   /** Previous request; undefined on the first ever turn. */
   lastSeenAt?: Date;
   /** The visit this turn belongs to, and the gap it began after. */
@@ -62,6 +65,7 @@ export function buildContextBlock(input: ContextInput): string {
     `- Talking with: ${input.displayName}. Use the name sparingly.`,
     `- Their local time: ${local} (${dayPart(now, input.timezone)}), timezone ${input.timezone}. Mention it only if it changes the advice.`,
   ];
+  if (input.where) lines.push(describeWhere(input.where));
 
   if (!input.lastSeenAt) {
     lines.push("- First time here. No history yet.");
@@ -190,6 +194,26 @@ export function buildContextBlock(input: ContextInput): string {
   }
 
   return lines.join("\n");
+}
+
+/** Where they are as they speak, in Lumi's terms: the page, what's in front of them there, and which way in. */
+export function describeWhere(w: Where): string {
+  const library = { thread: "the Library, looking at a thread's shelves", book: "the Library, reading a thread as a book", table: "the Library, at the loose threads on the table" };
+  const page = {
+    home: "Home",
+    today: "Today, with today's path in front of them",
+    library: w.detail ? library[w.detail] : "the Library",
+    lists: "the Lists sheet, with their lists in front of them",
+    insights: "Insights",
+    settings: "Settings, with what you hold about them in front of them",
+  }[w.place];
+  const how =
+    w.via === "bubble"
+      ? "through the bubble — the page stays in view and your reply shows in a small bubble beside you"
+      : w.via === "lists-add"
+        ? "through Lists' Add task line — they want it filed; a few words back"
+        : "in the conversation";
+  return `- Where they are: ${page}, talking to you ${how}.`;
 }
 
 /** One change in Lumi's terms: "they" did it on a page, "you" did it through a tool. */

@@ -95,6 +95,30 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 8 — 2026-09-13 · the app and where they are (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:50pm Vancouver, last seen 3h ago, two open intentions, a path with "Email Priya" as Right now)
+After *The app, and where they are* joined the persona and the context block gained *Where they are* (`decisions.md`). Eight single turns from an ad-hoc script (the persona and context block as production, a `where` per turn, no tools), not added to `voice-eval.mjs`. Prefix ≈ 4,630 tokens (cache reads 4,629–4,653).
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Where | They said | Voice | Use | Lumi said |
+|---|---|---|---|---|---|
+| 1 | Home | "where do I see all my stuff?" | ✓ | ✓ | "Tap Lists in the navigation. It opens over this page, with your School, Work, Personal and Later tabs, plus search and Completed." |
+| 2 | Today, bubble | "this one feels too big" | ✓ | ✓ | "Just open the thread with Priya. No drafting yet." |
+| 3 | Today, bubble | "can you remind me at 3 to call the dentist?" | ✓ | ✓ | "I can't send reminders here. Set a phone alarm for 3 p.m. labelled "Call the dentist."" |
+| 4 | Home | "how do I make a new list for groceries?" | ✓ | ✓ | "Making new lists isn't available yet. For now, groceries can go in Personal. / Tell me what you need to buy and I'll add it there." |
+| 5 | Library, bubble | "where are my notes about the book?" | ✓ | ~ | "The Library doesn't show your saved notes yet — you reach them through me for now. / Which book are you looking for?" |
+| 6 | Settings, bubble | "how do I change my name?" | ✓ | ✓ | "You can't change your name in the app yet. What would you like me to call you?" |
+| 7 | Library, bubble | "it's cosy in here" | ✓ | ✓ | "It is. The shelves do a lot of the work." |
+| 8 | Home | "I can't start." | ✓ | ~ | "Open the email thread with Priya. No drafting yet — just get it on screen." |
+
+**Why:** 1–4 and 6 name the one place or say *not yet* plainly, with something close to do instead; none invents a button. 2 reads "this one" as the Right now without asking. 7 takes the room lightly, one line. 5 is ~ only because the script has no tools: with them, `search_library` should come before the question. 8 is ~: it goes straight to the Right now instead of first telling unclear from can't-begin (persona → Starting); the place line isn't involved (it's Home), and the path in context invites it — worth watching in run 5's scenario 1 conditions.
+
+**Rerun after merging `main`** (run 7's persona, without *Focus Together* or *Not this*; the map no longer names sessions or Start with Lumi). Prefix ≈ 4,100 tokens (cache reads 4,096–4,120). Same grades; the replies barely moved: 1 "Open Lists in the left sidebar — or along the bottom on your phone…", 3 "I can't send reminders yet. Set a phone reminder for 3 p.m.…", 5 "The Library doesn't show your notes yet — it's just the room for now. / Which book were the notes about?", 7 "It is. A room with absolutely no opinion on what you should be doing." (still one line, drier), 8 unchanged in substance (still ~).
+
+**Chanté's live test, then a fix.** Live, "this one feels too big" in the Today bubble got *Just go over to the compost container. You don't need to carry it out yet.* (the canon's smallest piece); Chanté: "She gave me instructions on how to do it", and she chose one question first (`living/decisions.md`). With that line in *What you're for* → Starting, scenario 2 again: *Is it the whole email to Priya, a particular part, or just too much for today?* — Voice ✓ · Use ✓ (one question, no step, her words for the three options).
+
+**After merging file sharing** (`feat/chat-files`; Home's line in the map names the paperclip, the bubble is words only): from the Today bubble, "can I send you a photo of my whiteboard?" → *Yes — head to Home and tap the paperclip in the message box to send it. Photos don't come through this bubble.* — Voice ✓ · Use ✓ (the one place and the one tap).
+
 ### Run 7 — 2026-09-13 · all nine on OpenAI after focus sessions were removed (`feat/today-in-place`; `gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:40pm Vancouver, last seen 3h ago)
 The persona lost *Focus Together*, *Not this* and the *Body double* quick start, *Company* now reads "be there: one short line, then quiet until they speak", and the brief's places line says there are no focus sessions and that Today's changes happen on its card. Prefix ~3,480 tokens, cached from the second call (run 6: 4,140 uncached, before this change and before `main`'s later persona edits). The script runs without tools, so nothing is saved in scenario 9.
 

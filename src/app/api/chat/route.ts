@@ -30,16 +30,22 @@ export const maxDuration = 60;
 const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 
 /**
- * One streamed turn. The client sends only the new user message; history
- * comes from the database so the transcript can't drift between tabs.
- * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
- * The turn's logic lives in `core/ai/turn.ts`; this is auth, loading, streaming and saving.
+ * One streamed turn. The client sends only the new user message (and where it
+ * was sent from); history comes from the database so the transcript can't drift
+ * between tabs. Tools execute server-side and loop up to five steps so Lumi can
+ * act, then speak. The turn's logic lives in `core/ai/turn.ts`; this is auth,
+ * loading, streaming and saving.
  */
 export async function POST(req: Request) {
+  // Dev timings for the log line: getting ready (auth, loads, selection), her first word, the whole turn.
+  const startedAt = Date.now();
+  let firstWordAt: number | undefined;
   const { user, previous } = await requireVisit();
-  const incoming = parseChatBody(await req.json().catch(() => undefined));
-  if (!incoming) return Response.json({ error: "message required" }, { status: 400 });
-  const userMessage = userMessageFrom(incoming, new Date(), randomUUID);
+  // The message, and the page they spoke from and which way in (Home, the bubble, Lists' Add task) — nowhere if it isn't a place.
+  const body = parseChatBody(await req.json().catch(() => undefined));
+  if (!body) return Response.json({ error: "message required" }, { status: 400 });
+  const { where } = body;
+  const userMessage = userMessageFrom(body.message, new Date(), randomUUID);
   // Files shared with the message (Home's composer): each inline, a kind Lumi reads, within the limits.
   // The composer holds to the same limits, so this only turns away what didn't come from it.
   const filesProblem = sharedFilesProblem(userMessage.parts);
@@ -108,9 +114,11 @@ export async function POST(req: Request) {
       library: { view: libraryView, unavailable: library.unavailable },
       // Mail off: undefined leaves Their mail out of the context altogether.
       mail: MAIL_ON ? { scan: mailScan ?? null, leads } : undefined,
+      where,
     }),
   );
 
+  const readyAt = Date.now();
   const result = streamText({
     model: chatModel(),
     tools,
@@ -131,11 +139,14 @@ export async function POST(req: Request) {
       context,
     ),
     providerOptions: chatProviderOptions,
+    onChunk: ({ chunk }) => {
+      if (chunk.type === "text-delta") firstWordAt ??= Date.now();
+    },
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${turn.recut ? ` recut=${turn.recut.reason}` : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${turn.recut ? ` recut=${turn.recut.reason}` : ""} ready=${readyAt - startedAt}ms firstWord=${firstWordAt ? `${firstWordAt - startedAt}ms` : "-"} done=${Date.now() - startedAt}ms`);
       }
     },
   });

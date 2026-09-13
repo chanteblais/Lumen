@@ -12,6 +12,7 @@ import type { loadLibraryOrNothing } from "@/core/domain/library";
 import type { Heard } from "@/core/domain/memory-rules";
 import type { Snapshot } from "@/core/domain/snapshot";
 import { isUuid } from "@/core/ids";
+import { parseWhere, type Where } from "@/core/places";
 import type { ContextInput } from "./context";
 import type { LibraryView } from "./library-select";
 import type { TurnSignals } from "./memory-select";
@@ -52,14 +53,21 @@ const IncomingMessage = z
     return chars <= MAX_MESSAGE_CHARS && (chars > 0 || m.parts.some((p) => p.type === "file"));
   });
 
-const ChatBody = z.object({ message: IncomingMessage });
+/**
+ * Where they are as they send (`core/places.ts`, from the shared chat client): the page's path and which
+ * way in. Shape-checked here; `parseWhere` then keeps only a place in the nav, and the context block says
+ * it in fixed words, so nothing the client writes reaches Lumi as text.
+ */
+const WhereBody = z.object({ path: z.string().max(200), via: z.enum(["home", "bubble", "lists-add"]) });
+
+const ChatBody = z.object({ message: IncomingMessage, where: WhereBody.nullish() });
 
 export type IncomingMessage = z.infer<typeof IncomingMessage>;
 
-/** The new user message from a request body, or undefined when the body isn't one (the route answers 400). */
-export function parseChatBody(raw: unknown): IncomingMessage | undefined {
+/** The new user message, and where they are (undefined: not said, or not a place in the nav), from a request body; undefined when the body isn't one (the route answers 400). */
+export function parseChatBody(raw: unknown): { message: IncomingMessage; where?: Where } | undefined {
   const r = ChatBody.safeParse(raw);
-  return r.success ? r.data.message : undefined;
+  return r.success ? { message: r.data.message, where: parseWhere(r.data.where) } : undefined;
 }
 
 /** The message as received: its id if it's a uuid, its text and file parts with nothing extra, and the server's time — client metadata can't move it. */
@@ -107,11 +115,14 @@ export function contextInputFor(t: {
   memory: { chosen: MemoryNote[]; heldBack: boolean };
   library: { view: LibraryView<Library["threads"][number], Library["notes"][number], Library["episodes"][number]>; unavailable: boolean };
   mail?: { scan?: { at: Date } | null; leads?: Lead[] };
+  /** The page they spoke from and which way in: a line in the context block, never in the cached prefix. */
+  where?: Where;
 }): ContextInput {
   const { user, snap } = t;
   return {
     displayName: user.displayName,
     timezone: user.timezone,
+    where: t.where,
     // The row is created with last_seen_at = created_at, so equality means the first ever turn.
     lastSeenAt: t.previous.getTime() === user.createdAt.getTime() ? undefined : t.previous,
     sitting: snap.sitting,

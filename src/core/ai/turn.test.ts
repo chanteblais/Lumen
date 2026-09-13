@@ -8,15 +8,15 @@ const text = (t: string) => ({ type: "text", text: t });
 
 describe("parseChatBody", () => {
   it("takes a user message of text parts", () => {
-    const m = parseChatBody({ id: "chat", message: { id: ID, role: "user", parts: [text("hi")], metadata: { createdAt: "2026-09-13T12:00:00Z" } } });
+    const m = parseChatBody({ id: "chat", message: { id: ID, role: "user", parts: [text("hi")], metadata: { createdAt: "2026-09-13T12:00:00Z" } } })?.message;
     expect(m?.parts).toEqual([text("hi")]);
   });
 
   it("takes a shared file as the composer sends it, with or without words", () => {
     const file = { type: "file", mediaType: "image/png", url: "data:image/png;base64,iVBORw0KGgo=", filename: "note.png" };
-    expect(parseChatBody({ message: { role: "user", parts: [text("what's this?"), file] } })?.parts).toEqual([text("what's this?"), file]);
-    expect(parseChatBody({ message: { role: "user", parts: [file] } })?.parts).toEqual([file]);
-    const m = userMessageFrom(parseChatBody({ message: { role: "user", parts: [{ ...file, providerMetadata: { x: 1 } }] } })!, new Date(), () => ID);
+    expect(parseChatBody({ message: { role: "user", parts: [text("what's this?"), file] } })?.message.parts).toEqual([text("what's this?"), file]);
+    expect(parseChatBody({ message: { role: "user", parts: [file] } })?.message.parts).toEqual([file]);
+    const m = userMessageFrom(parseChatBody({ message: { role: "user", parts: [{ ...file, providerMetadata: { x: 1 } }] } })!.message, new Date(), () => ID);
     expect(m.parts).toEqual([file]);
   });
 
@@ -40,10 +40,25 @@ describe("parseChatBody", () => {
   });
 });
 
+describe("where they are", () => {
+  const msg = { role: "user", parts: [text("this one feels too big")] };
+  it("keeps a place in the nav and which way in; a path that isn't a place is nowhere", () => {
+    expect(parseChatBody({ message: msg, where: { path: "/today", via: "bubble" } })?.where).toEqual({ place: "today", via: "bubble" });
+    expect(parseChatBody({ message: msg, where: { path: "/library/abc/book", via: "home" } })?.where).toEqual({ place: "library", via: "home", detail: "book" });
+    expect(parseChatBody({ message: msg, where: { path: "/admin", via: "home" } })).toEqual({ message: expect.anything(), where: undefined });
+    expect(parseChatBody({ message: msg })?.where).toBeUndefined();
+  });
+  it("refuses a where that isn't the client's shape: an unknown way in, a long path, text where a path goes", () => {
+    for (const where of [{ path: "/today", via: "email" }, { path: "/" + "x".repeat(200), via: "home" }, { path: 7, via: "home" }, "today", { path: "/today" }]) {
+      expect(parseChatBody({ message: msg, where }), JSON.stringify(where)).toBeUndefined();
+    }
+  });
+});
+
 describe("userMessageFrom", () => {
   it("keeps a uuid id, drops extra part fields, and stamps the server's time over the client's", () => {
     const now = new Date("2026-09-13T12:00:00Z");
-    const incoming = parseChatBody({ message: { id: ID, role: "user", parts: [{ type: "text", text: "hi", providerMetadata: { x: 1 } }], metadata: { createdAt: "2000-01-01T00:00:00Z" } } })!;
+    const incoming = parseChatBody({ message: { id: ID, role: "user", parts: [{ type: "text", text: "hi", providerMetadata: { x: 1 } }], metadata: { createdAt: "2000-01-01T00:00:00Z" } } })!.message;
     const m = userMessageFrom(incoming, now, () => "fresh");
     expect(m).toEqual({ id: ID, role: "user", parts: [text("hi")], metadata: { createdAt: now.toISOString() } });
     expect(userMessageFrom({ ...incoming, id: "not-a-uuid" }, now, () => "fresh").id).toBe("fresh");

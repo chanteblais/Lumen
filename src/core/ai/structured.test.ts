@@ -24,7 +24,7 @@ describe("proposeStructured", () => {
     expect(out).toEqual({ ok: true });
     const call = generateText.mock.calls[0][0];
     expect(call.instructions).toEqual([
-      { role: "system", content: PERSONA, providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } },
+      { role: "system", content: PERSONA, providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } }, openai: { promptCacheBreakpoint: { mode: "explicit" } } } },
       { role: "system", content: "RULES" },
       { role: "system", content: "INPUTS" },
     ]);

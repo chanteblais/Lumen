@@ -63,9 +63,15 @@ export const chatProviderOptions = {
   openai: { ...OPENAI_BASE, promptCacheKey: promptCacheKey("chat"), reasoningEffort: "low" },
 } as const;
 
-/** Marks a system message as the cached prefix. OpenAI caches long prefixes on its own. */
+/**
+ * Marks a system message as the cached prefix. OpenAI (GPT-6) keeps a cache entry only at a
+ * breakpoint, and its implicit one is the end of the prompt — the per-turn context block — so
+ * without this every turn wrote the whole prompt to cache and read none of it back. With it, the
+ * tools and the persona are read from cache across turns (measured 2026-09-13: 8,281 of ~8,400 tokens).
+ */
 export const cachedPrefixOptions = {
   anthropic: { cacheControl: { type: "ephemeral" } },
+  openai: { promptCacheBreakpoint: { mode: "explicit" } },
 } as const;
 
 function parseModel(spec: string): ["openai" | "anthropic", string] {
