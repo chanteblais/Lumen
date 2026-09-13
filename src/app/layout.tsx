@@ -7,7 +7,9 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { NAV_MODE_COOKIE, navModeFrom } from "@/components/shell/nav-pin";
 import { TopBar } from "@/components/shell/TopBar";
 import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
+import { FreshOnReturn } from "@/components/shell/FreshOnReturn";
 import { LumiCompanion } from "@/components/shell/LumiCompanion";
+import { SCENE_FADE_SCRIPT } from "@/components/shell/RoomScene";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -31,19 +33,24 @@ export const metadata: Metadata = {
   description: "A quieter way forward.",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children, sheet }: LayoutProps<"/">) {
   const navMode = navModeFrom((await cookies()).get(NAV_MODE_COOKIE)?.value);
   return (
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
       <body>
+        {/* First in the body, so it is watching before any room's painting is parsed (RoomScene). */}
+        <script dangerouslySetInnerHTML={{ __html: SCENE_FADE_SCRIPT }} />
         <AuthProvider>
           <TimezoneCapture />
+          <FreshOnReturn />
           <div className="shell">
             <Sidebar modeAtLoad={navMode} />
             <main className="main">
               <TopBar />
               {children}
             </main>
+            {/* A sheet opened from the nav (Lists), over the page underneath: app/@sheet. */}
+            {sheet}
           </div>
           <LumiCompanion />
         </AuthProvider>

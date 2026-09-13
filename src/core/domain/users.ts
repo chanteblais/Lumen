@@ -1,9 +1,10 @@
 /**
  * Users: lazy creation keyed by the auth provider id, visit tracking, timezone.
- * The auth layer (src/lib/auth.ts) calls ensureUser() and hands the internal
- * row to everything else — nothing outside lib/auth sees a Clerk id.
+ * The auth layer (src/lib/auth.ts) calls ensureUser() / visit() and hands the
+ * internal row to everything else — nothing outside lib/auth sees a Clerk id.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, getTableColumns } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { type Db } from "@/db/client";
 import { DEFAULT_PREFERENCES, users, type User } from "@/db/schema";
 import { appendEvent, latestEvent } from "./events";
@@ -84,11 +85,38 @@ export async function ensureUser(db: Db, input: EnsureUserInput): Promise<User> 
 export async function touchLastSeen(db: Db, user: User, now: Date = new Date()): Promise<Date> {
   const previous = user.lastSeenAt;
   await db.update(users).set({ lastSeenAt: now }).where(eq(users.id, user.id));
+  await openSitting(db, user.id, previous, now);
+  return previous;
+}
+
+/**
+ * Find the user and record the visit in one round trip: `ensureUser` +
+ * `touchLastSeen` for a row that already exists, which is every request but the
+ * first. The row comes back as it was before this visit — `lastSeenAt` is the
+ * previous visit, as `ensureUser` would have returned it — with the browser's
+ * timezone applied when it's valid. Undefined when there is no row yet.
+ */
+export async function visit(db: Db, clerkUserId: string, timezone: string | undefined, now: Date = new Date()): Promise<{ user: User; previous: Date } | undefined> {
+  // The joined copy of the row is read before the update applies, so it carries the previous visit.
+  const before = alias(users, "before");
+  const [row] = await db
+    .update(users)
+    .set({ lastSeenAt: now, ...(isValidTimezone(timezone) ? { timezone } : {}) })
+    .from(before)
+    .where(and(eq(users.clerkUserId, clerkUserId), eq(before.id, users.id)))
+    .returning({ ...getTableColumns(users), previous: before.lastSeenAt });
+  if (!row) return undefined;
+  const { previous, ...updated } = row;
+  await openSitting(db, updated.id, previous, now);
+  return { user: { ...updated, lastSeenAt: previous }, previous };
+}
+
+/** A gap of 30 min or more since the last request opens a sitting: `app.opened`, carrying the gap. */
+async function openSitting(db: Db, userId: string, previous: Date, now: Date): Promise<void> {
   const gapSeconds = Math.round((now.getTime() - previous.getTime()) / 1000);
   if (gapSeconds >= 30 * 60) {
-    await appendEvent(db, { userId: user.id, type: "app.opened", subjectType: "user", subjectId: user.id, payload: { gap_seconds: gapSeconds } });
+    await appendEvent(db, { userId, type: "app.opened", subjectType: "user", subjectId: userId, payload: { gap_seconds: gapSeconds } });
   }
-  return previous;
 }
 
 /** Set the timezone if the browser reports a valid one that differs. */

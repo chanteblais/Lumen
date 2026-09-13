@@ -6,12 +6,14 @@ import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
 import { isPublicPath } from "@/lib/public-paths";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
-import { BookIcon, GearIcon, HomeIcon, SprigIcon, SunIcon } from "./NavIcons";
+import { BookIcon, GearIcon, HomeIcon, ListIcon, SprigIcon, SunIcon } from "./NavIcons";
 
 const NAV = [
   { href: "/", label: "Home", Icon: HomeIcon },
   { href: "/today", label: "Today", Icon: SunIcon },
   { href: "/library", label: "Library", Icon: BookIcon },
+  // The tools, set apart from the rooms above: Lists is a sheet over the page you're on (app/@sheet), not a room.
+  { href: "/lists", label: "Lists", Icon: ListIcon, tools: true },
   { href: "/insights", label: "Insights", Icon: SprigIcon },
   { href: "/settings", label: "Settings", Icon: GearIcon, utility: true }, // a utility, not a space: set a little apart
 ] as const;
@@ -115,13 +117,13 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
         <nav className="nav-list" aria-label="Primary">
           {NAV.map((place) => {
             const { href, label, Icon } = place;
-            const utility = "utility" in place;
+            const apart = "utility" in place ? " nav-utility" : "tools" in place ? " nav-tools" : "";
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={utility ? "nav-item nav-utility" : "nav-item"}
+                className={`nav-item${apart}`}
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
               >

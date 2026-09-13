@@ -6,7 +6,8 @@
 
 type IconProps = { className?: string };
 
-function Glyph({ children, size = 24, className = "" }: IconProps & { children: React.ReactNode; size?: number }) {
+/** Shared with the Lists sheet's small icons (components/lists/ListGlyphs.tsx), so they're drawn in the same hand. */
+export function Glyph({ children, size = 24, className = "" }: IconProps & { children: React.ReactNode; size?: number }) {
   return (
     <svg
       aria-hidden
@@ -35,6 +36,16 @@ export function HomeIcon({ className }: IconProps) {
     <Glyph className={className}>
       <path d="M3.5 11 12 4l8.5 7" />
       <path d="M6 9.4V20h4.4v-5.4h3.2V20H18V9.4" />
+    </Glyph>
+  );
+}
+
+/** Lists: the bulleted list from `art/assets/icon-sheet-2.png`, as a line icon. */
+export function ListIcon({ className }: IconProps) {
+  return (
+    <Glyph className={className}>
+      <path d="M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01" strokeWidth={2.6} />
+      <path d="M9 6.5h11M9 12h11M9 17.5h11" />
     </Glyph>
   );
 }

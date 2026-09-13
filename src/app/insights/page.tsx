@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { LeadsSection, Opener } from "@/components/insights/LeadsSection";
 import { Divider } from "@/components/ui/Ornament";
 import { INSIGHTS_LINES } from "@/core/insights";
-import { recordVisit, requireUser } from "@/lib/auth";
+import { requireVisit } from "@/lib/auth";
 import { ConnectMail } from "@/lib/auth-mail";
 import { mailAccessFor } from "@/lib/email";
 
@@ -16,8 +16,7 @@ export const metadata: Metadata = { title: "Insights" };
  * docs/features.md → Insights.
  */
 export default async function InsightsPage() {
-  const user = await requireUser();
-  await recordVisit(user);
+  const { user } = await requireVisit();
   const access = await mailAccessFor(user);
 
   return (

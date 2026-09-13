@@ -63,7 +63,7 @@ These are not four independent tools. They are four ways of interacting with the
 
 ## 3. Navigation should remain understandable
 
-*Current label decision: Library remains the user-facing name already chosen. Functional labels below illustrate clarity, not a requirement to rename it Lists. Other navigation choices remain open.*
+*Current label decision: Library remains the user-facing name already chosen. Functional labels below illustrate clarity, not a requirement to rename it Lists. Since 2026-09-13 the nav also carries **Lists**, a sheet over the page you're on with everything on your lists — a view, not a space ([decision](../living/decisions.md#2026-09-13--lists-is-in-the-nav-again-as-a-sheet-over-the-page-youre-on)). Other navigation choices remain open.*
 
 The metaphorical architecture should deepen the experience without obscuring basic usability.
 

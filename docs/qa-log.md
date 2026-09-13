@@ -6,7 +6,7 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
-## Sweep 2026-09-13 — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
+## Sweep 2026-09-13 (4) — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
 
 Chanté, from Today's speech bubble: "I need to buy new headphones and also call Kendra" got *Noted · Buy new headphones · Personal*, *Noted · Call Kendra · Personal*, then *Updated · Buy new headphones*, *Updated · Call Kendra*. And Lumi's shadow was clipping the bubble.
 
@@ -30,7 +30,56 @@ Chanté, from Today's speech bubble: "I need to buy new headphones and also call
 - Ask her to move one of them to another list: one *Updated* line.
 - On Today, with the bubble open beside her: her shadow stays under her and the bubble's tail and left edge are clean.
 
----
+## Sweep 2026-09-13 (3) — a smoother first load: the pool opens whole, paintings start with the HTML (`fix/first-load-smoother`, worktree, port 3006)
+
+Chanté asked what would make the first load feel smoother and chose: warm the database connections, load the paintings sooner with a fade, trim the fonts.
+
+### Verified
+- **Warm pool.** A fresh pool, a first query and then nine parallel reads (Today's fan-out), three runs each from Vancouver: none warmed, the nine took ~490–550ms (they each opened a connection); 6 warmed, no better (~470–530ms, the rest still connected); all 10 warmed, ~90ms. The first query takes ~50–100ms longer while all ten open. Net ~0.3–0.4s off a cold first load.
+- **Idle connections survive the pooler.** Three connections held idle 6 minutes answered in 68ms with no reconnect.
+- **Paintings start with the HTML.** Before: Today's painting started ~400ms after the HTML finished, once the stylesheet had loaded. After: a preload link in the head and the `img` in the page; it started at 968ms against the HTML's 980ms. Home, Today and the Library each render the image, its preload and the fade script.
+- **Fade only when not already loaded.** A cached painting is marked `data-instant` and shows at once (no fade on navigation); a cache-busted one was marked shown on load without `data-instant` and took the 450ms transition. No hydration warnings in the console.
+- `npm run check` passes.
+
+### Known and deliberate
+- **Fonts unchanged.** Both are variable fonts: the ten declared weights are four files (one per family and style), preloaded and done within ~25ms of the HTML. Trimming weights would save nothing.
+- **The painting shows after 3s regardless**, should the inline script not run.
+- **Screenshots from the automation tab can be stale** (see `dev-hygiene.md` → Traps): Today looked like a flat brown room in two captures while the painting was loaded, shown and at opacity 1; a style change forced a fresh frame and the painting was there.
+
+### Open
+- The fade on a truly first visit (empty browser cache) wasn't watched live; its path was exercised with a cache-busted image.
+
+### Highest-value manual tests
+- In a private window, sign in and open Today: the garden's colour first, the painting fading in over it, and no pop.
+- Move between Home, Today and the Library: each painting appears at once, with no fade.
+- After 10+ minutes away, open Today: noticeably less wait than before.
+
+## Sweep 2026-09-13 (2) — page load: fewer round trips, and fresh on Back and on return (`fix/page-load-round-trips`, worktree, port 3006)
+
+Chanté chose fewer waits over loading screens, "but make sure we reload when anything changes".
+
+### Verified (dev server, signed in, from Vancouver against us-east-2; three warm runs each, same method as the sweep below)
+- **Library** 0.32s → **0.17s**. **Today** first byte 0.35s → **0.24s** (complete 0.67s → 0.53s). **Home** 0.85s → **0.51s**. Each page still carried its content (Home's composer and greeting, Today's Right now card, the Library's scene); no errors in the server log.
+- **The visit query returns the previous visit.** `UPDATE users … FROM users AS before … RETURNING before.last_seen_at`, run in a rolled-back transaction: the returned previous equalled the row's value before the update, the new stamp was now.
+- **Back re-reads.** Library → Today by the nav link, then Back: the Library was shown and a fresh `/library?_rsc` request followed.
+- `npm run check`: types, lint, 89 tests, route-auth (accepts `requireVisit()`), CSS prefixes.
+
+### Fixed
+- **Today's card arrived a beat after the page** (Chanté, reviewing). Streamed timing: header at ~0.22s, the plan parts at ~0.52s, and React holds a placeholder swap at least 300ms (`FALLBACK_THROTTLE_MS`). The plan was already primed, so nothing needed to stream: Today now renders whole when `planIsReady`, and keeps Suspense (the dots) only while a path is being generated.
+
+### Known and deliberate
+- **Today's first byte waits for the snapshot** (~0.3s here, a few ms beside the database) so the page can arrive in one piece; there is no loading screen, by Chanté's preference.
+- **No cookie or token copy of the user.** Folding the lookup into the visit write took the round trip away without keeping a copy that could go stale.
+- **Returning to a tab re-reads after a minute away, not every time.** Flicking between tabs doesn't cost a server render and a visit each time.
+- The first request ever still takes the old two-step path (create the row, then stamp it).
+
+### Open
+- The refresh on returning to a tab isn't exercised by the automation tab (it is always hidden); read, not clicked.
+
+### Highest-value manual tests
+- On Today, open Home, tell Lumi you've done Today's Right now thing, press Back: Today shows the path without it (a moment after it appears).
+- Leave a tab on the Library, use the companion bubble in another tab, come back after a minute: the page is re-read.
+- A first visit after 30+ minutes away: Home still greets you as coming back.
 
 ## Sweep 2026-09-13 — page load: the database pool and the function region (`fix/db-pool-stall`, worktree)
 
