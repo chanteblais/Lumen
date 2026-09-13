@@ -239,7 +239,7 @@ lumen/                            the repo folder, still named for the product's
 
 ## 5. API routes
 
-Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET`); `npm run check:routes` asserts it statically. Client components never touch the database — they call these routes; server components call `src/core` directly.
+Every exported method handler in a `src/app/**/route.{ts,tsx,js,mjs}` must call `requireUser()` or `requireVisit()` (or check `CRON_SECRET`) in its own body; `npm run check:routes` asserts it statically, per handler, with comments and strings ignored, and fails on any top-level `"use server"` file under `src/` (a server action is a public endpoint; this app uses routes). Client components never touch the database — they call these routes; server components call `src/core` directly.
 
 | Route | Method | Gate | What it does | Since |
 |---|---|---|---|---|
