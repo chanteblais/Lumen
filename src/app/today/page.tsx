@@ -18,41 +18,46 @@ export default async function TodayPage() {
   const hello = part === "morning" ? "Good morning" : part === "afternoon" ? "Good afternoon" : part === "evening" ? "Good evening" : "Still up";
 
   return (
-    <div className="mx-auto w-full max-w-[880px] px-1 pb-14">
-      {/* Today is set in the garden: the painting fills the viewport behind the shell
-          (globals.css → Today: the garden); the page's parts lie over it on plates of paper. */}
+    <div className="today-page">
+      {/* Today is set in the garden (globals.css → Today: the garden): the painting fills the
+          viewport behind the shell, the page is one paper panel on its right, and the room
+          stays open for Lumi to stand in. */}
       <div className="today-scene" aria-hidden />
-      <div className="today-plate today-opening mb-8">
+      <div className="today-panel">
         <p className="label">Today</p>
-        <div className="my-4">
+        <div className="my-3">
           <Divider />
         </div>
-        <div className="flex items-start gap-6">
-          <LumiAvatar size={48} className="medallion mt-1" />
+        <div className="flex items-start gap-4">
+          <LumiAvatar size={40} className="medallion mt-1" />
           <div className="min-w-0">
-            <h1 className="font-display text-[34px] leading-[1.2] text-ink sm:text-[40px]">
+            <h1 className="font-display text-[30px] leading-[1.15] text-ink">
               {hello}, {user.displayName}.
             </h1>
-            <Suspense fallback={<p className="mt-2 font-display text-[20px] text-ink-mute">Working out the shape of today…</p>}>
+            <Suspense fallback={<p className="today-dayline mt-2 font-display text-ink-mute">Working out the shape of today…</p>}>
               <PlanSection user={user} part="dayline" />
             </Suspense>
           </div>
         </div>
+
+        <Suspense fallback={<PlanSkeleton />}>
+          <PlanSection user={user} part="path" />
+        </Suspense>
       </div>
 
-      <Suspense fallback={<PlanSkeleton />}>
-        <PlanSection user={user} part="path" />
+      <Suspense fallback={null}>
+        <PlanSection user={user} part="closing" />
       </Suspense>
     </div>
   );
 }
 
-/** While the path is being cut: the card, its kicker, and Lumi's three slow dots — the same pause as in the chat, not grey bars. */
+/** While the path is being cut: the Right now kicker and Lumi's three slow dots — the same pause as in the chat, not grey bars. */
 function PlanSkeleton() {
   return (
-    <section className="card px-8 py-8 sm:px-10" aria-label="Right now" aria-busy>
+    <section className="today-now" aria-label="Right now" aria-busy>
       <p className="label">Right now</p>
-      <p className="thinking-dots mt-5"><span>·</span><span>·</span><span>·</span></p>
+      <p className="thinking-dots mt-4"><span>·</span><span>·</span><span>·</span></p>
     </section>
   );
 }

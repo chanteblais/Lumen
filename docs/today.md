@@ -22,7 +22,7 @@ Today is not a task list with a "today" filter and not a dashboard. Its job is t
 **Core design test, per component:** *does seeing this right now help the user take their next action?* If not — hide, defer, collapse, or move it. **For the page:** *does it hand the overwhelmed user another system to manage, or does Lumi take some of the managing away?* Always the latter.
 
 ## Anatomy (V1)
-Top to bottom, on plates of paper laid over the garden (2026-09-12), in the shell:
+Top to bottom, in one paper panel on the right of the garden (2026-09-12; the closing line on a slip beneath it, Lumi standing in the room), in the shell:
 - **Greeting line** (deterministic, `core/ai/greeting.ts`): "Good morning, Chanté."
 - **Lumi's day line** (from the plan, one or two sentences, in voice): "You've got practicum at 5. Nothing else is especially time-sensitive." Lumi's bust beside it, small.
 - **Capacity prompt** — only when today has no capacity report and the plan hasn't been accepted yet: *How much have we got today?* Not much · Normal-ish · Lots · (skip). Answering regenerates the plan. Asked at most once per day, dismissable, never blocking.
