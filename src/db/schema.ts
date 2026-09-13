@@ -279,9 +279,11 @@ export type DayPlanJson = {
   later: { intentionId: string }[];
   restCanWait: boolean;
   closingLine?: string;
+  /** Lumi's one line on the card after a Not this: why what's there now fits instead. Only on a `declined` re-cut; dropped when the path advances. */
+  note?: string;
 };
 /** Why a plan row exists. `reentry`: re-cut after the coming-back pass let things go. */
-export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "reentry" | "asked" | "advanced";
+export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "reentry" | "asked" | "advanced" | "first_step";
 
 export const dayPlans = pgTable(
   "day_plans",

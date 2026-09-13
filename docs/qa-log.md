@@ -6,14 +6,14 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
-## Sweep 2026-09-13 (7) — Lumi knows the app and where you are (`feat/lumi-environment`)
+## Sweep 2026-09-13 (8) — Lumi knows the app and where you are (`feat/lumi-environment`)
 
 Chanté: "I'd like Lumi to be aware of her environment and the app's functionality."
 
 ### Fixed
-- **She didn't know which page a turn came from.** The bubble on Today sent the same request as Home's composer. Now each client's transport adds `where: { path, via }`; the dev log line reads `where=today/bubble`. Checked live on port 3005: on Today, tap Lumi, "what can I do on this page?" → *Today shows one thing to do now — currently "Take out compost."* / Start with Lumi, Break it down, Not this, Done / *You can also tell me "make today smaller"…* — no tools called, nothing written but the two messages.
+- **She didn't know which page a turn came from.** The bubble on Today sent the same request as Home's composer. Now each client's transport adds `where: { path, via }`; the dev log line reads `where=today/bubble`. Checked live on port 3005: on Today, tap Lumi, "what can I do on this page?" → *Today shows one thing to do now — currently "Take out compost."* / Start with Lumi, Break it down, Not this, Done / *You can also tell me "make today smaller"…* — no tools called, nothing written but the two messages. (That was before merging `main`, when Today still had Start with Lumi.) After the merge, the same question from the same bubble (`where=today/bubble`): the card's Not this, Break it down and Done, "tell me here if you want something easier or a different plan", and on her own she corrected the earlier line: *I mentioned a "Start with Lumi" button earlier — that was incorrect. You can ask for company right here.*
 - **She didn't know what the app does or doesn't.** Eight single turns on `gpt-6-astra` (`voice-eval-log.md` → Run 7): Lists named for "where's all my stuff", a plain *not yet* for reminders, new lists and changing a name, with something close to do instead; no invented buttons.
-- `npm run check`: typecheck, lint, 43 files / 272 tests, route-auth, CSS prefixes and the brief all pass (the brief re-stamped after `lumi.md` §6 changed; its text unchanged).
+- `npm run check`: typecheck, lint, 43 files / 272 tests, route-auth, CSS prefixes and the brief all pass (the brief re-stamped after `lumi.md` §6 changed; its text unchanged). After merging `main`: 45 files / 280 tests, all pass.
 
 ### Known and deliberate
 - The place isn't stored on the message: it describes the moment, and history doesn't need it. An old tab (a client from before this change) or a malformed body sends no place, and the context simply has no line.
@@ -22,13 +22,39 @@ Chanté: "I'd like Lumi to be aware of her environment and the app's functionali
 
 ### Open
 - Her Today reply ran three short paragraphs in the bubble; within the persona's shape, but the bubble is narrow. Watch for length there before tuning.
+- After the merge she answered with a dash list ("card: - Not this … - Break it down … - Done"), which the bubble renders run together on one line: the bubble (and Home) show paragraphs, not lists, and the persona allows a list only for a brain dump. Either the persona holds her to prose here or the reply renderer learns lists — Chanté's call if it recurs.
 - "I can't start." on Home went straight to the Right now instead of first telling unclear from can't-begin (Run 7, #8). Not caused by the place line; watch it.
 
 ### Highest-value manual tests
 - On Today, tap Lumi: "this one feels too big" — she should take the Right now without asking which.
 - In Lists, Add task: "oat milk" — filed, a few words back.
-- On Home: "how do I change how long our sessions are?" — a plain *not yet*, and she settles a length with you instead.
+- On Home: "can you remind me at 3 to call the dentist?" — a plain *not yet*, with something close to do instead; no invented reminder.
+- On Today: "stay with me while I do this" — company in words, no session, timer or Start with Lumi offered.
 - In the Library bubble: "it's nice in here" — one light line, no scenery speech.
+
+---
+
+## Sweep 2026-09-13 (7) — no way to sign in from an incognito window (`fix/sign-in-path`)
+
+Chanté: "The site doesn't give a log in option in incognito."
+
+### Fixed
+- **Signed out, `/sign-in` and `/sign-up` showed no form.** Production (www.burlyman.ca) was healthy from the outside: `/` redirected to `/sign-in`, Clerk's scripts and `/v1/environment` answered, every request was 200. In a fresh headless Chrome profile, though, the `SignIn` root box stayed empty and the URL kept gaining `?redirect_url=…/sign-in`. A trace of `Clerk.redirectToSignIn` showed the call coming from the sign-in UI's fallback route. The cause is the Lists sheet's `app/@sheet/[...catchAll]`, which adds `catchAll: ["sign-in"]` to `useParams()`. `@clerk/nextjs` infers the component's path by removing every catch-all param from the pathname, so it read `/` and treated `/sign-in` as an unknown step. Both pages now pass `routing="path"` and their own `path`. It has been broken signed out since `775002c` (the Lists sheet, this morning); a signed-in browser never sees the sign-in form, so nobody noticed.
+
+### Known and deliberate
+- `TimezoneCapture`'s first-visit refresh isn't involved (the loop was the same with the cookie already set).
+
+### Verified (live, port 3006, worktree on the branch)
+- Fresh profile, signed out: `/sign-in` and `/sign-up` each mount Clerk's card (2 inputs, Continue with Google) and the URL stays clean. `npm run check` passes; `client.db.test.ts` timed out once under the full run and passed on its own (5/5).
+- Production is only verifiable after deploy: re-run the fresh-profile probe against www.burlyman.ca/sign-in.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- An incognito window on the deployed site: the sign-in card appears, and Continue with Google signs in and lands on Home.
+
+---
 
 ## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
 
