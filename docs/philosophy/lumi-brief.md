@@ -33,10 +33,10 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `bb96a85f87fd` |
+| `docs/philosophy/lumi.md` | `1a2b185eb033` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `642dd75551e2` |
+| `docs/living/decisions.md` | `9d530808cc7d` |
 | `PROJECT-CANON.md` | `e7c3bca2b1cb` |
 <!-- sources:end -->
 
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/chat-files`): the product decisions gained *Files shared with Lumi are read, not kept*, and `lumi.md` §14 gained *A shared file*. What she does with a file is the *how*, and lives in the persona. The brief already carries the why: she carries the administration, and a thing to do is filed whether it's said or photographed.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`): `lumi.md` §17 now names both harnesses, what the conversation scenarios cover and what's still missing. That's how she is evaluated, not what she should understand.
 - **2026-09-13 · reviewed, nothing for Lumi** (`ux/voice-eval-and-time-away`): the product decisions gained *Lumi may name time away when it helps someone get their bearings*, and `lumi.md` §14–15 follow it. The rule itself is the *how*, so it lives in the persona. The brief already says what it rests on: coming back restores the present, and nothing unfinished turns into debt.

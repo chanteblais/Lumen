@@ -865,8 +865,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   display: flex;
   align-items: center;
   gap: 18px;
-  /* The left side clears the pill's round end now that nothing sits before the textarea. */
-  padding: 10px 14px 10px 30px;
+  /* The paperclip sits in the left round end as the send button does in the right. */
+  padding: 10px 14px;
   background: var(--card);
   border: 1px solid var(--rule-strong);
   border-radius: 999px;
@@ -927,6 +927,45 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   cursor: pointer;
 }
 .tool-link:hover { color: var(--ink); }
+
+/* ---------- Shared files ---------- */
+/* The paperclip before the textarea, and what will go with the next message as
+   chips above the pill. In the transcript a photo shared this visit shows as
+   itself; anything else, and anything from before this page open, as a chip. */
+.composer-attach { flex: none; }
+.composer-attach:disabled { opacity: 0.45; cursor: default; }
+.composer-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  list-style: none;
+}
+@media (min-width: 768px) {
+  .composer-files { width: clamp(min(100%, 460px), 70%, 100%); margin-inline: auto; }
+}
+.shared-files { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.shared-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+  min-height: 36px;
+  padding: 4px 10px 4px 6px;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.shared-file-mini { flex: none; width: 26px; height: 26px; object-fit: cover; border-radius: 4px; }
+.shared-file-glyph { flex: none; margin-left: 4px; color: var(--brass); }
+.shared-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shared-file-remove { display: inline-flex; flex: none; margin-right: -4px; padding: 4px; border: 0; border-radius: 999px; background: none; color: var(--ink-mute); cursor: pointer; }
+.shared-file-remove:hover { color: var(--ink); }
+.shared-file-photo { display: block; max-width: min(260px, 100%); max-height: 260px; border: 1px solid var(--rule); border-radius: 8px 8px 2px 8px; }
+.msg-user-said { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; }
 
 /* ---------- Messages ---------- */
 .msg { display: flex; gap: 18px; align-items: flex-start; max-width: 760px; }
@@ -1314,7 +1353,8 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   box-shadow: var(--shadow);
 }
 .shell:has(.home-scene) .msg-lumi .msg-avatar { margin-top: 6px; }
-.shell:has(.home-scene) .msg-user p {
+.shell:has(.home-scene) .msg-user p,
+.shell:has(.home-scene) .shared-file {
   background: rgba(241, 230, 207, 0.12);
   backdrop-filter: blur(10px);
 }

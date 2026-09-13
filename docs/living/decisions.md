@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · Files shared with Lumi are read, not kept
+
+**Decision.** On Home, a photo, a screenshot, a PDF or a text file can go with a message. Lumi reads it on that turn and does with it what she'd do with the same words: files what needs doing, answers what was asked. The file itself isn't kept. The conversation keeps a note that something was shared, by name, and later Lumi says she can't see it rather than guess.
+**Rationale.** Chanté's ask, and her three calls: photos, PDFs and text files; read, don't keep; Home's composer only. *(Claude's reading: a photo of a sticky note or a whiteboard is a brain dump without the typing. Keeping the files would start an archive of uploads nobody asked to manage. It is the mail rule, a line per thing and never the mail, applied to files.)*
+**Implications.**
+- No page shows past files: nothing to browse, name or delete.
+- The companion bubble and the Lists add-line stay words-only.
+- Asking about a file shared earlier means sharing it again.
+
+**Principle.** V§4, EP§1, EP§23.
+**Replaces.** The composer's *Add file* placeholder, hidden 2026-09-12 as a dead control.
+
 ## 2026-09-13 · Lumi may name time away when it helps someone get their bearings
 
 **Decision.** In conversation, Lumi may say how long someone has been away when that helps them orient, as in the model strategy's *"You disappeared for four days. We don't need to reconstruct the four days."* She never does it in a way that makes the absence feel like a debt. Counts of what's undone stay out, and so does any tally of what piled up. Pages show neither.

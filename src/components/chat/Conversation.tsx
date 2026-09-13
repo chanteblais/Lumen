@@ -1,5 +1,6 @@
 "use client";
 
+import type { FileUIPart } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SessionBar } from "@/components/focus/SessionBar";
@@ -79,11 +80,13 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   // something this sitting, and again next time you come back.
   const [inSitting, setInSitting] = useState(initialInSitting || resumed || Boolean(initialHandoff));
 
-  const send = (text: string, extra?: Record<string, unknown>) => {
+  const send = (text: string, extra?: Record<string, unknown>, files?: FileUIPart[]) => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if ((!trimmed && !files?.length) || busy) return;
     setInSitting(true);
-    void sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString(), ...(extra ?? {}) } });
+    const metadata = { createdAt: new Date().toISOString(), ...(extra ?? {}) };
+    // A photo with nothing said is a whole message too.
+    void (trimmed ? sendMessage({ text: trimmed, files, metadata }) : sendMessage({ files: files ?? [], metadata }));
   };
 
   // Focus Together: what the server said was running when the page opened,
@@ -132,7 +135,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
         />
       </div>
       {session && <SessionBar session={session} busy={busy} quietKey={messages.length} onEvent={sessionEvent} onGone={setGone} />}
-      <Composer onSend={send} onStop={stop} busy={busy} initialValue={prefill} />
+      <Composer onSend={(text, files) => send(text, undefined, files)} onStop={stop} busy={busy} initialValue={prefill} />
     </div>
   );
 }
