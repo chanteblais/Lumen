@@ -21,7 +21,7 @@ import type { CSSProperties } from "react";
  *   (`LUMI_LOOP_CELLS`), which is how the pick-up is also the set-down; every
  *   loop starts and ends at (or fading from) the rest cell. The lantern Lumi's
  *   body, `public/lumi-idle.webp` (`scripts/cut-lumi-idle.py`), is kept beside
- *   it until the hands-free Lumi is decided.
+ *   it for now (hands-free is settled, 2026-09-13).
  *
  * A new state is a new cell in one of these lists, never a new component.
  */
