@@ -44,7 +44,7 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
    # …work there; when merged:
    git worktree remove ../lumen-<branch>
    ```
-   (Claude sessions: the EnterWorktree tool does this.) `.env.local` is untracked, so a fresh worktree has none — symlink it before starting a dev server there: `ln -s <main-checkout>/.env.local .env.local`. Run `npm ci` in the worktree too.
+   (Claude sessions: the EnterWorktree tool does this.) `.env.local` is untracked, so a fresh worktree has none — symlink it before starting a dev server there: `ln -s <main-checkout>/.env.local .env.local`. Run `npm ci` in the worktree too (a real install, never a `node_modules` symlink). Forget either and the preflight that runs before `npm run check` / `npm run dev` says so — [`dev-hygiene.md`](dev-hygiene.md).
 3. **Never `git add -A` / `git add .` in the shared checkout.** Stage explicit paths; glance at `git status` first.
 3a. **In a worktree, keep every file path inside the worktree.** Read/Edit/Write take literal paths — an absolute path missing the worktree segment silently edits the shared checkout.
 4. Sessions that only *read* need no branch and no worktree.
@@ -60,11 +60,12 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 - **One server per checkout.** Two `next dev` processes in one directory share `.next` and corrupt each other.
 - **A server serves the working tree, not a branch.** Switching branches in that checkout switches what the browser shows — say so in the review checklist, and stop your server before switching away from the branch under review.
 - **Worktrees have no `.env.local`** (untracked). Copy or symlink it from the main checkout before starting a server there.
-- **Review server lifecycle:** start it when the change is implemented, leave it running with a review checklist (pages, what to look for, preconditions, which port serves which branch), stop it once the change is merged. Servers started only for Claude's own verification are stopped as soon as verification is done.
+- **Review server lifecycle:** start it when the change is implemented, leave it running with a review checklist (pages, what to look for, preconditions, which port serves which branch), stop it once the change is merged. **Every URL in it is a clickable markdown link** — `[localhost:3005](http://localhost:3005)`, `[Today](http://localhost:3005/today)` — never a bare host or a URL in backticks. Servers started only for Claude's own verification are stopped as soon as verification is done.
+- **Preflight first.** `npm run dev` runs `scripts/preflight.mjs` before starting (installs, stale generated types, `.env.local` and its keys); a fail names the fix. Traps and guards: [`dev-hygiene.md`](dev-hygiene.md).
 
 ## Commit guards (pre-commit hook)
 
-A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). It enforces:
+A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). On this machine the path is set absolute, to the shared checkout's `.githooks`, so every worktree runs the shared checkout's copy — a hook changed on a branch isn't live until that checkout has it (`dev-hygiene.md` → Traps). It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
 2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `COHERENCE_ALLOW_MAIN=1 git commit …`.

@@ -45,7 +45,7 @@ Her behaviour is a designed system in [`docs/philosophy/lumi.md`](docs/philosoph
 
 ## The spaces
 
-Each place expresses a relationship to activity (V§14, EP§15) and answers one question (Chanté, 2026-09-12). The place document is [`docs/product/spaces.md`](docs/product/spaces.md); this table is its summary. A feature is placed by the cognitive mode it belongs to, not given a space of its own (spaces §4). The spaces doc words two questions differently (the Library: *What am I holding, and where does it belong?*; the Study: *What are we doing now?*); the questions below stand until Chanté picks ([open questions](docs/living/open-questions.md) 2 and 3).
+Each place expresses a relationship to activity (V§14, EP§15) and answers one question (Chanté, 2026-09-12). The place document is [`docs/product/spaces.md`](docs/product/spaces.md); this table is its summary. The Garden has its own, [`docs/product/today-garden.md`](docs/product/today-garden.md). A feature is placed by the cognitive mode it belongs to, not given a space of its own (spaces §4). The place documents word three of the questions differently: the Garden *What deserves my attention today?* or *What needs tending today?* (Garden, Purpose and §158); the Library *What am I holding, and where does it belong?* (spaces §2) or *What am I carrying?* (Garden §59); the Study *What are we doing now?* (spaces §2) or *How do we stay with it?* (Garden §60). The questions below stand until Chanté picks ([open questions](docs/living/open-questions.md) 2, 3 and 5).
 
 | Place | Question | Relationship (EP§15) | In the app now |
 |---|---|---|---|
@@ -74,7 +74,7 @@ The direction is moving from *an antique book with no decorative imagery* to **i
 | [`docs/product/lumi-model-strategy.md`](docs/product/lumi-model-strategy.md) | Build model vs Lumi model; *Coherence remembers, Lumi understands*; anti-patterns; how models are evaluated | **Canonical** |
 | [`docs/product/ai-and-information-architecture.md`](docs/product/ai-and-information-architecture.md) | How the AI understands and acts, and why: the life model (threads, intentions, actions), conversation vs state, explicit vs inferred, priority vs attention, context selection, memory kinds and decay, bounded and proportional autonomy, the seams to keep (§57), a minimal V1 (§58), review questions (§61). [`architecture.md`](docs/architecture.md) is the how as built | **Canonical** |
 | [`docs/product/spaces.md`](docs/product/spaces.md) | The places and what belongs in each: cognitive modes, not feature buckets; plain nav names; context travels; environmental richness vs interface quiet; growth without gamification or judgement | **Canonical** (the text as received ends partway through §29) |
-| `docs/product/today-garden.md` | The Garden | To come. Interim: [`today.md`](docs/today.md) |
+| [`docs/product/today-garden.md`](docs/product/today-garden.md) | The Garden: a temporary, capacity-aware projection of the life model into what deserves tending today, never a second source of truth; a path with one thing dominant; intelligent omission and trusted containment; *Not this* and capacity change the plan; no overdue debt and no planning ritual; the metaphor partly implicit; growth as continuity, not output; the core experience test (§157). [`today.md`](docs/today.md) is the page as built | **Canonical** (the text as received is missing §78–119) |
 | `docs/product/lists-library.md` | The Library | To come |
 | `docs/product/focus-study.md` | The Study | To come. Interim: [`features.md`](docs/features.md) → Focus Together |
 | `docs/design/visual-language.md` | The look of the places and the interface | To come. Interim: [`art-direction.md`](docs/art-direction.md), [`design-system.md`](docs/design-system.md); `design-philosophy.md` is partly superseded |
@@ -96,10 +96,10 @@ How the code works, and how to work in the repo, is indexed in [`docs/README.md`
 | Task interactions, lists, dragging, correcting | EP§1, EP§5–6, EP§16–17 → decisions (*direct manipulation*) |
 | Lumi's behaviour, the persona prompt, AI, memory, proactivity, notifications | [`lumi.md`](docs/philosophy/lumi.md) → [model strategy](docs/product/lumi-model-strategy.md) → V§4–7, V§16–18, EP§5, EP§11, EP§17, EP§20 → decisions → open questions 9–12, 17, 21–23 |
 | Choosing or evaluating a model for Lumi | [model strategy](docs/product/lumi-model-strategy.md) → `lumi.md` §15, §17 → open question 21 → [`voice-eval-log.md`](docs/voice-eval-log.md) |
-| Prioritisation, planning, capacity, the Garden | V§3, V§10–11, V§15, EP§3, EP§7, EP§9 → Garden doc → decisions |
+| Prioritisation, planning, capacity, the Garden | V§3, V§10–11, V§15, EP§3, EP§7, EP§9 → [`today-garden.md`](docs/product/today-garden.md) (§157, the core experience test) → decisions → open questions 5, 16, 20, 26 → [`today.md`](docs/today.md) |
 | Focus sessions | V§7, EP§10–11, EP§18 → [`features.md`](docs/features.md) → Focus Together |
-| Rewards, gamification, engagement, growth of the places | V§14, V§18, EP§14, EP§20 → [`spaces.md`](docs/product/spaces.md) §25–28 → open question 14 before anything else |
-| Re-entry, onboarding, overdue things, session state | V§8, V§17, EP§8, EP§19, EP§23 → decisions (*never a count*, *a session's end is a fact*) |
+| Rewards, gamification, engagement, growth of the places | V§14, V§18, EP§14, EP§20 → [`spaces.md`](docs/product/spaces.md) §25–28 → [`today-garden.md`](docs/product/today-garden.md) §33, §66 → open question 14 before anything else |
+| Re-entry, onboarding, overdue things, session state | V§8, V§17, EP§8, EP§19, EP§23 → [`today-garden.md`](docs/product/today-garden.md) §52–54 → decisions (*never a count*, *a session's end is a fact*) |
 | Visual design, paintings, animation | V§13–14, EP§11–12, EP§15 → visual language, motion → [`art-direction.md`](docs/art-direction.md) → [`animation-pipeline.md`](docs/animation-pipeline.md) |
 | Pure implementation with no change in behaviour | `CLAUDE.md`, [`architecture.md`](docs/architecture.md), [`domain.md`](docs/domain.md); the canon only if behaviour moves |
 

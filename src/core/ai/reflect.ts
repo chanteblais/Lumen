@@ -18,7 +18,7 @@ import { appendEvent, listEventsSince, reflectedOn } from "@/core/domain/events"
 import { applyBeliefOps, listActiveBeliefs, MAX_OPS_PER_RUN, type BeliefOp } from "@/core/domain/memory";
 import { getSession } from "@/core/domain/sessions";
 import { describeGap, dayPart } from "@/core/time";
-import { chatModel } from "./model";
+import { chatModel, effortOptions } from "./model";
 
 const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
 const MAX_MODEL_CONFIDENCE = 0.6;
@@ -203,7 +203,7 @@ async function proposeWithModel(inputs: SessionReflectionInputs): Promise<RawOp[
     ],
     prompt: "Propose the belief operations this session justifies. Return only the structured list.",
     output: Output.object({ schema: ReflectionSchema, name: "reflection" }),
-    providerOptions: { anthropic: { effort: "low" } },
+    providerOptions: effortOptions("low"),
   });
   return r.output?.ops ?? [];
 }

@@ -56,7 +56,7 @@
 
 ## 2026-09-13 · The model that builds Coherence and the model that is Lumi are chosen separately
 
-**Decision.** Development keeps using whatever is strongest for engineering and documentation (Claude, today). For Lumi in production, OpenAI models are prototyped **alongside** the current Anthropic implementation and evaluated against Lumi's own requirements, not generic benchmarks. **Status: exploring.** No switch has been decided.
+**Decision.** Development keeps using whatever is strongest for engineering and documentation (Claude, today). For Lumi in production, OpenAI models are prototyped **alongside** the current Anthropic implementation and evaluated against Lumi's own requirements, not generic benchmarks. **Status: exploring.** No switch has been decided. *(Lumi was switched to OpenAI the same day; see the update below.)*
 **Rationale.** Lumi's role is relational and interpretive, which is different from coding. The best model for one layer need not be the best for the other. This is not a judgement that one model is universally better.
 **Implications.**
 - The provider stays behind one module (`src/core/ai/model.ts`; sticky decision 10), though Anthropic-specific options also appear in the planner, lead and reflection calls.
@@ -65,6 +65,8 @@
 - Method, criteria and the other model calls (planner, leads, reflection) are open question 21.
 
 **Replaces.** The implicit assumption that Lumi runs on `claude-opus-5` because the project does (`CLAUDE.md` → Stack still describes the current implementation).
+
+**Update 2026-09-13 · Lumi runs on OpenAI.** At Chanté's ask, every model call Lumi makes (the conversation, the day plan, mail leads and reflection) now goes to OpenAI's `gpt-6-astra`. The Anthropic implementation stays alongside, one setting away (`LUMI_MODEL=anthropic:claude-opus-5`), so the two can still be compared. The provider-specific options now live only in `model.ts`, which settles the second half of the first implication. OpenAI replaces Anthropic as the provider that receives conversations, beliefs and mail gists, and requests are sent with `store: false`. The comparison itself, and its blind grading, are still open question 21.
 
 ## 2026-09-12 · The Product Vision is foundational
 
@@ -123,6 +125,15 @@
 - Spaces change slowly with the relationship: discovered, not awarded, never decaying, never a judgement (§25–27). Nothing about the world is required to use the product (§28).
 
 **Not reconciled:** it words two questions differently. The Library asks *What am I holding, and where does it belong?* (above: *Where have I been?*), and the Study *What are we doing now?* (above: *What am I doing now?*). The questions above stand until Chanté picks (open questions 2 and 3).
+
+**Addendum, 2026-09-13 (later).** [`docs/product/today-garden.md`](../product/today-garden.md), Chanté's, is the Garden's place document (the text as received is missing §78–119). It keeps *Today is a path, not a pile* and *Lumi proposes; the user decides* (below), and adds:
+- Today is a temporary projection of the broader model, never a second source of truth (§2, §121).
+- Capacity changes scope. Low capacity makes the page smaller, never redder, and high capacity is not a reason to fill the day (§12–14).
+- Nothing unfinished becomes overdue debt; carryover comes from renewed relevance, and repeated deferral is a signal, not a score (§52–54).
+- No planning ritual in the morning or the evening, and Today stands on its own without a conversation first (§55, §71, §143).
+- The Garden's growth reflects continuity, never output (§33, §66); open question 14 is still Chanté's to decide.
+
+**Not reconciled either:** it words the Garden's question as *What deserves my attention today?* (Purpose), *What deserves tending today?* (§59) and *What needs tending today?* (§158), where the decided question is *What matters today?*. It also gives the Library *What am I carrying?* (§59) and the Study *How do we stay with it?* (§60). The questions above stand until Chanté picks (open questions 2, 3 and 5). Where the page as built falls short of it: open questions 5, 16, 20, 22, 26 and 27.
 
 ## 2026-09-12 · Rewards: earning coherence ⚠ contested
 
