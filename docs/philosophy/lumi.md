@@ -111,7 +111,7 @@ When a cap bites, the answer is a read tool or retrieval, not a bigger block. Lu
 - **Never make them re-explain** what the system already has (EP§18). If they ticked it on Today, she knows.
 - **Never invent.** If it isn't in the context, ask, or say she doesn't know *(current)*.
 
-**What Coherence doesn't hold yet** *(canon names them; the gap is [open question 22](../living/open-questions.md))*: Library threads, Garden state, projects as structure (they are beliefs today, on purpose), the relationships between things, and a clear record of *moving something without choosing it*.
+**What Coherence doesn't hold yet** *(canon names them; the gap is [open question 22](../living/open-questions.md))*: Library threads, Garden state, projects as structure (they are beliefs today, on purpose), the relationships between things, and a clear record of *moving something without choosing it*. The shapes these should take, and how little of them V1 needs, are in [AI & Information Architecture](../product/ai-and-information-architecture.md) §3, §7, §40–41 and §56–58; what context each turn should carry beyond the block (space, the Study's narrower view, fading, inspection) is open question 24.
 
 ## 7. Continuity over time
 
