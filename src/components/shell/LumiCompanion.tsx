@@ -10,15 +10,22 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   wave: 120, // a quick gesture: 24 frames ≈ 3 s, the pace Chanté checked the sheet at
+  hands: 200, // a slow, quiet gesture: 16 frames ≈ 3 s
+  pickup: 140, // 69 frames ≈ 10 s: pick up, hold a moment, set down
 };
 /**
- * Loops mixed into the breathing now and then, one pass at a time. Empty since
- * the lantern character (2026-09-12): the sway and the playful foot were drawn
- * of the earlier character, and no idle variation is drawn of her yet.
+ * Loops mixed into the breathing now and then, one pass at a time: her hands
+ * coming together, holding nothing (the hands-free Lumi, `docs/art-direction.md` §4a).
  */
-const VARIATIONS: LumiLoop[] = [];
+const VARIATIONS: LumiLoop[] = ["hands"];
 /** Loops played in answer to something, never on the idle schedule. */
 const REACTIONS: LumiLoop[] = ["wave"];
+/**
+ * Things she does with what is around her. Nothing asks for one yet — in a
+ * room it would follow the room (a book in the Library) — so they play only
+ * from the dev cue strip, for review.
+ */
+const ACTIONS: LumiLoop[] = ["pickup"];
 /**
  * Away this long, then back, is an arrival, and she waves. Thirty minutes: the
  * gap that starts a new sitting for the greeting (`SITTING_GAP_MS` in
@@ -75,8 +82,8 @@ const DEBUG = process.env.NODE_ENV === "development";
  * - a wave when you arrive — the page opened, or its tab shown again, after
  *   thirty minutes or more with no tab of the app visible (and on a first
  *   visit in this browser) — once, at the next rest frame, then back to breathing
- * - every so often one pass of a variation (none drawn of the lantern
- *   character yet; when there are, never the same one twice running)
+ * - every so often one pass of a variation (her hands coming together; with
+ *   more than one, never the same one twice running)
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
  * Every loop is one drawing and hands over at the same rest cell.
@@ -131,7 +138,7 @@ export function LumiCompanion() {
       VARIATIONS.length &&
       after(between(20000, 45000), () => {
         if (pending) return; // a cue or a reaction is already waiting; it plays instead
-        const choices = VARIATIONS.filter((loop) => loop !== last);
+        const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
       });
@@ -256,7 +263,7 @@ const subscribeFolded = (fn: () => void) => {
 let toggled = false; // animate the fold only once a click has asked for it, not on load
 
 function DebugStrip() {
-  const cues: Cue[] = [...VARIATIONS, ...REACTIONS, "blink"];
+  const cues: Cue[] = [...VARIATIONS, ...REACTIONS, ...ACTIONS, "blink"];
   // Read through a store so the server renders it open and the client catches up without a state-in-effect.
   const folded = useSyncExternalStore(subscribeFolded, readFolded, () => false);
   const toggle = () => {

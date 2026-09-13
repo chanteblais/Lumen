@@ -8,22 +8,28 @@ import type { CSSProperties } from "react";
  *   expressions (neutral · blink · happy · curious · excited · sleepy), each
  *   from one of the cells of `art/lumi/lumi-lantern-idle.png` (the lantern
  *   character, 2026-09-12). Used inside the round avatar.
- * - `public/lumi-idle.webp` — a 24×4 grid of 160×208 cells from
- *   `art/lumi/lumi-wave.png` (2026-09-13): rows 0–2 the nine-cell breath loop
- *   (the wave sheet's first cell stretched up to 2px at the hood top with the
- *   feet held) with open / half-shut / shut eyes, row 3 the 24-cell wave with
- *   its eyes open (`LUMI_LOOP_EYES`: a blink mid-wave shows the open cell).
- *   Both loops are one drawing, so they hand over at the rest cell without a
- *   swap. A loop is an order over its cells (`LUMI_LOOP_CELLS`); every loop
- *   starts and ends at the rest cell.
+ * - `public/lumi-free.webp` — the hands-free Lumi (2026-09-13, cut by
+ *   `scripts/cut-lumi-free.py`; `docs/art-direction.md` §4a): a 27×6 grid of
+ *   176×208 cells. Rows 0–2 the nine-cell breath loop (the hands-free wave
+ *   sheet's first cell stretched up to 2px at the hood top with the feet held)
+ *   with open / half-shut / shut eyes; row 3 the 24-cell wave; row 4 the
+ *   16-cell hands-together idle; row 5 the pick-up (three cells fading the
+ *   book stack in, then 24 cells: reach, lift, both hands, holding). Those
+ *   three have their eyes open only (`LUMI_LOOP_EYES`: a blink mid-loop shows
+ *   the open cell). Every loop is held to the one rest drawing, so loops hand
+ *   over at the rest cell without a swap. A loop is an order over its cells
+ *   (`LUMI_LOOP_CELLS`), which is how the pick-up is also the set-down; every
+ *   loop starts and ends at (or fading from) the rest cell. The lantern Lumi's
+ *   body, `public/lumi-idle.webp` (`scripts/cut-lumi-idle.py`), is kept beside
+ *   it until the hands-free Lumi is decided.
  *
  * A new state is a new cell in one of these lists, never a new component.
  */
 export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
 export const LUMI_EYES = ["open", "half", "closed"] as const;
-export const LUMI_LOOPS = ["breath", "wave"] as const;
+export const LUMI_LOOPS = ["breath", "wave", "hands", "pickup"] as const;
 /** Columns in the body sheet — the most cells in a loop. */
-export const LUMI_IDLE_FRAMES = 24;
+export const LUMI_IDLE_FRAMES = 27;
 
 export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
@@ -38,22 +44,25 @@ const run = (n: number) => Array.from({ length: n }, (_, i) => i);
 export const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
   breath: run(9),
   wave: run(24), // rest 0–1 · the hand rises 2–7 · two waves 8–15 · it lowers 16–21 · rest 22–23
+  hands: run(16), // rest 0 · the hands meet 1–6 · rest together 7–9 · part 10–14 · rest 15
+  // the stack fades in 0–2 · rest 3–4 · reach 5–8 · lift 9–14 · both hands 15–18 · holding 19–26,
+  // held a moment, then the same cells backwards: she sets it down and the stack fades out
+  pickup: [...run(27), ...Array<number>(8).fill(26), ...run(27).reverse()],
 };
 /** Frames in each loop. */
-export const LUMI_LOOP_FRAMES: Record<LumiLoop, number> = {
-  breath: LUMI_LOOP_CELLS.breath.length,
-  wave: LUMI_LOOP_CELLS.wave.length,
-};
+export const LUMI_LOOP_FRAMES = Object.fromEntries(LUMI_LOOPS.map((loop) => [loop, LUMI_LOOP_CELLS[loop].length])) as Record<LumiLoop, number>;
 /** The eye rows each loop has on the body sheet, in order; an eye state a loop lacks shows its open cell. */
 export const LUMI_LOOP_EYES: Record<LumiLoop, readonly LumiEyes[]> = {
   breath: LUMI_EYES,
   wave: ["open"],
+  hands: ["open"],
+  pickup: ["open"],
 };
 const eyeRows = (loops: readonly LumiLoop[]) => loops.reduce((n, loop) => n + LUMI_LOOP_EYES[loop].length, 0);
 
 const SHEETS = {
   head: { src: "/lumi-heads.png", cols: LUMI_EXPRESSIONS.length, rows: 1, w: 176, h: 176 },
-  body: { src: "/lumi-idle.webp", cols: LUMI_IDLE_FRAMES, rows: eyeRows(LUMI_LOOPS), w: 160, h: 208 },
+  body: { src: "/lumi-free.webp", cols: LUMI_IDLE_FRAMES, rows: eyeRows(LUMI_LOOPS), w: 176, h: 208 },
 } as const;
 
 export type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };

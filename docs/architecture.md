@@ -193,8 +193,8 @@ lumen/                            the repo folder, still named for the product's
 │   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
-├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
-├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · draw-library-map.py (the Library's camera-view manifest → annotated maps) · cut-lumi-idle.py (art/ → public/) · preview-lumi-loop.py · check-route-auth.mjs · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
+├── public/                       lumi-heads.png · lumi-free.webp (the hands-free body) · lumi-idle.webp (the lantern body, kept until the hands-free one is decided) — cut sprite sheets, never edited by hand
+├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · draw-library-map.py (the Library's camera-view manifest → annotated maps) · cut-lumi-idle.py (art/ → the heads and the lantern body) · cut-lumi-free.py (art/ → the hands-free body, one spec per loop; helpers in lumi_cut.py) · preview-lumi-loop.py (a loop as the page plays it, and its held parts) · check-route-auth.mjs · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
 ├── drizzle.config.ts
 ├── .env.example
 └── package.json
