@@ -22,9 +22,10 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 |---|---|---|
 | id | uuid pk | |
 | user_id | fk | |
-| kind | text | `'main'` — exactly one per user in V1, created lazily |
-| summary | text null | rolling summary of messages older than the window (M6) |
-| summary_through_message_id | uuid null | where the summary ends |
+| kind | text | `'main'` — exactly one per user in V1, created lazily. Unique partial index `conversations_user_main_idx (user_id) WHERE kind = 'main'` (`0006`), so two first visits racing can't make a second (`ensureMainConversation` inserts on conflict do nothing, then reads) |
+| summary | text null | unused (older conversation reaches a turn as episodes) |
+| summary_through_message_id | uuid null | consolidation's watermark: messages up to it are folded into memory. No FK, on purpose — see *Pointers without foreign keys* below |
+| consolidating_until | timestamptz null | (`0006`) a consolidation run's lease: taken before its model call, cleared when it finishes, free once expired — so two instances don't both pay for a model call on one stretch |
 | created_at, updated_at | | |
 
 ### `messages`
@@ -65,7 +66,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | check_in_minutes | int | copied from preferences at start |
 | started_at | timestamptz | |
 | ended_at | timestamptz null | |
-| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early`. Built M5 (2026-09-12), no migration — the table was in `0000` |
+| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early`, and the unique partial index `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL` (`0006`) holds it when two starts race. Built M5 (2026-09-12), no migration — the table was in `0000` |
 
 ### `memory_notes` — beliefs with evidence
 | column | type | notes |
@@ -97,7 +98,7 @@ What may be stored is decided in code before the insert (`core/domain/memory-rul
 | left_off | text null | where it was left, when something was left open |
 | started_at / ended_at | timestamptz | the first and last message it covers |
 | through_message_id | uuid | the last message it covers — the watermark moved here |
-| thread_ids | jsonb string[] | threads it touched; a forgotten thread's id is removed |
+| thread_ids | jsonb string[] | threads it touched; a forgotten thread's id is removed. GIN index `episodes_thread_ids_idx` (`0006`) for the `@>` filters. A join table was considered and not built: at V1 scale (one user, tens of episodes) the array and its index do the job, and a thread is forgotten rarely |
 | created_at | | |
 
 One per stretch of conversation, written by consolidation (`core/ai/consolidate.ts`) once the stretch is over. The conversation's `summary_through_message_id` is the watermark: messages up to it are folded in.
@@ -143,7 +144,10 @@ Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not 
 | payload | jsonb | type-specific |
 | occurred_at | timestamptz | |
 
-Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
+Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique partial `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'` (`0006`) — reflection's once-per-session claim.
+
+### Pointers without foreign keys
+`conversations.summary_through_message_id`, `episodes.through_message_id`, `memory_notes.source_message_id` / `supersedes_id` and `thread_notes.source_message_id` / `superseded_by_id` point into history and have no FK, on purpose: a message or an older version can go (the user forgets a belief's chain; a conversation is trimmed) while the row pointing at it stays meaningful, and an FK would either block that or cascade a delete nobody asked for. Code treats a missing target as normal — `unconsolidatedMessages` falls back to the latest episode's `ended_at` when the watermark message is gone (and logs it) rather than re-reading the conversation.
 
 ## Events catalogue (V1)
 | type | payload |
@@ -220,7 +224,7 @@ Something Lumi noticed that might need doing — in the user's recent mail, for 
 | intention_id | fk null | set when kept (`set null` if the intention ever goes) |
 | suggested_at, resolved_at | timestamptz | |
 
-Index `(user_id, status, suggested_at)`.
+Index `(user_id, status, suggested_at)`, and the unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))` (`0006`): one message can yield several leads, never the same one twice — two looks racing insert on conflict do nothing. `createLeads` collapses whitespace in the title before the insert.
 
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
@@ -234,6 +238,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0006_data_integrity.sql` | `conversations.consolidating_until` (timestamptz null, consolidation's lease); unique partial indexes `conversations_user_main_idx (user_id) WHERE kind = 'main'`, `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL`, `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'`; unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))`; GIN `episodes_thread_ids_idx` (code review 2026-09-13, section A) | No (add-only) — but a unique index fails to build if duplicates already exist: run the duplicate checks in the branch summary first | **No** — `fix/data-integrity`; Chanté applies it |
 | `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **Yes** — 2026-09-13, applied by hand (the tables were present before landing; checked). Recorded in `drizzle.__drizzle_migrations` on 2026-09-13, with `0005` (until then only `0000`–`0002` were, so `db:migrate` failed on "already exists") |
 | `0005_thread_shelves.sql` | `threads.parent_id` (fk to `threads`, on delete set null) and `threads.shelved_by`, plus the index `threads_parent_idx` | No (add-only; nullable columns) | **Yes** — 2026-09-13, applied by Claude from `feat/library-sections` while in review (add-only, so safe under `main`'s code), in one transaction with the journal rows for `0003`–`0005`; `npm run db:migrate` is a no-op again. `feat/plan-together`'s priorities migration must renumber to `0006`, and its `priorities` table already exists unrecorded |
 | `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **Yes** — 2026-09-13, applied by hand before landing (checked). Recorded 2026-09-13 — see `0004` |

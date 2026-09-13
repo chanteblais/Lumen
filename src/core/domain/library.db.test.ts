@@ -14,7 +14,7 @@ import type { Db } from "@/db/client";
 import { conversations, episodes, messages, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
 import { ensureMainConversation } from "./conversations";
-import { buildShelves, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing, shelveThread } from "./library";
+import { buildShelves, getOwnedThread, insertEpisode, listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing, shelveThread, unconsolidatedMessages } from "./library";
 import type { Heard } from "./memory-rules";
 
 let db: Db;
@@ -292,6 +292,23 @@ describe("each user's Library is their own", () => {
     expect(seen?.notes).toEqual([]);
     expect((await listCurrentNotes(db, a.id, [String(id)])).map((x) => x.content)).toEqual(["The garden gets raised beds."]);
     expect((await loadLibraryOrNothing(db, b.id)).threads).toEqual([]);
+  });
+});
+
+describe("the watermark", () => {
+  it("reads from the latest episode's end when the watermark message is gone, not from the start", async () => {
+    const u = await createTestUser(db, "Wim");
+    const c = await ensureMainConversation(db, u.id);
+    const first = await say(u, "2026-09-10T09:00:00Z", "user", "an old stretch, already folded in");
+    const endOfOld = await say(u, "2026-09-10T09:05:00Z", "assistant", "the end of it");
+    const fresh = await say(u, "2026-09-11T09:00:00Z", "user", "something new since");
+    await insertEpisode(db, { userId: u.id, conversationId: c.id, summary: "The old stretch.", leftOff: null, startedAt: new Date("2026-09-10T09:00:00Z"), endedAt: new Date("2026-09-10T09:05:00Z"), throughMessageId: endOfOld });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rows = await unconsolidatedMessages(db, c.id, randomUUID());
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+    expect(rows.map((r) => r.id)).toEqual([fresh]);
+    expect(rows.map((r) => r.id)).not.toContain(first);
   });
 });
 

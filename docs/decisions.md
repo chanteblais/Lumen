@@ -4,6 +4,12 @@ Append-only. One entry per decision that changes `architecture.md`, `domain.md` 
 
 **Product decisions** (what the product is and why, and the constraints they put on future work) live in [`living/decisions.md`](living/decisions.md), the canon's log. An entry here that changes how the product behaves gets a short entry there too.
 
+- **2026-09-13 · History pointers stay without foreign keys; episodes keep `thread_ids` as jsonb.** From the code review (A22, A23), `fix/data-integrity`.
+  - **No FKs** on `summary_through_message_id`, `through_message_id`, `source_message_id`, `supersedes_id`, `superseded_by_id`. They point into history, and the target may go first: forgetting a belief deletes its chain, and a message may be trimmed. An FK would block that delete or cascade one nobody asked for. Code treats a missing target as normal; `unconsolidatedMessages` falls back to the latest episode's end instead of re-reading the conversation.
+  - **No `episode_threads` join table.** A GIN index (`episodes_thread_ids_idx`, `0006`) serves the `@>` filters. At V1 scale (one user, tens of episodes) the array does the job, and scrubbing a forgotten thread's id is rare. Revisit if a thread's visits become a hot read.
+
+  **Replaces** nothing; records why the review's suggestions were not taken.
+
 - **2026-09-13 · The Library's categories and threads show only in a hidden debug mode.** Chanté: "a debug mode button somewhere hidden that, when turned on, shows the categories and threads as parchment over the rooms". She chose debug-only over keeping the plaques, and five taps on the wordmark over a shortcut or a dev-only chip.
   - **The switch:** `Sidebar` counts taps on the wordmark within 2 s. The first still navigates Home and the rest `preventDefault`. The fifth toggles the cookie `coherence_debug` and reloads the page. A `router.refresh()` was lost behind the first tap's navigation to Home in the click-through.
   - **The overlay:** a server component, `LibraryDebug`, placed by the room pages (Home, Today, the Library), reads the cookie and the threads and renders the parchment. It isn't in the root layout, because the layout has no user without redirecting on the public pages.

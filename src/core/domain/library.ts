@@ -396,12 +396,26 @@ export async function isForgotten(db: Db, userId: string, content: string): Prom
 
 /* --------------------------------------------- consolidation watermark */
 
-/** Messages after the watermark, oldest first. */
+/**
+ * Messages after the watermark, oldest first. The watermark has no FK (a
+ * pointer into history): when its message is gone, the latest episode's end
+ * stands in for it, so a missing message never re-reads the whole conversation.
+ */
 export async function unconsolidatedMessages(db: Db, conversationId: string, watermarkId: string | null, limit = 200) {
   let after: Date | undefined;
   if (watermarkId) {
     const [w] = await db.select({ createdAt: messages.createdAt }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
     after = w?.createdAt;
+    if (!after) {
+      const [e] = await db
+        .select({ endedAt: episodes.endedAt })
+        .from(episodes)
+        .where(eq(episodes.conversationId, conversationId))
+        .orderBy(desc(episodes.endedAt))
+        .limit(1);
+      after = e?.endedAt;
+      console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${after ? `the latest episode's end (${after.toISOString()})` : "the start (no episode either)"}`);
+    }
   }
   return db
     .select()

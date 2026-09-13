@@ -45,8 +45,8 @@ Domain, database, migrations, reflection and consolidation.
 | A19 | **`createLeads` appends events one by one** in a sequential loop. | `domain/leads.ts:49-51` | open |
 | A20 | **`dueOn` re-implements `localDate`** with its own formatter. | `domain/intentions.ts:173` | open |
 | A21 | **Thread order ties are nondeterministic.** Consolidation stamps one `now` on every thread it touches; `listThreads` and the library-select sorts order only by `lastDiscussedAt`, so the index line and the cut vary between turns. | `domain/library.ts:141`, `core/ai/library-select.ts:83, 86, 111` | open |
-| A22 | **`episodes.thread_ids` jsonb** is filtered with `@>` and no GIN index, and hand-patched when a thread is forgotten. | `domain/library.ts` | open |
-| A23 | **Pointer columns without FKs** (`supersedes_id`, `superseded_by_id`, `source_message_id`, `through_message_id`); `unconsolidatedMessages` re-reads from the start if the watermark message is missing. | `db/schema.ts`, `domain/library.ts` | open |
+| A22 | **`episodes.thread_ids` jsonb** is filtered with `@>` and no GIN index, and hand-patched when a thread is forgotten. | `domain/library.ts` | fixed — GIN `episodes_thread_ids_idx` (`0006`); decided — no join table: at V1 scale the array and its index do the job, and forgetting a thread is rare |
+| A23 | **Pointer columns without FKs** (`supersedes_id`, `superseded_by_id`, `source_message_id`, `through_message_id`); `unconsolidatedMessages` re-reads from the start if the watermark message is missing. | `db/schema.ts`, `domain/library.ts` | decided — no FKs: pointers into history whose target may go first (domain.md → Pointers without foreign keys); fixed — a missing watermark falls back to the latest episode's end, logged |
 | A24 | **Dead code:** `messageCount` (also fetches every row to count), `todayCapacity` / `todayCapacityState`. | `domain/conversations.ts:78`, `domain/capacity.ts:57-64` | open |
 | A25 | **DB test gaps:** intention writes and transitions, `startFocusSession` / `sweepAbandoned`, `keepLead` / `dismissLead`, `users.visit`, `scan.ts`, a consolidation that rolls back, and each fix above. | `openTestDb` | open |
 
