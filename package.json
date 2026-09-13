@@ -15,6 +15,7 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes && npm run check:css",
     "check:routes": "node scripts/check-route-auth.mjs",
     "check:css": "node scripts/check-css-prefixes.mjs",
+    "land": "node scripts/land.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
     "db:studio": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs studio"

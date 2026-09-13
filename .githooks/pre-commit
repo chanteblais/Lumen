@@ -30,4 +30,17 @@ if [ "$branch" = "main" ] && [ -z "$COHERENCE_ALLOW_MAIN" ] && [ -z "$LUMEN_ALLO
   exit 1
 fi
 
+# 3. The shared checkout parks on a detached HEAD at main's commit, never on
+#    main itself (docs/branching.md → Landing on main), so a commit there would
+#    belong to no branch. Only the main worktree (git dir = common dir); linked
+#    worktrees may detach freely. Deliberate (e.g. mid-rebase):
+#      COHERENCE_ALLOW_DETACHED=1 git commit …
+if [ -z "$branch" ] && [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ] && [ -z "$COHERENCE_ALLOW_DETACHED" ]; then
+  echo "✗ Commit on a detached HEAD in the shared checkout blocked — it would belong to no branch." >&2
+  echo "  The shared checkout parks detached at main between sessions. Start a branch first:" >&2
+  echo "    git switch -c <type>/<slug>" >&2
+  echo "  (or take a worktree), commit there, and land it with npm run land -- <branch>." >&2
+  exit 1
+fi
+
 exit 0
