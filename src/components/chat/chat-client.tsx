@@ -70,45 +70,67 @@ export function useAutoResize(max = MESSAGE_BOX_MAX_PX) {
 }
 
 /**
- * Chats that outlive the component showing them. The speech bubble closes on
- * Escape, a click elsewhere or a page change, and the Lists sheet closes with
- * Back; a `useChat` that owned its `Chat` would stop it on unmount, and the
- * route aborts the turn with the request — Lumi would stop mid-tool. Held here,
- * the turn finishes wherever you've gone. `@ai-sdk/react` leaves a chat passed
- * in as `useChat({ chat })` running when the component unmounts.
+ * Chats that outlive the component showing them. Home unmounts when you go to
+ * another page, the speech bubble closes on Escape, a click elsewhere or a page
+ * change, and the Lists sheet closes with Back; a `useChat` that owned its
+ * `Chat` would stop it on unmount, and the route aborts the turn with the
+ * request — Lumi would stop mid-tool. Held here, the turn finishes wherever
+ * you've gone. `@ai-sdk/react` leaves a chat passed in as `useChat({ chat })`
+ * running when the component unmounts.
  */
-export type HeldChatSlot = "bubble" | "lists-add";
-const held = new Map<HeldChatSlot, Chat<CoherenceUIMessage>>();
+export type HeldChatSlot = "home" | "bubble" | "lists-add";
+type Held = { chat: Chat<CoherenceUIMessage>; seed: CoherenceUIMessage[] | undefined };
+const held = new Map<HeldChatSlot, Held>();
+
+type HoldOptions = {
+  /** The conversation and the transcript the server rendered, for a chat that opens on its history (Home). */
+  seed?: { id: string; messages: CoherenceUIMessage[] };
+  /** Skip the refresh when the turn lands on this path: Home shows its own turn, and a refresh there would redo its page work for nothing. */
+  refreshUnlessOn?: string;
+};
 
 /** A beat after a turn lands before the page refreshes: the route's `after()` may still be re-cutting today's path. */
 const LANDED_REFRESH_MS = 700;
 
 /**
- * The slot's chat for a newly opened bubble or add-line: the one still talking
- * if a turn is in flight (reopened mid-turn, you see it finish), else a fresh
- * one — once a turn has landed, the next opening starts clean, as it always has.
- * An unused chat counts as fresh, so calling this twice (React's dev double
- * render) hands back the same one.
+ * The slot's chat for a component that has just mounted.
+ * - A turn still in flight: that chat, `resumed` — you left mid-turn and are
+ *   back, so you see it finish (and nothing from the server doubles it: the
+ *   server's copy is ignored until the next mount with no turn in flight).
+ * - Otherwise a fresh one, seeded with what the server just rendered (Home) or
+ *   empty (the bubble, the add-line), so it never drifts from the transcript.
+ * A chat still exactly as seeded (same seed, nothing added) counts as fresh, so
+ * calling this twice for one mount (React's dev double render) hands back the same one.
  */
-function holdChat(slot: HeldChatSlot, onLanded: () => void): Chat<CoherenceUIMessage> {
+function holdChat(slot: HeldChatSlot, options: HoldOptions, refresh: () => void): { chat: Chat<CoherenceUIMessage>; resumed: boolean } {
   const current = held.get(slot);
-  if (current && (isBusy(current.status) || current.messages.length === 0)) return current;
+  if (current && isBusy(current.chat.status)) return { chat: current.chat, resumed: true };
+  const seed = options.seed?.messages;
+  if (current && current.seed === seed && current.chat.messages.length === (seed?.length ?? 0)) return { chat: current.chat, resumed: false };
   const chat = new Chat<CoherenceUIMessage>({
+    ...(options.seed ? { id: options.seed.id, messages: options.seed.messages } : {}),
     transport: chatTransport(),
     generateId: newMessageId,
     // Called when the turn ends however it ends (landed, stopped, failed), even
-    // with the bubble or the sheet long closed: the page showing then reflects what she did.
-    onFinish: () => void setTimeout(onLanded, LANDED_REFRESH_MS),
+    // with the component long gone: the page showing then reflects what she did.
+    onFinish: () =>
+      void setTimeout(() => {
+        if (options.refreshUnlessOn !== undefined && window.location.pathname === options.refreshUnlessOn) return;
+        refresh();
+      }, LANDED_REFRESH_MS),
   });
-  held.set(slot, chat);
-  return chat;
+  held.set(slot, { chat, seed });
+  return { chat, resumed: false };
 }
 
-/** `useChat` on the slot's held chat; refreshes the page underneath once each turn has landed. */
-export function useHeldChat(slot: HeldChatSlot) {
+/**
+ * `useChat` on the slot's held chat; refreshes the page underneath once each
+ * turn has landed. `resumed` says this mount picked up a turn already in flight.
+ */
+export function useHeldChat(slot: HeldChatSlot, options: HoldOptions = {}) {
   const router = useRouter();
   // The app router instance is the same object for the life of the app, so refreshing through it after this component is gone is fine.
-  const [chat] = useState(() => holdChat(slot, () => router.refresh()));
+  const [{ chat, resumed }] = useState(() => holdChat(slot, options, () => router.refresh()));
   const result = useChat<CoherenceUIMessage>({ chat });
-  return { ...result, busy: isBusy(result.status) };
+  return { ...result, busy: isBusy(result.status), resumed };
 }

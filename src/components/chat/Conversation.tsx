@@ -1,6 +1,5 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SessionBar } from "@/components/focus/SessionBar";
@@ -8,7 +7,7 @@ import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import type { SessionView } from "@/core/domain/sessions";
 import { sessionEventText, sessionFromMessages, type SessionEventResponse } from "@/core/focus";
-import { LUMI_LOST_THREAD, chatTransport, isBusy, newMessageId } from "./chat-client";
+import { LUMI_LOST_THREAD, useHeldChat } from "./chat-client";
 import { Composer } from "./Composer";
 import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
@@ -50,30 +49,36 @@ export function handoffMessage(params: URLSearchParams, titles: Record<string, s
   return null;
 }
 
+/** Where the turn in flight began: its user message (the last one). */
+function lastUserIndex(messages: CoherenceUIMessage[]) {
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
+  return messages.length;
+}
+
 export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {}, initialSession = null }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
+
+  // Held above the page (`chat-client.tsx`), so leaving Home mid-turn doesn't stop
+  // Lumi. With no turn in flight it is seeded fresh from what the server just
+  // rendered; back mid-turn, it is the chat still talking (`resumed`), and the
+  // server's copy — which has your message but not yet her reply — is set aside.
+  // Landing refreshes the page you went to, never Home itself.
+  const { messages, sendMessage, stop, status, error, busy, resumed } = useHeldChat("home", {
+    seed: { id: conversationId, messages: initialMessages },
+    refreshUnlessOn: "/",
+  });
+
   // Every page open is a fresh start: the greeting card sits after everything
   // that was there when the page opened, and what you say next goes below it.
-  const [cardAt] = useState(initialMessages.length);
+  // Back mid-turn, the card goes before the turn still arriving, so it reads as this visit.
+  const [cardAt] = useState(() => (resumed ? lastUserIndex(messages) : initialMessages.length));
   // A link from Today/Library (?start=<id> …) becomes the first message of this sitting.
   const initialHandoff = useMemo(() => handoffMessage(params, intentionTitles), [params, intentionTitles]);
   // Quick starts are for the moment of starting: shown until you've said
   // something this sitting, and again next time you come back.
-  const [inSitting, setInSitting] = useState(initialInSitting || Boolean(initialHandoff));
-  const [transport] = useState(chatTransport);
+  const [inSitting, setInSitting] = useState(initialInSitting || resumed || Boolean(initialHandoff));
 
-  // Owned by this page, unlike the bubble's and the Lists add-line's held chats
-  // (`chat-client.tsx`): it opens on the transcript the server rendered, which a
-  // chat kept across visits would contradict.
-  const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({
-    id: conversationId,
-    messages: initialMessages,
-    transport,
-    generateId: newMessageId,
-  });
-
-  const busy = isBusy(status);
   const send = (text: string, extra?: Record<string, unknown>) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -95,10 +100,11 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
 
   // Send the handoff once, then clean the URL without a navigation (a router
   // navigation would re-render the page and remount the chat mid-request).
+  // Arriving by a link while a turn you left is still arriving, it waits for that turn to land.
   const prefill = params.get("prefill") ?? "";
   useEffect(() => {
-    if (handled.current || (!initialHandoff && !prefill)) return;
-    // Deferred so React's dev double-mount (which aborts in-flight chat requests) settles first.
+    if (handled.current || (!initialHandoff && !prefill) || busy) return;
+    // Deferred so React's dev double-mount settles first.
     const t = setTimeout(() => {
       handled.current = true;
       if (initialHandoff) {
@@ -110,7 +116,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
       window.history.replaceState(null, "", "/");
     }, 50);
     return () => clearTimeout(t);
-  }, [initialHandoff, prefill, sendMessage]);
+  }, [initialHandoff, prefill, sendMessage, busy]);
 
   return (
     <div className="chat-page">
