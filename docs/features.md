@@ -13,7 +13,7 @@ Coherence   Home · Today · Library · Insights · Settings
 ```
 
 - The place you're in: its icon lit on the rail and a brass star on the rail's rule beside it (`aria-current="page"`).
-- **Hover** the rail (or tab into it) and the parchment slides out over the page — the wordmark, the names beside their icons, *Progress lives here.* — and folds when the pointer leaves. **Click** the parchment or the compass star at the head of the rail and it stays **pinned** open, and the page moves over to make room; click again to fold it. The pin is remembered in this browser (a cookie), so a pinned nav is there from the first paint. Nothing depends on pinning.
+- **Hover** the rail (or tab into it) and the parchment slides out over the page — the wordmark, the names beside their icons, *Progress lives here.* — and folds when the pointer leaves. **Click** the parchment or the compass star at the head of the rail and it stays **pinned** open, floating over the page as on hover (the page never moves for it); click again to fold it. Any spot on the parchment that isn't a link pins — beside a name, the head, the foot. The pin is remembered in this browser (a cookie), so a pinned nav is there from the first paint. Nothing depends on pinning.
 - Mobile (<768px), a trial to revisit: the rail stays, narrower; tap the compass star to open the names over the page; a tap on a place, outside the nav or Escape folds them. No pinning on a phone.
 - Nav carries **no counts, no badges, no dots** — by design (`design-philosophy.md` §3.2).
 - The browser tab is a running head too: *Today · Coherence*, *Library · Coherence*, *Insights · Coherence*, *Settings · Coherence*; Home is just *Coherence* (`layout.tsx` title template, each page's `metadata.title`).

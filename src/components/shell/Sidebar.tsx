@@ -15,15 +15,16 @@ const NAV = [
   { href: "/settings", label: "Settings", Icon: GearIcon },
 ] as const;
 
-/** Where a pinned parchment docks beside the page (the CSS breakpoint); below it, it only ever floats. */
-const DOCKS = "(min-width: 768px)";
+/** Where the parchment can be pinned (the CSS breakpoint); below it, the compass star opens it for one visit. */
+const PINS = "(min-width: 768px)";
 
 /**
  * The rail and its parchment. The green rail is always there: an icon per
  * place, and a brass star on its rule beside the one you're in. The names
  * are on the parchment, which slides out while the pointer is over the rail
  * (or keyboard focus is in it) and floats over the page. A click on the
- * parchment, or on the compass star, pins it open and the page makes room;
+ * parchment (anywhere but a link), or on the compass star, pins it open,
+ * still floating: the page never moves for it;
  * a click that unpins folds it at once, even with the pointer still over it
  * (hover can't reopen it until the pointer has left, or it looks stuck open).
  * On a phone there is no hover: the compass star opens it over the page,
@@ -53,7 +54,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
   }, [open]);
 
   function toggle() {
-    if (!window.matchMedia(DOCKS).matches) return setOpen((o) => !o);
+    if (!window.matchMedia(PINS).matches) return setOpen((o) => !o);
     const next = !pinned;
     setPinned(next);
     setResting(!next);

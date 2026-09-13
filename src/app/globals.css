@@ -134,16 +134,14 @@ body::after {
   grid-template-columns: var(--rail-w) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
-/* Pinned, the page makes room for the parchment instead of sitting under it. */
-@media (min-width: 768px) {
-  .shell:has(> .nav[data-pinned]) { grid-template-columns: calc(var(--rail-w) + var(--panel-w)) minmax(0, 1fr); }
-}
 
 /* ---------- The rail and its parchment (components/shell/Sidebar.tsx) ----------
    The rail is always there, the same deep green on every page. The parchment
    with the names is folded away until it is shown: hovered, reached by
-   keyboard, opened (a tap on a phone) or pinned. Folded, it lets the pointer
-   through and each row is only as wide as the rail. The shown state is a set
+   keyboard, opened (a tap on a phone) or pinned — always floating over the
+   page, which never moves for it. Folded, it lets the pointer through and each
+   row is only as wide as the rail; shown, a row is as wide as its name, so a
+   click on the parchment beside a name pins rather than following the link. The shown state is a set
    of custom properties, so the three ways in share one list of values. */
 .nav {
   position: relative;
@@ -159,14 +157,14 @@ body::after {
 }
 .nav[data-open],
 .nav:has(:focus-visible) {
-  --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s;
+  --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s;
 }
 @media (min-width: 768px) {
-  .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
+  .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
 /* Not while resting: just unpinned by a click with the pointer still over it. */
 @media (hover: hover) {
-  .nav:not([data-resting]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
+  .nav:not([data-resting]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
 
 .nav-rail {
@@ -327,8 +325,10 @@ body::after {
 }
 .nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: none; }
 .nav-item .name {
-  flex: 1;
-  margin: 0 14px 0 12px;
+  flex: none;
+  min-width: 128px; /* the tint reads as a tile, not a hug, on a short name */
+  margin: 0 0 0 12px;
+  pointer-events: var(--nav-pe); /* folded, a name overflowing the rail takes no clicks, even while it fades */
   padding: 9px 14px;
   border-radius: 6px;
   font-size: 18px;
