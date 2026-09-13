@@ -43,8 +43,8 @@ export function textOf(message: CoherenceUIMessage): string {
     .join("\n\n");
 }
 
-/** Whether an assistant message has anything to show yet: words, or something she did. */
-export const hasReply = (message: CoherenceUIMessage) => textOf(message) !== "" || message.parts.some((p) => p.type.startsWith("tool-"));
+/** Whether an assistant message has anything to show (words, or something she did; silence shows nothing), and her answer to the last thing said. */
+export { hasReply, latestReply } from "@/core/ai/reply";
 
 /** Lumi's three slow brass dots while she thinks (`.thinking-dots`). Pass `label={null}` when a parent already says so. */
 export function ThinkingDots({ label = "Lumi is thinking" }: { label?: string | null }) {

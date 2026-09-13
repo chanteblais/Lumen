@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
-import { ThinkingDots, textOf } from "./chat-client";
+import { ThinkingDots, hasReply, textOf } from "./chat-client";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
 
@@ -85,8 +85,8 @@ function render(messages: CoherenceUIMessage[]): React.ReactNode[] {
     if (at) prevAt = at;
     // One paragraph per block of speech (`textOf`): Lumi often says a line, acts, then says another.
     const text = textOf(m);
-    const hasTools = m.role === "assistant" && m.parts.some((p) => p.type.startsWith("tool-"));
-    if (!text && !hasTools) continue;
+    // A turn she stayed silent on (no words, no tools) shows nothing — no empty bubble.
+    if (m.role === "assistant" ? !hasReply(m) : !text) continue;
     items.push(
       m.role === "user" ? (
         <div key={m.id} className="msg msg-user">
