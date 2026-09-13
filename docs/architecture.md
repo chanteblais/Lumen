@@ -192,7 +192,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── insights.ts           Insights copy (deterministic)
 │   │   └── time.ts               tz-aware today/gap helpers
 │   ├── db/                       schema.ts (the domain model as code) client.ts (lazy postgres-js + drizzle) migrations/ (drizzle-kit)
-│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
+│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · public-paths.ts (the pages a signed-out visitor may see: the proxy and the nav read it) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
@@ -229,7 +229,7 @@ Planned: `GET/DELETE /api/beliefs` (M6).
 - **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
 - **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). OpenAI caches a prefix of 1024 tokens or more on its own (the persona + tools clear it); Anthropic's minimum is model-dependent. A short persona may never cache, so grow it before assuming a bug.
 - **Message ids are UUIDs on both sides** (`generateId: () => crypto.randomUUID()` in `useChat`, `generateMessageId` in the route) because `messages.id` is a uuid column.
-- **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the two public prefixes by hand and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
+- **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the public prefixes by hand (`isPublicPath`, `src/lib/public-paths.ts`, the same list that keeps the nav off the sign-in and sign-up pages) and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
 - **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx`, `src/lib/auth-mail.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else. The Google token for mail is fetched in `auth.ts` and handed on as an `EmailReader` (`lib/email.ts`), so `src/core` never sees Clerk or a token.
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.
