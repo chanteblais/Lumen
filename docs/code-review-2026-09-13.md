@@ -101,13 +101,13 @@ Domain, database, migrations, reflection and consolidation.
 | D2 | **The route-auth audit can pass vacuously:** `.pathname` breaks on a path with a space (exits 0, "no API routes"); only `route.ts` under `src/app/api` is walked; one regex over the whole file lets a comment or one gated handler cover every export. | `scripts/check-route-auth.mjs:12, 32, 38, 48` | fixed — per-handler, comment-blind, all `src/app` routes, `"use server"` flagged, missing dir fails |
 | D3 | **No security headers** and `x-powered-by` on. | `next.config.ts` | fixed — no framing, referrer, nosniff, permissions (mic self); `poweredByHeader: false` |
 | D4 | **No startup env validation** — a missing Clerk or OpenAI key shows up at the first request. | `db/client.ts`, `core/ai/model.ts:16` | fixed — `src/lib/env.ts` from `instrumentation.ts`: throws in prod naming keys, warns in dev |
-| D5 | **`npm audit`: 4 highs, all via `@huggingface/transformers`** (adm-zip via onnxruntime-node, sharp); ~340 MB of installs. Imported only by the voice worker, loaded on the first voice tap. | `chat/voice/whisper.worker.ts:2` | open |
+| D5 | **`npm audit`: 4 highs, all via `@huggingface/transformers`** (adm-zip via onnxruntime-node, sharp); ~340 MB of installs. Imported only by the voice worker, loaded on the first voice tap. | `chat/voice/whisper.worker.ts:2` | decided — keep it: the flagged packages are Node-side, the library runs only in the browser worker (`pre-prod.md` → Dependencies) |
 | D6 | **Preflight compares top-level packages only**, so a nested-only lockfile change goes unnoticed and a stale install gets cloned. | `scripts/preflight.mjs:99-127` | fixed — nested entries checked via npm's hidden lockfile, for clones too |
 | D7 | **Script duplication:** three git exec wrappers, three repo-root computations; `check-css-prefixes.mjs` also uses `.pathname`. | `scripts/*.mjs` | fixed — `scripts/lib.mjs`; census output identical |
 | D8 | **`vitest.config.mts` uses `__dirname`** (a warning on every run). | `vitest.config.mts:10` | fixed — `import.meta.dirname` |
-| D9 | **README is stale:** `npm install` not `npm ci`; `check` described as tsc + eslint + vitest; points at a 12-line `docs/product.md` stub. | `README.md` | open |
-| D10 | **`CLAUDE.md` never references `AGENTS.md`**, so Next's "read the bundled docs" rule never reaches Claude. | `CLAUDE.md` | open |
-| D11 | **The Clerk boundary list omits `src/proxy.ts`** (a required import). | `CLAUDE.md`, `src/lib/auth.ts` header | open |
+| D9 | **README is stale:** `npm install` not `npm ci`; `check` described as tsc + eslint + vitest; points at a 12-line `docs/product.md` stub. | `README.md` | fixed — `npm ci`, what `check` runs, points at `PROJECT-CANON.md` + `docs/README.md` |
+| D10 | **`CLAUDE.md` never references `AGENTS.md`**, so Next's "read the bundled docs" rule never reaches Claude. | `CLAUDE.md` | fixed — `@AGENTS.md` in the Docs list |
+| D11 | **The Clerk boundary list omits `src/proxy.ts`** (a required import). | `CLAUDE.md`, `src/lib/auth.ts` header | fixed — listed there and in `architecture.md` → Key conventions |
 | D12 | **Node isn't pinned** (dev-hygiene backlog #3; CI pins 22, `@types/node` is 22). | `package.json`, `.nvmrc` | fixed — `.nvmrc` 22 + preflight note; no `engines`: Vercel runs 24.x (dev-hygiene backlog #3) |
 | D13 | **`zod` patch 4.6.2 → 4.6.4** within range. | `package.json` | fixed — `^4.6.4`, lockfile zod-only; other checkouts `npm ci` after merging (preflight says so) |
 

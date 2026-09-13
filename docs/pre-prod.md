@@ -37,6 +37,12 @@ Things to sort before anyone but Chanté uses Coherence.
 - [ ] Check them on the deployed URL: `curl -sI https://lumen-nu-steel.vercel.app/sign-in`.
 - [ ] A full Content-Security-Policy (scripts, styles, connections). Only `frame-ancestors` is set: Clerk's scripts and frames, the voice model's downloads from Hugging Face and its wasm each need an allowance, tested in a browser.
 
+## Dependencies — `npm audit`
+- **4 high, none reachable on the server (reviewed 2026-09-13, `npm audit --omit=dev`; decided: `@huggingface/transformers` stays).** All four come through `@huggingface/transformers@4.2.0`: `adm-zip <=0.6.0` (a crafted ZIP's 4 GB allocation; extraction following symlinks) via `onnxruntime-node@1.24.3`, and `sharp <=0.35.4-rc.0` (libvips and libheif CVEs) as its own nested copy, `sharp@0.34.5` — plus the two packages that carry them. Neither has a fix available.
+  - Both are Node-side packages. The library is imported by exactly one file, `src/components/chat/voice/whisper.worker.ts`, a browser Web Worker that `localEngine.ts` starts (`new Worker(new URL("./whisper.worker.ts", import.meta.url))`) on the first voice tap; `localEngine.ts` imports only its types. In the browser the library uses `onnxruntime-web`, so the vulnerable code never runs on the server and never receives a ZIP or an image from anyone.
+  - Next's own `sharp` (for `next/image`, used by `RoomScene.tsx`) is the top-level `sharp@0.35.4`, outside the flagged range.
+  - **Revisit** if `@huggingface/transformers` is ever imported from server code (a route, a server component, `src/core`), or if `next/image` ever resolves the nested copy. Re-run `npm audit --omit=dev` when transformers updates.
+
 ## Rename outside the repo (Coherence)
 The app and docs say Coherence since 2026-09-12. These still say Lumen, and each is Chanté's call; none of them blocks anything.
 - [ ] **Clerk application name** (dashboard → the *Lumen* app → Settings). This is the one a user sees: "Sign in to Lumen" on the sign-in and sign-up cards, and in verification emails. The name is per application, so dev and production change together; keys, instances and `clerk_user_id`s stay as they are.
