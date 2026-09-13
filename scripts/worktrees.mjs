@@ -6,7 +6,8 @@
 //
 // A worktree can go only when every one of these holds:
 //   - it lives under .claude/worktrees (the shared checkout, this checkout and other tools' worktrees stay)
-//   - it isn't locked (a Claude session locks the worktree it's in)
+//   - it isn't locked (a Claude session locks a worktree EnterWorktree made; one the desktop app made isn't
+//     locked, so the in-use check below is what keeps it while its session runs)
 //   - no process has its working directory inside it (a session, a shell, a dev server)
 //   - nothing happened in it for an hour (a session may be about to move in)
 //   - no uncommitted or untracked changes
