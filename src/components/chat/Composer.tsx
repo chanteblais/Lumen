@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useAutoResize } from "./chat-client";
 import { useVoiceInput } from "./useVoiceInput";
 
 type Props = { onSend?: (text: string) => void; onStop?: () => void; busy?: boolean; initialValue?: string };
@@ -16,15 +17,8 @@ function join(base: string, spoken: string) {
 
 export function Composer({ onSend, onStop, busy = false, initialValue = "" }: Props) {
   const [value, setValue] = useState(initialValue);
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const { ref, resize } = useAutoResize();
   const baseRef = useRef("");
-
-  const resize = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, []);
 
   const voice = useVoiceInput({
     onTranscript: (final, interim) => {
@@ -68,11 +62,6 @@ export function Composer({ onSend, onStop, busy = false, initialValue = "" }: Pr
           submit();
         }}
       >
-        <button type="button" className="icon-btn h-[60px] w-[60px] shrink-0" aria-label="Add">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
         <textarea
           ref={ref}
           rows={1}

@@ -76,22 +76,23 @@ Domain, database, migrations, reflection and consolidation.
 
 | id | finding | where | status |
 |---|---|---|---|
-| C1 ✓ | **Closing the bubble cancels Lumi's turn.** `useChat` stops its own `Chat` on unmount; the route aborts with `req.signal`, so Escape, a click outside or navigating mid-turn stops her tools. The 700 ms refresh timer is cleared on unmount too. Same in the Lists add-line. | `shell/CompanionBubble.tsx:48, 84-109`, `shell/LumiCompanion.tsx:94-98, 212`, `lists/ListsSheet.tsx` (AddLine) | open |
-| C2 | **The mic can stay on.** Stopping while `getUserMedia` is pending tears down before `stream` is set; the tracks are never stopped. | `chat/voice/localEngine.ts:174-182, 236-270` | open |
-| C3 | **A let-go row comes back** after a tab or search change, and a second let-go sends a second drop. | `lists/ListsSheet.tsx` (Row) | open |
-| C4 ✓ | **Lumi's animation timers array never empties** (~14k ids an hour). | `shell/LumiCompanion.tsx:109-110` | open |
-| C5 | **`CompleteCircle` ignores refreshed props**; Move and Undo fail silently. | `lists/CompleteCircle.tsx:12`, `ListsSheet.tsx` | open |
-| C6 | **The animation loop re-renders the bubble every ~200 ms** (pose state beside `CompanionBubble`, inline `onSend`) and runs in hidden tabs and under the Lists sheet. | `LumiCompanion.tsx:100-238` | open |
-| C7 | **Dialog focus.** The Lists sheet has `aria-modal` but no trap or restore; the bubble doesn't return focus to Lumi's button; `RowMenu` claims `role="menu"` without arrow keys. | `ListsSheet.tsx`, `CompanionBubble.tsx` | open |
-| C8 | **`MemoryItem`:** confirming Forget unmounts the focused button; "Forgotten." sits in a freshly mounted live region; Escape doesn't cancel editing. | `settings/MemoryItem.tsx:44-52, 114` | open |
-| C9 | **Chat client duplication:** transport ×3, reply-text extraction ×3, land-then-refresh ×2, "I lost the thread…" ×3, thinking dots ×4, textarea auto-resize ×2 (different caps). | `chat/Conversation.tsx`, `CompanionBubble.tsx`, `ListsSheet.tsx`, `chat/Composer.tsx` | open |
-| C10 | **`ListsSheet.tsx` (~460 lines) holds four components**; its filter/heading logic belongs in `core/domain/lists-view.ts`. | `lists/ListsSheet.tsx` | open |
-| C11 | **The voice worker copies up to 19 MB every 4 s**; the buffer is fresh and can be transferred. | `localEngine.ts:86` | open |
-| C12 | **A focusable "+" button with no handler** in the Composer. | `chat/Composer.tsx:71` | open |
-| C13 | **Reduced-motion gaps:** thinking dots and the listening mic animate forever; `LumiCompanion` reads the preference once. | `globals.css` (~889, ~941), `LumiCompanion.tsx:107` | open |
-| C14 | **`QuickStarts` imports from `persona.ts`**, which holds the whole prompt → move `QUICK_STARTS` to its own file (the persona string must stay byte-identical). | `today/QuickStarts.tsx:3`, `core/ai/persona.ts:79` | open |
-| C15 | **`TimezoneCapture` compares the encoded cookie with the raw timezone**, so it rewrites the cookie on every load. | `TimezoneCapture.tsx:27` | open |
-| C16 | **`lumi-heads.png` is 226 KB** for 36–64 px avatars. | `public/` | open |
+| C1 ✓ | **Closing the bubble cancels Lumi's turn.** `useChat` stops its own `Chat` on unmount; the route aborts with `req.signal`, so Escape, a click outside or navigating mid-turn stops her tools. The 700 ms refresh timer is cleared on unmount too. Same in the Lists add-line. | `shell/CompanionBubble.tsx:48, 84-109`, `shell/LumiCompanion.tsx:94-98, 212`, `lists/ListsSheet.tsx` (AddLine) | fixed — the bubble and the Lists add-line hold their `Chat` per slot (`useHeldChat`); refresh from `onFinish` |
+| C2 | **The mic can stay on.** Stopping while `getUserMedia` is pending tears down before `stream` is set; the tracks are never stopped. | `chat/voice/localEngine.ts:174-182, 236-270` | fixed — a take counter; a capture let go while waiting stops its tracks and bails |
+| C3 | **A let-go row comes back** after a tab or search change, and a second let-go sends a second drop. | `lists/ListsSheet.tsx` (Row) | fixed — let-go ids held by the sheet, not the row |
+| C4 ✓ | **Lumi's animation timers array never empties** (~14k ids an hour). | `shell/LumiCompanion.tsx:109-110` | fixed — a `Set`; each id leaves when its timer fires |
+| C5 | **`CompleteCircle` ignores refreshed props**; Move and Undo fail silently. | `lists/CompleteCircle.tsx:12`, `ListsSheet.tsx` | fixed — the circle follows its `done` prop; Move, let-go and Undo say when they didn’t land |
+| C6 | **The animation loop re-renders the bubble every ~200 ms** (pose state beside `CompanionBubble`, inline `onSend`) and runs in hidden tabs and under the Lists sheet. | `LumiCompanion.tsx:100-238` | fixed — `LumiFigure` owns the loop; stable `onSend`; waits while hidden or at `/lists` |
+| C7 | **Dialog focus.** The Lists sheet has `aria-modal` but no trap or restore; the bubble doesn't return focus to Lumi's button; `RowMenu` claims `role="menu"` without arrow keys. | `ListsSheet.tsx`, `CompanionBubble.tsx` | fixed — `useDialogFocus` (in, Tab trapped, handed back); bubble Escape returns to Lumi; ⋯ menu roles dropped. `inert` decided against: the nav stays usable over the sheet, and at `/lists` the sheet sits inside `main` |
+| C8 | **`MemoryItem`:** confirming Forget unmounts the focused button; "Forgotten." sits in a freshly mounted live region; Escape doesn't cancel editing. | `settings/MemoryItem.tsx:44-52, 114` | fixed — a status line mounted from the start; focus to “Forgotten.”, then the next belief; Escape cancels; Keep/Cancel return focus |
+| C9 | **Chat client duplication:** transport ×3, reply-text extraction ×3, land-then-refresh ×2, "I lost the thread…" ×3, thinking dots ×4, textarea auto-resize ×2 (different caps). | `chat/Conversation.tsx`, `CompanionBubble.tsx`, `ListsSheet.tsx`, `chat/Composer.tsx` | fixed — `chat/chat-client.tsx`; one cap, 160px (Home's); Today page's dots left (not this branch's file) |
+| C10 | **`ListsSheet.tsx` (~460 lines) holds four components**; its filter/heading logic belongs in `core/domain/lists-view.ts`. | `lists/ListsSheet.tsx` | fixed — ListsSheet · ListsNav · ListsRow · AddLine · DateCell; rows, heading, empty line and tint in `lists-view.ts`, tested |
+| C11 | **The voice worker copies up to 19 MB every 4 s**; the buffer is fresh and can be transferred. | `localEngine.ts:86` | fixed — `postMessage(msg, [audio.buffer])`; callers never read it after |
+| C12 | **A focusable "+" button with no handler** in the Composer. | `chat/Composer.tsx:71` | fixed — removed (no plan for it in `features.md` or the canon) |
+| C13 | **Reduced-motion gaps:** thinking dots and the listening mic animate forever; `LumiCompanion` reads the preference once. | `globals.css` (~889, ~941), `LumiCompanion.tsx:107` | fixed — CSS holds dots and mic still; `LumiFigure` subscribes to the media query |
+| C14 | **`QuickStarts` imports from `persona.ts`**, which holds the whole prompt → move `QUICK_STARTS` to its own file (the persona string must stay byte-identical). | `today/QuickStarts.tsx:3`, `core/ai/persona.ts:79` | fixed — `core/ai/quick-starts.ts`; `persona.ts` re-exports; PERSONA sha256 unchanged (96adb7bd…) |
+| C15 | **`TimezoneCapture` compares the encoded cookie with the raw timezone**, so it rewrites the cookie on every load. | `TimezoneCapture.tsx:27` | fixed — compares the decoded value |
+| C16 | **`lumi-heads.png` is 226 KB** for 36–64 px avatars. | `public/` | fixed — lossless `lumi-heads.webp`, 227 → 163 KB, pixels and alpha identical; `cut-lumi-idle.py` writes it directly |
+| C17 | **Leaving Home mid-turn stops Lumi** — the same class as C1: Home's `useChat` owned its `Chat`, so unmounting the page aborted the request and her tools. (Added after the first pass.) | `chat/Conversation.tsx` | fixed — Home's `Chat` held in the `home` slot; re-seeded from the server with no turn in flight, kept while one is |
 
 ## D — Tooling, config and docs (`chore/hygiene`)
 
