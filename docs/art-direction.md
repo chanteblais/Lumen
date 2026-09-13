@@ -139,7 +139,8 @@ Motion is part of Lumi's voice, so it follows the voice guide in `product.md`: c
 
 | When (derived) | Lumi | Tier | Status |
 |---|---|---|---|
-| Any page, nothing happening | breathes, blinks | 1 | live |
+| Any page, nothing happening | breathes, blinks; now and then her empty hands come together in front of her and part | 1; the hands 3 | live (the hands since 2026-09-13, hands-free) |
+| She has a reason to handle something (none wired yet) | picks up a book and holds it, sets it down — one path played both ways | 3 | built, dev cue strip only (2026-09-13) |
 | A message sent from the bubble | one blink, a "got it" | 1 | live |
 | Arriving: the app opened or its tab shown after 30 min or more away, or a first visit | waves once, then breathes | 3 | live (2026-09-13); the one drawn gesture — a greeting, rare by construction |
 | Lumi is writing a reply | eyes narrow, or a glance up | 1–2 | idea |
