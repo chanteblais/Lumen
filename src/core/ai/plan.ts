@@ -7,7 +7,7 @@ import { z } from "zod";
 import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
-import { dayPart, describeGap, gapBucket } from "@/core/time";
+import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
 import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
@@ -160,7 +160,8 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     }
     if (isStale(c, inputs.now)) flags.push("untouched for two weeks+");
     if (c.nextAction) flags.push(`next: ${c.nextAction}`);
-    if (c.dueAt) flags.push(`due ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, month: "short", day: "numeric" }).format(c.dueAt)}`);
+    // A day-only date today stays a candidate (dueOn skips it) — say plainly that it's due today.
+    if (c.dueAt) flags.push(localDate(c.dueAt, inputs.timezone) === inputs.localDate ? "due today" : `due ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, month: "short", day: "numeric" }).format(c.dueAt)}`);
     if (c.note) flags.push(`note: ${c.note.slice(0, 80)}`);
     lines.push(`- ${c.id} · "${c.title}" · ${c.list ?? "—"} · ${c.estimateMinutes ? `~${c.estimateMinutes}m` : "—"}${flags.length ? ` · ${flags.join("; ")}` : ""}`);
   }

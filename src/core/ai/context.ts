@@ -1,4 +1,5 @@
 import { declineLabel } from "@/core/declines";
+import { isDayOnly } from "@/core/due-date";
 import { dayPart, describeGap, gapBucket } from "@/core/time";
 import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
@@ -293,12 +294,15 @@ export function describeActivity(a: ActivityItem): string {
     case "intention.created":
       return `you saved ${t}`;
     case "intention.updated": {
+      if (onPage && a.fields?.length === 1 && a.fields[0] === "dueAt") return `they changed the date on ${t} in Lists`;
       const fields = a.fields?.length ? ` (${a.fields.join(", ")})` : "";
       return onPage ? `they moved ${t} in Lists${fields}` : `you changed ${t}${fields}`;
     }
   }
 }
 
+/** A day-only date (00:00 local) is just the day; anything else carries its time. */
 function fmtDue(d: Date, timeZone: string): string {
+  if (isDayOnly(d, timeZone)) return new Intl.DateTimeFormat("en-CA", { timeZone, month: "short", day: "numeric" }).format(d);
   return new Intl.DateTimeFormat("en-CA", { timeZone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(d);
 }
