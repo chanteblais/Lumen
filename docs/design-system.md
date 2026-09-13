@@ -214,8 +214,8 @@ Viewer-local date + time as a `.label`, top right. Renders empty on the server a
 ### Icons
 Inline SVG, `stroke="currentColor"`, 1.4–1.6 stroke, round caps. No icon font, no icon library. **An icon may carry meaning when its name is always a hover, a focus or a tap away** — the nav's places are icons on the rail with their names on the parchment (2026-09-13, Chanté's call; it replaces "plain names, no icons" in the nav). An icon with no way to see its name is still out, and every icon-only control has an `aria-label`.
 
-### Favicon (`app/icon.svg`)
-Lumi's hooded head in the forest circle with a brass hairline ring, drawn as flat SVG shapes (the raster sprite does not survive 16px). Replaces the default Next favicon.
+### Favicon (`app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`)
+**Chanté's compass star** (`art/scenery/library/icon.png`, 2026-09-13): the gold four-pointed star inside interlaced rings, the same mark as the star at the head of the nav rail. `scripts/make-favicon.py` keys it off its white ground and writes three files Next links on its own: `favicon.ico` (16, 32, 48) and `icon.png` (32) for tabs, with the strokes thickened and pulled toward the mid gold so the hairlines survive 16px on light and dark tabs; and `apple-icon.png` (180), the untouched mark on the rail's olive green, opaque because iOS fills transparency with black. Replaces the SVG of Lumi's head in the forest circle (2026-09-12). The proxy's matcher already skips `.png` and `.ico`, so the icons are served without sign-in.
 
 ---
 
