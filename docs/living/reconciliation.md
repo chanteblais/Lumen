@@ -217,3 +217,11 @@ Historical log references to the previous Spaces/Garden point to their archived 
 - Five historical snapshots preserve their prose; only relative link destinations were relocated. Their original bytes remain available at the baseline Git commit.
 - Relative Markdown file links and explicit heading anchors in changed documents, including the archive, checked for resolution.
 - Documentation-only diff: no runtime files, schema, migration or milestone implementation changed. Application tests and a UI server are not applicable to this change; document coverage, links and whitespace are the relevant checks.
+
+## Main integration update
+
+Before the approved merge, main at `0ccb9b4` brought in the Library spatial map/painting history and Home greeting styling. The spatial-map proposal is now present on main; its earlier absence described above applies only to the original `b25cd5c` audit baseline. The new asset history and engineering entries are preserved, and open question 3 now links to the proposal without declaring it approved. The merge preserves current Home styling and working conventions.
+
+The follow-on [V1 gap plan](v1-gap-plan.md) checks the canon against code and proposes the first three bounded implementation changes. It records new evidence without changing runtime behaviour.
+
+Integration verification: `npm run check` passed after main integration (type generation/TypeScript, ESLint, 17 test files / 89 tests, and five authenticated routes). The diff against the integrated main has no application, script, package or schema changes. Document coverage and links were rechecked. No UI click-through was needed for this documentation-only delta.

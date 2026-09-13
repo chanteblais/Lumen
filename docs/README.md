@@ -8,6 +8,8 @@ Start with [shared terminology](product/shared-model.md) and [AI & Information A
 
 The [reconciliation record](living/reconciliation.md) contains lineage, source coverage and preserved gaps. The [historical snapshots](archive/2026-09-13-before-reconciliation/README.md) retain superseded text. Current product intent and the implementation index below are deliberately distinct.
 
+The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gaps and proposes three bounded first changes; it is a plan, not a claim of implementation or new milestone commitments.
+
 ## Implementation, evidence and operations
 
 | Doc | What's in it |

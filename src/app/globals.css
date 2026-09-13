@@ -485,6 +485,13 @@ body::after {
   border-radius: 999px;
   box-shadow: var(--shadow);
 }
+/* On a wide page the pill is set to a measure (~70% of the column, never
+   under 460px) and centred on the column, under the greeting, rather than
+   running edge to edge; the voice/tagline line keeps the same measure.
+   A phone keeps the full width — the input would be squeezed between its buttons. */
+@media (min-width: 768px) {
+  .composer, .composer-foot { width: clamp(min(100%, 460px), 70%, 100%); margin-inline: auto; }
+}
 .composer textarea {
   flex: 1;
   resize: none;
@@ -766,7 +773,9 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 
 /* The greeting hangs on the wall as a parchment scroll — the one light thing
    in the room, the way the tagline hangs in the mockup. Ink on paper again
-   inside it; the rods are the two dark bars past its edges. */
+   inside it; the rods are the two dark bars past its edges. The parchment is
+   lamp-warm and a little thin, so the room reads faintly through it, and it
+   is set tighter than the bare-paper opening (2026-09-13: ~18% shorter). */
 .shell:has(.home-scene) .opening {
   --paper: #f1e7d2;
   --paper-deep: rgba(43, 34, 22, 0.07);
@@ -788,11 +797,14 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   color: var(--ink);
   text-shadow: none;
   margin-top: 8px;
-  padding: 30px 34px 32px;
-  background: linear-gradient(180deg, #f5edda 0%, #eee2c9 55%, #e7d9bc 100%);
-  border-radius: 3px;
-  box-shadow: var(--shadow), inset 0 0 40px rgba(122, 96, 54, 0.12);
+  padding: 20px 34px 22px;
+  background: linear-gradient(180deg, rgba(246, 234, 208, 0.84) 0%, rgba(240, 222, 188, 0.82) 55%, rgba(233, 211, 172, 0.84) 100%);
+  border-radius: 14px;
+  box-shadow: var(--shadow), 0 0 48px rgba(217, 172, 95, 0.12), inset 0 0 40px rgba(150, 104, 44, 0.16);
 }
+.shell:has(.home-scene) .opening-head { margin-bottom: 20px; }
+.shell:has(.home-scene) .opening-line { margin-top: 8px; }
+.shell:has(.home-scene) .opening .quick-starts { margin-top: 20px; }
 .shell:has(.home-scene) .opening::before,
 .shell:has(.home-scene) .opening::after {
   content: "";
@@ -806,7 +818,8 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 }
 .shell:has(.home-scene) .opening::before { top: -6px; }
 .shell:has(.home-scene) .opening::after { bottom: -6px; }
-.shell:has(.home-scene) .opening.is-compact { padding: 22px 28px 24px; }
+.shell:has(.home-scene) .opening.is-compact { padding: 16px 28px 18px; }
+.shell:has(.home-scene) .opening.is-compact .opening-head { margin-bottom: 18px; }
 .shell:has(.home-scene) .chip:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 .shell:has(.home-scene) .icon-btn:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 
@@ -842,7 +855,10 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 }
 @media (max-width: 767px) {
   .shell:has(.home-scene) .sidebar { border-bottom-color: rgba(241, 230, 207, 0.12); }
-  .shell:has(.home-scene) .opening { padding: 22px 20px 24px; }
+  .shell:has(.home-scene) .opening { padding: 16px 18px 18px; }
+  .shell:has(.home-scene) .opening-head { margin-bottom: 18px; }
+  .shell:has(.home-scene) .opening-line { margin-top: 6px; }
+  .shell:has(.home-scene) .opening .quick-starts { margin-top: 18px; }
 }
 
 /* ---------- Today: the garden ----------
@@ -962,7 +978,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 700; --lumi-y: 900; } /* see Library: the reading room */
+  body:has(.library-scene) { --lumi-x: 1190; --lumi-y: 890; } /* see Library: the reading room */
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
@@ -976,9 +992,9 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background.png → public/library-room.webp). For
-   now the room is the whole page: nothing sits on the painting, and Lumi
-   stands on the rug in front of the reading table. The sidebar, the top bar,
+   room (art/scenery/library/background.png → public/library-room.webp).
+   For now the room is the whole page: nothing sits on the painting, and Lumi
+   stands on the open floor to the right of the reading circle. The sidebar, the top bar,
    the grain and the way her spot is mapped are shared with Today (the
    selectors above name both scenes). Nothing for the user to keep. */
 .library-scene {
@@ -998,6 +1014,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
 }
 .library-page { flex: 1 0 auto; }
-/* Lumi's spot (--lumi-x/y above) is on the rug in front of the reading table,
-   between the floor cushion and the table's front leg: she covers the table's
-   apron and runner, both further back than her feet. */
+/* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
+   reading circle (the round table with its armchairs, stools and cushions),
+   below the stair bookcase: she covers only floor and the rug's corner, both
+   further back than her feet, and stays clear of the sidebar and the crop at
+   every desktop window. */

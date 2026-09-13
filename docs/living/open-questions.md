@@ -18,7 +18,7 @@ Related: [Study](../product/focus-study.md).
 
 ## 3. How does the broad Library become navigable?
 
-**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today. Literal zoom and intellectual book presentations are candidates, not requirements.
+**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques. It remains a proposal, not approved interaction design.
 
 Related: [Library](../product/lists-library.md).
 
