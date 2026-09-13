@@ -14,14 +14,18 @@ Things to sort before anyone but Chanté uses Coherence.
 - [x] Pooler connection string (port 6543, transaction mode) in `DATABASE_URL` on Vercel (2026-09-12); `prepare: false` in the driver config.
 - [ ] Backups enabled.
 
-## Anthropic
-- [x] `ANTHROPIC_API_KEY` set on Vercel (2026-09-12).
-- [ ] Spend limit set in the Anthropic console.
-- [ ] Prompt caching verified in prod (`cache_read_input_tokens > 0` on second turn).
+## OpenAI (Lumi's model since 2026-09-13)
+- [x] `OPENAI_API_KEY` set on Vercel (2026-09-13, by Chanté).
+- [ ] Spend limit set in the OpenAI dashboard.
+- [ ] Prompt caching verified in prod (`cacheRead > 0` on the second turn; locally 2049 of ~2070 input tokens read from cache).
 - [ ] Refusal handling produces a Lumi-voice message, not an error.
+- [ ] `LUMI_MODEL` unset on Vercel (it's for local comparison runs).
+
+## Anthropic (alongside, for comparison)
+- [x] `ANTHROPIC_API_KEY` set on Vercel (2026-09-12). Unused in production unless `LUMI_MODEL=anthropic:…`; can be removed once the comparison is settled.
 
 ## Environment variables (Vercel)
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` · `CLERK_SECRET_KEY` · `DATABASE_URL` · `ANTHROPIC_API_KEY`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` · `CLERK_SECRET_KEY` · `DATABASE_URL` · `OPENAI_API_KEY` (`ANTHROPIC_API_KEY` only for `LUMI_MODEL=anthropic:…`)
 - `NEXT_PUBLIC_CLERK_SIGN_IN_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_URL` · `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` (same values as `.env.local`; without them `auth.protect()` bounces to Clerk's hosted portal instead of `/sign-in`)
 - Scope every variable to **Production and Preview**. A Development-only entry is invisible to deploys. Check with `vercel env ls --scope chante-s-projects1 --project lumen`; the app is `lumen` → https://lumen-nu-steel.vercel.app (the project keeps the old name until it's renamed; see below).
 
@@ -34,7 +38,7 @@ The app and docs say Coherence since 2026-09-12. These still say Lumen, and each
 - [ ] **The folder** `~/Projects/lumen`: a coordinated stop (`branching.md` rule 8): every session stops, the folder moves, `git worktree repair` runs, and every session restarts in the new path. Claude's project memory is keyed to the folder path (`~/.claude/projects/-Users-chante-Projects-lumen/`), so move that directory to the new path's slug or the memories stop loading. The least valuable rename. Fine to leave.
 
 ## Privacy
-- [ ] Privacy note in Settings: conversations are sent to Anthropic's API (30-day retention by default), stored in our database keyed to your account, and deletable in full.
+- [ ] Privacy note in Settings: conversations, what Lumi has learned and short gists of recent mail are sent to OpenAI's API (not used for training; requests sent with `store: false`, though OpenAI may keep them up to 30 days for abuse monitoring; check the current terms before writing the note), stored in our database keyed to your account, and deletable in full.
 - [ ] Export + delete-everything path exists and is tested (single cascade by `user_id`).
 - [ ] No conversation text in Vercel logs.
 
