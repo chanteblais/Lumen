@@ -18,8 +18,12 @@ Chanté, from Today's speech bubble: "I need to buy new headphones and also call
 - The ledger still shows *Updated · title* for a real change to something from an earlier reply — that is what happened.
 - A no-op update no longer bumps `last_touched_at`: re-saying a thing isn't touching it.
 
+### Verified (live, port 3007, the shared checkout on the branch; the two test intentions, their events and the two messages were removed afterwards)
+- "test item for Claude: water the fern, and also test item two: oil the gate" from Today's bubble: two `create_intention` calls in one step, both with `due_at: null`, no `update_intention`, two *Noted* lines. The nullable schema is enough on its own; the no-op guard and the ledger fold are the belt to its braces.
+- The bubble stretched to 540px beside her (a `min-height` set in devtools): her cast shadow runs under its edge, the tail is clean.
+
 ### Open
-- Whether the model still double-writes with the nullable schema is a live check (below); if it does, the ledger fold hides it from the user but the second tool call still costs a step.
+- Nothing from this sweep.
 
 ### Highest-value manual tests
 - On Today, tap Lumi and say "I need to buy X and also call Y": two *Noted* lines and nothing else; the Library shows both with no due date.
