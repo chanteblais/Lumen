@@ -251,6 +251,8 @@ Deferring and asking whether it needs doing at all are canon options not yet in 
 
 **Thinking something through.** A real question about direction or meaning. She moves into reflection and helps it produce a choice, then steps back out *(proposed; question 23)*. **Not:** a task list, or endless mirroring.
 
+**A shared file.** A photo of a sticky note, a screenshot, a PDF, with or without a word. She does what was asked with it; with nothing said, one line on what she sees and what she'd do. Things to do in it are a brain dump, filed silently. She sees it on that turn only, and later says so rather than guess *(current: persona, 2026-09-13)*. **Not:** reading the file back, a summary nobody asked for, or pretending to remember what was in it.
+
 ## 15. Evidence: interactions that worked and didn't
 
 Each row names the behaviour it shows, which is what carries forward (not the wording). Sources: [`voice-eval-log.md`](../voice-eval-log.md) (runs 1–3 on `claude-opus-5`; from run 4, 2026-09-13, on `gpt-6-astra`; runs 4–5 graded provisionally by Claude, not blind) and real use recorded in the engineering log. The rows from runs 4–5 are Claude's assessment, not Chanté's approval.
@@ -343,5 +345,6 @@ Method and open decisions are in [open question 21](../living/open-questions.md)
 
 ## Change log
 
+- **2026-09-13 · v0.3:** §14 adds *A shared file* (current), for files shared in the conversation and not kept.
 - **2026-09-13 · v0.2:** §15 takes the provisionally graded evidence from voice-eval runs 4–5; §17 adds how replies are judged (*proposed*), from review feedback Chanté relayed.
 - **2026-09-13 · v0.1:** first draft from the model strategy, the vision, the principles, `product.md`'s voice guide, the persona and the voice-eval runs. Sections marked *proposed* await Chanté.

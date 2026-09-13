@@ -6,13 +6,16 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
+import type { SharedFileNote } from "@/core/shared-files";
 
 /**
  * `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down);
  * `kind: "session_event"` with `sessionId`/`response` is a tap on the session bar or a check-in.
  */
 export type CoherenceMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
-export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata>;
+/** `data-shared-file`: the note kept in place of a file shared with a message (`core/shared-files.ts`). */
+export type CoherenceDataParts = { "shared-file": SharedFileNote };
+export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata, CoherenceDataParts>;
 
 export const MESSAGE_WINDOW = 30;
 
