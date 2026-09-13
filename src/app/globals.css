@@ -1196,7 +1196,9 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 .shell:has(.home-scene) .composer {
   backdrop-filter: blur(14px);
 }
-.shell:has(.home-scene) .composer-dock { background: linear-gradient(to bottom, transparent, rgba(26, 18, 12, 0.55) 26px); }
+/* No fade behind the dock: on the painting it was a box with a hard right edge
+   at the companion lane. The pill's own glass holds the scrolling lines. */
+.shell:has(.home-scene) .composer-dock { background: none; }
 .shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
 .shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
 .shell:has(.home-scene) .session-checkin {
