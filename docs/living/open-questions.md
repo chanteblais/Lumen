@@ -90,7 +90,7 @@ Related: [Approved decision](decisions.md#2026-09-13--approved-documentation-rec
 
 ## 15. Which names does the user see?
 
-**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Lists / Library / Insights / Settings is the current navigation (Lists added 2026-09-13 as a sheet over the page, not a rename of the Library). Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
+**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library, then Lists / Insights, then Settings is the current navigation — rooms, tools, utility, each group set apart (Lists added 2026-09-13 as a sheet over the page, not a rename of the Library). Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
 
 Related: [Spaces](../product/spaces.md).
 

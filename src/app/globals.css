@@ -309,35 +309,52 @@ body::after {
 .nav-crest { width: 72px; }
 .nav-divider { align-self: stretch; margin-top: 22px; }
 
-.nav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-/* Settings is a utility, not a space: set 64px further down, apart from the
-   places. On a short window the rail's foot (and the moon's button) is already
-   close under the last row, so the gap gives way first — none at a rail of
-   584px or less, the full 64px from 648px. A soft brass hairline on the rail,
-   fading at both ends, sits in the middle of the gap, centred on the icons; it
-   narrows with the gap and is gone when the gap is. */
-.nav-utility {
-  --utility-gap: clamp(0px, calc(var(--rail-h) - 584px), 64px);
-  margin-top: var(--utility-gap);
+/* Two soft breaks on the rail (Chanté, 2026-09-13): the tools (Lists, Insights)
+   set apart from the rooms (Home, Today, Library), and Settings, a utility,
+   further down again. Each break is a gap with a soft brass hairline in its
+   middle, fading at both ends and centred on the icons. On a short window the
+   rail's foot (and the moon's button) is already close under the last row, so
+   the gaps give way first: the room the rail has past its rows (--nav-spare,
+   none at a rail of 638px or less) goes to the tools' break first, up to 32px,
+   then to Settings', up to 64px. A hairline narrows with its gap and is gone
+   when the gap is. */
+.nav-list {
+  --nav-spare: max(0px, calc(var(--rail-h) - 638px));
+  --tools-gap: min(var(--nav-spare), 32px);
+  --utility-gap: min(calc(var(--nav-spare) - var(--tools-gap)), 64px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
 }
+.nav-tools { margin-top: var(--tools-gap); }
+.nav-utility { margin-top: var(--utility-gap); }
+.nav-tools::before,
 .nav-utility::before {
   content: "";
   position: absolute;
-  top: calc(-1 * (var(--utility-gap) + 4px) / 2); /* the gap and the list's 4px */
   left: calc(var(--rail-x) + var(--rail-w) / 2);
-  width: clamp(0px, calc(var(--rail-h) - 584px), 30px);
   height: 1px;
   transform: translateX(-50%);
   background: linear-gradient(to right, transparent, #d4ad6c, transparent); /* the painted brass */
   opacity: 0.55;
   pointer-events: none;
 }
+.nav-tools::before {
+  top: calc(-1 * (var(--tools-gap) + 4px) / 2); /* the gap and the list's 4px */
+  width: min(calc(var(--tools-gap) * 2), 30px);
+}
+.nav-utility::before {
+  top: calc(-1 * (var(--utility-gap) + 4px) / 2);
+  width: min(var(--utility-gap), 30px);
+}
 .nav-item {
   position: relative;
   display: flex;
   align-items: center;
   width: var(--nav-reach);
-  height: 50px;
+  /* 50px, until the rail is too short for six rows above the moon's button (638px): then the rows give up the difference between them, down to 38px */
+  height: clamp(38px, calc(50px - (638px - var(--rail-h)) / 6), 50px);
   color: var(--ink);
   text-decoration: none;
   pointer-events: auto;
@@ -1048,8 +1065,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   .nav-panel { top: 0; left: var(--bar-gap); right: var(--bar-gap); width: auto; height: var(--bar-h); pointer-events: auto; }
   .nav-list { flex-direction: row; gap: 0; height: 100%; margin: 0; padding: 0 6px; }
   .nav-item { flex: 1; width: auto; height: 100%; flex-direction: column; justify-content: center; gap: 3px; }
-  .nav-utility { margin-top: 0; } /* the bar shares its width equally: no gap before Settings, no divider */
-  .nav-utility::before { display: none; }
+  .nav-tools, .nav-utility { margin-top: 0; } /* the bar shares its width equally: no breaks, no dividers */
+  .nav-tools::before, .nav-utility::before { display: none; }
   .nav-icon { width: auto; height: 28px; padding: 0; }
   .nav-icon::before { left: 50%; width: 36px; height: 34px; }
   .nav-item .name {
@@ -1479,21 +1496,57 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 
+/* Aged paper, after the mockup: light in the middle and browning toward the
+   edges, in a brass-lined frame with a lighter band outside it, brass corner
+   brackets, and sparks at the foot's corners. The rules on it are brass too. */
 .lists-sheet {
   --olive: #4a4526;
+  --ink: #33281b;
+  --ink-soft: #54452f;
+  --ink-mute: #85735a;
+  --brass: #9a7440;
+  --rule: rgba(139, 106, 56, 0.24);
+  --rule-strong: rgba(139, 106, 56, 0.44);
   position: relative;
   display: flex;
   flex-direction: column;
   width: min(1180px, 100%);
   height: min(840px, 100%);
   padding: 30px 40px 26px;
-  background: linear-gradient(to bottom, rgba(255, 250, 238, 0.4), rgba(255, 250, 238, 0) 40%), #efe3c8;
-  border: 1px solid rgba(139, 106, 56, 0.4);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 6px rgba(241, 231, 210, 0.85), inset 0 0 0 7px rgba(139, 106, 56, 0.22), 0 24px 60px rgba(20, 14, 8, 0.45);
+  background:
+    radial-gradient(ellipse 70% 65% at 50% 42%, rgba(246, 234, 210, 0.85), rgba(246, 234, 210, 0) 72%),
+    radial-gradient(ellipse 110% 110% at 50% 50%, transparent 52%, rgba(130, 90, 40, 0.26) 100%),
+    #e7d3ae;
+  border: 1px solid #b8945c;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 5px rgba(247, 238, 218, 0.65),
+    inset 0 0 0 6px rgba(139, 106, 56, 0.32),
+    0 0 0 3px rgba(226, 206, 168, 0.95),
+    0 0 0 4px rgba(120, 88, 44, 0.5),
+    0 26px 60px rgba(20, 14, 8, 0.5);
   outline: none;
   animation: lists-rise 220ms ease-out both;
 }
+.lists-sheet::before {
+  --c: #a8844e;
+  content: "";
+  position: absolute;
+  inset: -5px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 24px 3px no-repeat,
+    linear-gradient(var(--c), var(--c)) left top / 3px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 24px 3px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 3px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 24px 3px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 3px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 24px 3px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 3px 24px no-repeat;
+}
+.lists-corner { position: absolute; bottom: 14px; color: var(--brass); opacity: 0.75; pointer-events: none; }
+.lists-corner-bl { left: 14px; }
+.lists-corner-br { right: 14px; }
 @keyframes lists-fade { from { opacity: 0; } }
 @keyframes lists-rise { from { opacity: 0; transform: translateY(8px); } }
 
@@ -1513,8 +1566,14 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 }
 .lists-close:hover { background: var(--paper-deep); color: var(--ink); }
 
-.lists-head { display: flex; align-items: center; gap: 18px; padding: 0 44px 18px 0; border-bottom: 1px solid var(--rule); }
-.lists-mark { flex: none; width: 58px; height: 58px; color: var(--brass); }
+.lists-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 44px 18px 0;
+  background: linear-gradient(to right, transparent, var(--rule-strong) 6%, var(--rule-strong) 94%, transparent) bottom / 100% 1px no-repeat;
+}
+.lists-mark { flex: none; width: 58px; height: 58px; color: #5f5a34; }
 .lists-title { font-size: 50px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); }
 .lists-tagline { margin-top: 6px; font-size: 21px; font-style: italic; line-height: 1.2; color: var(--ink-soft); }
 .lists-tools { margin-left: auto; display: flex; align-items: center; gap: 14px; }
@@ -1524,10 +1583,11 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   gap: 8px;
   width: 280px;
   padding: 9px 16px;
-  border: 1px solid var(--rule-strong);
+  border: 1px solid #c8ac7c;
   border-radius: 999px;
-  background: rgba(255, 250, 238, 0.55);
-  color: var(--ink-mute);
+  background: rgba(255, 251, 242, 0.72);
+  box-shadow: inset 0 1px 2px rgba(90, 60, 20, 0.08);
+  color: var(--ink-soft);
   transition: border-color 160ms ease;
 }
 .lists-search:focus-within { border-color: var(--brass); }
@@ -1539,17 +1599,18 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   gap: 8px;
   padding: 10px 22px;
   border-radius: 999px;
-  background: var(--olive);
-  color: #f1e7d2;
+  border: 1px solid #6f6236;
+  background: linear-gradient(to bottom, #5b5631, #423f1f);
+  color: #f2e3b8;
   font-family: var(--font-display);
   font-size: 19px;
   line-height: 1;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(20, 14, 8, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.2), 0 3px 8px rgba(40, 28, 10, 0.3);
   cursor: pointer;
-  transition: background-color 160ms ease;
+  transition: filter 160ms ease;
 }
-.lists-add:hover { background: #3a361c; }
+.lists-add:hover { filter: brightness(1.08); }
 
 .lists-add-line { padding: 14px 0 6px; border-bottom: 1px solid var(--rule); }
 .lists-add-line form { display: flex; align-items: center; gap: 10px; }
@@ -1570,31 +1631,50 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 .lists-add-line .chip:disabled { opacity: 0.5; cursor: default; }
 .lists-add-reply { margin: 10px 4px 4px; font-size: 16px; line-height: 1.4; color: var(--ink-soft); }
 
-.lists-tabs { display: flex; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
+.lists-tabs { display: flex; align-items: center; gap: 12px; padding: 16px 0; overflow-x: auto; scrollbar-width: none; }
+.lists-tabs-mark { flex: none; color: var(--brass); opacity: 0.8; }
 .lists-tab {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 20px;
-  border: 1px solid var(--rule-strong);
+  padding: 10px 22px;
+  border: 1px solid #cdb488;
   border-radius: 6px;
-  background: rgba(255, 250, 238, 0.4);
+  background: linear-gradient(to bottom, rgba(255, 251, 240, 0.7), rgba(244, 231, 206, 0.5));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   font-family: var(--font-display);
   font-size: 18px;
   line-height: 1;
   color: var(--ink-soft);
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease;
 }
-.lists-tab svg { color: var(--brass); }
-.lists-tab:hover { background: rgba(255, 250, 238, 0.85); color: var(--ink); }
-.lists-tab[aria-pressed="true"] { background: var(--olive); border-color: var(--olive); color: #f1e7d2; }
-.lists-tab[aria-pressed="true"] svg { color: #e2cf9c; }
+.lists-tab svg { color: #4a4030; }
+.lists-tab:hover { border-color: #b8945c; color: var(--ink); }
+.lists-tab[aria-pressed="true"] {
+  border-color: #3a371b;
+  background: linear-gradient(to bottom, #5b5631, #423f1f);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.18), 0 1px 3px rgba(40, 30, 10, 0.3);
+  color: #f2e3b8;
+}
+.lists-tab[aria-pressed="true"] svg { color: #e6d29c; }
 .lists-tab-quick { display: none; } /* on a phone, where the side column isn't */
 
-.lists-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
-.lists-side { display: flex; flex-direction: column; padding: 18px 22px 0 0; border-right: 1px solid var(--rule); overflow-y: auto; }
+.lists-body { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
+/* The mockup's brass rules around the side column: one along its top, fading in
+   from the left, one down its right edge, fading out at the foot, and a spark where they meet. */
+.lists-body::before,
+.lists-body::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+}
+.lists-body::before { left: 0; width: 230px; height: 1px; background: linear-gradient(to right, transparent, var(--rule-strong) 12%); }
+.lists-body::after { left: 230px; bottom: 0; width: 1px; background: linear-gradient(to bottom, var(--rule-strong) 80%, transparent); }
+.lists-body-mark { position: absolute; top: 0; left: 230px; transform: translate(-50%, -50%); color: var(--brass); }
+.lists-side { display: flex; flex-direction: column; padding: 18px 22px 0 0; overflow-y: auto; }
 .lists-side ul { display: flex; flex-direction: column; gap: 2px; }
 .lists-side-item {
   width: 100%;
@@ -1609,9 +1689,18 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   cursor: pointer;
   transition: background-color 160ms ease;
 }
-.lists-side-item svg { flex: none; color: var(--brass); }
-.lists-side-item:hover { background: var(--paper-deep); color: var(--ink); }
-.lists-side-item[aria-pressed="true"] { background: rgba(139, 106, 56, 0.16); color: var(--ink); }
+.lists-side-item svg { flex: none; color: #5c4d38; }
+/* The glyphs on tabs and in the side column are drawn a little heavier than the rail's, and the
+   default lists' are softly filled, so they read like the mockup's solid marks at 18px. */
+:is(.lists-tab, .lists-side-item, .lists-search) svg > :not([stroke-width]) { stroke-width: 1.8; }
+:is(.lists-g-school, .lists-g-work, .lists-g-personal) { fill: currentColor; fill-opacity: 0.28; }
+/* The default lists keep their colours beside their names, as in the mockup. */
+.lists-side-item .lists-g-school { color: #6a6391; }
+.lists-side-item .lists-g-work { color: #7b5634; }
+.lists-side-item .lists-g-personal { color: #6d7a3f; }
+.lists-side-item .lists-g-done { color: #7f9a57; }
+.lists-side-item:hover { background: rgba(176, 140, 88, 0.14); color: var(--ink); }
+.lists-side-item[aria-pressed="true"] { background: rgba(176, 140, 88, 0.28); color: var(--ink); }
 .lists-side-head { margin: 16px 12px 6px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 20px; color: var(--ink); }
 .lists-side-tail { margin-top: auto; padding: 24px 0 6px; }
 
@@ -1631,11 +1720,13 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 .lists-row-next { margin-top: 1px; font-size: 15px; line-height: 1.3; color: var(--ink-mute); }
 /* The list a row is in, tinted after the mockup: each of the user's lists takes the next of four quiet tints. */
 .lists-tag { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 3px 12px; border-radius: 6px; font-size: 15px; color: var(--ink-soft); background: rgba(43, 34, 22, 0.07); white-space: nowrap; }
-.lists-tag[data-tint="0"] { background: rgba(122, 116, 150, 0.2); }
-.lists-tag[data-tint="1"] { background: rgba(196, 140, 100, 0.26); }
-.lists-tag[data-tint="2"] { background: rgba(130, 128, 70, 0.24); }
-.lists-tag[data-tint="3"] { background: rgba(150, 120, 80, 0.18); }
-.lists-due { font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
+.lists-tag[data-tint="0"] { background: rgba(150, 140, 182, 0.3); color: #4f4868; }
+.lists-tag[data-tint="1"] { background: rgba(214, 160, 118, 0.34); color: #6a4830; }
+.lists-tag[data-tint="2"] { background: rgba(168, 162, 100, 0.36); color: #545130; }
+.lists-tag[data-tint="3"] { background: rgba(172, 136, 90, 0.28); color: #5b4630; }
+.lists-due { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
+.lists-due-mark { color: var(--brass); }
+.lists-row .circle { border-color: #bea47c; }
 .lists-gone { grid-column: 2 / -1; display: flex; align-items: center; gap: 12px; font-size: 16px; font-style: italic; color: var(--ink-mute); }
 .lists-gone button { font-style: normal; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .lists-empty { padding: 18px 6px; font-family: var(--font-display); font-size: 20px; line-height: 1.35; color: var(--ink-mute); }
@@ -1692,7 +1783,8 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   .lists-title { font-size: 36px; }
   .lists-tagline { font-size: 17px; }
   .lists-add { padding: 9px 16px; font-size: 17px; }
-  .lists-tabs { gap: 8px; padding: 12px 0; }
+  .lists-tabs { gap: 8px; padding: 12px 0; background: linear-gradient(to right, var(--rule-strong), transparent) bottom / 100% 1px no-repeat; }
+  .lists-body::before, .lists-body::after, .lists-body-mark, .lists-corner { display: none; }
   .lists-tab { padding: 7px 14px; font-size: 16px; }
   .lists-tab-quick { display: inline-flex; }
   .lists-body { grid-template-columns: minmax(0, 1fr); }

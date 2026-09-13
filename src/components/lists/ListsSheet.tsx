@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ledger } from "@/components/chat/Ledger";
 import { SprigIcon } from "@/components/shell/NavIcons";
-import { Tailpiece } from "@/components/ui/Ornament";
+import { Sparkle, Tailpiece } from "@/components/ui/Ornament";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import { UNSORTED, type ListsRow, type ListsView } from "@/core/domain/lists-view";
 import { CompleteCircle } from "./CompleteCircle";
@@ -50,8 +50,8 @@ export function ListsSheet({ view, over }: { view: ListsView; over: boolean }) {
 
   const tabs: { key: Shown; label: string; icon: React.ReactNode }[] = [
     { key: "all", label: "All", icon: <AllGlyph /> },
-    ...view.lists.map((name) => ({ key: `list:${name}` as Shown, label: name, icon: <ListNameGlyph name={name} /> })),
-    { key: "done", label: "Completed", icon: <DoneGlyph /> },
+    ...view.lists.map((name) => ({ key: `list:${name}` as Shown, label: name, icon: <ListNameGlyph name={name} className={`lists-g-${name.toLowerCase()}`} /> })),
+    { key: "done", label: "Completed", icon: <DoneGlyph className="lists-g-done" /> },
   ];
   const quick: typeof tabs = [
     { key: "today", label: "Today", icon: <TodayGlyph /> },
@@ -85,6 +85,8 @@ export function ListsSheet({ view, over }: { view: ListsView; over: boolean }) {
         <button type="button" className="lists-close" onClick={close} aria-label="Close Lists">
           <CloseGlyph />
         </button>
+        <Sparkle size={10} className="lists-corner lists-corner-bl" />
+        <Sparkle size={10} className="lists-corner lists-corner-br" />
 
         <header className="lists-head">
           <SprigIcon className="lists-mark" />
@@ -106,6 +108,7 @@ export function ListsSheet({ view, over }: { view: ListsView; over: boolean }) {
         {adding && <AddLine onClose={() => setAdding(false)} />}
 
         <div className="lists-tabs" role="group" aria-label="Show">
+          <Sparkle size={10} className="lists-tabs-mark" />
           {[...tabs, ...quick].map((t) => (
             <button
               key={t.key}
@@ -121,6 +124,7 @@ export function ListsSheet({ view, over }: { view: ListsView; over: boolean }) {
         </div>
 
         <div className="lists-body">
+          <Sparkle size={9} className="lists-body-mark" />
           <aside className="lists-side" aria-label="Views">
             <ul>
               {tabs.map((t) => (
@@ -202,7 +206,10 @@ function Row({ row, lists, showList, tint }: { row: ListsRow; lists: string[]; s
           {row.list}
         </span>
       )}
-      <span className="lists-due">{row.due}</span>
+      <span className="lists-due">
+        {row.due}
+        {row.dueToday && <Sparkle size={9} className="lists-due-mark" />}
+      </span>
       {row.done ? <span /> : <RowMenu row={row} lists={lists} onLetGo={() => setGone(true)} />}
     </li>
   );
