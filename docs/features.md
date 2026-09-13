@@ -8,7 +8,7 @@ Every page and feature: who it's for, what it does, key states. Grows with each 
 
 ## Navigation
 
-The rail and its parchment (`components/shell/Sidebar.tsx`), present on every page — a green rail with an icon per place, and the names on a sheet of parchment that opens from it (2026-09-13, Chanté's ask, after `art/mockups/rail-nav.png`):
+The rail and its parchment (`components/shell/Sidebar.tsx`), present on every page once you're signed in (not on sign-in or sign-up, which take the full width: the nav belongs to the space you enter) — a green rail with an icon per place, and the names on a sheet of parchment that opens from it (2026-09-13, Chanté's ask, after `art/mockups/rail-nav.png`):
 
 ```
 Coherence   Home · Today · Library · Insights · Settings
