@@ -127,7 +127,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 - Every table is keyed by `user_id`; export and delete are a single cascade.
 - Conversation text never goes to Vercel logs; log ids and durations only.
 - Mail: read-only, and read only when Insights is opened (at most once per 30 minutes) or when the user asks Lumi to look. Message text goes to the model for that one call and is **never stored** — a lead keeps sender, subject, received-at and Lumi's own line. Tokens stay in Clerk. Disconnecting is Clerk's account panel → Connected accounts.
-- Anthropic API standard retention is 30 days; note this in the eventual privacy page. Zero-data-retention is an org-level option to revisit if Lumi gets real users.
+- Lumi's requests go to OpenAI with `store: false`; OpenAI's API may still keep them up to 30 days for abuse monitoring (check the current terms), so note this in the eventual privacy page. Zero-data-retention is an org-level option to revisit if Lumi gets real users. (Under `LUMI_MODEL=anthropic:…`, Anthropic's standard retention is 30 days.)
 
 ## 3. Decisions that are expensive to reverse
 
@@ -225,7 +225,7 @@ Planned: `GET/DELETE /api/beliefs` (M6).
 - **Deterministic where it can be:** the greeting, focus check-ins, quick starts. Lumi speaks unprompted only at check-ins.
 - **Store facts and events; derive judgements** (stale, avoided, gap, today's capacity). Never persist derived flags.
 - **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
-- **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). Anthropic's minimum cacheable prefix is model-dependent; a short persona may never cache — grow it before assuming a bug.
+- **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). OpenAI caches a prefix of 1024 tokens or more on its own (the persona + tools clear it); Anthropic's minimum is model-dependent. A short persona may never cache, so grow it before assuming a bug.
 - **Message ids are UUIDs on both sides** (`generateId: () => crypto.randomUUID()` in `useChat`, `generateMessageId` in the route) because `messages.id` is a uuid column.
 - **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the two public prefixes by hand and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
 - **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx`, `src/lib/auth-mail.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else. The Google token for mail is fetched in `auth.ts` and handed on as an `EmailReader` (`lib/email.ts`), so `src/core` never sees Clerk or a token.
