@@ -6,6 +6,7 @@
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
+import type { Logger } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import type { Db } from "./client";
@@ -14,10 +15,11 @@ import { users, type User } from "./schema";
 
 const migrationsFolder = path.resolve(process.cwd(), "src/db/migrations");
 
-export async function openTestDb(): Promise<{ db: Db; close: () => Promise<void> }> {
+/** `logger`: sees every statement after the migrations — for tests about the order of writes. */
+export async function openTestDb({ logger }: { logger?: Logger } = {}): Promise<{ db: Db; close: () => Promise<void> }> {
   const client = new PGlite();
-  const pglite = drizzle(client, { schema });
-  await migrate(pglite, { migrationsFolder });
+  await migrate(drizzle(client, { schema }), { migrationsFolder });
+  const pglite = drizzle(client, { schema, logger });
   // The app's client is postgres-js; the query builder the domain uses is the same surface.
   return { db: pglite as unknown as Db, close: () => client.close() };
 }

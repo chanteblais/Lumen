@@ -22,9 +22,10 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 |---|---|---|
 | id | uuid pk | |
 | user_id | fk | |
-| kind | text | `'main'` — exactly one per user in V1, created lazily |
-| summary | text null | rolling summary of messages older than the window (M6) |
-| summary_through_message_id | uuid null | where the summary ends |
+| kind | text | `'main'` — exactly one per user in V1, created lazily. Unique partial index `conversations_user_main_idx (user_id) WHERE kind = 'main'` (`0006`), so two first visits racing can't make a second (`ensureMainConversation` inserts on conflict do nothing, then reads) |
+| summary | text null | unused (older conversation reaches a turn as episodes) |
+| summary_through_message_id | uuid null | consolidation's watermark: messages up to it are folded into memory. No FK, on purpose — see *Pointers without foreign keys* below |
+| consolidating_until | timestamptz null | (`0006`) a consolidation run's lease: taken before its model call, cleared when it finishes, free once expired — so two instances don't both pay for a model call on one stretch |
 | created_at, updated_at | | |
 
 ### `messages`
@@ -65,7 +66,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | check_in_minutes | int | copied from preferences at start |
 | started_at | timestamptz | |
 | ended_at | timestamptz null | |
-| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early`. Built M5 (2026-09-12), no migration — the table was in `0000` |
+| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early` (or as `abandoned`, if it was already past its threshold and not yet swept), and the unique partial index `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL` (`0006`) holds it when two starts race. Built M5 (2026-09-12), no migration — the table was in `0000` |
 
 ### `memory_notes` — beliefs with evidence
 | column | type | notes |
@@ -97,7 +98,7 @@ What may be stored is decided in code before the insert (`core/domain/memory-rul
 | left_off | text null | where it was left, when something was left open |
 | started_at / ended_at | timestamptz | the first and last message it covers |
 | through_message_id | uuid | the last message it covers — the watermark moved here |
-| thread_ids | jsonb string[] | threads it touched; a forgotten thread's id is removed |
+| thread_ids | jsonb string[] | threads it touched; a forgotten thread's id is removed. GIN index `episodes_thread_ids_idx` (`0006`) for the `@>` filters. A join table was considered and not built: at V1 scale (one user, tens of episodes) the array and its index do the job, and a thread is forgotten rarely |
 | created_at | | |
 
 One per stretch of conversation, written by consolidation (`core/ai/consolidate.ts`) once the stretch is over. The conversation's `summary_through_message_id` is the watermark: messages up to it are folded in.
@@ -143,7 +144,10 @@ Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not 
 | payload | jsonb | type-specific |
 | occurred_at | timestamptz | |
 
-Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
+Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique partial `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'` (`0006`) — reflection's once-per-session claim.
+
+### Pointers without foreign keys
+`conversations.summary_through_message_id`, `episodes.through_message_id`, `memory_notes.source_message_id` / `supersedes_id` and `thread_notes.source_message_id` / `superseded_by_id` point into history and have no FK, on purpose: a message or an older version can go (the user forgets a belief's chain; a conversation is trimmed) while the row pointing at it stays meaningful, and an FK would either block that or cascade a delete nobody asked for. Code treats a missing target as normal — `unconsolidatedMessages` falls back to the latest episode's `ended_at` when the watermark message is gone (and logs it) rather than re-reading the conversation.
 
 ## Events catalogue (V1)
 | type | payload |
@@ -152,26 +156,28 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` — from the chat tool or Today's prompt |
 | `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
 | `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
-| `intention.created` / `.updated` / `.completed` / `.reopened` / `.dropped` / `.touched` | `{ diff? }`; `.completed`, `.reopened`, `.updated {fields}` and `.dropped {reason}` carry `{ via: 'app' | 'chat' }` — the circle on Today or in Lists, or the Lists sheet's ⋯ menu (move, let go), vs a chat tool (`.updated` and `.dropped` since 2026-09-13; older rows have no `via` and read as chat). The chat context's *Recent changes* (`core/domain/activity.ts`) is derived from these, joined to the intention's title and current status |
+| `intention.created` / `.updated` / `.completed` / `.reopened` / `.dropped` / `.touched` | `{ diff? }`; `.completed`, `.reopened`, `.updated {fields}` and `.dropped {reason}` carry `{ via: 'app' | 'chat' }` — the circle on Today or in Lists, or the Lists sheet's ⋯ menu (move, let go), vs a chat tool (`.updated` and `.dropped` since 2026-09-13; older rows have no `via` and read as chat). The chat context's *Recent changes* (`core/domain/activity.ts`) is derived from these, joined to the intention's title and current status. `.completed`, `.reopened` and `.dropped` are written only when the status actually moves (code review A7, 2026-09-13): completing a done thing, reopening an open one or dropping a dropped one returns the row unchanged with no event, so `completed_at` keeps the first tick. Dropping a done thing clears `completed_at`; completing a dropped one clears `dropped_at` |
 | `session.started` | `{ goal, first_step, planned_minutes, approach, intention_id }` (M5) |
 | `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below |
 | `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
 | `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }`; `.noted` and `.revised` also carry `source`; `.contradicted` / `.retired` may carry a free-text `note`. No belief content in any of them |
-| `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`wasForgotten`); no words are kept |
-| `memory.consolidated` | `{ messages, threads_created, notes, summaries }` (2026-09-13) — one stretch of conversation folded into memory; `subject_id` is its episode, when one was written |
+| `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`isForgotten`, the one check for beliefs and the Library — it reads `library.forgotten` too); no words are kept |
+| `memory.consolidated` | `{ messages, threads_created, notes, summaries, shelved }` (2026-09-13) — one stretch of conversation folded into memory; `subject_id` is its episode, when one was written |
+| `memory.consolidation_failed` | `{ from, through }` (2026-09-13, code review A2) — a consolidation run over the stretch after watermark `from` (a message id, or null) up to `through` failed: the model call threw or returned nothing usable, or applying it failed and rolled back. The watermark stays; the next runs over the same `from` back off by how many of these there are in the last 7 days (10 min · 1 h · 6 h, `consolidationRetryAt`). The subject is the user |
 | `library.thread_created` / `.summary_revised` | `{ by: 'user'|'lumi'|'consolidation' }` — the subject is the thread |
 | `library.shelved` | `{ under, from, by }` — the thread (the subject) moved under `under` (a thread id, or null: taken off its shelf) from `from`; `by` is `user` (`shelve_thread` on their word), `lumi` or `consolidation` |
 | `library.noted` | `{ note, kind, source, supersedes, by }` — a note filed under the thread (the subject); `supersedes` is the note it replaced, or null |
 | `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
-| `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
-| `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
+| `email.scanned` | `{ through, read, suggested, backlog }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. `backlog` (2026-09-13, code review A12) is `{ after, before }` or null: older mail this look ran out of pages for, read by the next look after what's new — so mail beyond one look's pages is carried, never skipped, and nothing older than a week is read. The newest one is *when Lumi last looked* |
+| `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead`. Each once per lead (2026-09-13, code review A6): keeping claims the lead (`status = 'suggested'`) in the transaction that creates the intention, and a second keep returns that intention with no event; a second let-go returns the lead as it is. A lead held already for the same message and title is not inserted again, and gets no `.suggested` |
+| `reflection.claimed` | `{}` (2026-09-13, code review A4) — written before reflection does any work on a session (the subject), on conflict do nothing against `events_reflection_claim_idx`; only the caller whose row came back reflects |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
 
 ## Derived (never stored)
 | view | rule |
 |---|---|
 | `staleIntentions` | `status = open AND last_touched_at < now − 14d` |
-| `todayCapacityState` | latest `capacity.reported` within the user's local day, plus whether a `capacity.asked {skipped}` exists today — Today's prompt shows only when neither does (`core/domain/capacity.ts`) |
+| `capacityState` | latest `capacity.reported` within the user's local day, plus whether a `capacity.asked {skipped}` exists today — Today's prompt shows only when neither does (`capacityStateFromEvents` in `core/domain/capacity.ts`, over the snapshot's one read of today's events) |
 | `declinedToday` | today's `intention.declined` events, newest first, with reasons — never Right now again today; flagged in the context block (`core/domain/intentions.ts`) |
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
 | `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |
@@ -181,7 +187,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `lastSession` | the most recently ended session if it ended in the last 36h — continuity for the context block ("pick it back up") and the abandoned greeting |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
-| `mailScan` | the newest `email.scanned`: when Lumi last looked and the watermark (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
+| `mailScan` | the newest `email.scanned`: when Lumi last looked, the watermark and any backlog (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
 | `suggestedLeads` | `leads.status = suggested`, newest first (≤ 12 on Insights, ≤ 8 in the context block). Never counted anywhere |
 
 ## Added in M3 (migration `0001`)
@@ -220,7 +226,7 @@ Something Lumi noticed that might need doing — in the user's recent mail, for 
 | intention_id | fk null | set when kept (`set null` if the intention ever goes) |
 | suggested_at, resolved_at | timestamptz | |
 
-Index `(user_id, status, suggested_at)`.
+Index `(user_id, status, suggested_at)`, and the unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))` (`0006`): one message can yield several leads, never the same one twice — two looks racing insert on conflict do nothing. `createLeads` collapses whitespace in the title before the insert.
 
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
@@ -234,6 +240,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0006_data_integrity.sql` | `conversations.consolidating_until` (timestamptz null, consolidation's lease); unique partial indexes `conversations_user_main_idx (user_id) WHERE kind = 'main'`, `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL`, `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'`; unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))`; GIN `episodes_thread_ids_idx` (code review 2026-09-13, section A) | No (add-only) — but a unique index fails to build if duplicates already exist: run the duplicate checks in the branch summary first | **No** — `fix/data-integrity`; Chanté applies it |
 | `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **Yes** — 2026-09-13, applied by hand (the tables were present before landing; checked). Recorded in `drizzle.__drizzle_migrations` on 2026-09-13, with `0005` (until then only `0000`–`0002` were, so `db:migrate` failed on "already exists") |
 | `0005_thread_shelves.sql` | `threads.parent_id` (fk to `threads`, on delete set null) and `threads.shelved_by`, plus the index `threads_parent_idx` | No (add-only; nullable columns) | **Yes** — 2026-09-13, applied by Claude from `feat/library-sections` while in review (add-only, so safe under `main`'s code), in one transaction with the journal rows for `0003`–`0005`; `npm run db:migrate` is a no-op again. `feat/plan-together`'s priorities migration must renumber to `0006`, and its `priorities` table already exists unrecorded |
 | `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **Yes** — 2026-09-13, applied by hand before landing (checked). Recorded 2026-09-13 — see `0004` |

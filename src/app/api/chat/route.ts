@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   });
   // Fold finished stretches of conversation into memory — an episode per visit, notes filed
   // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
-  after(() => consolidateAfter(db(), user));
+  after(() => consolidateAfter(db(), user, { passes: 1 }));
 
   const body = (await req.json()) as { message?: CoherenceUIMessage };
   const incoming = body.message;
