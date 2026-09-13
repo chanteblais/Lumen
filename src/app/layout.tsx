@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { NAV_MODE_COOKIE, navModeFrom } from "@/components/shell/nav-pin";
 import { TopBar } from "@/components/shell/TopBar";
 import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
+import { FreshOnReturn } from "@/components/shell/FreshOnReturn";
 import { LumiCompanion } from "@/components/shell/LumiCompanion";
 
 const cormorant = Cormorant_Garamond({
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <AuthProvider>
           <TimezoneCapture />
+          <FreshOnReturn />
           <div className="shell">
             <Sidebar modeAtLoad={navMode} />
             <main className="main">
