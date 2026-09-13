@@ -1,8 +1,7 @@
 import { getOwnedThread, listCurrentNotes, listNoteHistory, listThreadEpisodes, listThreads } from "@/core/domain/library";
 import { db } from "@/db/client";
 import type { Episode, Thread, ThreadNote } from "@/db/schema";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "@/core/ids";
 
 /**
  * Reads for the Library's pages. Like `loadLibraryOrNothing`, none of them
@@ -24,7 +23,7 @@ export type ThreadPlace = { thread: Thread; held: Thread[] };
 
 /** The thread with everything held around it; "missing" when it isn't theirs (or isn't a thread id); null when it can't be read. */
 export async function readThread(userId: string, id: string): Promise<ThreadPlace | "missing" | null> {
-  if (!UUID.test(id)) return "missing";
+  if (!isUuid(id)) return "missing";
   try {
     const [thread, held] = await Promise.all([getOwnedThread(db(), userId, id), listThreads(db(), userId)]);
     if (!thread) return "missing";
