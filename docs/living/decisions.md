@@ -19,6 +19,7 @@
 
 **Principle.** V§16–17, EP§18; *Coherence remembers, Lumi understands*; AI & IA §24–26; Library §12–16, §20–24, §33, §55.
 **Replaces.** The M6 plan's rolling conversation summary ([engineering log](../decisions.md), same date).
+**Confirmed.** Chanté, 2026-09-13, after it landed.
 
 ## 2026-09-13 · Lists is in the nav again, as a sheet over the page you're on
 

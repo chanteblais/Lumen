@@ -132,7 +132,7 @@ Related: [Model strategy](../product/lumi-model-strategy.md).
 
 ## 22. Which richer concepts become structure first?
 
-**Status: Open.** Current intentions combine Intention and Action; lists, beliefs, sessions and events hold a smaller model. Decide minimal representation of Threads, relationships, commitments, scoped exclusions and outcomes. Preserve conceptual distinctions without prematurely building the entire ontology or expanding V1.
+**Status: Partly answered.** Threads come first (2026-09-13, confirmed by Chanté — [decisions](decisions.md): *Recent conversation lives on, and what mattered is filed in the Library*). Threads, their notes and short memories of each visit now exist as life-model objects, filled from conversation by consolidation; how the Library presents them is question 3. Still open: relationships, commitments, scoped exclusions, outcomes, and how threads relate to intentions (still flat, combining Intention and Action). Preserve conceptual distinctions without prematurely building the entire ontology or expanding V1.
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 
