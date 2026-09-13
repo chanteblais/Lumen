@@ -36,7 +36,7 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 | `docs/philosophy/lumi.md` | `272cc5cd788b` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `6fe23daa6b60` |
+| `docs/living/decisions.md` | `81dcf4e03b49` |
 | `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
@@ -94,6 +94,8 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/priorities`, merging `main` with `feat/lumi-environment`): the product decisions now hold both *Plan with Lumi is scrapped; what they say matters this week is remembered* and *When something feels too big, Lumi asks before she hands over a step*, each already reviewed on its own branch (the lines below). Together they change nothing she should understand; the persona carries both hows.
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/priorities`): the product decisions gained *Plan with Lumi is scrapped; what they say matters this week is remembered*. What she should understand is already here: she proposes and they correct, what they told her outranks what she guessed, and a deadline isn't the same as importance. How she holds a stated priority is the *how*, in the persona and the tool descriptions. The places line still reads true: nothing on Today mentions planning with her.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/lumi-environment`, Chanté's live test): the product decisions gained *When something feels too big, Lumi asks before she hands over a step*, and `lumi.md` §5 and §14 follow it. The brief already says resistance is information to adapt to (break it down, swap it, let it rest, ask whether it needs doing) and that the states behind not starting need different things; the rule itself is the *how*, so it went into the persona (*What you're for* → Starting).
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/lumi-environment`): `lumi.md` §6 now says each turn carries where the user is and that her persona holds a map of the app. The brief already says the places are views of one life and that she lives in them and is on every page; which page, what each lets the user do and what isn't built are the *how*, so they went into the persona (*The app, and where they are*), which would otherwise go stale inside the brief as pages change.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/chat-files`): the product decisions gained *Files shared with Lumi are read, not kept*, and `lumi.md` §14 gained *A shared file*. What she does with a file is the *how*, and lives in the persona. The brief already carries the why: she carries the administration, and a thing to do is filed whether it's said or photographed.

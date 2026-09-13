@@ -140,7 +140,7 @@ Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not 
 | id | bigserial pk | |
 | user_id | fk | |
 | type | text | see catalogue |
-| subject_type / subject_id | text / uuid null | intention, session, note |
+| subject_type / subject_id | text / uuid null | intention, session, note, user, lead, thread, episode, priority |
 | payload | jsonb | type-specific |
 | occurred_at | timestamptz | |
 
@@ -189,6 +189,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
 | `mailScan` | the newest `email.scanned`: when Lumi last looked, the watermark and any backlog (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
 | `suggestedLeads` | `leads.status = suggested`, newest first (≤ 12 on Insights, ≤ 8 in the context block). Never counted anywhere |
+| `currentPriorities` | `priorities` not retired whose scope holds today (`while`, or `week_of` = this local week's Monday), plus any said for a week still ahead; newest first, ≤ 12 (`core/domain/priorities.ts`). A week's priority stops holding when its week ends — nothing is cleared or flagged |
 
 ## Added in M3 (migration `0001`)
 `intentions.list` (free label from the user's lists; `users.preferences.lists` holds the ordered names, default School · Work · Personal · Later), `intentions.estimate_minutes`, and:
@@ -201,7 +202,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced | first_step` — `first_step` (2026-09-13): a step chosen from *Break it down* on Today's card set as Right now's first step, no re-cut (event `plan.first_step`); `declined` now comes from the card and is written twice: at once, with the next Right now picked in code from After that and `note` (a fixed line for the reason, dropped when the path advances), then the model's re-cut of the rest keeping that Right now — the second only if no other row was written in between; `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
+| reason | text | `new_day | first_items | capacity | declined | reentry | asked | priority | advanced | first_step` — `priority` (2026-09-13): re-cut because a stated priority was held or let go in chat (`hold_priority` / `let_go_priority`); `first_step` (2026-09-13): a step chosen from *Break it down* on Today's card set as Right now's first step, no re-cut (event `plan.first_step`); `declined` now comes from the card and is written twice: at once, with the next Right now picked in code from After that and `note` (a fixed line for the reason, dropped when the path advances), then the model's re-cut of the rest keeping that Right now — the second only if no other row was written in between; `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
 Events added: `plan.generated {reason, ask?}` (`ask`: the user's words when the reason is `asked` — a learning signal, e.g. "easy" three days running), `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.
@@ -228,8 +229,29 @@ Something Lumi noticed that might need doing — in the user's recent mail, for 
 
 Index `(user_id, status, suggested_at)`, and the unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))` (`0006`): one message can yield several leads, never the same one twice — two looks racing insert on conflict do nothing. `createLeads` collapses whitespace in the title before the insert.
 
+## Added 2026-09-13 (migration `0007`) — stated priorities
+
+### `priorities`
+What the user said matters, over the scope they gave. Their word only: Lumi's own ordering is the day plan and is never stored here, and nothing is inferred into this table. Kept apart from beliefs (`memory_notes`, what Lumi has learned) and from urgency (`intentions.due_at`) — `product/shared-model.md` → Priority and temporal scope; open question 11.
+
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk | cascade |
+| content | text | one sentence, close to their words: "The paper matters most this week" |
+| intention_id | uuid null | the open intention it names, if any (set null on delete) |
+| scope | text | `week` \| `while` (for a while — no end date is invented) |
+| week_of | text null | for `week`: the local Monday (`YYYY-MM-DD`) of the week they meant — this week or next |
+| supersedes_id | uuid null | the priority this one replaced |
+| retired_at / retired_reason | timestamptz / text null | `let_go` (they said it no longer matters like that) \| `superseded` |
+| created_at | timestamptz | |
+
+Index `(user_id, retired_at)`. Whether a priority holds is derived (`currentPriorities`, above), never stored: a week's priorities stop holding on the Monday after, with nothing to clear. Written only by the `hold_priority` / `let_go_priority` tools; read into the snapshot, the context block (*What they said matters*) and the day planner.
+
+Events added: `priority.held {scope, week_of, intention_id, supersedes}`, `priority.let_go {scope, week_of}`; `plan.generated {reason: "priority"}`.
+
 ## Deliberately absent
-Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · priority field · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
+Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · a priority field or score on intentions (stated priorities are scoped rows of their own, `priorities`, never a number) · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
 
 ## Storage
 None in V1. (Voice audio never leaves the browser; file attachments are post-V1.)
@@ -240,9 +262,10 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
-| `0006_data_integrity.sql` | `conversations.consolidating_until` (timestamptz null, consolidation's lease); unique partial indexes `conversations_user_main_idx (user_id) WHERE kind = 'main'`, `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL`, `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'`; unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))`; GIN `episodes_thread_ids_idx` (code review 2026-09-13, section A) | No (add-only) — but a unique index fails to build if duplicates already exist: run the duplicate checks in the branch summary first | **No** — `fix/data-integrity`; Chanté applies it |
+| `0007_priorities.sql` | `priorities` table (stated priorities: content, `intention_id`, `scope`, `week_of`, `supersedes_id`, retired) + FKs (user cascade, intention set null) + index `(user_id, retired_at)` | No (create-only) | **Yes** — 2026-09-13. Written on `feat/plan-together` (as `0003`), renumbered to `0007` on `land/plan-together`, and landed byte-identical with `feat/priorities`. The table was already in the database from an earlier attempt with no journal row and matched the file exactly (columns, types, nullability, defaults, both FKs, the index; no rows), so only its `drizzle.__drizzle_migrations` row was inserted (Claude, one transaction: row 8, `created_at` = the journal's `when`); `npm run db:migrate` is a no-op |
+| `0006_data_integrity.sql` | `conversations.consolidating_until` (timestamptz null, consolidation's lease); unique partial indexes `conversations_user_main_idx (user_id) WHERE kind = 'main'`, `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL`, `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'`; unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))`; GIN `episodes_thread_ids_idx` (code review 2026-09-13, section A) | No (add-only) — but a unique index fails to build if duplicates already exist: run the duplicate checks in the branch summary first | **Yes** — recorded in `drizzle.__drizzle_migrations` with a hash matching the file (read 2026-09-13 while checking `0007`) |
 | `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **Yes** — 2026-09-13, applied by hand (the tables were present before landing; checked). Recorded in `drizzle.__drizzle_migrations` on 2026-09-13, with `0005` (until then only `0000`–`0002` were, so `db:migrate` failed on "already exists") |
-| `0005_thread_shelves.sql` | `threads.parent_id` (fk to `threads`, on delete set null) and `threads.shelved_by`, plus the index `threads_parent_idx` | No (add-only; nullable columns) | **Yes** — 2026-09-13, applied by Claude from `feat/library-sections` while in review (add-only, so safe under `main`'s code), in one transaction with the journal rows for `0003`–`0005`; `npm run db:migrate` is a no-op again. `feat/plan-together`'s priorities migration must renumber to `0006`, and its `priorities` table already exists unrecorded |
+| `0005_thread_shelves.sql` | `threads.parent_id` (fk to `threads`, on delete set null) and `threads.shelved_by`, plus the index `threads_parent_idx` | No (add-only; nullable columns) | **Yes** — 2026-09-13, applied by Claude from `feat/library-sections` while in review (add-only, so safe under `main`'s code), in one transaction with the journal rows for `0003`–`0005`; `npm run db:migrate` is a no-op again. The `priorities` table that already existed unrecorded was recorded as `0007` (see `0007`) |
 | `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **Yes** — 2026-09-13, applied by hand before landing (checked). Recorded 2026-09-13 — see `0004` |
 | `0002_leads.sql` | `leads` table (what Lumi noticed in the mail: title, why, list, due, sender/subject/received, status, `intention_id` when kept) + two indexes | No (create-only) | **Yes** — 2026-09-12, applied by Claude with `npm run db:migrate` on `feat/email-insights` (additive, per `branching.md` → Claude sessions) |
 | `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **Yes** — 2026-09-13 (applied by Chanté; journaled) |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Intention } from "@/db/schema";
+import type { Intention, Priority } from "@/db/schema";
 import { buildContextBlock } from "./context";
 
 const now = new Date("2026-09-12T06:00:00Z"); // Fri 11pm Vancouver
@@ -71,6 +71,28 @@ describe("buildContextBlock", () => {
     expect(line("Essay")).toMatch(/due \D*18$/);
     expect(line("Practicum")).toMatch(/5:00/);
     expect(block).toContain('they changed the date on "Essay" in Lists');
+  });
+  it("shows what they said matters with its id, scope, words and the intention it names", () => {
+    const paper = { id: "i1", title: "Discussion post", status: "open", lastTouchedAt: now, list: "School", estimateMinutes: null, dueAt: null, nextAction: null } as unknown as Intention;
+    const block = buildContextBlock({
+      displayName: "C",
+      timezone: "America/Vancouver", // Fri Sep 11 locally
+      now,
+      openIntentions: [paper],
+      priorities: [
+        { id: "p1", content: "The discussion post matters most this week", scope: "week", weekOf: "2026-09-07", intentionId: "i1", retiredAt: null } as unknown as Priority,
+        { id: "p2", content: "Evenings stay free for a while", scope: "while", weekOf: null, intentionId: null, retiredAt: null } as unknown as Priority,
+        { id: "p3", content: "Taxes first next week", scope: "week", weekOf: "2026-09-14", intentionId: null, retiredAt: null } as unknown as Priority,
+      ],
+    });
+    expect(block).toContain("## What they said matters");
+    expect(block).toMatch(/- p1 · this week · "The discussion post matters most this week" · i1 "Discussion post"/);
+    expect(block).toMatch(/- p2 · for a while · "Evenings stay free for a while" · —/);
+    expect(block).toMatch(/- p3 · next week · "Taxes first next week"/);
+  });
+  it("leaves the priorities section out when there are none", () => {
+    const block = buildContextBlock({ displayName: "C", timezone: "UTC", now });
+    expect(block).not.toContain("What they said matters");
   });
   it("leaves the recent-changes section out when nothing changed", () => {
     const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, recentActivity: [] });

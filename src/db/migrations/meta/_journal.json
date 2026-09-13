@@ -50,6 +50,13 @@
       "when": 1789331597142,
       "tag": "0006_data_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789336938985,
+      "tag": "0007_priorities",
+      "breakpoints": true
     }
   ]
 }
