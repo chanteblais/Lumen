@@ -13,7 +13,7 @@
 **Implications.**
 - Icons can carry meaning, but only where the name is always a hover, focus or tap away. An icon with no way to see its name is still out.
 - The names stay plain (`spaces.md` §3): *Home, Today, Library*, never place-names the user has to decode.
-- Pinning is optional and undone the same way; nothing may depend on it.
+- Pinning, and locking the sheet away (the moon), are optional and undone the same way; nothing may depend on either.
 - Phones are a trial (the rail plus a tap on the compass star); to revisit.
 
 **Principle.** V§14, `spaces.md` §3 and §21.

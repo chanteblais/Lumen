@@ -127,8 +127,9 @@ body::after {
 .shell {
   --rail-x: 10px;   /* the rail floats in from the corner */
   --rail-top: 10px;
+  --rail-h: max(560px, min(calc(100dvh - 2 * var(--rail-top)), 780px));
   --rail-w: 64px;   /* the green rail, always there */
-  --panel-w: 216px; /* the parchment the names are on */
+  --panel-w: 196px; /* a 4px gap, then the 192px parchment the names are on */
   position: relative;
   z-index: 0;
   height: 100dvh;
@@ -164,12 +165,12 @@ body::after {
 @media (min-width: 768px) {
   .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
-/* Not while resting: just unpinned by a click with the pointer still over it. */
+/* Not while resting (just unpinned or unlocked with the pointer still over it), nor locked away (the moon). */
 @media (hover: hover) {
-  .nav:not([data-resting]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
+  .nav:not([data-resting]):not([data-locked]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
 
-/* Chanté's painted rail (art/ui/nav-rail.png, cut by scripts/cut-nav-rail.py).
+/* Chanté's painted rail (art/ui/nav-rail.png, cut by scripts/cut-nav-art.py).
    The head (the compass star) and the foot (the moon) keep their proportions;
    the plain length between stretches to the rail's height. The numbers in the
    calc()s are the source's pixels: 118px wide, a 267px head, a 236px foot. It
@@ -180,8 +181,7 @@ body::after {
   left: var(--rail-x);
   z-index: 2;
   width: var(--rail-w);
-  height: min(calc(100dvh - 2 * var(--rail-top)), 780px);
-  min-height: 560px;
+  height: var(--rail-h);
   background:
     url("/nav-rail-head.webp") top / 100% auto no-repeat,
     url("/nav-rail-foot.webp") bottom / 100% auto no-repeat;
@@ -194,19 +194,24 @@ body::after {
   background: url("/nav-rail-body.webp") 0 0 / 100% 100% no-repeat;
 }
 
-/* The painted compass star is the button: it pins the parchment (opens it, on
-   a phone), and glows while the parchment is kept open. */
-.nav-toggle {
+/* The painted compass star and moon are buttons: the star pins the parchment
+   open (opens it, on a phone) and glows while it's kept open; the moon locks it
+   away from hover and glows while it's locked. The moon's centre is 101px up
+   from the rail's foot in the source's pixels. */
+.nav-toggle,
+.nav-lock {
   position: absolute;
   z-index: 4;
-  top: calc(var(--rail-top) + var(--rail-w) * 110.5 / 118 - 24px);
   left: var(--rail-x);
   width: var(--rail-w);
   height: 48px;
   border-radius: 50%;
   cursor: pointer;
 }
-.nav-toggle::before {
+.nav-toggle { top: calc(var(--rail-top) + var(--rail-w) * 110.5 / 118 - 24px); }
+.nav-lock { top: calc(var(--rail-top) + var(--rail-h) - var(--rail-w) * 101 / 118 - 24px); }
+.nav-toggle::before,
+.nav-lock::before {
   content: "";
   position: absolute;
   inset: -4px;
@@ -216,8 +221,11 @@ body::after {
   opacity: 0;
   transition: opacity 200ms ease;
 }
-.nav-toggle:hover::before { opacity: 0.5; }
-.nav-toggle[aria-expanded="true"]::before { opacity: 1; }
+.nav-lock::before { background: radial-gradient(circle, rgba(236, 228, 200, 0.5), rgba(236, 228, 200, 0) 62%); } /* moonlight, a little cooler */
+.nav-toggle:hover::before,
+.nav-lock:hover::before { opacity: 0.5; }
+.nav-toggle[aria-expanded="true"]::before,
+.nav-lock[aria-pressed="true"]::before { opacity: 1; }
 
 /* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
    every page, and the greeting's scroll on Home's dark room. */
@@ -257,11 +265,16 @@ body::after {
   content: "";
   position: absolute;
   z-index: 1;
-  inset: 0 0 0 calc(var(--rail-x) + var(--rail-w) - 10px); /* tucked under the rail's edge */
-  background: linear-gradient(180deg, #f6eedc 0%, #efe4cc 60%, #e9dcc0 100%);
-  border: 1px solid rgba(139, 106, 56, 0.28);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(27, 26, 23, 0.12), 0 16px 40px rgba(27, 26, 23, 0.28), inset 0 0 36px rgba(122, 96, 54, 0.12);
+  inset: 0 0 0 calc(var(--rail-x) + var(--rail-w) + 4px); /* 4px clear of the rail */
+  /* Chanté's painted sheet (art/ui/nav-parchment.png, cut by scripts/cut-nav-art.py):
+     the head and foot hold the corner flourishes and keep their proportions
+     (67px each at the pieces' 384px width); the body between stretches. */
+  --cap: calc((var(--panel-w) - 4px) * 67 / 384);
+  background:
+    url("/nav-parchment-head.webp") top / 100% auto no-repeat,
+    url("/nav-parchment-foot.webp") bottom / 100% auto no-repeat,
+    url("/nav-parchment-body.webp") 0 calc(var(--cap) - 1px) / 100% calc(100% - 2 * var(--cap) + 2px) no-repeat;
+  filter: drop-shadow(0 10px 22px rgba(27, 26, 23, 0.26));
 }
 .nav-panel::before,
 .nav-head,
@@ -279,13 +292,20 @@ body::after {
   flex-direction: column;
   align-items: center;
   height: 196px;
-  padding: 22px 18px 0 calc(var(--rail-x) + var(--rail-w) + 8px);
+  padding: 26px 16px 0 calc(var(--rail-x) + var(--rail-w) + 20px);
   text-align: center;
 }
-.nav-wordmark { margin-top: 10px; font-size: 34px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+.nav-wordmark { margin-top: 14px; font-size: 30px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
 .nav-tagline { margin-top: 12px; font-size: 17px; font-style: italic; line-height: 1.25; color: var(--ink-soft); }
-.nav-divider { margin-top: 22px; }
-.nav-divider .hair { width: 52px; }
+/* The parchment's marks (after the mockup): a slender star between hairlines
+   that fade toward their ends — short over the wordmark, the full measure
+   under the tagline. */
+.flourish { display: flex; align-items: center; gap: 7px; color: var(--brass); }
+.flourish .hair { flex: 1; height: 1px; opacity: 0.85; }
+.flourish .hair:first-child { background: linear-gradient(to left, var(--brass), transparent); }
+.flourish .hair:last-child { background: linear-gradient(to right, var(--brass), transparent); }
+.nav-crest { width: 72px; }
+.nav-divider { align-self: stretch; margin-top: 22px; }
 
 .nav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .nav-item {
@@ -312,7 +332,7 @@ body::after {
 .nav-icon::before {
   content: "";
   position: absolute;
-  left: 50%;
+  left: calc(50% + var(--rail-x) / 2); /* the cell's centre is past the rail's inset: centre on the icon */
   top: 50%;
   width: 42px;
   height: 42px;
@@ -341,7 +361,7 @@ body::after {
 .nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: none; }
 .nav-item .name {
   flex: none;
-  min-width: 128px; /* the tint reads as a tile, not a hug, on a short name */
+  min-width: 168px; /* a tile that reaches in toward the sheet's inner rule, whatever the name's length */
   margin: 0 0 0 12px;
   pointer-events: var(--nav-pe); /* folded, a name overflowing the rail takes no clicks, even while it fades */
   padding: 9px 14px;
@@ -353,7 +373,7 @@ body::after {
 .nav-item[aria-current="page"] .name { background: rgba(139, 106, 56, 0.16); }
 
 .nav-foot {
-  margin: 40px 18px 0 calc(var(--rail-x) + var(--rail-w) + 26px);
+  margin: 40px 18px 0 calc(var(--rail-x) + var(--rail-w) + 28px);
   padding-bottom: 24px;
   font-size: 19px;
   font-style: italic;
@@ -829,7 +849,7 @@ body::after {
 @media (max-width: 767px) {
   /* The rail stays, narrower; the parchment only floats (the compass star opens it). Trial, 2026-09-13. */
   .shell { --rail-x: 6px; --rail-top: 6px; --rail-w: 48px; }
-  .nav-rail { min-height: 500px; }
+  .shell { --rail-h: max(500px, min(calc(100dvh - 12px), 780px)); }
   .nav-icon::before { width: 38px; height: 38px; }
   .main { box-shadow: none; }
   .main { padding: 22px 20px 0; }

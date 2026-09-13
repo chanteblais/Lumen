@@ -1,2 +1,13 @@
-/** The cookie that remembers the nav's parchment is pinned open (`pinned` / `folded`). Read by the layout so a pinned panel is there from the first paint. */
-export const NAV_PIN_COOKIE = "coherence_nav";
+/**
+ * How the nav's parchment behaves, remembered per browser in a cookie the layout reads (so the page
+ * renders it right from the first paint): `pinned` open (the compass star), `hover` (it opens while
+ * the pointer is over the nav) or `locked` away (the moon: it never opens on hover).
+ */
+export type NavMode = "pinned" | "hover" | "locked";
+
+export const NAV_MODE_COOKIE = "coherence_nav";
+
+/** Anything unknown (and the old `folded`) is `hover`. */
+export function navModeFrom(value: string | undefined): NavMode {
+  return value === "pinned" || value === "locked" ? value : "hover";
+}

@@ -16,6 +16,26 @@ export function Diamond({ size = 9, className = "" }: GlyphProps) {
   );
 }
 
+/** ✧ A slender four-pointed star, its upright arms longer than its cross — the nav's parchment marks (after `art/mockups/rail-nav.png`). */
+export function Sparkle({ size = 12, className = "" }: GlyphProps) {
+  return (
+    <svg aria-hidden width={size} height={size} viewBox="0 0 16 16" className={`ornament ${className}`}>
+      <path d="M8 0Q8.7 7.3 14.5 8Q8.7 8.7 8 16Q7.3 8.7 1.5 8Q7.3 7.3 8 0Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Hairline · sparkle · hairline, the hairlines fading toward their ends. The nav's parchment divider. */
+export function Flourish({ className = "" }: { className?: string }) {
+  return (
+    <span aria-hidden className={`flourish ${className}`}>
+      <i className="hair" />
+      <Sparkle />
+      <i className="hair" />
+    </span>
+  );
+}
+
 /** ❦ The hedera — the ivy leaf that has closed chapters since Rome. */
 export function Fleuron({ size = 18, className = "" }: GlyphProps) {
   return (

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Diamond, Divider } from "@/components/ui/Ornament";
-import { NAV_PIN_COOKIE } from "./nav-pin";
+import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
+import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
 import { BookIcon, GearIcon, HomeIcon, SprigIcon, SunIcon } from "./NavIcons";
 
 const NAV = [
@@ -19,20 +19,24 @@ const NAV = [
 const PINS = "(min-width: 768px)";
 
 /**
- * The rail and its parchment. The green rail is always there: an icon per
- * place, and a brass star on its rule beside the one you're in. The names
- * are on the parchment, which slides out while the pointer is over the rail
- * (or keyboard focus is in it) and floats over the page. A click anywhere on
- * the rail or the parchment that isn't a link pins it open,
- * still floating: the page never moves for it;
- * a click that unpins folds it at once, even with the pointer still over it
- * (hover can't reopen it until the pointer has left, or it looks stuck open).
+ * The rail and its parchment. The painted rail is always there: an icon per
+ * place, and a brass star on its rule beside the one you're in. The names are
+ * on the parchment, which slides out while the pointer is over the nav (or
+ * keyboard focus is in it) and floats over the page; the page never moves
+ * for it. Three ways it can be, remembered in a cookie:
+ * - `hover`, the default;
+ * - `pinned` open — the compass star, or a click anywhere on the rail or the
+ *   parchment that isn't a link; the same again folds it, at once, even with
+ *   the pointer still over it (hover can't reopen it until the pointer has
+ *   left, or it looks stuck open);
+ * - `locked` away — the moon: hover never opens it; the moon again, or a pin,
+ *   lets it out.
  * On a phone there is no hover: the compass star opens it over the page,
  * and a tap on a place, outside it or Escape folds it away.
  */
-export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
+export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   const pathname = usePathname();
-  const [pinned, setPinned] = useState(pinnedAtLoad);
+  const [mode, setMode] = useState<NavMode>(modeAtLoad);
   const [open, setOpen] = useState(false);
   const [resting, setResting] = useState(false);
   const ref = useRef<HTMLElement>(null);
@@ -53,25 +57,38 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
     };
   }, [open]);
 
-  function toggle() {
+  function remember(next: NavMode) {
+    setMode(next);
+    document.cookie = `${NAV_MODE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+
+  function togglePin() {
     if (!window.matchMedia(PINS).matches) return setOpen((o) => !o);
-    const next = !pinned;
-    setPinned(next);
-    setResting(!next);
-    document.cookie = `${NAV_PIN_COOKIE}=${next ? "pinned" : "folded"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    const pinning = mode !== "pinned";
+    remember(pinning ? "pinned" : "hover");
+    setResting(!pinning);
+  }
+
+  function toggleLock() {
+    setOpen(false);
+    remember(mode === "locked" ? "hover" : "locked");
+    setResting(true); // unlocked under the pointer, it waits for the pointer to leave before hover opens it
   }
 
   function onNavClick(e: MouseEvent) {
     if ((e.target as Element).closest("a, button")) return;
-    toggle();
+    togglePin();
   }
 
+  const pinned = mode === "pinned";
+  const locked = mode === "locked";
   const shown = open || pinned;
   return (
     <aside
       ref={ref}
       className="nav"
       data-pinned={pinned || undefined}
+      data-locked={locked || undefined}
       data-open={open || undefined}
       data-resting={resting || undefined}
       onPointerLeave={() => setResting(false)}
@@ -81,14 +98,21 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
       <button
         type="button"
         className="nav-toggle"
-        onClick={toggle}
+        onClick={togglePin}
         aria-expanded={shown}
         aria-label={shown ? "Fold the names away" : "Keep the names open"}
+      />
+      <button
+        type="button"
+        className="nav-lock"
+        onClick={toggleLock}
+        aria-pressed={locked}
+        aria-label={locked ? "Let the names open on hover again" : "Keep the names folded away"}
       />
 
       <div className="nav-panel">
         <div className="nav-head">
-          <Diamond size={10} />
+          <Flourish className="nav-crest" />
           <Link href="/" className="font-display nav-wordmark">
             Coherence
           </Link>
@@ -97,7 +121,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
             <br />
             way forward.
           </p>
-          <Divider className="nav-divider" />
+          <Flourish className="nav-divider" />
         </div>
 
         <nav className="nav-list" aria-label="Primary">
@@ -126,7 +150,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
           Progress
           <br />
           lives here.
-          <Diamond size={8} />
+          <Sparkle size={9} />
         </p>
       </div>
     </aside>
