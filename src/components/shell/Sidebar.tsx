@@ -22,8 +22,8 @@ const PINS = "(min-width: 768px)";
  * The rail and its parchment. The green rail is always there: an icon per
  * place, and a brass star on its rule beside the one you're in. The names
  * are on the parchment, which slides out while the pointer is over the rail
- * (or keyboard focus is in it) and floats over the page. A click on the
- * parchment (anywhere but a link), or on the compass star, pins it open,
+ * (or keyboard focus is in it) and floats over the page. A click anywhere on
+ * the rail or the parchment that isn't a link pins it open,
  * still floating: the page never moves for it;
  * a click that unpins folds it at once, even with the pointer still over it
  * (hover can't reopen it until the pointer has left, or it looks stuck open).
@@ -61,7 +61,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
     document.cookie = `${NAV_PIN_COOKIE}=${next ? "pinned" : "folded"}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
 
-  function onParchmentClick(e: MouseEvent) {
+  function onNavClick(e: MouseEvent) {
     if ((e.target as Element).closest("a, button")) return;
     toggle();
   }
@@ -75,6 +75,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
       data-open={open || undefined}
       data-resting={resting || undefined}
       onPointerLeave={() => setResting(false)}
+      onClick={onNavClick}
     >
       <div className="nav-rail" aria-hidden>
         <Diamond size={7} className="nav-spark nav-spark-head" />
@@ -91,7 +92,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
         <CompassStar />
       </button>
 
-      <div className="nav-panel" onClick={onParchmentClick}>
+      <div className="nav-panel">
         <div className="nav-head">
           <Diamond size={10} />
           <Link href="/" className="font-display nav-wordmark">
