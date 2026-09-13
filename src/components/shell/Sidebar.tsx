@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
 import { isPublicPath } from "@/lib/public-paths";
+import { DEBUG_COOKIE, DEBUG_TAP_WINDOW_MS, DEBUG_TAPS } from "./debug-mode";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
 import { BookIcon, GearIcon, HomeIcon, ListIcon, SprigIcon, SunIcon } from "./NavIcons";
 
@@ -45,6 +46,20 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   const [mode, setMode] = useState<NavMode>(modeAtLoad);
   const [resting, setResting] = useState(false);
   const ref = useRef<HTMLElement>(null);
+  const router = useRouter();
+  const taps = useRef<number[]>([]);
+
+  /** Five quick taps on the wordmark turn debug mode on or off (debug-mode.ts). The first tap still goes Home; the rest of a run stay put. */
+  function onWordmarkClick(e: MouseEvent) {
+    const now = Date.now();
+    taps.current = [...taps.current.filter((t) => now - t < DEBUG_TAP_WINDOW_MS), now];
+    if (taps.current.length > 1) e.preventDefault();
+    if (taps.current.length < DEBUG_TAPS) return;
+    taps.current = [];
+    const on = !document.cookie.split("; ").includes(`${DEBUG_COOKIE}=1`);
+    document.cookie = on ? `${DEBUG_COOKIE}=1; Path=/; Max-Age=31536000; SameSite=Lax` : `${DEBUG_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+    router.refresh();
+  }
 
   function remember(next: NavMode) {
     setMode(next);
@@ -103,7 +118,7 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
       <div className="nav-panel">
         <div className="nav-head">
           <Flourish className="nav-crest" />
-          <Link href="/" className="font-display nav-wordmark">
+          <Link href="/" className="font-display nav-wordmark" onClick={onWordmarkClick}>
             Coherence
           </Link>
           <p className="font-display nav-tagline">

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { after } from "next/server";
 import { Conversation } from "@/components/chat/Conversation";
+import { LibraryDebug } from "@/components/library/LibraryDebug";
 import { RoomScene } from "@/components/shell/RoomScene";
 import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
@@ -73,6 +74,7 @@ export default async function Home() {
           (globals.css → Home: the room); everything else on the page is the same
           conversation, re-lit for the evening. */}
       <RoomScene room="home" />
+      <LibraryDebug userId={user.id} />
       <Conversation
         conversationId={conversation.id}
         initialMessages={initialMessages}

@@ -215,7 +215,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── chat/                 Conversation, Message, Ledger, Composer, QuickStarts, LumiAvatar
 │   │   ├── insights/             LeadsSection (looks, then asks), LeadActions (Still needs doing · Let it go)
 │   │   ├── focus/                SessionBar (the bar + the check-in card + the client timer)
-│   │   ├── library/              LibraryRoom (names on the painted bookcases; room-slots.ts from the spatial-map manifest) · LibrarySheet · ShelfView · BookView · load.ts (reads that never throw)
+│   │   ├── library/              LibraryDebug (debug mode's parchment of categories and threads over the rooms; the cookie is shell/debug-mode.ts, toggled by five taps on the nav's wordmark) · LibraryRoom (names on the painted bookcases, debug mode only; room-slots.ts from the spatial-map manifest) · LibrarySheet · ShelfView · BookView · load.ts (reads that never throw)
 │   │   ├── lists/                ListsPanel (server: loads the rows) · ListsSheet (the sheet, its rows, ⋯ menu and Add line) · ListGlyphs · CompleteCircle
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested

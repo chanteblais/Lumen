@@ -73,7 +73,16 @@ Not carried over from the mockup: the filter tabs, the plant per category, the *
   - `.library-head` / `.library-kicker` / `.library-title` / `.library-line`
   - **the section view:** `.library-shelf-plaque` (a dark plaque with a gilt hairline and a sparkle each side) over `.library-spines` on a wooden board, and `.library-spine` (116×180px, 18px type, `data-tone` 0–3: green, oxblood, navy, olive, chosen from the id and meaningless)
   - **the book:** `.library-spread`, two `.library-leaf` pages with a gutter that stack below 900px, each `.library-part` headed by a sparkle and `.library-part-title`, and notes carrying `.library-source` (*your words* / *Lumi's reading*), plus `.library-change*`, `.library-visit*` and `.library-revised`
-  - **the table page:** `.library-papers` / `.library-paper` (`.is-section`) A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
+  - **the table page:** `.library-papers` / `.library-paper` (`.is-section`)
+- **Only in debug mode.** The plaques and the slip show only in debug mode until the Library is integrated properly (Chanté, 2026-09-13).
+- **The debug parchment.** `.debug-library` (`components/library/LibraryDebug.tsx`) is a `<details>` fixed at the top right of a room (top 112px, right 24px, up to 320px wide), on the parchment tokens:
+  - the frame: `#e7d3ae` with a lamp-warm centre, a `#b8945c` hairline, an inset light band and a soft drop shadow;
+  - the heading: a brass `Debug` kicker and *Categories and threads* at 20px display;
+  - categories: 18px display at 600; shelves: 12px tracked caps in the mute ink; threads: brass middots;
+  - `.debug-library-who`: 11px italic;
+  - an italic foot line over a hairline.
+
+  The body scrolls within `100dvh − 420px`, which keeps it clear of Lumi. Hidden while a sheet is open and below 768px. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
 
 | Piece | In the reading room |
 |---|---|

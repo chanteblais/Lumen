@@ -234,7 +234,8 @@ body::after {
 .shell:has(.home-scene) .opening,
 .lists-sheet,
 .library-sheet,
-.library-plain {
+.library-plain,
+.debug-library {
   --paper: #f1e7d2;
   --paper-deep: rgba(43, 34, 22, 0.07);
   --ink: #2b2216;
@@ -1809,6 +1810,56 @@ body:has(.library-sheet) :is(.companion, .companion-debug) { display: none; } /*
   .library-title { font-size: 34px; }
   .library-book-title { font-size: 32px; }
   .library-spine { width: 100px; min-height: 156px; font-size: 16px; }
+}
+
+/* ---------- Debug mode: the Library over the rooms (components/library/LibraryDebug.tsx) ----------
+   Five quick taps on the nav's wordmark set `coherence_debug` (Sidebar,
+   debug-mode.ts). While it's on, every room (Home, Today, the Library, Lists
+   opened directly) carries a small parchment in its top right listing what
+   Lumi has filed: each category, its shelves and threads, and the threads in
+   no category, each a link. It is for Chanté to watch the memory at work, not
+   a design for users. It folds on its heading (a <details>), and is hidden
+   below 768px (no wordmark there) and while a sheet is open. */
+.debug-library {
+  position: fixed;
+  top: 112px;
+  right: 24px;
+  z-index: 20;
+  width: min(320px, calc(100vw - 140px));
+  padding: 12px 18px 10px;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 40%, rgba(246, 234, 210, 0.85), rgba(246, 234, 210, 0) 75%),
+    #e7d3ae;
+  border: 1px solid #b8945c;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 4px rgba(247, 238, 218, 0.6),
+    inset 0 0 0 5px rgba(139, 106, 56, 0.28),
+    0 18px 40px rgba(20, 14, 8, 0.45);
+  font-size: 15px;
+  line-height: 1.3;
+}
+.debug-library-head { display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none; }
+.debug-library-kicker { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--brass); }
+.debug-library-title { font-size: 20px; color: var(--ink); }
+.debug-library-body { max-height: calc(100dvh - 420px); min-height: 80px; margin-top: 6px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--brass-soft) transparent; }
+.debug-library-section { margin-top: 10px; }
+.debug-library-section > h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--ink); }
+.debug-library-loose { font-style: italic; font-weight: 500 !important; color: var(--ink-soft) !important; }
+.debug-library-shelf { margin: 6px 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
+.debug-library-books { margin: 2px 0 0 10px; }
+.debug-library-books.is-shelved { margin-left: 22px; }
+.debug-library-books li { position: relative; padding: 2px 0 2px 12px; color: var(--ink); }
+.debug-library-books li::before { content: "·"; position: absolute; left: 2px; color: var(--brass); }
+.debug-library a { color: inherit; text-decoration: none; }
+.debug-library a:hover,
+.debug-library a:focus-visible { text-decoration: underline; text-decoration-color: var(--brass-soft); }
+.debug-library-who { margin-left: 6px; font-size: 11px; font-style: italic; letter-spacing: 0; text-transform: none; color: var(--ink-mute); }
+.debug-library-quiet { margin-top: 8px; font-size: 14px; font-style: italic; color: var(--ink-mute); }
+.debug-library-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule); font-size: 12px; font-style: italic; color: var(--ink-mute); }
+body:has(.lists-sheet, .library-sheet) .debug-library { display: none; }
+@media (max-width: 767px) {
+  .debug-library { display: none; }
 }
 
 /* ---------- Lists: the sheet (components/lists/ListsSheet.tsx) ----------
