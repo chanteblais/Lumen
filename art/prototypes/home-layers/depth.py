@@ -22,7 +22,9 @@ import math
 
 HALF = 17          # half her cloak's width at her feet, 120px tall
 MARGIN = 4         # a ground point is in front of her only if lower on the page by more than this (a corner level with her feet doesn't cover her hem)
-REACH = 37        # how far her drawing reaches either side of her feet (the stand-in's hem and sleeves: 36.5px)
+REACH = 50         # how far her drawing reaches either side of her feet: the walk rig's side-on drawings reach 43.4px at rest
+                   # (the stand-in's hem and sleeves only 36.5px, the old 37), and her lean, sway and hem swing add a few
+                   # more; at 37 lumi-walk's ?occlusion=1 found 170px of her overlapping a layer the rule could not rank
 CLEARANCE = 24     # her body's reach from her feet, page px across
 
 

@@ -89,7 +89,7 @@
 
 <main>
   <header>
-    <p class="eyebrow">Walk test · Home · isometric</p>
+    <p class="eyebrow">Walk test · Home in layers · isometric</p>
     <h1>Lumi walks Home</h1>
     <p class="lede">Drawings of her at the room’s angle, one for every sixteenth of a turn and one more just past side-on, most of them mirrored. She walks eight ways, rounds corners on the move and turns through the drawings between; code moves the pieces: boots that step, legs drawn to each boot, a cloak that sways and trails a turn. Click the floor to send her somewhere, or let her walk the tour.</p>
   </header>
@@ -157,14 +157,15 @@
     <div class="notes">
       <h2>What to look at</h2>
       <ul>
+        <li><b>Behind and in front:</b> the room is Home taken apart into an empty floor and its furniture as layers, and a piece is drawn over her only when its footprint reaches lower on the page than her feet. Close behind the low table its top should cover her lower half and never her hood; in front of the cushions, the chair or the armchair nothing of them should cover her; her shadow stays under every piece.</li>
         <li>A corner of a quarter turn or less, she rounds on the move, turning through the drawings between. A sharper one, she stops, her hood leans toward the new way, and she steps round.</li>
         <li><b>Turn:</b> Morph (the default) treats her facing as a place on the ring rather than a drawing: between two drawings it warps each of them row by row until her two edges and the feature between them — the face, or the sun on her hood — land in the same place, then crossfades. Swap is the old behaviour, a hard change of drawing every sixteenth of a turn. Does the morph read as one figure rotating, and does anything tear, ghost or balloon?</li>
-        <li>She faces the way she walks. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking.</li>
+        <li>She faces the way she walks. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking. The plan also draws the walkable floor (dashed), where her feet may not go (dotted), each piece’s footprint (cyan) and overhang (white), the blockers left in the painting (orange), the proposed anchors (red), and her feet’s width, the columns the depth rule tests (a red bar).</li>
         <li>Her legs run from under the cloak to her boots every step.</li>
         <li><b>Idle:</b> standing she blinks at uneven gaps, now and then glances or tilts her head, sways very slowly, and rarely looks curious or sleepy; walking, she only blinks and glances. Her eyes are drawn over the painted ones, so they can shut, shift and change shape. Try the cues: do the eyes read as hers, or as stickers? Does the tilt bend the collar or tear it?</li>
         <li>Turning away past side-on, her ribbon bow and medallions shrink to a sliver and go — a drawing just past side-on carries them — rather than fading out.</li>
       </ul>
-      <p class="small">Her height is in the painting’s own pixels; the table stands about 65. Heights, pace and the turn style here are for judging, not settings in the app.</p>
+      <p class="small">Her height is in the painting’s own pixels; the table stands about 62. Heights, pace and the turn style here are for judging, not settings in the app.</p>
     </div>
   </section>
 </main>
@@ -175,16 +176,20 @@
 
   var RIG = /*RIG*/null;
   var MORPH = /*MORPH*/null;
+  // Home's layers (art/scenery/home/layers.json, trimmed to what the page reads) plus the tour (tour-home.json, its
+  // anchors resolved by build.py) and each layer's floor-coloured pixels (fringe.py, for ?occlusion=1)
   var ROOM = /*ROOM*/null;
+  var SCENE = /*SCENE*/null;
   var PARTS = /*PARTS*/null;
-  var ROOM_SRC = '__ROOM_URI__';
+  var PLATE_SRC = '__PLATE_URI__';
   var PW = ROOM.size[0], PH = ROOM.size[1];
+  var TOUR = ROOM.tour;
 
   var params = new URLSearchParams(location.search);
   var GRID = params.get('grid');
   var STILL_T = params.has('t') ? parseFloat(params.get('t')) : null;
   var AROUND = params.has('around') ? params.get('around').split(',').map(parseFloat) : null;   // with ?audit=1
-  var HEADLESS = !!GRID || STILL_T !== null || params.has('audit') || params.has('trace');
+  var HEADLESS = !!GRID || STILL_T !== null || params.has('audit') || params.has('trace') || params.has('occlusion');
   var reduceMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   var reduced = !HEADLESS && !!(reduceMq && reduceMq.matches);
 
@@ -214,7 +219,6 @@
     pulse: 0.14,      // Turn: Swap — the small squash that carries each change of drawing (Morph has no pop to hide)
     breath: 1.3,      // px at the hood top, resting
     breathS: 3.2,
-    clearance: 24,    // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
     cell: 5,          // the path grid, in ground units
     turnCost: 14,     // px a path pays for each 45° of turning, so it turns rarely
     jog: 4            // a path corner this close to the straight line past it is a jog, not a corner, and is dropped
@@ -255,29 +259,155 @@
     return inside;
   }
 
-  // ---- the room: isometric ground, furniture ---------------------------------------------------------------
+  // ---- the room: isometric ground, Home's layers---------------------------------------------------------------
   var B = ROOM.iso.slope;
   function toUV(x, y) { return { u: (x + y / B) / 2, v: (y / B - x) / 2 }; }
   function fromUV(u, v) { return { x: u - v, y: (u + v) * B }; }
   var UV_PX = Math.sqrt(1 + B * B);   // screen px per ground unit along either axis
-  var OCC = ROOM.occluders.map(function (o) {
-    var uv = o.footprint.map(function (p) { return toUV(p[0], p[1]); });
-    return {
-      id: o.id, cutout: o.cutout, footprint: o.footprint,
-      u0: Math.min.apply(null, uv.map(function (q) { return q.u; })), u1: Math.max.apply(null, uv.map(function (q) { return q.u; })),
-      v0: Math.min.apply(null, uv.map(function (q) { return q.v; })), v1: Math.max.apply(null, uv.map(function (q) { return q.v; }))
-    };
-  });
-  function clearanceUV() { return T.clearance * sizeMul() / UV_PX; }
-  function blocked(p) {
-    var q = toUV(p.x, p.y), c = clearanceUV();
-    for (var i = 0; i < OCC.length; i++) {
-      var o = OCC[i];
-      if (q.u > o.u0 - c && q.u < o.u1 + c && q.v > o.v0 - c && q.v < o.v1 + c) return true;
+  var LAYER = {};
+  ROOM.layers.forEach(function (L) { LAYER[L.id] = L; });
+
+  // The depth rule, ported verbatim from art/prototypes/home-layers/index.src.html, which is depth.py's twin — depth.py
+  // stays the reference. In one page column two ground points differ only in u + v, so lower on the page is toward the
+  // camera. An item draws over Lumi when some point of its ground polygon (extent, else footprint) lies in one of her
+  // columns (feet x ± HALF) lower on the page than her feet by more than the margin; an item with ground only within
+  // her drawn reach (x ± REACH) is tested at its column nearest her; out of reach it cannot overlap her. HALF and REACH
+  // are layers.json's, set for her height of 120; here they scale with her height, so at 120 the rule is depth.py's.
+  function HALF() { return ROOM.lumi.halfWidth * sizeMul(); }
+  function REACH() { return ROOM.lumi.reach * sizeMul(); }
+  function stripMaxY(poly, a, b) {
+    var best = null;
+    for (var i = 0; i < poly.length; i++) {
+      var p = poly[i], q = poly[(i + 1) % poly.length];
+      if (p[0] >= a && p[0] <= b) best = best === null ? p[1] : Math.max(best, p[1]);
+      if (p[0] !== q[0]) {
+        [a, b].forEach(function (c) {
+          if (c >= Math.min(p[0], q[0]) && c <= Math.max(p[0], q[0])) {
+            var y = p[1] + (c - p[0]) * (q[1] - p[1]) / (q[0] - p[0]);
+            best = best === null ? y : Math.max(best, y);
+          }
+        });
+      }
     }
-    return false;
+    return best;
   }
-  function standable(p) { return inPoly(p, ROOM.walkable) && !blocked(p); }
+  // depth.py's column_interval: [min y, max y] where page column c crosses the polygon, or null (the occlusion count)
+  function columnInterval(poly, c) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < poly.length; i++) {
+      var p = poly[i], q = poly[(i + 1) % poly.length], y;
+      if (p[0] === q[0]) { if (p[0] === c) { lo = Math.min(lo, p[1], q[1]); hi = Math.max(hi, p[1], q[1]); } continue; }
+      if (c < Math.min(p[0], q[0]) || c > Math.max(p[0], q[0])) continue;
+      y = p[1] + (c - p[0]) * (q[1] - p[1]) / (q[0] - p[0]);
+      lo = Math.min(lo, y); hi = Math.max(hi, y);
+    }
+    return lo === Infinity ? null : [lo, hi];
+  }
+  function groundOf(L) { return L.extent || L.footprint; }
+  // her feet columns first; failing that, the item's column nearest her if it is within her drawn reach (her hem is wider)
+  function groundYNear(L, fx) {
+    var g = groundOf(L), m = stripMaxY(g, fx - HALF(), fx + HALF());
+    if (m !== null) return m;
+    var xs = g.map(function (p) { return p[0]; }), gx0 = Math.min.apply(null, xs), gx1 = Math.max.apply(null, xs);
+    if (gx1 < fx - REACH() || gx0 > fx + REACH()) return null;
+    var c = Math.min(Math.max(fx, gx0), gx1);
+    return stripMaxY(g, c, c);
+  }
+  function drawsOver(L, fx, fy) {
+    var m = groundYNear(L, fx);
+    return m !== null && m > fy + ROOM.depth.margin;
+  }
+  var LOW = {};
+  ROOM.layers.forEach(function (L) { LOW[L.id] = Math.max.apply(null, groundOf(L).map(function (p) { return p[1]; })); });
+  // Back-to-front: a topological sort of "in front of" over the layers and Lumi, ties by the lowest ground point.
+  function drawOrder(fx, fy) {
+    var names = ROOM.depth.order.concat(['lumi']), after = {}, indeg = {}, key = {};
+    names.forEach(function (n) { after[n] = []; indeg[n] = 0; key[n] = n === 'lumi' ? fy : LOW[n]; });
+    ROOM.depth.infront.forEach(function (p) { after[p[1]].push(p[0]); });
+    var over = {};
+    ROOM.layers.forEach(function (L) {
+      var m = groundYNear(L, fx);
+      if (m === null) return;
+      if (m > fy + ROOM.depth.margin) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
+    });
+    names.forEach(function (n) { after[n].forEach(function (b) { indeg[b]++; }); });
+    var ready = names.filter(function (n) { return !indeg[n]; }), out = [];
+    var byKey = function (a, b) { return key[a] - key[b]; };
+    ready.sort(byKey);
+    while (ready.length) {
+      var n = ready.shift();
+      out.push(n);
+      after[n].forEach(function (b) { if (!--indeg[b]) ready.push(b); });
+      ready.sort(byKey);
+    }
+    if (out.length < names.length) names.filter(function (n) { return out.indexOf(n) < 0; }).sort(byKey).forEach(function (n) { out.push(n); });
+    return { order: out, over: over };
+  }
+
+  // Where her feet may stand: inside layers.json's `walkable.floor` and outside every footprint (extent where given)
+  // and blocker grown by her clearance as a ground circle. At her height of 120 that is layers.json's `walkable.minus`
+  // as written; at another height the same polygons are grown here by depth.py's `grow`, ported (hull of the polygon's
+  // vertices plus a 16-point ellipse, one hull for a convex polygon, one per edge of a concave one).
+  function hull(points) {
+    var seen = {}, pts = [];
+    points.forEach(function (p) {
+      var x = Math.round(p[0] * 100) / 100, y = Math.round(p[1] * 100) / 100, k = x + ',' + y;
+      if (!seen[k]) { seen[k] = true; pts.push([x, y]); }
+    });
+    pts.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    if (pts.length < 3) return pts;
+    var cross = function (o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); };
+    var lower = [], upper = [], i;
+    for (i = 0; i < pts.length; i++) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0) lower.pop();
+      lower.push(pts[i]);
+    }
+    for (i = pts.length - 1; i >= 0; i--) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0) upper.pop();
+      upper.push(pts[i]);
+    }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+  function convex(poly) {
+    var n = poly.length, sign = 0;
+    for (var i = 0; i < n; i++) {
+      var a = poly[i], b = poly[(i + 1) % n], c = poly[(i + 2) % n];
+      var z = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+      if (z) { if (sign && (z > 0) !== (sign > 0)) return false; sign = z; }
+    }
+    return true;
+  }
+  function grow(poly, r) {
+    var ell = [];
+    for (var i = 0; i < 16; i++) ell.push([r * Math.cos(2 * Math.PI * i / 16), r * B * Math.sin(2 * Math.PI * i / 16)]);
+    var plus = function (pts) {
+      var out = [];
+      pts.forEach(function (p) { ell.forEach(function (e) { out.push([p[0] + e[0], p[1] + e[1]]); }); });
+      return out;
+    };
+    if (convex(poly)) return [hull(plus(poly))];
+    return poly.map(function (p, k) { return hull(plus([p, poly[(k + 1) % poly.length]])); });
+  }
+  var minusCache = { key: null, polys: null };
+  function minusPolys() {
+    var m = sizeMul();
+    if (minusCache.key === m) return minusCache.polys;
+    var polys = [];
+    if (Math.abs(m - 1) < 1e-9) polys = ROOM.walkable.minus.map(function (q) { return q.poly; });
+    else {
+      var r = ROOM.lumi.clearance * m;
+      ROOM.layers.forEach(function (L) { Array.prototype.push.apply(polys, grow(groundOf(L), r)); });
+      ROOM.blockers.forEach(function (b) { Array.prototype.push.apply(polys, grow(b.footprint, r)); });
+    }
+    minusCache = { key: m, polys: polys };
+    return polys;
+  }
+  function standable(p) {
+    if (!inPoly(p, ROOM.walkable.floor)) return false;
+    var ms = minusPolys();
+    for (var i = 0; i < ms.length; i++) if (inPoly(p, ms[i])) return false;
+    return true;
+  }
 
   // ---- the ring of facings: angles, not even steps ---------------------------------------------------------------
   // Every drawing sits on the ring at the angle it was drawn at — `facings.py` writes that into rig-walk.json as
@@ -416,7 +546,7 @@
   function ground() {
     var key = ui.size;
     if (gridCache.key === key) return gridCache;
-    var uvs = ROOM.walkable.map(function (p) { return toUV(p[0], p[1]); });
+    var uvs = ROOM.walkable.floor.map(function (p) { return toUV(p[0], p[1]); });
     var u0 = Math.min.apply(null, uvs.map(function (q) { return q.u; })), v0 = Math.min.apply(null, uvs.map(function (q) { return q.v; }));
     var u1 = Math.max.apply(null, uvs.map(function (q) { return q.u; })), v1 = Math.max.apply(null, uvs.map(function (q) { return q.v; }));
     var nu = Math.ceil((u1 - u0) / T.cell) + 1, nv = Math.ceil((v1 - v0) / T.cell) + 1, free = new Uint8Array(nu * nv);
@@ -554,10 +684,10 @@
   var random = rng(7);
   var S;
   function resetSim() {
-    var start = ROOM.tour[0].at, k0 = nearestDir(45), p0 = DIRS[k0].deg;   // she starts facing the front diagonal
+    var start = TOUR[0].at, k0 = nearestDir(45), p0 = DIRS[k0].deg;   // she starts facing the front diagonal
     S = {
       x: start[0], y: start[1], p: p0, praw: p0, dirIdx: k0, spinTo: null, roundAhead: null,
-      path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
+      path: [], leg: 0, legRest: TOUR[0].rest, hold: TOUR[0].rest, waiting: true,
       r: 0, phi: 0, L: T.speed * T.step,
       turnActive: false, turnT: 0, turnFrom: p0, turnTo: p0, turnEl: 0, turnDur: T.turnStep,
       turnP: 0, turnIndex: 0, turnTotal: 0, turnSide: 0,
@@ -604,13 +734,13 @@
   // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it.
   function nextLeg() {
     var pts = [], from = { x: S.x, y: S.y }, k = S.leg, rest = 0;
-    for (var guard = 0; guard < ROOM.tour.length; guard++) {
-      var k2 = (k + 1) % ROOM.tour.length, t = ROOM.tour[k2], p = findPath(from, { x: t.at[0], y: t.at[1] });
+    for (var guard = 0; guard < TOUR.length; guard++) {
+      var k2 = (k + 1) % TOUR.length, t = TOUR[k2], p = findPath(from, { x: t.at[0], y: t.at[1] });
       if (!p) break;
       pts = pts.concat(p); from = p[p.length - 1]; k = k2; rest = t.rest;
       if (rest > 0) break;
     }
-    if (!pts.length) { S.leg = (S.leg + 1) % ROOM.tour.length; S.hold = 0.5; S.waiting = true; return; }   // no way round: skip it
+    if (!pts.length) { S.leg = (S.leg + 1) % TOUR.length; S.hold = 0.5; S.waiting = true; return; }   // no way round: skip it
     S.leg = k;
     startWalk(roundCorners({ x: S.x, y: S.y }, pts), rest);
   }
@@ -1330,14 +1460,81 @@
     ctx.restore();
   }
 
+  // ---- the room drawn: the plate and every shadow, her contact shadow, then the layers and her in depth order ------
+  // Scaled once per device scale D (a size of the stage, or a zoom), never per frame. The plate with the shadows laid
+  // on it is one canvas at painting size, and one at D when that fits FLOOR_BUDGET (a close follow camera doesn't, and
+  // draws the painting-size one scaled). Each layer is one canvas at D, drawn on whole device pixels with the camera
+  // rounded to them, so the layers sit exactly on the plate.
+  var FLOOR_BUDGET = 8e6;
+  var floorCanvas = null, sceneCache = { key: '' };
+  function floorComposite() {
+    if (floorCanvas) return floorCanvas;
+    floorCanvas = document.createElement('canvas');
+    floorCanvas.width = PW; floorCanvas.height = PH;
+    var x = floorCanvas.getContext('2d');
+    x.drawImage(images.plate, 0, 0);
+    ROOM.layers.forEach(function (L) { if (L.shadow) x.drawImage(images['shadow:' + L.id], L.shadow.offset[0], L.shadow.offset[1]); });
+    return floorCanvas;
+  }
+  function sceneAt(D) {
+    var key = D.toFixed(5);
+    if (sceneCache.key === key) return sceneCache;
+    var sc = { key: key, floor: null, layers: {} }, fw = Math.ceil(PW * D), fh = Math.ceil(PH * D);
+    if (fw * fh <= FLOOR_BUDGET) {
+      sc.floor = document.createElement('canvas');
+      sc.floor.width = fw; sc.floor.height = fh;
+      var fx = sc.floor.getContext('2d');
+      fx.imageSmoothingEnabled = true; fx.imageSmoothingQuality = 'high';
+      fx.drawImage(floorComposite(), 0, 0, PW * D, PH * D);
+    }
+    ROOM.layers.forEach(function (L) {
+      var im = images['layer:' + L.id], ix = Math.floor(L.offset[0] * D), iy = Math.floor(L.offset[1] * D);
+      var c = document.createElement('canvas');
+      c.width = Math.max(1, Math.ceil((L.offset[0] + im.width) * D) - ix);
+      c.height = Math.max(1, Math.ceil((L.offset[1] + im.height) * D) - iy);
+      var x = c.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(im, L.offset[0] * D - ix, L.offset[1] * D - iy, im.width * D, im.height * D);
+      sc.layers[L.id] = { c: c, ix: ix, iy: iy };
+    });
+    sceneCache = sc;
+    return sc;
+  }
+
   function render(ctx, wDev, hDev, cam) {
-    var D = cam.D;
+    var D = cam.D, sc = sceneAt(D);
+    var ox = Math.round(cam.x0 * D), oy = Math.round(cam.y0 * D);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, wDev, hDev);
-    ctx.setTransform(D, 0, 0, D, -cam.x0 * D, -cam.y0 * D);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(images.room, 0, 0, PW, PH);
+    if (sc.floor) {
+      var sw = Math.min(wDev, sc.floor.width - ox), sh = Math.min(hDev, sc.floor.height - oy);
+      if (sw > 0 && sh > 0) ctx.drawImage(sc.floor, ox, oy, sw, sh, 0, 0, sw, sh);
+    } else {
+      // too big to scale whole (a close follow camera): a window round the view, scaled once and slid over until the
+      // view leaves it, instead of scaling the painting every frame
+      var FW = Math.ceil(PW * D), FH = Math.ceil(PH * D), win = sc.win;
+      var stale = !win || (ox < win.x && win.x > 0) || (oy < win.y && win.y > 0) ||
+        (ox + wDev > win.x + win.c.width && win.x + win.c.width < FW) || (oy + hDev > win.y + win.c.height && win.y + win.c.height < FH);
+      if (stale) {
+        var mx = Math.round(wDev / 4), my = Math.round(hDev / 4);
+        var wx = Math.max(0, ox - mx), wy = Math.max(0, oy - my);
+        var ww = Math.max(1, Math.min(FW - wx, wDev + 2 * mx)), wh = Math.max(1, Math.min(FH - wy, hDev + 2 * my));
+        if (!win) win = sc.win = { c: document.createElement('canvas'), x: 0, y: 0 };
+        if (win.c.width !== ww || win.c.height !== wh) { win.c.width = ww; win.c.height = wh; }
+        var wc = win.c.getContext('2d');
+        wc.setTransform(1, 0, 0, 1, 0, 0);
+        wc.clearRect(0, 0, ww, wh);
+        wc.imageSmoothingEnabled = true; wc.imageSmoothingQuality = 'high';
+        wc.setTransform(D, 0, 0, D, -wx, -wy);
+        wc.drawImage(floorComposite(), 0, 0);
+        win.x = wx; win.y = wy;
+      }
+      var su = ox - win.x, sv = oy - win.y, sw2 = Math.min(wDev, win.c.width - su), sh2 = Math.min(hDev, win.c.height - sv);
+      if (sw2 > 0 && sh2 > 0) ctx.drawImage(win.c, su, sv, sw2, sh2, 0, 0, sw2, sh2);
+    }
+    ctx.setTransform(D, 0, 0, D, -ox, -oy);
 
     // Between two drawings: A and B both warped onto the same knots. The nearer of the two goes down whole and the
     // other over it at its share, which is a straight lerp where they overlap — and since the morph has already put
@@ -1361,37 +1558,60 @@
     ctx.fill();
     ctx.restore();
 
-    place(ctx, fig);
-    if (mix) {
-      ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
-      place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
-      ctx.globalAlpha = 1;
+    // then the layers and her, back to front by the depth rule: a layer is drawn over her only when its ground reaches
+    // lower on the page than her feet in her columns; her contact shadow above is under every layer
+    var order = drawOrder(S.x, S.y).order;
+    for (var oi = 0; oi < order.length; oi++) {
+      if (order[oi] === 'lumi') {
+        place(ctx, fig);
+        if (mix) {
+          ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
+          place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+          ctx.globalAlpha = 1;
+        }
+        continue;
+      }
+      var lc = sc.layers[order[oi]];
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(lc.c, lc.ix - ox, lc.iy - oy);
+      ctx.setTransform(D, 0, 0, D, -ox, -oy);
     }
 
-    // furniture she is behind, cut from the painting and laid back over her
-    var q = toUV(S.x, S.y);
-    OCC.forEach(function (o) {
-      if (q.u >= o.u1 || q.v >= o.v1) return;
-      ctx.save();
-      polyPath(ctx, o.cutout);
-      ctx.clip();
-      ctx.drawImage(images.room, 0, 0, PW, PH);
-      ctx.restore();
-    });
-
     if (ui.plan) {
+      // outlines only: a filled polygon would wash over her where she overlaps it on the page. The floor dashed, the
+      // footprints and blockers grown by her clearance dotted (where her feet may not go), footprints cyan, extents
+      // white, blockers orange, anchors red, and her feet columns (x ± HALF, what the depth rule tests) a red bar
       ctx.lineWidth = 1.6 / D;
       ctx.setLineDash([6 / D, 5 / D]);
       ctx.strokeStyle = 'rgba(240, 217, 166, 0.95)';
-      polyPath(ctx, ROOM.walkable); ctx.stroke();
+      polyPath(ctx, ROOM.walkable.floor); ctx.stroke();
+      ctx.setLineDash([2 / D, 4 / D]);
+      ctx.lineWidth = 1.2 / D;
+      ctx.strokeStyle = 'rgba(255, 244, 214, 0.5)';
+      minusPolys().forEach(function (p) { polyPath(ctx, p); ctx.stroke(); });
       ctx.setLineDash([]);
-      OCC.forEach(function (o) {
-        // outlines only: a filled footprint would wash over her where she overlaps it on the page
-        ctx.strokeStyle = 'rgba(255, 244, 214, 0.75)';
-        polyPath(ctx, o.footprint); ctx.stroke();
-        ctx.strokeStyle = 'rgba(217, 172, 95, 0.9)';
-        polyPath(ctx, o.cutout); ctx.stroke();
+      ROOM.layers.forEach(function (L) {
+        ctx.strokeStyle = 'rgba(0, 230, 255, 0.95)'; ctx.lineWidth = 2 / D;
+        polyPath(ctx, L.footprint); ctx.stroke();
+        if (L.extent) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.2 / D; polyPath(ctx, L.extent); ctx.stroke(); }
       });
+      ROOM.blockers.forEach(function (b) {
+        ctx.strokeStyle = 'rgba(255, 140, 40, 0.9)'; ctx.lineWidth = 1.5 / D;
+        polyPath(ctx, b.footprint); ctx.stroke();
+      });
+      ctx.font = (12 / D) + 'px ui-sans-serif, system-ui, sans-serif';
+      ROOM.layers.forEach(function (L) {
+        Object.keys(L.anchors).forEach(function (name) {
+          var a = L.anchors[name].at;
+          ctx.fillStyle = '#ff3b3b';
+          ctx.beginPath(); ctx.arc(a[0], a[1], 3.5 / D, 0, 2 * Math.PI); ctx.fill();
+          ctx.lineWidth = 3 / D; ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.strokeText(name, a[0] + 6 / D, a[1] - 4 / D);
+          ctx.fillStyle = '#fff4d6'; ctx.fillText(name, a[0] + 6 / D, a[1] - 4 / D);
+        });
+      });
+      ctx.strokeStyle = 'rgba(255, 59, 59, 0.9)'; ctx.lineWidth = 2 / D;
+      ctx.beginPath(); ctx.moveTo(S.x - HALF(), S.y); ctx.lineTo(S.x + HALF(), S.y); ctx.stroke();
       if (S.path.length) {
         ctx.strokeStyle = 'rgba(255, 244, 214, 0.95)';
         ctx.lineWidth = 2.2 / D;
@@ -1443,7 +1663,7 @@
   // corners are jumped, and writes the numbers into <pre id="audit"> (capture.py --audit prints them).
   function runAudit() {
     document.body.classList.add('chromeless');
-    var dt = 1 / 60, pick = rng(11);
+    var dt = 1 / 60;
     var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0, faceOffDeg: {} };
     DIRS.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
     function run(frames) {
@@ -1477,6 +1697,27 @@
         }
       }
     }
+    walkAudit(run, log);
+    ['walkedPx', 'sidewaysPx', 'worstDeg', 'snappedPx'].forEach(function (k) { log[k] = Math.round(log[k] * 10) / 10; });
+    var pre = document.createElement('pre');
+    pre.id = 'audit';
+    pre.textContent = JSON.stringify(log);
+    document.querySelector('main').appendChild(pre);
+    document.title = 'ready';
+  }
+  // The walk the audit and the occlusion count share: every tour leg checked for a path, the tour for two minutes, then
+  // 60 seeded random clicks on the walkable floor. `run(frames)` steps the sim and measures; `unreachable` counts the
+  // tour legs and the clicks with no path.
+  function walkAudit(run, log) {
+    var pick = rng(11);
+    log.tourLegs = TOUR.length;
+    TOUR.forEach(function (t, k) {
+      var n = TOUR[(k + 1) % TOUR.length];
+      if (!findPath({ x: t.at[0], y: t.at[1] }, { x: n.at[0], y: n.at[1] })) {
+        log.unreachable++;
+        (log.tourLegsUnreachable = log.tourLegsUnreachable || []).push(k);
+      }
+    });
     run(120 * 60);
     ui.tour = false;
     for (var c = 0; c < 60; c++) {
@@ -1494,13 +1735,158 @@
       for (var f = 0; f < 60 * 40 && (S.path.length || turning()); f += 30) run(30);
       run(30);
     }
-    ['walkedPx', 'sidewaysPx', 'worstDeg', 'snappedPx'].forEach(function (k) { log[k] = Math.round(log[k] * 10) / 10; });
+  }
+
+  // `?occlusion=1`: the audit's walk (walkAudit), and at every fourth frame (every second during a morph) her drawing
+  // rendered alone into one buffer and the layers the depth order draws after her into another, both round her feet at
+  // room scale (D = 1). It counts, over the whole walk:
+  //   behindPx      her pixels (alpha > 0.5) covered (layer alpha > 0.1) by a layer drawn after her that the depth rule
+  //                 does not put in front of her — must be 0;
+  //   fringePx      her pixels covered by a layer drawn after her where that layer's pixel is floor-coloured (fringe.py's
+  //                 classifier, listed by build.py) — must be 0;
+  //   outOfReachPx  her pixels overlapping, in either order, a layer whose ground is out of her reach (groundYNear null):
+  //                 their order is arbitrary there, so this says whether REACH spans her widest drawing in motion;
+  //   columnMissPx  her pixels drawn over a layer whose ground, in that very page column, lies wholly lower than her
+  //                 feet (it stands in front of her there): a layer failing to cover what should be behind it;
+  //   columnOverPx  layer pixels drawn over her whose ground, in that column, lies wholly higher than her feet.
+  // The last two are what one order per layer cannot get right beside a footprint's corner and what HALF trades off:
+  // information, with the worst frame, not a gate. Then growCheck (the JS port of depth.py's grow against layers.json's
+  // polygons) and renderMs (render() at a 1166 css px stage at 2×, whole room and follow camera, flushed each frame).
+  function runOcclusion() {
+    document.body.classList.add('chromeless');
+    var dt = 1 / 60, BOX = 220, frameN = 0;
+    var log = { samples: 0, clicks: 0, unreachable: 0, behindPx: 0, fringePx: 0, outOfReachPx: 0, columnMissPx: 0,
+      columnOverPx: 0, coveredPx: 0, framesCovered: 0, halfWidth: HALF(), reach: REACH(), margin: ROOM.depth.margin,
+      framesWith: {}, worst: {} };
+    var LA = {};
+    ROOM.layers.forEach(function (L) {
+      var im = images['layer:' + L.id], c = document.createElement('canvas');
+      c.width = im.width; c.height = im.height;
+      var x = c.getContext('2d');
+      x.drawImage(im, 0, 0);
+      var px = x.getImageData(0, 0, im.width, im.height).data, a = new Uint8Array(im.width * im.height), fl = new Uint8Array(im.width * im.height);
+      for (var i = 0; i < a.length; i++) a[i] = px[i * 4 + 3];
+      (ROOM.floorlike[L.id] || []).forEach(function (p) {
+        var u = p[0] - L.offset[0], v = p[1] - L.offset[1];
+        if (u >= 0 && v >= 0 && u < im.width && v < im.height) fl[v * im.width + u] = 1;
+      });
+      LA[L.id] = { L: L, a: a, fl: fl, w: im.width, h: im.height, x: L.offset[0], y: L.offset[1] };
+    });
+    var herC = document.createElement('canvas'), frontC = document.createElement('canvas');
+    herC.width = herC.height = frontC.width = frontC.height = BOX;
+    var hctx = herC.getContext('2d', { willReadFrequently: true }), fctx = frontC.getContext('2d', { willReadFrequently: true });
+    function where(ids) {
+      return { t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), facing: DIRS[S.dirIdx].id, p: +S.p.toFixed(1),
+        state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting',
+        phase: ui.tour ? 'tour' : 'clicks', layers: Object.keys(ids) };
+    }
+    function sample() {
+      var ox = Math.round(S.x) - BOX / 2, oy = Math.round(S.y) - Math.round(BOX * 0.72);
+      var mix = morphMix(), under = mix && mix.t > 0.5 ? mix.b : mix ? mix.a : S.dirIdx;
+      hctx.setTransform(1, 0, 0, 1, 0, 0); hctx.clearRect(0, 0, BOX, BOX);
+      hctx.setTransform(1, 0, 0, 1, -ox, -oy);
+      place(hctx, drawFigure(1, under, CUR, mix));
+      if (mix) {
+        hctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
+        place(hctx, drawFigure(1, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+        hctx.globalAlpha = 1;
+      }
+      var ha = hctx.getImageData(0, 0, BOX, BOX).data;
+      var d = drawOrder(S.x, S.y), after = {}, seen = false;
+      fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, BOX, BOX);
+      d.order.forEach(function (n) {
+        if (n === 'lumi') { seen = true; return; }
+        if (!seen) return;
+        after[n] = true;
+        fctx.drawImage(images['layer:' + n], LAYER[n].offset[0] - ox, LAYER[n].offset[1] - oy);
+      });
+      var fa = fctx.getImageData(0, 0, BOX, BOX).data;
+      var near = ROOM.layers.map(function (L) { return { id: L.id, g: groundYNear(L, S.x), A: LA[L.id], col: {} }; });
+      var margin = ROOM.depth.margin;
+      var n = { behind: 0, fringe: 0, reach: 0, miss: 0, over: 0, covered: 0 }, ids = { behind: {}, fringe: {}, reach: {}, miss: {}, over: {} };
+      for (var j = 0; j < BOX; j++) {
+        for (var i = 0; i < BOX; i++) {
+          var q = (j * BOX + i) * 4;
+          if (ha[q + 3] <= 127) continue;
+          if (fa[q + 3] > 25) n.covered++;
+          var px = ox + i, py = oy + j;
+          for (var k = 0; k < near.length; k++) {
+            var e = near[k], A = e.A, u = px - A.x, v = py - A.y;
+            if (u < 0 || v < 0 || u >= A.w || v >= A.h || A.a[v * A.w + u] <= 25) continue;
+            var drawnAfter = !!after[e.id];
+            if (e.g === null) { n.reach++; ids.reach[e.id] = true; }
+            if (drawnAfter && !d.over[e.id]) { n.behind++; ids.behind[e.id] = true; }
+            if (drawnAfter && A.fl[v * A.w + u]) { n.fringe++; ids.fringe[e.id] = true; }
+            var iv = e.col[px];
+            if (iv === undefined) iv = e.col[px] = columnInterval(groundOf(A.L), px);
+            if (iv) {
+              if (!drawnAfter && iv[0] > S.y + margin) { n.miss++; ids.miss[e.id] = true; }
+              else if (drawnAfter && iv[1] < S.y - margin) { n.over++; ids.over[e.id] = true; }
+            }
+          }
+        }
+      }
+      log.samples++;
+      if (n.covered) { log.coveredPx += n.covered; log.framesCovered++; }
+      [['behindPx', 'behind'], ['fringePx', 'fringe'], ['outOfReachPx', 'reach'], ['columnMissPx', 'miss'], ['columnOverPx', 'over']].forEach(function (kv) {
+        var v = n[kv[1]];
+        if (!v) return;
+        log[kv[0]] += v;
+        log.framesWith[kv[0]] = (log.framesWith[kv[0]] || 0) + 1;
+        if (!log.worst[kv[0]] || v > log.worst[kv[0]].px) log.worst[kv[0]] = Object.assign({ px: v }, where(ids[kv[1]]));
+      });
+    }
+    function run(frames) {
+      for (var f = 0; f < frames; f++) {
+        step(dt);
+        frameN++;
+        if (frameN % 4 === 0 || (frameN % 2 === 0 && morphMix())) sample();
+      }
+    }
+    walkAudit(run, log);
+
+    var gc = { polys: 0, mismatched: 0, maxDiff: 0 }, groups = {};
+    ROOM.walkable.minus.forEach(function (m) { (groups[m.of] = groups[m.of] || []).push(m.poly); });
+    ROOM.layers.map(function (L) { return [L.id, groundOf(L)]; })
+      .concat(ROOM.blockers.map(function (b) { return [b.id, b.footprint]; }))
+      .forEach(function (pair) {
+        var mine = grow(pair[1], ROOM.lumi.clearance), theirs = groups[pair[0]] || [];
+        if (mine.length !== theirs.length) { gc.mismatched++; return; }
+        mine.forEach(function (p, i) {
+          gc.polys++;
+          if (p.length !== theirs[i].length) { gc.mismatched++; return; }
+          p.forEach(function (v, k) { gc.maxDiff = Math.max(gc.maxDiff, Math.abs(v[0] - theirs[i][k][0]), Math.abs(v[1] - theirs[i][k][1])); });
+        });
+      });
+    gc.maxDiff = +gc.maxDiff.toFixed(3);
+    log.growCheck = gc;
+
+    var W0 = 2332, H0 = Math.round(W0 * PH / PW), stage = document.createElement('canvas');
+    stage.width = W0; stage.height = H0;
+    var sctx = stage.getContext('2d'), perf = {};
+    [['room', 1], ['follow', 2.3]].forEach(function (v) {
+      S.cam = null;
+      var t0 = performance.now();
+      render(sctx, W0, H0, camera(W0, H0, v[1], true));
+      sctx.getImageData(0, 0, 1, 1);
+      perf[v[0] + 'FirstMs'] = +(performance.now() - t0).toFixed(1);
+      var t1 = performance.now();
+      for (var f = 0; f < 40; f++) {
+        step(dt);
+        render(sctx, W0, H0, camera(W0, H0, v[1], false));
+        sctx.getImageData(0, 0, 1, 1);
+      }
+      perf[v[0] + 'Ms'] = +((performance.now() - t1) / 40).toFixed(2);
+    });
+    log.renderMs = perf;
+
     var pre = document.createElement('pre');
     pre.id = 'audit';
     pre.textContent = JSON.stringify(log);
     document.querySelector('main').appendChild(pre);
     document.title = 'ready';
   }
+
   // `?trace=start,step,count`: at each sample where she is, the drawing she shows, where it faces and where she heads
   function runTrace() {
     document.body.classList.add('chromeless');
@@ -1532,6 +1918,7 @@
     resetSim();
     if (params.get('audit')) { runAudit(); return; }
     if (params.get('trace')) { runTrace(); return; }
+    if (params.get('occlusion')) { runOcclusion(); return; }
     if (GRID) { runGrid(); return; }
     var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
     var readout = document.getElementById('readout'), hint = document.getElementById('hint');
@@ -1569,7 +1956,7 @@
       if (ui.tour) { setTour(false); return; }
       setTour(true);
       hint.textContent = '';
-      if (!S.path.length) { S.leg = ROOM.tour.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
+      if (!S.path.length) { S.leg = TOUR.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
     });
     if (reduced) {
       tourBtn.disabled = true;
@@ -1664,10 +2051,15 @@
       im.src = src;
     });
   }
-  var names = Object.keys(PARTS);
-  Promise.all([load(ROOM_SRC)].concat(names.map(function (n) { return load(PARTS[n]); }))).then(function (imgs) {
-    images.room = imgs[0];
-    names.forEach(function (n, i) { images[n] = imgs[i + 1]; });
+  // the plate, the rig's pieces, every layer and its shadow
+  var keys = ['plate'], srcs = [PLATE_SRC];
+  Object.keys(PARTS).forEach(function (n) { keys.push(n); srcs.push(PARTS[n]); });
+  ROOM.layers.forEach(function (L) {
+    keys.push('layer:' + L.id); srcs.push(SCENE.layers[L.id]);
+    if (L.shadow) { keys.push('shadow:' + L.id); srcs.push(SCENE.shadows[L.id]); }
+  });
+  Promise.all(srcs.map(load)).then(function (imgs) {
+    keys.forEach(function (k, i) { images[k] = imgs[i]; });
     start();
   }).catch(function (err) {
     document.getElementById('hint').textContent = 'The drawings didn’t load, so there’s nothing to walk.';
