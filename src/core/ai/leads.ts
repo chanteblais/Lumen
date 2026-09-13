@@ -7,7 +7,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { EmailMessage } from "@/core/email/types";
-import { cachedPrefixOptions, chatModel } from "./model";
+import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
 import { stripCounts } from "./plan";
 
@@ -70,7 +70,7 @@ export async function inferLeads(inputs: LeadInputs): Promise<LeadDraft[]> {
     ],
     prompt: "Look through the mail and return only the structured leads.",
     output: Output.object({ schema: LeadsSchema, name: "mail_leads" }),
-    providerOptions: { anthropic: { effort: "low" } },
+    providerOptions: effortOptions("low"),
   });
   return clampLeads(r.output?.leads ?? [], inputs.messages, inputs.lists, [...inputs.openTitles, ...inputs.handledTitles]);
 }

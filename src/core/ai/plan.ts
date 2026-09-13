@@ -9,7 +9,7 @@ import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
 import { dayPart, describeGap, gapBucket } from "@/core/time";
 import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
-import { cachedPrefixOptions, chatModel } from "./model";
+import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
 
 export type PlanInputs = {
@@ -83,7 +83,7 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     ],
     prompt: "Choose today's path. Return only the structured plan.",
     output: Output.object({ schema: PlanSchema, name: "day_plan" }),
-    providerOptions: { anthropic: { effort: "medium" } },
+    providerOptions: effortOptions("medium"),
   });
 
   const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;

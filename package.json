@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.53",
+    "@ai-sdk/openai": "^4.0.66",
     "@ai-sdk/react": "^4.0.102",
     "@clerk/nextjs": "^7.9.2",
     "@huggingface/transformers": "^4.2.0",

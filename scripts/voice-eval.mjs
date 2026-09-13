@@ -2,11 +2,14 @@
 // Runs the nine voice scenarios (docs/voice-eval-log.md) against the live
 // persona + context block with the real model, without touching the database.
 // Usage: node --env-file=.env.local --import tsx scripts/voice-eval.mjs [scenario#]
+// Another model: LUMI_MODEL=anthropic:claude-opus-5 node --env-file=.env.local --import tsx scripts/voice-eval.mjs
 // Output: one transcript per scenario, plus token/cache usage per turn.
 import { generateText } from "ai";
 import { PERSONA } from "../src/core/ai/persona.ts";
 import { buildContextBlock } from "../src/core/ai/context.ts";
-import { cachedPrefixOptions, chatModel, chatProviderOptions } from "../src/core/ai/model.ts";
+import { CHAT_MODEL_ID, cachedPrefixOptions, chatModel, chatProviderOptions } from "../src/core/ai/model.ts";
+
+console.log(`Model: ${CHAT_MODEL_ID}`);
 
 const SCENARIOS = [
   ["I know what I need to do but I can't start.", "It's a grant report. Due Monday."],
