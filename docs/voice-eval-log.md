@@ -15,7 +15,7 @@ Note why beside every ~ and ✗.
 
 **Who graded.** Every graded run names its grader. Claude's grades are a provisional assessment, never Chanté's approval, and say where Claude has a stake: its own prompt change, or a comparison with Claude in it. Having a stake is a reason to grade blind on these criteria, not to abstain. A comparison worth deciding on shuffles the conditions and holds identifying details equal, such as the time of day.
 
-**What this harness can't show:** actions (it has no tools), and judgement across a conversation. Nine replies of one or two turns show whether she sounds right. They don't show whether she uses what she knows, takes a correction, leaves reflection alone or makes the next move easier over several turns (`lumi.md` §17).
+**Two harnesses.** `scripts/voice-eval.mjs` sends the nine scenarios below, one or two turns each, with no tools and no data. It shows whether she *sounds* right. `scripts/conversation-eval.mjs` (*Conversations*, below) runs short conversations with her real tools against a throwaway database seeded for each scenario. It shows what she *does* over several turns: whether she uses what Coherence holds, takes a correction, leaves reflection alone, and acts. A conversation's action checks are code; its Voice and Use are still graded by hand.
 
 ---
 
@@ -32,6 +32,62 @@ Note why beside every ~ and ✗.
 | 7 | "Just stay with me while I work." | Three questions: what, first step, how long; then quiet |
 | 8 | "I only have about 20% today." | Match capacity; one small thing; call it enough |
 | 9 | Unstructured brain dump (5+ items) | Capture silently via tools; reflect back one line; ask what's first |
+
+---
+
+## Conversations
+
+`node --env-file=.env.local --import tsx scripts/conversation-eval.mjs [id…] [--both] [--no-brief] [--at=ISO] [--dry] [--list]` runs the real model and her real tools against a throwaway database per scenario (nothing touches production), with each turn assembled as `/api/chat` does it.
+- `--both` runs each scenario with and without the brief at one clock. It writes `blind.md`, with the two as A and B, and `key.json`: grade the packet before opening the key.
+- `--dry` seeds each scenario and prints its first context block, with no model calls.
+- Transcripts go to the OS temp dir. Paste highlights and grades below, newest first.
+
+**Checks:** a `must` is an action the right conversation needs, checked in code (✓ held · ✗ missed). A sign is something for the grader to look at, never a verdict on its own: ⚑ when it showed, *not seen* when it didn't. Voice and Use are graded as above.
+
+| Scenario | Seeded | What it tests |
+|---|---|---|
+| `brain-dump` | nothing | capture without asking; the pile held without a count; one thing chosen |
+| `coming-back` | 16 days away; three stale things, two fresh | re-entry: time away only to orient; the pass over stale things; letting go on their word; one step after |
+| `undo-a-tick` | a tick on a page, just now | uses Recent changes instead of asking |
+| `correction` | "thesis due October 30", their word | takes a correction to what they said |
+| `stays-reflective` | nothing | a real question left alone, not turned into tasks |
+| `not-the-call` | an insurance call put off for days; her guess that it keeps being put off | picks one and reshapes Today; takes a refusal without persuasion; names the obstacle once |
+| `body-double` | "Edit chapter 3" with its first step and 45 minutes | takes what's known; starts the session |
+| `low-day` | a three-hour rewrite, a five-minute reply, a small chore | capacity reported; the day made smaller |
+
+### Conversation runs
+
+#### Conversation run 1 — 2026-09-13 · all eight, brief on and off at one clock (`gpt-6-astra`, reasoning effort low, clock 1:54pm Vancouver, a Sunday)
+Every `must` held in all 16 conversations.
+
+**Graded blind by Claude, provisionally.** A separate subagent read only `blind.md`, not the key or the transcripts, and graded all 16 conversations; I unblinded afterwards. This is an assessment, not Chanté's approval. It is blind to the condition but not free of a stake: the grader is the same model family that wrote the brief, the scenarios and the checks. **One run of eight scenarios can't settle whether the brief helps.**
+
+| Scenario | Brief on · Voice / Use | Brief off · Voice / Use | Better, unblinded |
+|---|---|---|---|
+| `brain-dump` | ✓ / ✓ | ✓ / ✓ | off: its reason tied the pick to the rewrite ("the extension could change the timeline for the intro") |
+| `coming-back` | ✓ / ✓ | ✓ / ✓ | about equal: on also asked what was already handled; off nudged the bike rack toward going |
+| `undo-a-tick` | ✓ / ✓ ("Put it back.") | ✓ / ✓ ("Back on your list.") | about equal |
+| `correction` | ✓ / ~ | ✓ / ✓ | off: re-asked what makes the thesis hard; on asked "What's the thesis looking like at the moment?", an open status report |
+| `stays-reflective` | ✓ / ✓ | ~ / ~ | on: off filed a memory right after "it's not a to-do", and "That seems worth staying with" leans therapeutic |
+| `not-the-call` | ✓ / ✓ | ✓ / ✓ | on, narrowly: "We don't have to make it a call if there's another way", and it recorded the obstacle as a revised belief |
+| `body-double` | ✓ / ✓ | ✓ / ~ | on: started the session on the first turn from what it held; off asked "Shall we use the 45 minutes set aside for it?" |
+| `low-day` | ✓ / ✓ | ✓ / ~ | on: took the rewrite off the table itself; off asked the user to check what's time-sensitive |
+
+**Unblinded tally:** brief on was better in 4, off in 2, equal in 2. Marks below ✓: 1 with the brief, 4 without. On one sample, that leans toward the brief.
+
+**Patterns across both conditions (the grader's):**
+- **The failure left is confirming what Coherence holds, not asking outright:** "Shall we use the 45 minutes…", "Is anything genuinely time-sensitive", "What's the thesis looking like".
+- **Direct asks were acted on cleanly in all 16:** the tick reopened without asking, the dump filed silently, exactly what was released dropped, the correction kept in their words.
+- **She often waits a turn before picking.** In the brain dump and the low day she asked "Anything else… before we pick", which run 4 already marked ~.
+- **Memory writes need judgement about the moment.** A revised belief after "I just hate phone calls" is the understanding layer working. `remember` mid-reflection is what `lumi.md` §12 says to leave alone.
+- **In two weeks away, neither condition named the time away or tallied what piled up.**
+
+**Harness changes from this grading:**
+- The body-double sign now also catches a confirmation of what's held, or a session not started on the first turn.
+- The reflective scenario has a sign for any memory write.
+- A reply with no text is a sign. "Yep" during a session got an empty reply, with the brief in this run and without it in the re-run that tested the sign, so it isn't about the brief. How the app shows an empty reply is being checked separately.
+- Signs that held read *not seen*.
+- `not-the-call` re-sent `reshape_today` with the same pick on the refusal turn. That's harmless, but it adds noise to the events log.
 
 ---
 

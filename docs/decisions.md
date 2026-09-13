@@ -4,6 +4,17 @@ Append-only. One entry per decision that changes `architecture.md`, `domain.md` 
 
 **Product decisions** (what the product is and why, and the constraints they put on future work) live in [`living/decisions.md`](living/decisions.md), the canon's log. An entry here that changes how the product behaves gets a short entry there too.
 
+- **2026-09-13 · A conversation harness: Lumi's real tools against a throwaway database (`scripts/conversation-eval.mjs`).** Chanté's go-ahead, after review feedback that nine single replies can't show judgement over a conversation or whether she acts.
+  - **How it runs:** each scenario gets a fresh PGlite (`openTestDb`, every migration applied), a test user, and seeded intentions, beliefs and a sitting. Each turn is assembled the way `/api/chat` assembles one (`loadSnapshot`, `listRecentActivity`, `selectBeliefs`, `selectLibrary`, `buildContextBlock`, `buildTools`) and runs `generateText` with `stopWhen: stepCountIs(5)`. Seed events are moved out of *Recent changes*, so she doesn't read the setup as her own doing.
+  - **Checks:** code over tool calls and database state (`must`), plus signs for the grader (`flag`). Voice and Use stay manual.
+  - **Comparing the brief:** `--both` runs each scenario with and without the brief at the same `--at` clock. The brief is taken out of `PERSONA` by string, and the script fails loudly if `persona.ts` stops placing it that way. It writes `blind.md` (the two shuffled as A and B, token counts left out) and `key.json`.
+  - **Output** goes to the OS temp dir, never the repo.
+  - **Why a script, not a vitest suite:** it spends model calls and its judgement is graded by hand, so it runs on purpose, like `voice-eval.mjs`.
+  - **A known cost:** the assembly is copied from the route, not shared. If what a chat turn carries changes, the script has to follow; extracting one `assembleTurn` for both is the follow-up.
+  - **Also fixed:** `context.ts` still told her "don't mention the length unless they do" on any long gap, which *Lumi may name time away* had replaced. It now says what the re-entry line says. `context.test.ts` only checks for "long gap".
+
+  No migration; nothing for the user to keep.
+
 - **2026-09-13 · History pointers stay without foreign keys; episodes keep `thread_ids` as jsonb.** From the code review (A22, A23), `fix/data-integrity`.
   - **No FKs** on `summary_through_message_id`, `through_message_id`, `source_message_id`, `supersedes_id`, `superseded_by_id`. They point into history, and the target may go first: forgetting a belief deletes its chain, and a message may be trimmed. An FK would block that delete or cascade one nobody asked for. Code treats a missing target as normal; `unconsolidatedMessages` falls back to the latest episode's end instead of re-reading the conversation.
   - **No `episode_threads` join table.** A GIN index (`episodes_thread_ids_idx`, `0006`) serves the `@>` filters. At V1 scale (one user, tens of episodes) the array does the job, and scrubbing a forgotten thread's id is rare. Revisit if a thread's visits become a hot read.
