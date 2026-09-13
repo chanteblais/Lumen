@@ -1499,11 +1499,12 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
     --px: max(calc(100vw / 1536), calc(100vh / 1024));
-    --lumi-right: calc(50vw - (var(--lumi-x) - 768) * var(--px) - 58px);
+    --lumi-right: calc(50vw - (var(--lumi-x) - var(--scene-cx, 768)) * var(--px) - 58px);
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 1060; --lumi-y: 745; } /* see Library: the reading room */
+  /* the Library has its own fit (--library-px, --scene-cx): see Library: the reading room */
+  body:has(.library-scene) { --px: var(--library-px); --lumi-x: 1085; --lumi-y: 755; }
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
@@ -1517,17 +1518,39 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
    room (art/scenery/library/background.png → public/library-room.webp):
-   an isometric cutaway on a dark ground, like Home's and Today's rooms.
+   an isometric cutaway, like Home's and Today's rooms.
    For now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the open floor to the right of the reading circle. The top bar,
    the grain and the way her spot is mapped are shared with Today (the
-   selectors above name both scenes). Nothing for the user to keep. */
+   selectors above name both scenes). Nothing for the user to keep.
+   Its fit is its own (Chanté, 2026-09-13: the walls reach the window's left
+   and right edges): the painting is scaled so the corner posts' outer edges
+   (painting x 128–1412) meet the window's sides, centred on them (x 770) and
+   on the painting's middle (y 512). A window narrower than the walls'
+   1284:1024 fills its height instead, as a cover fit would. The floor past
+   the walls and a little of the top and bottom are cropped; Lumi's spot and
+   the plaque stage use the same numbers. */
+body:has(.library-scene) {
+  --library-px: max(calc(100vw / 1284), calc(100vh / 1024));
+  --scene-cx: 770;
+}
 .library-scene {
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* the painting's own ground, and a 24×16 copy of it, so the fade-in has no seam (RoomScene; see .scene-painting) */
-  background: #231912 url("data:image/webp;base64,UklGRswAAABXRUJQVlA4IMAAAADQBACdASoYABAAPrVInkmnJCKhMAgA4BaJbACdMoRwAdAdFwOjX32wyEyE5gufAAD+8aZF4Lw9CrRKd1sclq0zmkgf5tuA7baxMYwOaLqxb8VmTm00C08mQ172zv07G6pz7rqzVoQwIWJVnUjroabjA/qpThJ2tcaSqaCmpFT++5tl18vK6T9gc3pvz/Xyom6lS7CxdUbHWSGNSd9LHZn7GCPtSAt/931dq6U7V/s/hrVeCE88iRM38KSRKtBJKAA=") center / cover no-repeat;
+  overflow: hidden;
+  /* the painting's own ground, and a 24×16 copy of it placed where the painting will be, so the fade-in has no seam (RoomScene; see .scene-painting) */
+  background: #332218 url("data:image/webp;base64,UklGRrIAAABXRUJQVlA4IKYAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoRwAdEM+33cudFQVWG1VYx1AAD+7p62j4VTzj3bS6de0i1/7uytd75E+nKxG2tRPOTmjKae2JBhni6ocaB3F04CtCvAEvp852tch61l76pe0VUTPfMckeCR0ztjR4weTqGNk1NLCdcOYIcRfE8eA0VY+obzeexu2eGmX1eWxiFGDDUm3QNWaAAA") no-repeat;
+  background-size: calc(1536 * var(--library-px)) calc(1024 * var(--library-px));
+  background-position: calc(50vw - var(--scene-cx) * var(--library-px)) calc(50vh - 512 * var(--library-px));
+}
+/* next/image's `fill` sets the painting's box inline, so the Library's fit overrides it */
+.library-scene .scene-painting {
+  inset: auto !important;
+  left: calc(50vw - var(--scene-cx) * var(--library-px)) !important;
+  top: calc(50vh - 512 * var(--library-px)) !important;
+  width: calc(1536 * var(--library-px)) !important;
+  height: calc(1024 * var(--library-px)) !important;
 }
 /* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */
@@ -1542,27 +1565,26 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .library-page { flex: 1 0 auto; }
 /* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
    reading circle (the round table with its armchairs, stools and cushions),
-   below the stair bookcase: she covers only floor and the rug's corner, both
-   further back than her feet, and stays clear of the nav and the crop at
-   every desktop window. */
+   in front of the stair bay: she covers only floor, the alcove's plant and
+   the stair bay's cabinet, all further back than her feet, and stays clear
+   of the nav and the crop at every desktop window. */
 
 /* ---------- Library: sections on the bookcases (components/library/LibraryRoom.tsx) ----------
    What the Library holds, drawn in code on the painting (2026-09-13). A thread
    with threads under it is a section: its name is set on a bookcase's blank
    plaque, in the order sections arrived — the centre bay, the ladder bay, the
-   stair bay (components/library/room-slots.ts, copied from
-   art/scenery/library/library-views.json). The stage is the painting's own
-   rectangle under the cover fit, so a plaque stays on its bookcase at any
-   window, and type is in the stage's units (100cqh is the painting's 1024px).
+   stair bay (components/library/room-slots.ts, measured on the painting). The
+   stage is the painting's own rectangle under the Library's fit (below), so a
+   plaque stays on its bookcase at any window, and type is in the stage's
+   units (100cqh is the painting's 1024px).
    A bookcase face is one link: invisible at rest, its plaque warming on hover
    or focus. Threads under nothing and holding nothing wait on the table, on a
    slip. Below 768px there is no room: a plain list, which is also there,
    visually hidden, for screen readers on a desktop. Nothing to arrange. */
 .library-stage {
-  --library-px: max(calc(100vw / 1536), calc(100vh / 1024));
   position: fixed;
   z-index: 1;
-  left: calc(50vw - 768 * var(--library-px));
+  left: calc(50vw - var(--scene-cx) * var(--library-px));
   top: calc(50vh - 512 * var(--library-px));
   width: calc(1536 * var(--library-px));
   height: calc(1024 * var(--library-px));

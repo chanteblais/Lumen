@@ -1,6 +1,6 @@
 # The Library's spatial map — proposal, v3
 
-*2026-09-13 · Claude. Drawn on `../background.png`, Chanté's isometric repaint of the reading room, now the painting the Library serves. `../shelf-zoom.png` is the reading scale and `../library-spatial-information-architecture.md` the governing IA. v1 and v2, the same day, were drawn on the frontal paintings (both archived now: `art/archived/scene_mockups/library-background-frontal.png` and `library-background-long-table.png`). Nothing here is approved, and no close-up has been generated.*
+*2026-09-13 · Claude. Drawn on Chanté's first isometric repaint of the reading room, served until her re-render with full-size armchairs the same day and now archived as `art/archived/scene_mockups/library-background-iso.png`; the manifest points there, so the maps still draw true. The served `../background.png` is a new render, so these coordinates don't carry over to it; the page's own numbers (`src/components/library/room-slots.ts`, Lumi's spot) were measured on it separately. `../shelf-zoom.png` is the reading scale and `../library-spatial-information-architecture.md` the governing IA. v1 and v2, the same day, were drawn on the frontal paintings (both archived now: `art/archived/scene_mockups/library-background-frontal.png` and `library-background-long-table.png`). Nothing here is approved, and no close-up has been generated.*
 
 The images in this folder are annotations drawn by `scripts/draw-library-map.py` from the manifest, `../library-views.json`. The numbers live in the manifest, so edit them there and redraw. The production painting is never touched.
 
@@ -19,7 +19,7 @@ The images in this folder are annotations drawn by `scripts/draw-library-map.py`
 - **Constant scale.** Nothing shrinks toward the back, so v2's depth-scale estimate is gone: walking needs only positions, not sizes.
 - **The furniture agrees with itself.** The reading circle's armchairs and the alcove's are the same scale, so v2's question about the circle's half-scale furniture is gone. What remains is Lumi's own size (question 6).
 - **The doorway under the stair is in view** at every desktop window, and `expansion_02` is now the room beyond it. The stair has a landing halfway up, a natural stop on the way to the gallery.
-- **Served:** `background.png` → `public/library-room.webp`. The scene's ground is the painting's dark `#231912`, and Lumi's spot is painting px (1060, 745), the open floor right of the reading circle.
+- **Served (when v3 was drawn):** `background.png` → `public/library-room.webp`. The scene's ground was the painting's dark `#231912`, and Lumi's spot painting px (1060, 745), the open floor right of the reading circle. Both moved with the re-render (`docs/decisions.md`).
 
 ## The model as understood
 
