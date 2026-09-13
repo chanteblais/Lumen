@@ -18,7 +18,7 @@ import { matchNotes, rankThreads } from "./library-select";
 import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
-import type { EmailReader } from "@/core/email/types";
+import { MAIL_ON, type EmailReader } from "@/core/email/types";
 import { heldAs, rankForRecall } from "./memory-select";
 import type { Recut } from "./today-plan";
 
@@ -443,6 +443,14 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
         }),
     }),
 
+    // Mail tools only while mail is on (core/email/types.ts → MAIL_ON). Typed as present either
+    // way: past messages still carry their parts, and CoherenceTools types those.
+    ...(MAIL_ON ? mailTools(db, userId, mail) : ({} as ReturnType<typeof mailTools>)),
+  };
+}
+
+function mailTools(db: Db, userId: string, mail: ToolContext["mail"]) {
+  return {
     look_at_email: tool({
       description:
         "Read the user's recent mail (Gmail, read-only) when they ask about it or about something that would be in it — 'did the landlord reply?', 'anything in my inbox I need to deal with?'. Optional search in Gmail syntax (from:priya, invoice) and days back (default 7). Returns sender, subject, when and the gist of each. Say what you found in a few lines — never read the inbox back. If it returns not_connected, say the Insights page has a Connect Google chip.",
