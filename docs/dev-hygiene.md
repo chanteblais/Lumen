@@ -17,7 +17,7 @@
 
 ## Session end (≤ 3 minutes, before the last commit)
 1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link — in every reply while it runs, not only the one that started it.
-2. Merged branches deleted; nothing of yours in `git stash list`; no checkout of yours on `main`; your worktree removed once its branch landed (or, if you're standing in it, clean, detached and branch deleted).
+2. Merged branches deleted; nothing of yours in `git stash list`; no checkout of yours on `main`; your worktree removed once its branch landed and it's safe, without asking (standing in it: detach, delete the branch, ExitWorktree `remove`); if it isn't safe, name it and why in the summary (`branching.md` → Parallel sessions 9).
 3. `npm run worktrees -- --prune` — clears every worktree that's safe to remove, whoever made it; anything kept for a reason only its owner can settle (uncommitted work, unmerged commits, a differing `.env.local`) is named to Chanté.
 4. Anything that cost a turn → a *Traps* row. Land one *Backlog* item, or re-rank it if something moved.
 5. Fix what this doc got wrong; add a *Change log* line.
