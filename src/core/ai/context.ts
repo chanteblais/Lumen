@@ -268,11 +268,12 @@ export function buildContextBlock(input: ContextInput): string {
     if (input.libraryUnavailable) lines.push("- Couldn't read the Library this turn. Don't claim to remember or not remember a thread; if it matters, say you can't check right now.");
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: input.timezone, month: "short", day: "numeric" });
     for (const o of library?.open ?? []) {
-      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
+      const under = o.shelf.length ? ` · in ${o.shelf.map(asQuoted).join(" › ")}` : "";
+      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})${under}`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
       for (const n of o.notes) lines.push(`- ${n.id} · ${n.kind} · "${asQuoted(n.content)}" · ${n.source === "user_said" ? "their word" : "your reading"} · ${day.format(n.createdAt)}`);
     }
     if (library?.index.length) {
-      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.resting ? ", resting" : ""})`).join(" · ");
+      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.shelf.length ? `, in ${asQuoted(x.shelf[x.shelf.length - 1])}` : ""}${x.resting ? ", resting" : ""})`).join(" · ");
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }

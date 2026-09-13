@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-09-13 · Threads that become categories become sections of the Library
+
+**Decision.** A thread can sit under a broader thread. A thread that holds threads is a **section** of the Library; inside a section, a thread that holds threads of its own is a **shelf**; the threads are **books**, titled with their names. Three levels at most. Lumi does the arranging between visits, conservatively, and the user corrects it by saying where something belongs. The Library shows the sections on its bookcases, and a section opens to its shelves and books; a book opens to where the thread stands.
+**Rationale.** Chanté: "I'd like you to keep building on lumi's memory system, and incorporate it into the library. Threads that become categories should gain their own section in the library. Eventually you'll be able to click on the different sections and see all the books that are there. The title of the books will be all your threads." Her mockup opens a thread as a book: *Library › Coherence › Memory & Continuity › AI Continuity & Identity*, with *Where we've arrived*, *What we've settled — for now*, *Still alive* and *How this thread changed*. *(Claude's reading:)* this is Library §17 ("Coherence may begin as an item under Ideas. Over time, it becomes substantial enough to have its own section") and §55 (structure emerges conservatively), and it answers the presentation half of spatial-map question 7: a Collection and a Thread Group are threads, not a separate filing layer.
+**Implications.**
+- Nothing is named, filed or kept by the user. A section's name is the thread's name, the words they use; it appears only once two threads belong under it. A thread Lumi shelved stays put, and a placement the user makes is never undone by Lumi.
+- Being a section is derived from what a thread holds, never stored, so a section disappears on its own if everything leaves it.
+- One place per thread for now. Cross-links (Library §34) are not built.
+- Which bookcase a section takes is presentation (the order sections arrived), not data. The slot count, the alcove, painted close-ups, Lumi's size in the room and the stage remain open (question 3).
+- Correction is in words only for now. Dragging in the Library remains open (`ef-burden-log.md`).
+- Forgetting a section forgets that thread only; what was in it becomes loose.
+
+**Principle.** V§4 and EP§1 (the system does the organising), EP§6 (correction beats configuration), EP§2–4 (progressive disclosure: room → section → shelf → book), EP§17 (a note shows whether it is their word or Lumi's reading), Library §17, §25–28, §33, §39, §55.
+**Replaces.** "Collections, Thread Groups, shelves and a Library page stay open" in *Recent conversation lives on…* (below), for the presentation model only.
+**Confirmed.** Pending Chanté's review of `feat/library-sections`.
+
+---
+
 ## 2026-09-13 · A date is typed the way it's said, and a day is not an appointment
 
 **Decision.** A task gets a date on the Lists sheet by tapping its date column and typing it as you'd say it — *fri*, *sep 30*, *in two weeks* — with no calendar to operate; it shows as *Today*, *Tomorrow* or *Sep 30* once saved. Only days for now, no times. A task with a day but no time stays an ordinary task on that day: it can be Right now, and Today treats being due as a reason to put it first. Only a task with a time is a fixed commitment under Later.

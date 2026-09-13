@@ -111,8 +111,12 @@ One per stretch of conversation, written by consolidation (`core/ai/consolidate.
 | aliases | jsonb string[] | other words they use for it ("the book", "my novel"), ≤ 8 — how a mention is recognised |
 | summary | text null | Lumi's quick orientation — what it is, where it stands, what's open — rewritten as notes arrive |
 | summary_revised_at | timestamptz null | |
+| parent_id | uuid null | (2026-09-13, `0005`) fk to `threads`, set null — the broader thread it sits under ("Memory design" under "Coherence"). Forgetting the parent leaves it loose |
+| shelved_by | text null | (`0005`) `user | lumi` — who put it there; Lumi and consolidation never move a thread the user placed (or took off a shelf) |
 | last_discussed_at | timestamptz | a note filed or the summary rewritten. *Resting* (30 days) is derived from it, never stored |
 | created_at | | |
+
+**Sections and shelves are derived, never stored** (`buildShelves`, `core/domain/library.ts`). A top-level thread with threads under it is a **section** of the Library; inside a section, a thread with threads under it is a **shelf**, and the rest are **books**. A top-level thread holding nothing is **loose** (on the table). At most three levels — section, shelf, book (`MAX_SHELF_DEPTH`, `whyNotShelve`). Everything is ordered by `created_at`, so a section keeps its bookcase as more arrives.
 
 ### `thread_notes`
 | column | type | notes |
@@ -127,7 +131,7 @@ One per stretch of conversation, written by consolidation (`core/ai/consolidate.
 | superseded_by_id | uuid null | the note that replaced it: history, not current |
 | created_at | | |
 
-Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not a project table: intentions stay flat and aren't linked to threads yet, and how the Library room shows threads (Collections, Thread Groups, shelves) isn't modelled. What may be stored runs through the same screens as beliefs. Forgetting deletes — a note with its lineage, or a thread with all its notes — and leaves a `library.forgotten` tombstone.
+Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not a project table: intentions stay flat and aren't linked to threads yet. Where a thread sits is one parent pointer; cross-links between threads aren't modelled yet. What may be stored runs through the same screens as beliefs. Forgetting deletes — a note with its lineage, or a thread with all its notes — and leaves a `library.forgotten` tombstone.
 
 ### `events` (append-only)
 | column | type | notes |
@@ -156,6 +160,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`wasForgotten`); no words are kept |
 | `memory.consolidated` | `{ messages, threads_created, notes, summaries }` (2026-09-13) — one stretch of conversation folded into memory; `subject_id` is its episode, when one was written |
 | `library.thread_created` / `.summary_revised` | `{ by: 'user'|'lumi'|'consolidation' }` — the subject is the thread |
+| `library.shelved` | `{ under, from, by }` — the thread (the subject) moved under `under` (a thread id, or null: taken off its shelf) from `from`; `by` is `user` (`shelve_thread` on their word), `lumi` or `consolidation` |
 | `library.noted` | `{ note, kind, source, supersedes, by }` — a note filed under the thread (the subject); `supersedes` is the note it replaced, or null |
 | `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
 | `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
@@ -230,6 +235,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
 | `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **Yes** — 2026-09-13, applied by hand (the tables were present before landing; checked). **Not journaled**: `drizzle.__drizzle_migrations` holds `0000`–`0002` only, so `npm run db:migrate` would try `0003` and `0004` again and fail on "already exists" — record both there (or apply later migrations by hand too) before the next `db:migrate` |
+| `0005_thread_shelves.sql` | `threads.parent_id` (fk to `threads`, on delete set null) and `threads.shelved_by`, plus the index `threads_parent_idx` | No (add-only; nullable columns) | **No** — pending Chanté (`feat/library-sections`). `feat/plan-together`'s priorities migration must now renumber to `0006` |
 | `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **Yes** — 2026-09-13, applied by hand before landing (checked). **Not journaled** — see `0004` |
 | `0002_leads.sql` | `leads` table (what Lumi noticed in the mail: title, why, list, due, sender/subject/received, status, `intention_id` when kept) + two indexes | No (create-only) | **Yes** — 2026-09-12, applied by Claude with `npm run db:migrate` on `feat/email-insights` (additive, per `branching.md` → Claude sessions) |
 | `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **Yes** — 2026-09-13 (applied by Chanté; journaled) |

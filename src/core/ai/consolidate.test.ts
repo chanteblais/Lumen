@@ -137,3 +137,50 @@ describe("clampConsolidation", () => {
     expect(plan.episode).toBeNull();
   });
 });
+
+describe("clampConsolidation — shelves", () => {
+  const held = [
+    { id: "app", title: "Coherence", aliases: [], parentId: null },
+    { id: "memory", title: "Memory design", aliases: [], parentId: null },
+    { id: "onboarding", title: "Onboarding", aliases: [], parentId: "app" },
+    { id: "pottery", title: "Pottery", aliases: [], parentId: null },
+    { id: "glaze", title: "Glazes", aliases: [], parentId: null },
+  ];
+  const heard = [{ messageId: "u1", text: "memory design for coherence, and my pottery glazes" }];
+  const proposal = (over: Partial<RawProposal>): RawProposal => ({ threads: [], notes: [], ...over });
+
+  it("shelves a loose thread under a held one, and never moves one already shelved", () => {
+    const plan = clampConsolidation(
+      proposal({ shelve: [{ thread: "memory", under: "app" }, { thread: "onboarding", under: "pottery" }, { thread: "invented", under: "app" }] }),
+      { threads: held, notes: [], heard },
+    );
+    expect(plan.shelves).toEqual([{ thread: "memory", under: "app" }]);
+    expect(plan.newThreads).toEqual([]);
+  });
+
+  it("starts a section only when it gathers two loose threads, and keeps three levels", () => {
+    const gathering = clampConsolidation(
+      proposal({
+        threads: [{ ref: "new:craft", title: "Making things", summary: "The things they make by hand: pottery and its glazes." }],
+        shelve: [{ thread: "pottery", under: "new:craft" }, { thread: "glaze", under: "new:craft" }],
+      }),
+      { threads: held, notes: [], heard },
+    );
+    expect(gathering.newThreads.map((t) => t.title)).toEqual(["Making things"]);
+    expect(gathering.shelves).toHaveLength(2);
+
+    const alone = clampConsolidation(
+      proposal({ threads: [{ ref: "new:craft", title: "Making things" }], shelve: [{ thread: "pottery", under: "new:craft" }] }),
+      { threads: held, notes: [], heard },
+    );
+    expect(alone.newThreads).toEqual([]);
+    expect(alone.shelves).toEqual([]);
+
+    const deep = clampConsolidation(
+      proposal({ shelve: [{ thread: "glaze", under: "pottery" }, { thread: "pottery", under: "memory" }, { thread: "memory", under: "app" }] }),
+      { threads: held, notes: [], heard },
+    );
+    // glaze under pottery, then pottery (now holding glaze) under memory, then memory under app would be four levels.
+    expect(deep.shelves).toEqual([{ thread: "glaze", under: "pottery" }, { thread: "pottery", under: "memory" }]);
+  });
+});
