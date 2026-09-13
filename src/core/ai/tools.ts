@@ -51,15 +51,20 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
   return {
     create_intention: tool({
       description:
-        "Save something the user intends to do. Use for each item in a brain dump, silently — don't ask permission per item. Infer list and a rough estimate when obvious; leave next_action empty unless a concrete first physical step is clear.",
+        "Save something the user intends to do. Use for each item in a brain dump, silently — don't ask permission per item. Infer list and a rough estimate when obvious; leave next_action empty unless a concrete first physical step is clear. One call saves the whole thing: don't update_intention what you just created.",
       inputSchema: z.object({
         title: z.string().min(1).max(120).describe("In the user's own words, short"),
-        next_action: z.string().max(200).optional().describe("Smallest concrete physical step, if clear"),
-        note: z.string().max(400).optional().describe("Why it matters / what's blocking, if said"),
-        list: z.string().max(40).optional().describe("One of the user's lists (see context). Infer; the user can correct"),
-        estimate_minutes: z.number().int().min(1).max(600).optional(),
-        effort_hint: z.enum(EFFORT).optional(),
-        due_at: z.string().datetime({ offset: true }).optional().describe("Only if the user named a real deadline or time, ISO 8601 with offset"),
+        next_action: z.string().max(200).nullable().optional().describe("Smallest concrete physical step, if clear; otherwise null"),
+        note: z.string().max(400).nullable().optional().describe("Why it matters / what's blocking, if said; otherwise null"),
+        list: z.string().max(40).nullable().optional().describe("One of the user's lists (see context). Infer; the user can correct"),
+        estimate_minutes: z.number().int().min(1).max(600).nullable().optional(),
+        effort_hint: z.enum(EFFORT).nullable().optional(),
+        due_at: z
+          .string()
+          .datetime({ offset: true })
+          .nullable()
+          .optional()
+          .describe("Only if the user named a real deadline or time, ISO 8601 with offset. Otherwise null — never invent a date"),
       }),
       execute: (input) =>
         safe(async () => {
@@ -70,14 +75,14 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             list: input.list,
             estimateMinutes: input.estimate_minutes,
             effortHint: input.effort_hint,
-            dueAt: input.due_at ? new Date(input.due_at) : undefined,
+            dueAt: input.due_at ? new Date(input.due_at) : null,
           });
           return { id: row.id, title: row.title, list: row.list, estimate_minutes: row.estimateMinutes };
         }),
     }),
 
     update_intention: tool({
-      description: "Change an existing intention (title, next_action, note, list, estimate, due_at). Use the id from context.",
+      description: "Change an existing intention (title, next_action, note, list, estimate, due_at). Use the id from context. Send only the fields that change.",
       inputSchema: z.object({
         id: z.string().uuid(),
         title: z.string().min(1).max(120).optional(),
@@ -89,7 +94,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
       }),
       execute: (input) =>
         safe(async () => {
-          const row = await updateIntention(db, userId, input.id, {
+          const r = await updateIntention(db, userId, input.id, {
             title: input.title,
             nextAction: input.next_action,
             note: input.note,
@@ -97,7 +102,8 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             estimateMinutes: input.estimate_minutes,
             dueAt: input.due_at === undefined ? undefined : input.due_at ? new Date(input.due_at) : null,
           });
-          return row ? { id: row.id, title: row.title, list: row.list } : { error: "not found" };
+          // `changed` empty: nothing moved, nothing written — the ledger stays quiet.
+          return r ? { id: r.row.id, title: r.row.title, list: r.row.list, changed: r.changed } : { error: "not found" };
         }),
     }),
 

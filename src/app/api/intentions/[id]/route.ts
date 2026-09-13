@@ -27,9 +27,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.action === "move") {
     const lists: string[] = user.preferences.lists?.length ? user.preferences.lists : [...DEFAULT_LISTS];
     if (typeof body.list !== "string" || !lists.includes(body.list)) return Response.json({ error: "list must be one of the user's lists" }, { status: 400 });
-    const row = await updateIntention(db(), user.id, id, { list: body.list }, "app");
-    if (!row) return Response.json({ error: "not found" }, { status: 404 });
-    return Response.json({ id: row.id, status: row.status, list: row.list });
+    const r = await updateIntention(db(), user.id, id, { list: body.list }, "app");
+    if (!r) return Response.json({ error: "not found" }, { status: 404 });
+    return Response.json({ id: r.row.id, status: r.row.status, list: r.row.list });
   }
   if (body.action === "drop") {
     const row = await dropIntention(db(), user.id, id, undefined, "app");

@@ -658,6 +658,10 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
    Say a thing, see her answer (and what she did), stay on the page. */
 .companion-bubble {
   position: relative;
+  /* Over her figure: the button comes later in the DOM, so without this her
+     cast and contact shadows (drawn inside the figure) painted across the
+     bubble's tail and edge where it opens beside her (2026-09-13). */
+  z-index: 2;
   width: 330px;
   max-width: calc(100vw - 112px);
   margin-right: 6px;

@@ -6,6 +6,30 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (4) — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
+
+Chanté, from Today's speech bubble: "I need to buy new headphones and also call Kendra" got *Noted · Buy new headphones · Personal*, *Noted · Call Kendra · Personal*, then *Updated · Buy new headphones*, *Updated · Call Kendra*. And Lumi's shadow was clipping the bubble.
+
+### Fixed
+- **Two ledger lines for one thing.** The stored parts show why: `gpt-6-astra` filled every field of `create_intention` (empty strings for note and next step, and `due_at: 2026-01-01T00:00:00Z` — a date nobody named), then in a second step called `update_intention` on both with `due_at: null` to take it back. Three layers, so the class is covered and not just this case: every optional field of `create_intention` now takes `null` and says so (*otherwise null — never invent a date*), and the description says one call saves the whole thing; `updateIntention` patches only what differs from the row (`intentionChanges`, pure, tested) and writes and appends nothing for a no-op, returning `changed`; and the ledger (`core/ai/ledger.ts`, pure, tested — `Ledger.tsx` renders it) folds an update to a thing noted in the same reply into its *Noted* line and says nothing for an update that changed nothing. Old messages without `changed` render as before.
+- **Her shadows painted over the bubble.** The bubble is rendered before her button, so the button (and the cast and contact shadows inside her figure) painted on top of it where the bubble opens beside her on Today. `.companion-bubble` now sits at `z-index: 2` in the `.companion` stacking context, over the figure.
+
+### Known and deliberate
+- The ledger still shows *Updated · title* for a real change to something from an earlier reply — that is what happened.
+- A no-op update no longer bumps `last_touched_at`: re-saying a thing isn't touching it.
+
+### Verified (live, port 3007, the shared checkout on the branch; the two test intentions, their events and the two messages were removed afterwards)
+- "test item for Claude: water the fern, and also test item two: oil the gate" from Today's bubble: two `create_intention` calls in one step, both with `due_at: null`, no `update_intention`, two *Noted* lines. The nullable schema is enough on its own; the no-op guard and the ledger fold are the belt to its braces.
+- The bubble stretched to 540px beside her (a `min-height` set in devtools): her cast shadow runs under its edge, the tail is clean.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- On Today, tap Lumi and say "I need to buy X and also call Y": two *Noted* lines and nothing else; the Library shows both with no due date.
+- Ask her to move one of them to another list: one *Updated* line.
+- On Today, with the bubble open beside her: her shadow stays under her and the bubble's tail and left edge are clean.
+
 ## Sweep 2026-09-13 (3) — a smoother first load: the pool opens whole, paintings start with the HTML (`fix/first-load-smoother`, worktree, port 3006)
 
 Chanté asked what would make the first load feel smoother and chose: warm the database connections, load the paintings sooner with a fade, trim the fonts.
