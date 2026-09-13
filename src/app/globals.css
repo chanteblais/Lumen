@@ -962,7 +962,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 700; --lumi-y: 900; } /* see Library: the reading room */
+  body:has(.library-scene) { --lumi-x: 1190; --lumi-y: 890; } /* see Library: the reading room */
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
@@ -976,9 +976,9 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background.png → public/library-room.webp). For
-   now the room is the whole page: nothing sits on the painting, and Lumi
-   stands on the rug in front of the reading table. The sidebar, the top bar,
+   room (art/scenery/library/background.png → public/library-room.webp).
+   For now the room is the whole page: nothing sits on the painting, and Lumi
+   stands on the open floor to the right of the reading circle. The sidebar, the top bar,
    the grain and the way her spot is mapped are shared with Today (the
    selectors above name both scenes). Nothing for the user to keep. */
 .library-scene {
@@ -998,6 +998,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
 }
 .library-page { flex: 1 0 auto; }
-/* Lumi's spot (--lumi-x/y above) is on the rug in front of the reading table,
-   between the floor cushion and the table's front leg: she covers the table's
-   apron and runner, both further back than her feet. */
+/* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
+   reading circle (the round table with its armchairs, stools and cushions),
+   below the stair bookcase: she covers only floor and the rug's corner, both
+   further back than her feet, and stays clear of the sidebar and the crop at
+   every desktop window. */

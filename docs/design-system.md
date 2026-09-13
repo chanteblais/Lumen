@@ -63,7 +63,7 @@ Not carried over from the mockup: the filter tabs, the plant per category, the *
 | Piece | In the reading room |
 |---|---|
 | `.library-page` | Fills `.main` (`flex: 1 0 auto`); holds the scene and the hidden heading, nothing else |
-| Lumi | From 1100px (landscape) she stands on the rug in front of the reading table, between the floor cushion and the table's front leg — `--lumi-x: 700; --lumi-y: 900` in the painting's pixels, mapped through the same cover fit as Today. She covers the table's apron and runner, both further back than her feet. Below that, her corner |
+| Lumi | From 1100px (landscape) she stands on the open floor to the right of the reading circle, below the stair bookcase — `--lumi-x: 1190; --lumi-y: 890` in the painting's pixels, mapped through the same cover fit as Today. She covers only floor and the rug's corner, both further back than her feet, and stays clear of the sidebar and the crop at every desktop window. Below that, her corner |
 
 The painting's signs and banners are **blank** (repainted 2026-09-13; the first painting, with words on them, is `art/mockups/library-background.png`). The boards are the Library's architectural collection slots in Chanté's IA (`art/scenery/library/library-spatial-information-architecture.md`): fixed places whose names would come from the user's life. Nothing writes on them yet.
 
