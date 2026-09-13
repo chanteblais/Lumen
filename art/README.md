@@ -17,7 +17,7 @@ Source art, never served. Three folders:
 | `archived/rali-playful-foot.png` | The earlier character: the first foot-tap, eight frames, each a fresh drawing — superseded by `rali-idle.png` (too few in-betweens; the whole figure boiled) | not cut any more |
 | `archived/rali-stretch.png` | The earlier character: a stretch | retired with the character — never cut |
 
-Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The process (gates, touch points, costs): `docs/animation-pipeline.md`.
+Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The process (gates, touch points, costs): `docs/animation-pipeline.md`. Where the art is heading, and the bets a new sheet, painting or mockup is tested against: `docs/art-direction.md` (give every new arrival a row in its §1).
 
 ## Adding a sheet (what the playful foot taught us, 2026-09-12)
 
