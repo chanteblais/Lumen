@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-09-13 · The nav is icons, with the names a hover away
+
+**Decision.** The places are icons on a narrow green rail that is always there; their names are on a parchment sheet that opens from the rail on hover, focus or tap, and can be pinned open. The rail marks where you are with a star.
+**Rationale.** Chanté's call, with `art/mockups/rail-nav.png`: she would rather have icons with expandable names than plain names always showing. *(Claude's reading: the rail gives the paintings back the width the sidebar took, and keeps the way around visible without holding a column of words in view.)*
+**Implications.**
+- Icons can carry meaning, but only where the name is always a hover, focus or tap away. An icon with no way to see its name is still out.
+- The names stay plain (`spaces.md` §3): *Home, Today, Library*, never place-names the user has to decode.
+- Pinning the sheet out (the rail's top half) and locking it in (the bottom half) are optional and undone the same way; nothing may depend on either.
+- Phones are a trial (the rail plus a tap on the compass star); to revisit.
+
+**Principle.** V§14, `spaces.md` §3 and §21.
+**Replaces.** The sidebar of plain names ([engineering log](../decisions.md), same date).
+
 ## 2026-09-13 · Approved documentation reconciliation
 
 Chanté approved the conceptual comparison and consolidation structure. **Previous approach → why it changed → current approach:**
