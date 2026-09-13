@@ -10,13 +10,19 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   wave: 120, // a quick gesture: 24 frames ≈ 3 s, the pace Chanté checked the sheet at
+  // The foot row's four orders, at the pace Chanté chose the foot sheet at ("gif 2 feels smoother"): ~2–4 s each.
+  glance: 160,
+  scuff: 160,
+  foot: 160,
+  dawdle: 160,
 };
 /**
- * Loops mixed into the breathing now and then, one pass at a time. Empty since
- * the lantern character (2026-09-12): the sway and the playful foot were drawn
- * of the earlier character, and no idle variation is drawn of her yet.
+ * Loops mixed into the breathing now and then, one pass at a time, never the
+ * same one twice running. All four are orders over the one foot sheet
+ * (2026-09-13) — a look at the ground, one scuff, two, and a dawdle — so a
+ * single drawing gives her idle four different breaks.
  */
-const VARIATIONS: LumiLoop[] = [];
+const VARIATIONS: LumiLoop[] = ["glance", "scuff", "foot", "dawdle"];
 /** Loops played in answer to something, never on the idle schedule. */
 const REACTIONS: LumiLoop[] = ["wave"];
 /**
@@ -75,8 +81,8 @@ const DEBUG = process.env.NODE_ENV === "development";
  * - a wave when you arrive — the page opened, or its tab shown again, after
  *   thirty minutes or more with no tab of the app visible (and on a first
  *   visit in this browser) — once, at the next rest frame, then back to breathing
- * - every so often one pass of a variation (none drawn of the lantern
- *   character yet; when there are, never the same one twice running)
+ * - every 20–45 s one pass of a variation, never the same one twice running:
+ *   a glance at the ground, one scuff of her boot, two, or a dawdle
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
  * Every loop is one drawing and hands over at the same rest cell.

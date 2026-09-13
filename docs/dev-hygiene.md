@@ -34,6 +34,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 
 | First seen | Symptom | Cause | Caught by | Fix |
 |---|---|---|---|---|
+| 2026-09-13 | `curl localhost:<port>/today` answers **404** on a fresh review server, though the page compiled with no error | signed out, Clerk's proxy answers a request that doesn't ask for HTML with 404, not the sign-in redirect a browser gets | by hand: a public page (`/sign-in`) answers 200, and `-H "Accept: text/html"` on the protected page answers 307 | smoke-test a server with `curl -H "Accept: text/html"` (expect 307 when signed out) or `/sign-in` (expect 200); a bare 404 there is not a missing route |
 | 2026-09-13 | Lumi fails in a worktree's dev server after the OpenAI switch | `.env.local` was copied into the worktree before `main` started needing `OPENAI_API_KEY` | preflight (keys against `.env.example`) | copy the key from the main checkout's `.env.local` |
 | 2026-09-13 | `tsc`: *Cannot find module '@ai-sdk/openai'* right after merging `main` | the merge added a package; the worktree's `node_modules` predates it | preflight (installed versions against the lockfile) | `npm ci` |
 | 2026-09-13 | `tsc`: *Cannot find module '../../../src/app/lists/page.js'* in `.next/dev/types/validator.ts` | Lists was renamed the Library; `next typegen` rewrites `.next/types` but not `.next/dev/types`, and `tsconfig.json` includes both | preflight (removes the stale types) | automatic; by hand, `rm -rf .next/dev/types` once no server of this checkout is running |
