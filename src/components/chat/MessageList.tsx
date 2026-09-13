@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
+import { sharedFilesIn } from "@/core/shared-files";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
 import { ThinkingDots, hasReply, textOf } from "./chat-client";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
+import { SharedFiles } from "./SharedFiles";
 
 type Props = {
   messages: CoherenceUIMessage[];
@@ -103,12 +105,17 @@ function render(messages: CoherenceUIMessage[]): React.ReactNode[] {
     if (at) prevAt = at;
     // One paragraph per block of speech (`textOf`): Lumi often says a line, acts, then says another.
     const text = textOf(m);
+    // What you shared with a message: the file itself this page open, a chip naming it after (it isn't kept).
+    const shared = m.role === "user" ? sharedFilesIn(m.parts) : [];
     // A turn she stayed silent on (no words, no tools) shows nothing — no empty bubble.
-    if (m.role === "assistant" ? !hasReply(m) : !text) continue;
+    if (m.role === "assistant" ? !hasReply(m) : !text && shared.length === 0) continue;
     items.push(
       m.role === "user" ? (
         <div key={m.id} className="msg msg-user">
-          <p>{text}</p>
+          <div className="msg-user-said">
+            {shared.length > 0 && <SharedFiles files={shared} />}
+            {text && <p>{text}</p>}
+          </div>
         </div>
       ) : (
         <div key={m.id} className="msg msg-lumi">

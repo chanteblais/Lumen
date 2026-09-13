@@ -24,6 +24,7 @@ import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
+import { noteSharedFiles, readSharedFiles, sharedFileNoteText, sharedFilesProblem } from "@/core/shared-files";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
@@ -61,6 +62,10 @@ export async function POST(req: Request) {
     parts: incoming.parts,
     metadata: { createdAt: new Date().toISOString(), ...(incoming.metadata ?? {}) },
   };
+  // Files shared with the message (Home's composer): each inline, a kind Lumi reads, within the limits.
+  // The composer holds to the same limits, so this only turns away what didn't come from it.
+  const filesProblem = sharedFilesProblem(userMessage.parts);
+  if (filesProblem) return Response.json({ error: `files ${filesProblem}` }, { status: filesProblem === "too_large" ? 413 : 400 });
 
   const conversation = await ensureMainConversation(db(), user.id);
 
@@ -75,8 +80,10 @@ export async function POST(req: Request) {
     // Never throws: the turn carries on without the Library if it can't be read.
     loadLibraryOrNothing(db(), user.id),
   ]);
-  await saveMessage(db(), conversation.id, userMessage);
-  const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
+  // Kept with a note in each shared file's place; the files themselves reach Lumi on this turn only (below).
+  const kept = noteSharedFiles(userMessage);
+  await saveMessage(db(), conversation.id, kept);
+  const all = [...history.filter((m) => m.id !== userMessage.id), kept];
 
   const tools = buildTools({
     db: db(),
@@ -143,7 +150,12 @@ export async function POST(req: Request) {
         }),
       },
     ],
-    messages: await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }),
+    // This turn's files as she reads them (a text file as its words); earlier ones are notes, read as shared and not kept.
+    messages: await convertToModelMessages([...all.slice(0, -1), readSharedFiles(userMessage)], {
+      tools,
+      ignoreIncompleteToolCalls: true,
+      convertDataPart: sharedFileNoteText,
+    }),
     providerOptions: chatProviderOptions,
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {

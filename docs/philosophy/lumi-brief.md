@@ -33,10 +33,10 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `bb96a85f87fd` |
+| `docs/philosophy/lumi.md` | `1a2b185eb033` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `5261a044fa57` |
+| `docs/living/decisions.md` | `d614427cf048` |
 | `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/chat-files`): the product decisions gained *Files shared with Lumi are read, not kept*, and `lumi.md` §14 gained *A shared file*. What she does with a file is the *how*, and lives in the persona. The brief already carries the why: she carries the administration, and a thing to do is filed whether it's said or photographed.
 - **2026-09-13 · places: no focus sessions; Today's changes happen on its card** (`feat/today-in-place`): the product decisions gained *Today does its own organising, and focus sessions are set aside for now*, two foundation entries are marked partly superseded or suspended, and the canon map's Home and Study rows say sessions are gone. The brief's places line said "Focus sessions happen with you on Home" and its context list named sessions: both would have had her offering something that no longer exists. Now Today's first thing is turned down or broken into steps on its card, and company while someone works is a conversation. Voice eval run logged in `voice-eval-log.md` (scenario 7 is the body-double ask).
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`): `lumi.md` §17 now names both harnesses, what the conversation scenarios cover and what's still missing. That's how she is evaluated, not what she should understand.
