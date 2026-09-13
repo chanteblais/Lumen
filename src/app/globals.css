@@ -125,13 +125,15 @@ body::after {
 
 /* ---------- Shell ---------- */
 .shell {
+  --rail-x: 10px;   /* the rail floats in from the corner */
+  --rail-top: 10px;
   --rail-w: 64px;   /* the green rail, always there */
   --panel-w: 216px; /* the parchment the names are on */
   position: relative;
   z-index: 0;
   height: 100dvh;
   display: grid;
-  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  grid-template-columns: calc(var(--rail-x) + var(--rail-w)) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
 
@@ -151,7 +153,7 @@ body::after {
   --nav-v: hidden;
   --nav-x: -8px;
   --nav-pe: none;
-  --nav-reach: var(--rail-w);
+  --nav-reach: calc(var(--rail-x) + var(--rail-w));
   --nav-delay: 180ms;     /* a moment's grace before it folds, so a pointer passing out and back doesn't flicker it */
   --nav-vis-delay: 380ms; /* hidden once the fade is done */
 }
@@ -167,44 +169,55 @@ body::after {
   .nav:not([data-resting]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
 
+/* Chanté's painted rail (art/ui/nav-rail.png, cut by scripts/cut-nav-rail.py).
+   The head (the compass star) and the foot (the moon) keep their proportions;
+   the plain length between stretches to the rail's height. The numbers in the
+   calc()s are the source's pixels: 118px wide, a 267px head, a 236px foot. It
+   floats in from the corner and stops short of the floor, as in the mockup. */
 .nav-rail {
   position: absolute;
-  inset: 0 auto 0 0;
+  top: var(--rail-top);
+  left: var(--rail-x);
   z-index: 2;
   width: var(--rail-w);
-  background: linear-gradient(180deg, #223029 0%, #1b251f 55%, #18211c 100%);
-  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.25), 4px 0 18px rgba(20, 16, 10, 0.18);
+  height: min(calc(100dvh - 2 * var(--rail-top)), 780px);
+  min-height: 560px;
+  background:
+    url("/nav-rail-head.webp") top / 100% auto no-repeat,
+    url("/nav-rail-foot.webp") bottom / 100% auto no-repeat;
+  filter: drop-shadow(0 8px 18px rgba(20, 14, 8, 0.32));
 }
-/* The brass rule inset along the rail, like the plate frame it replaces. */
-.nav-rail::after {
+.nav-rail::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(214, 180, 114, 0.5);
-  border-radius: 2px;
-  pointer-events: none;
+  inset: calc(var(--rail-w) * 267 / 118 - 1px) 0 calc(var(--rail-w) * 236 / 118 - 1px);
+  background: url("/nav-rail-body.webp") 0 0 / 100% 100% no-repeat;
 }
-.nav-spark { position: absolute; left: 50%; margin-left: -3.5px; color: #d6b472; opacity: 0.75; }
-.nav-spark-head { top: 72px; }
-.nav-spark-foot { bottom: 64px; }
-.nav-moon { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); color: #d6b472; }
 
-/* The compass star at the head of the rail pins the parchment (opens it, on a phone). */
+/* The painted compass star is the button: it pins the parchment (opens it, on
+   a phone), and glows while the parchment is kept open. */
 .nav-toggle {
   position: absolute;
   z-index: 4;
-  top: 18px;
-  left: 0;
+  top: calc(var(--rail-top) + var(--rail-w) * 110.5 / 118 - 24px);
+  left: var(--rail-x);
   width: var(--rail-w);
   height: 48px;
-  display: grid;
-  place-items: center;
-  color: #d9ba7c;
+  border-radius: 50%;
   cursor: pointer;
-  transition: color 160ms ease, filter 200ms ease;
 }
-.nav-toggle:hover { color: #f0d9a6; }
-.nav-toggle[aria-expanded="true"] { color: #f0d9a6; filter: drop-shadow(0 0 6px rgba(240, 217, 166, 0.45)); }
+.nav-toggle::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 140, 0.55), rgba(255, 214, 140, 0) 62%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.nav-toggle:hover::before { opacity: 0.5; }
+.nav-toggle[aria-expanded="true"]::before { opacity: 1; }
 
 /* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
    every page, and the greeting's scroll on Home's dark room. */
@@ -233,9 +246,9 @@ body::after {
    words sit over it. */
 .nav-panel {
   position: absolute;
-  top: 18px;
+  top: calc(var(--rail-top) + 20px);
   left: 0;
-  width: calc(var(--rail-w) + var(--panel-w));
+  width: calc(var(--rail-x) + var(--rail-w) + var(--panel-w));
   display: flex;
   flex-direction: column;
   pointer-events: var(--nav-pe);
@@ -244,7 +257,7 @@ body::after {
   content: "";
   position: absolute;
   z-index: 1;
-  inset: 0 0 0 calc(var(--rail-w) - 10px); /* tucked under the rail's edge */
+  inset: 0 0 0 calc(var(--rail-x) + var(--rail-w) - 10px); /* tucked under the rail's edge */
   background: linear-gradient(180deg, #f6eedc 0%, #efe4cc 60%, #e9dcc0 100%);
   border: 1px solid rgba(139, 106, 56, 0.28);
   border-radius: 10px;
@@ -266,7 +279,7 @@ body::after {
   flex-direction: column;
   align-items: center;
   height: 196px;
-  padding: 22px 18px 0 calc(var(--rail-w) + 8px);
+  padding: 22px 18px 0 calc(var(--rail-x) + var(--rail-w) + 8px);
   text-align: center;
 }
 .nav-wordmark { margin-top: 10px; font-size: 34px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
@@ -290,9 +303,10 @@ body::after {
   flex: none;
   display: grid;
   place-items: center;
-  width: var(--rail-w);
+  width: calc(var(--rail-x) + var(--rail-w));
   height: 100%;
-  color: #d3bf96;
+  padding-left: var(--rail-x);
+  color: #d4ad6c; /* the painted brass */
   transition: color 160ms ease;
 }
 .nav-icon::before {
@@ -309,13 +323,14 @@ body::after {
 }
 .nav-icon svg { position: relative; }
 .nav-item:hover .nav-icon,
-.nav-item[aria-current="page"] .nav-icon { color: #f0d9a6; }
-.nav-item:hover .nav-icon::before { background: rgba(240, 217, 166, 0.07); }
-.nav-item[aria-current="page"] .nav-icon::before { background: rgba(240, 217, 166, 0.12); border-color: rgba(240, 217, 166, 0.22); }
-/* You are here: a brass star on the rail's rule, beside the open place. */
+.nav-item[aria-current="page"] .nav-icon { color: #f3d292; }
+.nav-item:hover .nav-icon::before { background: rgba(243, 210, 146, 0.08); }
+.nav-item[aria-current="page"] .nav-icon::before { background: rgba(243, 210, 146, 0.12); border-color: rgba(243, 210, 146, 0.24); }
+/* You are here: a brass star on the rail's painted right-hand rule (108.5px
+   across its 118), beside the open place. */
 .nav-mark {
   position: absolute;
-  left: calc(var(--rail-w) - 12px);
+  left: calc(var(--rail-x) + var(--rail-w) * 108.5 / 118 - 5px);
   top: 50%;
   margin-top: -5px;
   color: #e8c987;
@@ -338,7 +353,7 @@ body::after {
 .nav-item[aria-current="page"] .name { background: rgba(139, 106, 56, 0.16); }
 
 .nav-foot {
-  margin: 40px 18px 0 calc(var(--rail-w) + 26px);
+  margin: 40px 18px 0 calc(var(--rail-x) + var(--rail-w) + 26px);
   padding-bottom: 24px;
   font-size: 19px;
   font-style: italic;
@@ -813,9 +828,8 @@ body::after {
 /* ---------- Mobile ---------- */
 @media (max-width: 767px) {
   /* The rail stays, narrower; the parchment only floats (the compass star opens it). Trial, 2026-09-13. */
-  .shell { --rail-w: 52px; }
-  .nav-toggle, .nav-panel { top: 10px; }
-  .nav-spark-head { top: 60px; }
+  .shell { --rail-x: 6px; --rail-top: 6px; --rail-w: 48px; }
+  .nav-rail { min-height: 500px; }
   .nav-icon::before { width: 38px; height: 38px; }
   .main { box-shadow: none; }
   .main { padding: 22px 20px 0; }

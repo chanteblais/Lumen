@@ -1,8 +1,7 @@
 /**
- * The rail's marks: one line icon per place, and the compass star and moon
- * that cap the rail. Inline SVG, `currentColor`, round caps (design-system →
- * Icons). The place icons sit beside their names on the parchment; the
- * compass and the moon are the rail's own.
+ * The rail's icons, one line icon per place. Inline SVG, `currentColor`, round
+ * caps (design-system → Icons); each sits on the rail beside its name on the
+ * parchment. The compass star and the moon are painted into the rail itself.
  */
 
 type IconProps = { className?: string };
@@ -83,33 +82,6 @@ export function GearIcon({ className }: IconProps) {
         const [x2, y2] = at(8.4, deg);
         return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={2.4} />;
       })}
-    </Glyph>
-  );
-}
-
-/** Eight points: four long, four short, filled — the star at the head of the rail. */
-const COMPASS = (() => {
-  const points: string[] = [];
-  for (let i = 0; i < 8; i++) {
-    const [ox, oy] = at(i % 2 === 0 ? 11 : 5.6, i * 45 - 90);
-    const [ix, iy] = at(1.7, i * 45 - 67.5);
-    points.push(`${ox} ${oy}`, `${ix} ${iy}`);
-  }
-  return `M${points.join("L")}Z`;
-})();
-
-export function CompassStar({ className = "" }: IconProps) {
-  return (
-    <svg aria-hidden width={30} height={30} viewBox="0 0 24 24" className={className}>
-      <path d={COMPASS} fill="currentColor" />
-    </svg>
-  );
-}
-
-export function MoonIcon({ className }: IconProps) {
-  return (
-    <Glyph size={26} className={className}>
-      <path d="M15.8 4.4a8 8 0 1 0 4 13.4 6.4 6.4 0 0 1-4-13.4Z" />
     </Glyph>
   );
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Diamond, Divider } from "@/components/ui/Ornament";
 import { NAV_PIN_COOKIE } from "./nav-pin";
-import { BookIcon, CompassStar, GearIcon, HomeIcon, MoonIcon, SprigIcon, SunIcon } from "./NavIcons";
+import { BookIcon, GearIcon, HomeIcon, SprigIcon, SunIcon } from "./NavIcons";
 
 const NAV = [
   { href: "/", label: "Home", Icon: HomeIcon },
@@ -77,20 +77,14 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
       onPointerLeave={() => setResting(false)}
       onClick={onNavClick}
     >
-      <div className="nav-rail" aria-hidden>
-        <Diamond size={7} className="nav-spark nav-spark-head" />
-        <Diamond size={7} className="nav-spark nav-spark-foot" />
-        <MoonIcon className="nav-moon" />
-      </div>
+      <div className="nav-rail" aria-hidden />
       <button
         type="button"
         className="nav-toggle"
         onClick={toggle}
         aria-expanded={shown}
         aria-label={shown ? "Fold the names away" : "Keep the names open"}
-      >
-        <CompassStar />
-      </button>
+      />
 
       <div className="nav-panel">
         <div className="nav-head">
