@@ -7,17 +7,17 @@
 2. **Every snag becomes a row; a cheap catch becomes a guard now.** Anything that cost a turn goes in *Traps* in the same session: symptom, cause, how it's caught, fix. If the catch is a few lines of script, write it then rather than waiting for the second time.
 3. **Generated state is disposable; nothing else is.** `.next/`, `node_modules/` and `tsconfig.tsbuildinfo` can be deleted and rebuilt without asking, once no running server uses them. Anything tracked, anything hand-made but untracked (`.env.local`, drafts in `art/`), and anything another session owns (branches, stashes, worktrees, servers) is never cleaned up on a guess.
 4. **A merge brings environment, not just code.** Merging or pulling `main` can add a package, rename a route or add an env key. After any merge, run the preflight (`npm run check` does) before believing an error.
-5. **Leave every checkout as you found it, or tidier.** Servers you started stopped, merged branches deleted, your worktree committed or clean, nothing stashed.
+5. **Leave every checkout as you found it, or tidier.** Servers you started stopped, merged branches deleted, your worktree committed or clean, nothing stashed, nothing parked on `main`.
 
 ## Session start (≤ 1 minute)
-1. `git branch --show-current` — is it yours? (`branching.md` → Parallel sessions.) In a worktree, rename a `worktree-*` or `claude/*` branch to `type/slug` before the first commit.
+1. `git branch --show-current` — is it yours? (`branching.md` → Parallel sessions.) Empty in the shared checkout means it's parked: `git switch --detach main`, then branch. In a worktree, rename a `worktree-*` or `claude/*` branch to `type/slug` before the first commit.
 2. `npm run preflight` — or let `npm run check` / `npm run dev` run it. Do what it says before anything else.
 3. Merged `origin/main` or pulled mid-session? Preflight again.
 4. Skim *Traps* for the area you're about to touch.
 
 ## Session end (≤ 3 minutes, before the last commit)
 1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link — in every reply while it runs, not only the one that started it.
-2. Merged branches deleted; nothing of yours in `git stash list`; your worktree committed or clean.
+2. Merged branches deleted; nothing of yours in `git stash list`; your worktree committed or clean; no checkout of yours on `main`.
 3. Anything that cost a turn → a *Traps* row. Land one *Backlog* item, or re-rank it if something moved.
 4. Fix what this doc got wrong; add a *Change log* line.
 
@@ -25,9 +25,10 @@
 | Guard | Catches | Runs | Where |
 |---|---|---|---|
 | Preflight | `node_modules` missing, a symlink, or behind `package-lock.json` (names each package) · generated route types pointing at routes that no longer exist (removes them; Next writes them again) · `.env.local` missing, or missing a key `.env.example` requires (key names only, never values) | before `npm run check` and `npm run dev` (npm's `precheck` / `predev`); by hand as `npm run preflight`. Env problems fail `dev` and are a note on `check`; skipped in CI | `scripts/preflight.mjs` |
-| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit, the CSS prefix audit | before every merge; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
+| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit, the CSS prefix audit | before every landing; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
 | CSS prefix audit | a rule in the compiled stylesheet that kept `-webkit-<prop>` but lost `<prop>` (lightningcss drops the unprefixed one when the prefixed line follows it) | inside `npm run check`; by hand as `npm run check:css` | `scripts/check-css-prefixes.mjs` |
-| pre-commit hook | `.claude/` bookkeeping staged; direct commits to `main` | every commit | `.githooks/pre-commit` |
+| `npm run land` | a merge that would need `main` checked out; landing a branch that doesn't contain the latest `main` (conflicts on `main`); two sessions landing at once (compare-and-swap on the ref) | every landing, instead of `git checkout main && git merge` | `scripts/land.mjs`, `branching.md` → Landing on main |
+| pre-commit hook | `.claude/` bookkeeping staged; direct commits to `main`; commits on the shared checkout's parked detached HEAD | every commit | `.githooks/pre-commit` |
 | Port etiquette | killing or reusing someone else's server; two servers in one checkout | before starting any server (by hand) | `CLAUDE.md`, `branching.md` → Dev servers |
 
 ## Traps — symptom → cause → catch → fix
@@ -35,6 +36,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 
 | First seen | Symptom | Cause | Caught by | Fix |
 |---|---|---|---|---|
+| 2026-09-13 | *fatal: 'main' is already checked out at '/Users/chante/Projects/lumen'* — a verified, approved branch can't merge; it happened again and again through the day | the merge recipe was `git checkout main && git merge --no-ff`, and git lets a branch be checked out in one worktree only; whichever checkout merged last kept `main` (the shared checkout, usually, while another session was still working there), and ~19 merges a day made it near-constant | `npm run land` (refuses and names the holder; never checks `main` out itself) and the pre-commit guard on the parked detached HEAD | land with `npm run land -- <branch>`; park the shared checkout with `git switch --detach main` |
 | 2026-09-13 | A `javascript_tool` script in the Claude-in-Chrome tab hangs until *CDP … timed out after 45000ms*; dispatched clicks seem to do nothing, or land a step late | the automation tab is hidden (`document.visibilityState === "hidden"`): `requestAnimationFrame` never fires, timers are throttled to ~1s, React commits an untrusted event's update later, and CSS transitions freeze (a fade reads as still visible) | by hand: check `document.visibilityState` first | never await `requestAnimationFrame` there; wait with `setTimeout` of 300ms or more before reading state; read computed custom properties and attributes rather than a transitioned value |
 | 2026-09-13 | A Claude-in-Chrome click on an element lands on whatever is next to it (a click on the nav's parchment hit the top bar, so it looked like the click handler was broken) | the extension's screenshot coordinate frame (1448px wide here) is not the page's CSS pixels (`innerWidth` 1728), so a coordinate read off a screenshot is off by the ratio — ~19% at the right edge of a 280px panel | by hand: `document.elementFromPoint(x, y)` at the coordinate, or compare `innerWidth` with the frame the screenshot reports | click by element (`ref` from `find`/`read_page`, or `el.click()` in `javascript_tool`), or scale coordinates by `innerWidth / frame width`; `resize_window` didn't change `innerWidth` either — test a phone width in a same-origin `<iframe>` of the page instead |
 | 2026-09-13 | No glass surface blurs on Home, Today or the Library; in Chrome `getComputedStyle(sidebar).backdropFilter` is `none`, and the served CSS has only `-webkit-backdrop-filter` in those rules | the source wrote `backdrop-filter` then `-webkit-backdrop-filter` in each rule; lightningcss (Turbopack's CSS pass in dev, Tailwind's optimize in a build) folds the pair into one property and the later prefixed line wins, so the unprefixed one is dropped. Order-dependent, not value-dependent (prefixed-first keeps both). Chrome ignores the prefix, so nothing errors | CSS prefix audit (`npm run check:css`) | write the unprefixed property only; the pipeline adds `-webkit-` for Safari from its targets |
@@ -42,7 +44,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 | 2026-09-13 | Lumi fails in a worktree's dev server after the OpenAI switch | `.env.local` was copied into the worktree before `main` started needing `OPENAI_API_KEY` | preflight (keys against `.env.example`) | copy the key from the main checkout's `.env.local` |
 | 2026-09-13 | `tsc`: *Cannot find module '@ai-sdk/openai'* right after merging `main` | the merge added a package; the worktree's `node_modules` predates it | preflight (installed versions against the lockfile) | `npm ci` |
 | 2026-09-13 | `tsc`: *Cannot find module '../../../src/app/lists/page.js'* in `.next/dev/types/validator.ts` | Lists was renamed the Library; `next typegen` rewrites `.next/types` but not `.next/dev/types`, and `tsconfig.json` includes both | preflight (removes the stale types) | automatic; by hand, `rm -rf .next/dev/types` once no server of this checkout is running |
-| 2026-09-13 | A worktree runs a different version of a hook than its own branch has | `core.hooksPath` is the shared checkout's absolute path (`/Users/chante/Projects/lumen/.githooks`), so every worktree runs the hooks of whatever branch the shared checkout has out; a hook changed on a branch is live nowhere until the shared checkout has it | by hand (`git config --get core.hooksPath`) | test a hook directly (`sh .githooks/<hook>`) from your worktree; Backlog #2 |
+| 2026-09-13 | A worktree runs a different version of a hook than its own branch has | `core.hooksPath` is the shared checkout's absolute path (`/Users/chante/Projects/lumen/.githooks`), so every worktree runs the hooks of whatever commit the shared checkout has out — and a parked checkout trails `main` until someone catches it up; a hook changed on a branch is live nowhere until the shared checkout has it | by hand (`git config --get core.hooksPath`) | test a hook directly (`sh .githooks/<hook>`) from your worktree; Backlog #1 |
 | 2026-09-13 | `grep --include=*.ts …` → *zsh: no matches found* | zsh expands the unquoted glob before grep sees it | by hand | quote globs (`--include='*.ts'`) |
 | 2026-09-13 | `git merge -F -` with a heredoc: *could not read file '-'* in a worktree session | the Bash guard in worktree sessions | by hand | repeated `-m` paragraphs |
 | 2026-09-12 | A worktree's review server dies at startup: *Symlink [project]/node_modules is invalid* — though `npm run check` passed | Turbopack refuses a `node_modules` symlink pointing outside the project; tsc and vitest don't mind | preflight (symlink check) | `rm node_modules && npm ci` |
@@ -52,19 +54,20 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 | — | Pages half-build, `.next` errors | two `next dev` in one checkout share `.next` | by hand (port etiquette) | one server per checkout |
 
 ## Backlog — ranked; land or re-rank one per session
-1. **Post-merge nudge.** A `post-merge` / `post-checkout` hook that says *package-lock.json changed — run npm ci* the moment it happens, not at the next check. Blocked on #2: with the absolute `hooksPath` a new hook is live only once the shared checkout has it.
-2. **Hooks from each worktree's own branch.** Set `core.hooksPath` to the relative `.githooks`, so a worktree runs its own copy. It's shared git config: change it when no other session is mid-commit, and note it in the change log.
-3. **Worktree census.** A read-only `scripts/worktrees.mjs`: each worktree, its branch (or detached), merged into `origin/main` or not, last commit, dirty or clean, any server serving it. Claude tidies the ones it made; the rest go to Chanté (below). On 2026-09-13 there were eight, several detached.
+1. **Hooks from each worktree's own branch.** Set `core.hooksPath` to the relative `.githooks`, so a worktree runs its own copy. Moved up 2026-09-13: with the shared checkout parked detached, its `.githooks` trails `main` until someone catches it up, so a new guard (like the detached-HEAD one) isn't live in any worktree meanwhile. It's shared git config: change it when no other session is mid-commit, and note it in the change log.
+2. **Post-merge nudge.** A `post-merge` / `post-checkout` hook that says *package-lock.json changed — run npm ci* the moment it happens, not at the next check. Blocked on #1.
+3. **Worktree census.** A read-only `scripts/worktrees.mjs`: each worktree, its branch (or detached), merged into `origin/main` or not, last commit, dirty or clean, any server serving it, and whether it holds `main`. Claude tidies the ones it made; the rest go to Chanté (below). On 2026-09-13 there were eleven, several detached.
 4. **Review-server helper.** One command that finds the first free port from 3005, never touches 3000–3004, checks what anything already listening serves, runs the preflight, starts `next dev` in the background and prints the clickable link.
 5. **Pin Node.** An `.nvmrc` and `engines` at 22 (CI's version), with a preflight line when the local major differs.
 
 ### Landed
+- 2026-09-13 — `scripts/land.mjs` as `npm run land`: lands a branch on `main` without checking `main` out (merge-tree, commit-tree, compare-and-swap update-ref), refusing while any checkout holds `main` or the branch lacks the latest `main`; and the pre-commit guard against commits on the shared checkout's parked detached HEAD. `branching.md` → Landing on main.
 - 2026-09-13 — `scripts/preflight.mjs` wired as `precheck` / `predev` / `preflight`: installs against the lockfile, symlinked `node_modules`, stale generated route types, `.env.local` and its required keys. `.env.example` now lists required keys uncommented and optional ones commented, so the preflight can read it.
 
 ## What goes to Chanté
 Only these; everything else Claude decides, does and records here.
 - Anything touching her accounts, keys or money (Vercel, Clerk, Supabase, OpenAI, Anthropic, Google).
-- Removing or rewriting anything another session or person owns: their worktrees, branches, stashes, running servers, or files in the shared checkout.
+- Removing or rewriting anything another session or person owns: their worktrees, branches, stashes, running servers, or files in the shared checkout — including releasing `main` from a checkout a session may be working in.
 - Anything on ports 3000–3004 or in another project.
 - A change to how *she* works: what she runs, reviews or applies herself (migrations, the review checklist).
 
@@ -72,3 +75,4 @@ Only these; everything else Claude decides, does and records here.
 - 2026-09-13 — Started, from the stale `.next/dev/types` and the missing `@ai-sdk/openai` hit while merging `docs/today-spec-as-built`. Preflight landed; review links are always clickable (`CLAUDE.md` → Review server).
 - 2026-09-13 — Trap and guard: lightningcss dropped `backdrop-filter` from every rule that also wrote `-webkit-backdrop-filter` after it, so no glass blurred in Chrome. The source now writes the unprefixed property alone, and `scripts/check-css-prefixes.mjs` (in `npm run check`) fails on any compiled rule that kept a prefix without its twin.
 - 2026-09-13 — Trap: a stale dev server 404s a route that exists (the Library spatial-map session, which also merged `main` mid-branch and needed `npm ci` from the preflight, as the doc predicted).
+- 2026-09-13 — Trap and guard, Chanté's ask after the umpteenth blocked merge: `main` held by whichever checkout merged last. `npm run land` replaces `git checkout main && git merge`; nobody parks on `main`; the shared checkout parks detached and the pre-commit hook guards that. Backlog: relative `hooksPath` moved to #1, since a parked checkout's hooks trail `main`.
