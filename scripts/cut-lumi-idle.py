@@ -22,6 +22,10 @@ drawing, so a hand-over between loops never swaps drawings:
   held: everything but the arm and the cloak it moves is the first cell's, so
   the hood, eyes, lantern and boots never move (Chanté: "she jumps around a
   little bit" — five cells had dropped 2–4px and the rest drifted a pixel);
+  then held again per phase: the rest cells are the first cell exactly, the
+  waves keep one cell's arm and cloak with only the hand and wrist swinging,
+  and the lower cloak only lifts through the rise and only drops through the
+  fall (the redraw bobbed the hem: "still jittering a bit, mostly up and down");
 - blink: half-shut and shut eyes on every breath cell, drawn by bringing a lid
   down over her own eyes (neither sheet has a blink row) — the lid is the
   face's own black, the bottom of each eye stays as a thin bright lens. The
@@ -343,6 +347,76 @@ held[FEET_Y - 10:, :] = 1          # the boots
 aligned = [align(c, rest, held) for c in wave[1:]]
 wave[1:] = [hold(c, rest) for c, _ in aligned]
 print('wave overlap with the first cell on the held parts, after aligning:', [round(float(o), 3) for _, o in aligned])
+
+WAVE_REST = [0, 1, 22, 23]        # cells that are the rest pose: exactly the first cell
+WAVE_WAVES = range(8, 16)         # the two waves: the arm held up, only the hand and wrist swing
+HAND_ROWS = 135                   # the raised hand never comes below this row of the cell
+
+
+def hold_hand(cell, donor):
+    """A hold inside a phase: while she waves, everything but the hand and wrist is `donor`'s. With the whole
+    free side taken from each cell, the generator's redraw of the cloak bounced the left hem 1–2px frame to frame
+    and the hood's tip by up to 1.5px (Chanté: "still jittering a bit, mostly up and down"). The hand is where the
+    cell and the donor disagree about what is dark or opaque — the hand now, and where it was — on her free side,
+    above HAND_ROWS, left of the face in the head rows; blobs only, dilated to take the wrist, feathered."""
+    dark = lambda c: (c[:, :, :3].sum(axis=2) < 150) & (c[:, :, 3] > 200)
+    opaque = lambda c: c[:, :, 3] > 127
+    hand = (dark(cell) ^ dark(donor)) | (opaque(cell) ^ opaque(donor))
+    hand[:, col0:] = False
+    hand[:head_rows, face_left - 2:] = False
+    hand[HAND_ROWS:] = False
+    hand = ndi.binary_opening(hand, iterations=1)
+    lab, k = ndi.label(hand)
+    sizes = ndi.sum(hand, lab, range(1, k + 1))
+    hand = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 30])
+    moving = ndi.binary_fill_holes(ndi.binary_dilation(hand, iterations=4))
+    w = ndi.gaussian_filter(moving.astype(float), 1.5)[:, :, None]
+    return straight(w * premul(cell) + (1 - w) * premul(donor))
+
+
+donor = wave[WAVE_WAVES[0]]
+for c in WAVE_WAVES[1:]:
+    wave[c] = hold_hand(wave[c], donor)
+for c in WAVE_REST:
+    wave[c] = rest
+
+WAVE_RISE = range(2, 8)           # the hand comes up: the cloak's lower edge may only lift
+WAVE_FALL = range(16, 22)         # the hand goes down: it may only drop
+LOW_ROW = 140                     # the lower cloak on her free side, below the raised arm
+
+
+def lower_area(cell):
+    """Coverage of the lower cloak on her free side (between LOW_ROW and the boots) — smaller as it lifts."""
+    return cell[LOW_ROW:FEET_Y - 8, :col0, 3].astype(float).sum() / 255
+
+
+def with_lower(cell, src):
+    """`cell` with `src`'s lower cloak on her free side, the seam feathered over the rows above LOW_ROW — except
+    around anything dark in either (the rising hand, and the rest pose's hanging hand, which would otherwise come
+    back as a second hand), where the cell keeps its own pixels."""
+    dark = lambda c: (c[:, :, :3].sum(axis=2) < 150) & (c[:, :, 3] > 200)
+    w = np.clip((np.arange(H) - (LOW_ROW - 8)) / 10, 0, 1)[:, None] * (np.arange(W) < col0)[None, :]
+    w = w * ~ndi.binary_dilation(dark(cell) | dark(src), iterations=4)
+    w = ndi.gaussian_filter(w, 1.5)[:, :, None]
+    return straight(w * premul(src) + (1 - w) * premul(cell))
+
+
+def monotone_lower(cells, order, start, lifting):
+    """Through a phase the lower cloak moves one way only. Measured exactly (alpha), the generator's rise dipped
+    the hem ~2px before lifting it 6px, and its fall lifted it 1px before dropping it — the up-and-down bob Chanté
+    saw. A cell that moves back keeps the lower cloak of the last cell that didn't."""
+    kept = start
+    for i in order:
+        backwards = lower_area(cells[i]) > lower_area(kept) if lifting else lower_area(cells[i]) < lower_area(kept)
+        if backwards:
+            cells[i] = with_lower(cells[i], kept)
+        else:
+            kept = cells[i]
+    return [round(float(lower_area(cells[i]) - lower_area(rest)), 1) for i in order]
+
+
+print('lower cloak on the rise, px² from rest:', monotone_lower(wave, WAVE_RISE, rest, lifting=True))
+print('lower cloak on the fall, px² from rest:', monotone_lower(wave, WAVE_FALL, donor, lifting=False))
 
 # The breath: the wave's first cell, stretched, so the two loops are one drawing.
 rises = [BREATH_RISE * (1 - np.cos(2 * np.pi * i / BREATH_FRAMES)) / 2 for i in range(BREATH_FRAMES)]
