@@ -47,7 +47,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | note | text null | why it matters / what's blocking / context |
 | status | text | `open | done | dropped` — *stale is derived, never stored* |
 | effort_hint | text null | `tiny | small | medium | large` — for capacity matching |
-| due_at | timestamptz null | only when the user named a real deadline |
+| due_at | timestamptz null | only when the user named a real deadline, or gave the row a date on the Lists sheet. **A day with no time is stored as 00:00 local that day** (`core/due-date.ts`, 2026-09-13) and read as a day to get it done by; any other time is a fixed-time commitment (Today → Later, `dueOn`). A page date writes `intention.updated {fields: ["dueAt"], via: "app"}` |
 | source_message_id | uuid null | the message that created it |
 | last_touched_at | timestamptz | any mention, edit, or session |
 | created_at, completed_at, dropped_at | | |
