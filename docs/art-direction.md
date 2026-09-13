@@ -4,7 +4,7 @@
 
 **Who this is for:** Chanté and Claude, whenever the work changes what Lumi or a scene looks like or how Lumi moves — a new sheet, a painting, a mockup, a new kind of motion. Read §2, §3 and §8 before generating anything.
 
-**Where it sits:** `design-philosophy.md` is what the *interface* is. This doc is what the *art* is and where it is heading: what holds across every drawing, the tension between the book and the painted world, the ladder of animation costs, what Lumi's motion means, and the bets under test. `animation-pipeline.md` is how a drawing becomes motion once that is settled; `art/README.md` is how the cut works; `design-system.md` is what ships.
+**Where it sits:** `design-philosophy.md` is what the *interface* is; `docs/product/spaces.md` (canon) is what the *places* are, and its §21–29 set what any painting of them must keep: spaces that feel related, imagery the environment earns and the interface doesn't, growth that is discovered and never a judgement, Lumi moving between them. This doc is what the *art* is and where it is heading: what holds across every drawing, the tension between the book and the painted world, the ladder of animation costs, what Lumi's motion means, and the bets under test. `animation-pipeline.md` is how a drawing becomes motion once that is settled; `art/README.md` is how the cut works; `design-system.md` is what ships.
 
 ---
 
@@ -130,7 +130,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 |---|---|---|---|---|---|
 | 1 | Expressions are eye shapes drawn in code, not cells cut from sheets | the void face; every expression sheet changes only the eyes (§2) | draw the six avatar expressions as shapes over the rest cell's face and compare them with the cut heads at 36–68px | at avatar size the drawn eyes read as stickers on a painting | open |
 | 2 | Frequent motion is layered (tier 2); drawn sheets only for signature moments | the ladder's costs and the drift (§4, §7) | one evening: split the rest cell into hood, face, eyes, lantern and body; animate a blink, a glance and a lantern sway; show it beside the current sprite on the review port | Chanté can tell it is a rig and it looks cheaper than the sprite | open — evidence for, 2026-09-13: the wave only stopped jumping once the cut treated the drawn sheet like layers (every frame is the rest drawing except the arm; inside the waves, except the hand) — two review rounds spent making a drawn loop behave like a rig |
-| 3 | The world responds to what happened, never to what didn't | §3; the one question | any care-loop or reward idea gets an `ef-burden-log.md` row first and one question: *does a bad week make the world sadder?* | a version that fades gently and still lowers burden in dogfooding | proposed |
+| 3 | The world responds to what happened, never to what didn't | §3; the one question | any care-loop or reward idea gets an `ef-burden-log.md` row first and one question: *does a bad week make the world sadder?* | a version that fades gently and still lowers burden in dogfooding | proposed. `spaces.md` §9 and §26–27 go further than §3's rule 1: growth follows continuity, not output, and *completion-driven decoration* is on its avoid list, which rules out "a finished session might open a flower" |
 | 4 | Lumi is the companion everywhere and, one day, a resident on Home | §6 | a still placed at room scale on Home's floor | the room reads busier and the conversation loses the eye | open — a still tried on Today first (2026-09-12, §6) |
 | 5 | Every room Lumi can enter shares one projection | walking depends on it (§6) | — | — | **settled 2026-09-12: isometric** |
 | 6 | A focus session shows Lumi working alongside | body doubling made visible (§5) | a still of Lumi reading near the session bar, then a tier-1 page turn | it reads as a distraction during focus | open |
@@ -155,6 +155,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 ## Change log
 
+- 2026-09-13: `docs/product/spaces.md` joins the canon. *Where it sits* names it and its §21–29. Bet 3 notes that it rules out completion-driven decoration, which §3's rule 1 still allows; rule 1 isn't rewritten until Chanté settles open question 14.
 - 2026-09-13 — Bet 2 gains evidence for: the wave stopped jumping only once the cut held the drawn sheet like layers (the rest drawing everywhere but the arm, and inside the waves everywhere but the hand), after two review rounds.
 
 - 2026-09-13 — The wave: §1 row for `lumi-wave.png` (the first sheet Claude generated), §4 tier 3 gains it and its cost, §5's behaviour map gains arriving → a wave (live). No bet moved; it is the tier-3 "rare signature gesture" §4 already reserved drawn sheets for.

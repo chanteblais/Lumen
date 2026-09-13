@@ -15,11 +15,11 @@ Home is "arrive and inhabit" (EP§15) and, in Chanté's words, "asks nothing of 
 *Meanwhile:* unchanged. *Related:* [`features.md`](../features.md) → Home; the EF-burden log accepted the chips on condition they "never grow beyond four".
 
 **2. Do focus sessions leave Home for the Study?** *(2026-09-12; partly answered by V§14)*
-The vision places Focus in the Study. EP§11 describes Lumi there: breathing, reading, sitting nearby, occasionally looking up. EP§18 has a task Today surfaces "move naturally into Focus". Still open: do sessions, the session bar and check-ins move off Home? Does starting one take you to the Study? M5 kept sessions on one surface on purpose ("a second timer surface would bring back the idle-timer pressure"), and they start only through Lumi.
+The vision places Focus in the Study. EP§11 describes Lumi there: breathing, reading, sitting nearby, occasionally looking up. EP§18 has a task Today surfaces "move naturally into Focus". Still open: do sessions, the session bar and check-ins move off Home? Does starting one take you to the Study? M5 kept sessions on one surface on purpose ("a second timer surface would bring back the idle-timer pressure"), and they start only through Lumi. *2026-09-13:* [`spaces.md`](../product/spaces.md) §16–18 describes the Study as the current intention, a first action, an optional timer, minimal controls and Lumi, with most of Coherence receding and leaving never marked as failure. It asks *What are we doing now?*; the decided question is *What am I doing now?*.
 *Meanwhile:* sessions run on Home. *Related:* question 18.
 
 **3. How does the Library hold *where have I been*?** *(2026-09-12; mostly answered by V§14, EP§14)*
-Lists lives in the Library ("organize and retrieve"), which "may expand because the user's life has accumulated more threads, knowledge, and history" (EP§14). Still open: how that record appears (finished things, sessions, what Lumi noticed and remembers) without becoming a report card, or visual richness becoming "a judgment of how productive the user has been" (EP§14).
+Lists lives in the Library ("organize and retrieve"), which "may expand because the user's life has accumulated more threads, knowledge, and history" (EP§14). Still open: how that record appears (finished things, sessions, what Lumi noticed and remembers) without becoming a report card, or visual richness becoming "a judgment of how productive the user has been" (EP§14). *2026-09-13:* [`spaces.md`](../product/spaces.md) §11–15 has the Library holding accumulated threads. Sections grow from what exists in the user's life, never unlocked (§13); things stay manipulable (§14); it stays navigable through Lumi's retrieval, never a taxonomy to maintain (§15). It asks *What am I holding, and where does it belong?*, with *Where did this thread begin?* and *What became of that idea?* as what it answers later (§12). The decided question is *Where have I been?* Which one the Library answers, or both, is Chanté's call.
 *Meanwhile:* Lists is a plain page. *Related:* questions 12 and 20.
 
 **4. Where does Insights (the mail) belong?** *(2026-09-12)*
@@ -27,11 +27,11 @@ Neither foundation document places it. Candidates: the Library (what arrived and
 *Meanwhile:* its own page.
 
 **5. What does tending look like in the Garden?** *(2026-09-12; partly answered by V§15, EP§15)*
-The concepts are named (planting an intention, tending active work, letting something rest, pruning what's no longer relevant), with the warning that users shouldn't have to "decipher an elaborate gardening simulation". Still open: which of these becomes a visible gesture, and where. Does *letting something rest* equal moving it to Later (EP§16)? Does pruning happen in the Garden or the Library? Is the path (Right now → After that → Later) the *tending active work* view?
+The concepts are named (planting an intention, tending active work, letting something rest, pruning what's no longer relevant), with the warning that users shouldn't have to "decipher an elaborate gardening simulation". Still open: which of these becomes a visible gesture, and where. Does *letting something rest* equal moving it to Later (EP§16)? Does pruning happen in the Garden or the Library? Is the path (Right now → After that → Later) the *tending active work* view? *2026-09-13:* [`spaces.md`](../product/spaces.md) §8 adds *Harvest* (bring something to completion) and says the words appear in the UI only when natural and immediately understandable; the metaphor stays partly implicit.
 *Meanwhile:* the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens.
 
 **15. Which names does the user see?** *(2026-09-12)*
-The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary.
+The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary. *2026-09-13, mostly answered by [`spaces.md`](../product/spaces.md) §3:* primary navigation stays plain (*Home · Today · Lists · Focus*), Garden, Library and Study are the internal names, and the labels evolve through testing ("Poetry should deepen clarity, not replace it"). Still open: Insights and Settings, which §3 leaves out, and a *Focus* item before there is a Study (question 2).
 *Meanwhile:* Home · Today · Lists · Insights · Settings.
 
 ## Rewards and growth
@@ -47,13 +47,15 @@ The ways forward:
 - **(b) The conversation stands.** V§14 and EP§14 are amended on purpose, with the reason recorded.
 - **(c) A reconciliation**, stated explicitly: for example, recognising beginning, choosing and returning in Lumi's words and in how the places grow, with no balance, no shop and no unlocks.
 
+*2026-09-13:* [`spaces.md`](../product/spaces.md) §8, §13 and §25–27, Chanté's most recent writing on this, describes (a) in detail. No XP, levels, task-completion currencies, unlocking through productivity or completion-driven decoration. Changes are "discovered rather than awarded" and reflect duration, context, exploration and relationship, not output. It isn't a decision until Chanté says so.
+
 *Meanwhile:* nothing built. Both versions agree: nothing decays, no streaks, absence costs nothing.
 
 **6. What counts, and is anything shown as a number?** *(depends on 14)*
 If there is earning: which of the seven behaviours count (ideas); whether rewarding *doing* invites ticking things off; whether letting go counts; whether a balance shows as a number (V§12 rules out productivity scores). If growth is history: what the places respond to, and how "an established Garden" never reads as a verdict on a hard month (EP§14).
 
 **7. Where do things live, and do they need care?** *(depends on 14)*
-Home, the Garden, or a *Lumi's World* (`art-direction.md` §9 Q1)? Nothing can cost anything when neglected, so either nothing needs care or care only adds.
+Home, the Garden, or a *Lumi's World* (`art-direction.md` §9 Q1)? Nothing can cost anything when neglected, so either nothing needs care or care only adds. *2026-09-13:* [`spaces.md`](../product/spaces.md) §6 and §26: nothing to decorate, purchase, unlock or maintain; the Garden doesn't die and the Library doesn't gather dust. For the places, *do they need care* is answered (no), whatever 14 decides.
 
 **8. Whose growth is it?** *(depends on 14)*
 The user's life moving forward (V§19), the places, Lumi's world, or all three?
@@ -64,13 +66,13 @@ The user's life moving forward (V§19), the places, Lumi's world, or all three?
 Today she speaks unprompted only at check-ins (the greeting is copy, not a message). The foundation gives her room to help the user return when distracted (V§7) and to name a pattern (V§12), and rules out notifications meant to raise engagement (EP§11, §20). Candidates: a deadline today, something in the mail, a long absence. There are no notifications. What would any of them have to be to stay useful and not become engagement?
 
 **10. How much can Lumi do without asking?**
-Automate administration, not agency (V§4). The user holds authority over what matters, what is deferred or abandoned, and what is enough (V§5). Today Lumi files, completes and drops things without confirmation (dropping only after the user says so) and pins her pick on Today. Where is the line for rescheduling, deleting, or acting on mail? EP§17 suggests the line follows the consequences.
+Automate administration, not agency (V§4). The user holds authority over what matters, what is deferred or abandoned, and what is enough (V§5). Today Lumi files, completes and drops things without confirmation (dropping only after the user says so) and pins her pick on Today. Where is the line for rescheduling, deleting, or acting on mail? EP§17 suggests the line follows the consequences. *2026-09-13, the principle answered by [AI & IA](../product/ai-and-information-architecture.md) §33–35:* confirmation is proportional to uncertainty, consequence and reversibility. Interpretation, tentative inference, a proposed change and a committed change are different things, and mistakes should be cheap to undo. Still open: where the line falls for rescheduling, deleting and mail, and what a *proposed* change looks like when only tools write state.
 
 **11. How do stated and inferred priorities meet?**
-The planner infers from deadlines, list order, avoidance and capacity, and there is no priority field, by design. V§5: an inferred priority is never objective truth. EP§5 warns against "treating deadlines as equivalent to importance". EP§16 makes a vertical drag in Lists a statement of relative priority. When the user says "X matters most this week", or drags it up, is that a belief, a position, or something that expires?
+The planner infers from deadlines, list order, avoidance and capacity, and there is no priority field, by design. V§5: an inferred priority is never objective truth. EP§5 warns against "treating deadlines as equivalent to importance". EP§16 makes a vertical drag in Lists a statement of relative priority. When the user says "X matters most this week", or drags it up, is that a belief, a position, or something that expires? *2026-09-13, mostly answered by [AI & IA](../product/ai-and-information-architecture.md) §14–16:* importance, urgency, priority and attention relevance are different things. Priority is reasoned in context, never stored as a universal truth, and a manual move is kept as its own signal beside urgency, so Lumi can name both ("I know you've got the paper above this, but…"). Still open: how a stated priority stops being current (§53: superseded, not deleted).
 
 **12. How is long-term memory shown?**
-The product should get easier as it knows you (V§16), and advanced users "can inspect or directly manipulate more structure" (EP§19). Beliefs exist, with confidence and evidence, and *What Lumi knows* (M6) is planned as a page for correcting. How does a user see what Lumi remembers without it becoming something to curate? Does it belong in the Library?
+The product should get easier as it knows you (V§16), and advanced users "can inspect or directly manipulate more structure" (EP§19). Beliefs exist, with confidence and evidence, and *What Lumi knows* (M6) is planned as a page for correcting. How does a user see what Lumi remembers without it becoming something to curate? Does it belong in the Library? *2026-09-13, partly answered by [AI & IA](../product/ai-and-information-architecture.md) §36 and §51:* mostly through conversation, with no enormous memory interface. *Why do you think mornings work better for me?* gets a reason and a hedge; *Stop treating that as something I'm working toward* archives it. Still open: whether a page exists at all.
 
 **16. Do *Not this* and coming back cover what the foundation names?** *(2026-09-12; partly answered by EP§7)*
 EP§7 frames the chips as "possible lightweight responses", and its five match the current six minus *Don't feel like it*. So a short set is the intended shape, not a chip per reason. Still open:
@@ -89,7 +91,7 @@ EP§11: "Lumi intervenes when useful, not because an engagement timer says it is
 *Meanwhile:* 15 minutes. *Related:* question 2.
 
 **19. How does inference show itself?** *(2026-09-12; from EP§17)*
-Lumi guesses each thing's list and estimate when she files it, and on Today and in Lists the guess looks exactly like something the user said. Beliefs already carry `user_said` or `lumi_inferred`; intentions don't. EP§17 asks for uncertainty in proportion to importance, with no warning labels on harmless guesses. Which guesses matter enough to show (a due date Lumi inferred? an estimate that shapes a low day?), and how quietly?
+Lumi guesses each thing's list and estimate when she files it, and on Today and in Lists the guess looks exactly like something the user said. Beliefs already carry `user_said` or `lumi_inferred`; intentions don't. EP§17 asks for uncertainty in proportion to importance, with no warning labels on harmless guesses. Which guesses matter enough to show (a due date Lumi inferred? an estimate that shapes a low day?), and how quietly? *2026-09-13, the storage half answered by [AI & IA](../product/ai-and-information-architecture.md) §10–11:* keep explicit, observed, inferred and derived information apart. For consequential facts like a deadline or a category, keep source, confidence and whether the user confirmed it, and don't show provenance constantly. Intentions today keep only `source_message_id`.
 *Meanwhile:* nothing distinguishes them.
 
 **20. How does direct manipulation reach Lumi?** *(2026-09-12; from EP§5–6, EP§16)*
@@ -120,7 +122,23 @@ The model strategy lists what Coherence should remember: tasks, lists, prioritie
 - **Retrieval once the context caps bite.**
 
 Which of these become structure, and which become derived views over events?
-*Related:* question 3 (the Library), question 11 (priorities), `lumi.md` §6.
+
+*2026-09-13:* [AI & IA](../product/ai-and-information-architecture.md) names the shapes: threads, intentions, actions and commitments (§3); states beyond open and done, such as waiting, resting, blocked and archived (§7); relationships (§40–41); and genealogy (§54). It also sets the pace: the smallest model that keeps the distinctions the experience needs (§56), and a V1 of simple threads or categories, manual ordering, basic status, events, and provenance for important AI-created state (§58). Today an intention is both Intention and Action (its `next_action`), and projects are beliefs on purpose (sticky decision 15).
+*Related:* question 3 (the Library), question 11 (priorities), question 24 (context assembly), `lumi.md` §6.
+
+**24. What does context assembly need beyond one block?** *(2026-09-13; from [AI & IA](../product/ai-and-information-architecture.md) §22–23, §25–26, §30, §49, §52–53)*
+The canon wants context chosen for the moment: by space, compressed further in the Study, fading with time, inspectable, and reconciled when memory and state disagree. Today:
+- **No space context.** The block is the same at Home and when the user taps Lumi on Today or Lists; a message from the bubble doesn't say where it came from.
+- **No Study compression.** During a focus session the block still carries every open intention.
+- **Only intentions fade.** Stale after 14 days untouched is derived. A belief weakens only when contradicted, or is retired by the user, and never with time.
+- **Not observable.** `context.test.ts` tests assembly, but nothing records what a given turn included or left out.
+- **Memory and state can diverge.** A `project` belief can outlive the intention it was about being dropped; nothing links them (§52–53).
+
+*Meanwhile:* one capped block for every page and every turn. *Related:* questions 12 and 22, `lumi.md` §6.
+
+**25. What should Coherence not keep?** *(2026-09-13; from [AI & IA](../product/ai-and-information-architecture.md) §50–51)*
+"Lumi should know enough to be genuinely useful without collecting information merely because it might someday be useful." Today, mail bodies are never stored (a lead keeps sender, subject and Lumi's line). The conversation, beliefs (retired softly) and events are kept indefinitely. Export and delete exist only as a cascade on the user row, and beyond `forget_belief` there is no way to ask for either. Every inference Lumi writes is durable, and everything goes to one model provider. Open: what gets a lifetime, which inferences should stay ephemeral, what could stay on the device, and how a deletion reaches events and beliefs.
+*Meanwhile:* [`architecture.md`](../architecture.md) → Privacy posture. *Related:* question 21 (a second provider), [`pre-prod.md`](../pre-prod.md).
 
 **23. How much reflection, and when back to action?** *(2026-09-13)*
 The strategy wants Lumi to "move fluidly between practical and reflective conversation" and to tell useful reflection from rumination. The persona leans hard toward action: "A single concrete next step beats any amount of advice. When in doubt, say less." The action bias serves initiation (V§6). The risk is a Lumi who can't sit with a real question about direction or meaning (V§19). When does she stay in reflection, how does she notice it has become circling, and is reflective conversation something Home offers on purpose (EP§15: arriving, talking, *reflecting*)?

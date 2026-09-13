@@ -24,7 +24,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 
 ## Conventions
 - `src/core` is framework-free (no `next`/`react` imports; ESLint enforces). Domain logic and AI assembly live there and are unit-tested.
-- The model **reads** state via the context block and **writes** only via tools. Every tool write appends an `events` row. Never parse prose for state.
+- The model **reads** state via the context block and **writes** only via tools. Every tool write appends an `events` row. Never parse prose for state. The *why* behind this layer, and the seams to keep as it grows (conversation ≠ state, explicit ≠ inferred, priority ≠ attention, spaces ≠ data silos…), is `docs/product/ai-and-information-architecture.md` (§57 seams, §61 review questions).
 - Greeting and focus check-ins are deterministic (no LLM call). Lumi speaks unprompted only for check-ins.
 - Store facts and events; derive judgements (stale, avoided, gap) at read time. Never persist derived flags.
 - **Understanding layer is first-class:** beliefs (`memory_notes`) carry confidence + evidence; the model proposes belief ops, `core/domain/memory.ts` applies them with guardrails; outcomes (sessions, completions) are the feedback signal. The user never rates or tags anything.
