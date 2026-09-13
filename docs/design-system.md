@@ -32,7 +32,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 **Dark mode:** none in V1. The book is ivory — with two exceptions, below.
 
-**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home/background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest along the left edge) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
+**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home/background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest along the left edge) and the floor (behind the composer) so the type sits in the light — at half the strength it first had (2026-09-13, Chanté: the room read much darker than the painting, ~43% darker on average; now ~24%), since the greeting has its own scroll and the composer its glass. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
 
 | Token | By lantern light | Usage on Home |
 |---|---|---|
