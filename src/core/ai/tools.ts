@@ -12,7 +12,7 @@ import type { UserPreferences } from "@/db/schema";
 import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { dismissLead, keepLead } from "@/core/domain/leads";
-import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS } from "@/core/domain/library";
+import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS, shelfPath, shelveThread, whyNotShelve } from "@/core/domain/library";
 import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
 import { matchNotes, rankThreads } from "./library-select";
 import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
@@ -58,6 +58,7 @@ const WHY_NOT: Record<string, string> = {
   forgotten: "not kept: they asked you to forget this before",
   "not active": "not found — use an id from the context or recall_memory",
   "not found": "not found — use an id from the context or recall_memory",
+  "placed by them": "not moved: they put it there themselves",
 };
 function whyNot(why: string | undefined): string {
   return why ? (WHY_NOT[why] ?? why) : "skipped";
@@ -338,11 +339,13 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
         safe(async () => {
           const thread = await getOwnedThread(db, userId, input.id);
           if (!thread) return { error: "not found — use a thread id from the context or search_library" };
-          const [notes, earlier] = await Promise.all([listCurrentNotes(db, userId, [thread.id], 40), listNoteHistory(db, userId, thread.id, 10)]);
+          const [notes, earlier, held] = await Promise.all([listCurrentNotes(db, userId, [thread.id], 40), listNoteHistory(db, userId, thread.id, 10), listThreads(db, userId)]);
           return {
             id: thread.id,
             title: thread.title,
             also_called: thread.aliases,
+            in: shelfPath(held, thread.id).map((t) => t.title),
+            holds: held.filter((t) => t.parentId === thread.id).map((t) => ({ id: t.id, title: t.title })),
             summary: thread.summary,
             notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading", when: n.createdAt.toISOString().slice(0, 10) })),
             earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: n.createdAt.toISOString().slice(0, 10) })),
@@ -360,7 +363,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           return {
             threads: rankThreads(held, input.query, notes)
               .slice(0, 3)
-              .map((t) => ({ id: t.id, title: t.title, summary: t.summary })),
+              .map((t) => ({ id: t.id, title: t.title, in: shelfPath(held, t.id).map((p) => p.title), summary: t.summary })),
             notes: matchNotes(notes, input.query).map((n) => ({ id: n.id, thread_id: n.threadId, thread: titles.get(n.threadId), kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading" })),
           };
         }),
@@ -397,6 +400,33 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           if ("skipped" in r) return r.skipped === "already_held" ? { already_held: true, id: r.existing?.id } : { error: whyNot(r.skipped) };
           const thread = await getOwnedThread(db, userId, threadId);
           return { id: r.note.id, thread_id: threadId, thread: thread?.title, content: r.note.content, held_as: heard ? "their word" : "your reading", ...(r.replaced ? { replaced: r.replaced.id } : {}) };
+        }),
+    }),
+
+    shelve_thread: tool({
+      description:
+        "They told you where a thread belongs in the Library: under another thread ('that goes with the book') — a thread with threads under it is a section, like a category of their life (yoga, cooking, the book) — or off its shelf ('it's its own thing'). thread_id and under_id from the context, open_thread or search_library; new_section, a title, when what it goes under isn't a thread yet; neither, to take it off its shelf. Three levels at most: section, shelf, book. their_words: what they said, copied exactly (checked).",
+      inputSchema: z.object({
+        thread_id: z.string().uuid(),
+        under_id: z.string().uuid().optional(),
+        new_section: z.string().min(2).max(80).optional().describe("A title — only when what it goes under isn't a thread yet"),
+        their_words: z.string().min(1).max(300),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          if (!findTheirWords(input.their_words, userWords)) return { error: "their_words must be copied from what they said — shelving goes on their word" };
+          let under = input.under_id ?? null;
+          if (!under && input.new_section) {
+            const held = await listThreads(db, userId);
+            const why = whyNotShelve([...held, { id: "new", parentId: null }], input.thread_id, "new");
+            if (why) return { error: whyNot(why) };
+            const made = await createThread(db, userId, { title: input.new_section }, "user");
+            if ("skipped" in made) return { error: whyNot(made.skipped) };
+            under = made.thread.id;
+          }
+          const r = await shelveThread(db, userId, input.thread_id, under, "user");
+          if ("skipped" in r) return { error: whyNot(r.skipped) };
+          return { id: r.thread.id, title: r.thread.title, in: shelfPath(await listThreads(db, userId), r.thread.id).map((t) => t.title) };
         }),
     }),
 

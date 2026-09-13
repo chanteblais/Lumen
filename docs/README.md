@@ -1,6 +1,6 @@
 # Coherence — Design Docs
 
-**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md) and the [Experience Principles](philosophy/experience-principles.md); Lumi's behaviour is [Lumi — Relational Intelligence & Behaviour](philosophy/lumi.md). The places are [Spaces of Coherence](product/spaces.md), the Garden has its own document in [Today / Garden](product/today-garden.md) (with [`today.md`](today.md) the page as built), and the *why* behind the AI layer described in `architecture.md` is [AI & Information Architecture](product/ai-and-information-architecture.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
+**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md) and the [Experience Principles](philosophy/experience-principles.md); Lumi's behaviour is [Lumi — Relational Intelligence & Behaviour](philosophy/lumi.md), and the philosophy she is sent with every call is [her brief](philosophy/lumi-brief.md), reviewed whenever its sources change. The places are [Spaces of Coherence](product/spaces.md), the Garden has its own document in [Today / Garden](product/today-garden.md) (with [`today.md`](today.md) the page as built), and the *why* behind the AI layer described in `architecture.md` is [AI & Information Architecture](product/ai-and-information-architecture.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
 
 ## Product and design canon
 
@@ -30,6 +30,7 @@ The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gap
 | [EF-Burden Log](ef-burden-log.md) | **Standing ledger:** every place the app asks the user to maintain, decide, rate or tidy something. The dogfood ledger for the one question |
 | [Voice Eval Log](voice-eval-log.md) | Scripted scenarios run against Lumi's persona, what was off, what changed in the prompt |
 | [QA Log](qa-log.md) | QA sweeps: tested/fixed, known-and-deliberate (don't re-report), open items |
+| [Code Review 2026-09-13](code-review-2026-09-13.md) | Whole-project code review: every finding with an id, its owning fix branch and its status (data integrity, AI layer and routes, companion UI, tooling, strictness) |
 | [UX Review Log](ux-review-log.md) | Findings from UX passes with severity / effort / status |
 | [Pre-Production](pre-prod.md) | Checklist before real users |
 | [User Journey](user-journey.md) | The loop a user moves through, as a diagram |
