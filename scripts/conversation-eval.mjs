@@ -62,6 +62,9 @@ async function age(db, id, days) {
 const byTitle = (rows, fragment) => rows.find((r) => r.title.toLowerCase().includes(fragment));
 const replied = (calls, re, turn) => calls.some((c) => c.name === "_reply" && (turn === undefined || c.turn === turn) && re.test(c.text));
 
+/** Tools that write what she believes or keeps (tools.ts). */
+const MEMORY_WRITES = ["remember", "confirm_belief", "contradict_belief", "revise_belief", "correct_belief", "forget_belief", "add_to_library", "shelve_thread", "forget_from_library"];
+
 const SCENARIOS = [
   {
     id: "brain-dump",
@@ -162,6 +165,8 @@ const SCENARIOS = [
       { kind: "must", label: "filed no task", ok: !calls.some((c) => c.name === "create_intention") },
       { kind: "must", label: "started no session", ok: !calls.some((c) => c.name === "start_focus_session") },
       { kind: "flag", label: "narrated feelings back (\"it sounds like you're feeling\")", ok: !replied(calls, /sounds like you('re| are) feeling/i) },
+      // Thinking out loud: act on nothing, memory included (lumi.md §12). A sign, not a must: a note can be right.
+      { kind: "flag", label: "wrote to memory or the Library while they were thinking out loud", ok: !calls.some((c) => MEMORY_WRITES.includes(c.name)) },
     ],
   },
   {
@@ -195,7 +200,9 @@ const SCENARIOS = [
     turns: ["Body double", "chapter 3", "yep"],
     checks: async ({ calls }) => [
       { kind: "must", label: "started a focus session", ok: calls.some((c) => c.name === "start_focus_session") },
-      { kind: "flag", label: "asked how long, though the estimate is 45 min", ok: !replied(calls, /how long/i) },
+      // Confirming what's held costs a turn as surely as asking (conversation run 1).
+      { kind: "flag", label: "asked, or asked to confirm, how long (the estimate is 45 min)", ok: !replied(calls, /(how long|\b45\b|minutes)[^.?!]*\?/i) },
+      { kind: "flag", label: "didn't start the session on the first turn, though what, first step and length were known", ok: calls.some((c) => c.name === "start_focus_session" && c.turn === 1) },
     ],
   },
   {
@@ -329,7 +336,14 @@ async function runScenario(scenario, { brief, now, dry }) {
       });
     }
 
-    const checks = dry ? [] : await scenario.checks({ db, user, calls, ids });
+    const silent = calls.filter((c) => c.name === "_reply" && !c.text).map((c) => c.turn);
+    const checks = dry
+      ? []
+      : [
+          ...(await scenario.checks({ db, user, calls, ids })),
+          // Every scenario: a turn with no text at all may render as an empty bubble in the app.
+          { kind: "flag", label: `a reply with no text${silent.length ? ` (turn ${silent.join(", ")})` : ""}`, ok: silent.length === 0 },
+        ];
     return { id: scenario.id, brief, turns, checks };
   } catch (e) {
     return { id: scenario.id, brief, turns: [], checks: [], error: e instanceof Error ? e.stack ?? e.message : String(e) };

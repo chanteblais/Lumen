@@ -57,6 +57,38 @@ Note why beside every ~ and ✗.
 
 ### Conversation runs
 
+#### Conversation run 1 — 2026-09-13 · all eight, brief on and off at one clock (`gpt-6-astra`, reasoning effort low, clock 1:54pm Vancouver, a Sunday)
+Every `must` held in all 16 conversations.
+
+**Graded blind by Claude, provisionally.** A separate subagent read only `blind.md`, not the key or the transcripts, and graded all 16 conversations; I unblinded afterwards. This is an assessment, not Chanté's approval. It is blind to the condition but not free of a stake: the grader is the same model family that wrote the brief, the scenarios and the checks. **One run of eight scenarios can't settle whether the brief helps.**
+
+| Scenario | Brief on · Voice / Use | Brief off · Voice / Use | Better, unblinded |
+|---|---|---|---|
+| `brain-dump` | ✓ / ✓ | ✓ / ✓ | off: its reason tied the pick to the rewrite ("the extension could change the timeline for the intro") |
+| `coming-back` | ✓ / ✓ | ✓ / ✓ | about equal: on also asked what was already handled; off nudged the bike rack toward going |
+| `undo-a-tick` | ✓ / ✓ ("Put it back.") | ✓ / ✓ ("Back on your list.") | about equal |
+| `correction` | ✓ / ~ | ✓ / ✓ | off: re-asked what makes the thesis hard; on asked "What's the thesis looking like at the moment?", an open status report |
+| `stays-reflective` | ✓ / ✓ | ~ / ~ | on: off filed a memory right after "it's not a to-do", and "That seems worth staying with" leans therapeutic |
+| `not-the-call` | ✓ / ✓ | ✓ / ✓ | on, narrowly: "We don't have to make it a call if there's another way", and it recorded the obstacle as a revised belief |
+| `body-double` | ✓ / ✓ | ✓ / ~ | on: started the session on the first turn from what it held; off asked "Shall we use the 45 minutes set aside for it?" |
+| `low-day` | ✓ / ✓ | ✓ / ~ | on: took the rewrite off the table itself; off asked the user to check what's time-sensitive |
+
+**Unblinded tally:** brief on was better in 4, off in 2, equal in 2. Marks below ✓: 1 with the brief, 4 without. On one sample, that leans toward the brief.
+
+**Patterns across both conditions (the grader's):**
+- **The failure left is confirming what Coherence holds, not asking outright:** "Shall we use the 45 minutes…", "Is anything genuinely time-sensitive", "What's the thesis looking like".
+- **Direct asks were acted on cleanly in all 16:** the tick reopened without asking, the dump filed silently, exactly what was released dropped, the correction kept in their words.
+- **She often waits a turn before picking.** In the brain dump and the low day she asked "Anything else… before we pick", which run 4 already marked ~.
+- **Memory writes need judgement about the moment.** A revised belief after "I just hate phone calls" is the understanding layer working. `remember` mid-reflection is what `lumi.md` §12 says to leave alone.
+- **In two weeks away, neither condition named the time away or tallied what piled up.**
+
+**Harness changes from this grading:**
+- The body-double sign now also catches a confirmation of what's held, or a session not started on the first turn.
+- The reflective scenario has a sign for any memory write.
+- A reply with no text is a sign. "Yep" during a session got an empty reply, with the brief in this run and without it in the re-run that tested the sign, so it isn't about the brief. How the app shows an empty reply is being checked separately.
+- Signs that held read *not seen*.
+- `not-the-call` re-sent `reshape_today` with the same pick on the refusal turn. That's harmless, but it adds noise to the events log.
+
 ---
 
 ## Runs
