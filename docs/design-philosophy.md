@@ -21,7 +21,7 @@ In order of permission:
 3. **Micro-interactions.** A chip that nudges 1px, text that streams, a check-in that appears and waits. Quiet, physical.
 4. **Lumi himself.** Small, sparing, expressive through eyes and posture. A circular avatar beside his lines; never a full-body illustration in the working UI.
 
-Decorative imagery is not on this list. **One painted surface (2026-09-12):** Home is set in a painted room — the painting is the *place* the book is read in, not an illustration inside it. It sits behind everything, dimmed so the type leads, and no other page gets one; if it ever competes with the copy, dim it further before touching the copy. **Printer's ornaments are not imagery:** the diamond, hedera and asterism, hairline rules, crossed corners and plate frames are part of the typography, the way a chapter head's fleuron is. They are drawn in brass at hairline weight and rationed to one flourish per surface (`design-system.md` § Ornaments).
+Decorative imagery is not on this list. **Painted places, not pictures (2026-09-12):** Home is set in a painted room (a lamplit study) and Today in a painted greenhouse (a daylit garden) — each painting is the *place* the book is read in, not an illustration inside it. It sits behind everything, dimmed or veiled so the type leads, and a page gets one only when it is painted one; if it ever competes with the copy, dim it further before touching the copy. **Printer's ornaments are not imagery:** the diamond, hedera and asterism, hairline rules, crossed corners and plate frames are part of the typography, the way a chapter head's fleuron is. They are drawn in brass at hairline weight and rationed to one flourish per surface (`design-system.md` § Ornaments).
 
 ## 3. Principles
 

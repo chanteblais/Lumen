@@ -31,12 +31,12 @@ export function CapacityPrompt() {
   };
 
   if (state === "answering") {
-    return <p className="font-display text-[22px] italic leading-[1.3] text-ink-mute">Shaping the day around that…</p>;
+    return <p className="today-plate font-display text-[22px] italic leading-[1.3] text-ink-mute">Shaping the day around that…</p>;
   }
 
   const busy = state === "skipping";
   return (
-    <section aria-label="Capacity" className="flex flex-wrap items-center gap-x-6 gap-y-3">
+    <section aria-label="Capacity" className="today-plate flex flex-wrap items-center gap-x-6 gap-y-3">
       <p className="font-display text-[22px] leading-[1.3] text-ink-soft">{state === "failed" ? "That didn't take. Once more?" : "How much have we got today?"}</p>
       <div className="flex flex-wrap items-center gap-2">
         {ANSWERS.map((a) => (

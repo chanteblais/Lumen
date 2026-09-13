@@ -28,9 +28,9 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 **Gutter:** `.main` carries a soft inset shadow on its left edge where the page meets the spine. Off on phones.
 
-**Dark mode:** none in V1. The book is ivory — with one exception, below.
+**Dark mode:** none in V1. The book is ivory — with two exceptions, below.
 
-**Home: the room** (2026-09-12). Home is the one page not set on ivory: it is set *in* a painted room (`art/scenery/home-background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
+**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home-background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
 
 | Token | By lantern light | Usage on Home |
 |---|---|---|
@@ -42,7 +42,19 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Rule / strong | parchment at .16 / .40 | Every hairline |
 | Shadow | two black layers (.25 / .35) | Plates and the scroll |
 
-The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Every other page stays ivory; the room is not a theme, it is where Home is.
+The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today has a painting of its own (below); Lists, Insights and Settings stay ivory. The room is not a theme, it is where Home is.
+
+**Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today-background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) — late light through the glass, a raised bed at its heart. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped under `.shell:has(.today-scene)`) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory** and what sat on bare paper lies on plates of it over the painting, the garden showing in the gaps. Its `::after` is a warm veil (`rgba(44,30,16,…)`), heaviest under the panel and along the top, clear over the middle of the room.
+
+| Piece | In the garden |
+|---|---|
+| Plates (`.today-plate`, and `.card` on Today) | Card at .97 over a 20px blur (Right now's `.card` solid — the one thing, nothing of the room through it), a hairline at .10, a deeper two-layer shadow (.08 / .24) — the opening (running head, portrait, greeting, day line), the capacity line, Right now, After that, Later |
+| `.today-aside` | *Everything else can wait.* on a slip of paper (.82, no border), sized to its line |
+| Sidebar | A plate of paper at .84 over a 16px blur, the garden faintly through it; frame and crossed corners unchanged |
+| Top bar | Set straight on the painting: parchment type (`#f1e6cf`) with a small dark text-shadow, the double rule in parchment |
+| Grain / foxing / gutter | Grain at .14; foxing and the gutter shadow off |
+
+Not carried over from the mockup (`art/mockups/today-mockup.png`): the filter tabs, the plant per category, the *In Season* panel with step counts, the *Plant something new* button and the quote plate — `decisions.md` 2026-09-12 · Today, set in the garden.
 
 ---
 
@@ -90,6 +102,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
 | `.icon-btn` | 44px round icon button on paper-deep |
 | `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it |
+| `.today-scene` / `.today-plate` / `.today-aside` | Today only: the painted greenhouse behind the shell with its veil, and the paper plates the page's parts lie on (see Color Palette → Today: the garden) |
 | `.home-scene` | Home only: the painted room, fixed behind the shell, with its dimming `::after`; its presence (`.shell:has(.home-scene)`) re-lights every token on the page (see Color Palette → Home: the room) |
 | `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on |
 | `.send` | 64px forest circle; disabled at 45% opacity |

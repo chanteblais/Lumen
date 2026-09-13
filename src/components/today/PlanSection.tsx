@@ -60,7 +60,7 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
       </section>
 
       {afterThat.length > 0 && (
-        <section aria-label="After that">
+        <section className="today-plate" aria-label="After that">
           <div className="mb-3 flex items-baseline gap-4">
             <p className="label">After that</p>
             <div className="rule flex-1" />
@@ -79,7 +79,7 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
       )}
 
       {later.length > 0 && (
-        <section aria-label="Later">
+        <section className="today-plate" aria-label="Later">
           <div className="mb-3 flex items-baseline gap-4">
             <p className="label">Later</p>
             <div className="rule flex-1" />
@@ -97,7 +97,7 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
       )}
 
       {plan.restCanWait && (
-        <p className="font-display text-[20px] italic text-ink-mute">{plan.closingLine ?? "Everything else can wait."}</p>
+        <p className="today-aside self-start font-display text-[20px] italic text-ink-mute">{plan.closingLine ?? "Everything else can wait."}</p>
       )}
     </div>
   );

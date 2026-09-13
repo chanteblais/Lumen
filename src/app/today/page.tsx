@@ -19,19 +19,24 @@ export default async function TodayPage() {
 
   return (
     <div className="mx-auto w-full max-w-[880px] px-1 pb-14">
-      <p className="label">Today</p>
-      <div className="my-4">
-        <Divider />
-      </div>
-      <div className="mb-8 flex items-start gap-6">
-        <LumiAvatar size={48} className="medallion mt-1" />
-        <div className="min-w-0">
-          <h1 className="font-display text-[34px] leading-[1.2] text-ink sm:text-[40px]">
-            {hello}, {user.displayName}.
-          </h1>
-          <Suspense fallback={<p className="mt-2 font-display text-[20px] text-ink-mute">Working out the shape of today…</p>}>
-            <PlanSection user={user} part="dayline" />
-          </Suspense>
+      {/* Today is set in the garden: the painting fills the viewport behind the shell
+          (globals.css → Today: the garden); the page's parts lie over it on plates of paper. */}
+      <div className="today-scene" aria-hidden />
+      <div className="today-plate today-opening mb-8">
+        <p className="label">Today</p>
+        <div className="my-4">
+          <Divider />
+        </div>
+        <div className="flex items-start gap-6">
+          <LumiAvatar size={48} className="medallion mt-1" />
+          <div className="min-w-0">
+            <h1 className="font-display text-[34px] leading-[1.2] text-ink sm:text-[40px]">
+              {hello}, {user.displayName}.
+            </h1>
+            <Suspense fallback={<p className="mt-2 font-display text-[20px] text-ink-mute">Working out the shape of today…</p>}>
+              <PlanSection user={user} part="dayline" />
+            </Suspense>
+          </div>
         </div>
       </div>
 
