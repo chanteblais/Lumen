@@ -2,9 +2,10 @@
 
     python3 art/prototypes/lumi-walk/split.py
 
-Five drawings at the rooms' angle, named by the way she faces on the page: sw (art/lumi/lumi-iso-front.png),
-nw (lumi-iso-back.png), s, w and n (lumi-iso-s/w/n.png). The page mirrors sw, w and nw for se, e and ne, so
-eight directions cost five drawings. A facing whose drawing isn't there yet is skipped.
+Ten drawings at the rooms' angle, named by the way she faces on the page: sw (art/lumi/lumi-iso-front.png),
+nw (lumi-iso-back.png), s, w and n (lumi-iso-s/w/n.png), and the five she turns through — ssw, wsw, wbw, wnw,
+nnw. The page mirrors every one that is neither facing you nor facing away, so eighteen ring positions cost ten
+drawings. A facing whose drawing isn't there yet is skipped.
 
 For each facing it writes, into parts/:
   <facing>-body.png     the figure without what is below the hem: hood, face, cloak, the coat's slit, hands
@@ -15,7 +16,9 @@ leg as a hip under the cloak, an ankle at its boot, a width and a colour, and th
 other every frame — so however the body bobs and the boots step, a leg is never cut off and a boot never floats
 (Chanté, 2026-09-13: "her feet are walking nicely, but they appear to be floating beneath her. Same with her body
 beneath the slit of her coat"). rig-walk.json also holds the feet's ground contacts, the hem, the head's weight
-rows, and for faces the eyes (for blinks) and the face's black. debug-split.png shows each facing whole (body,
+rows, and for a view with a face everything the page needs to draw the eyes in code over the painted ones — the
+eyes' ellipses, the face's black, the face's outline to clip them to, its width at the eye rows (a glance shifts
+them a share of it), the painted eye's colour from the middle out and the halo's falloff. debug-split.png shows each facing whole (body,
 drawn legs and boots), tinted by piece, and pulled apart (the boots a stride apart, the body lifted, the legs
 following), so a gap shows before any page does.
 
@@ -43,6 +46,15 @@ FIG_H = 440          # hood top to feet in the pieces, px
 LOW = 0.55           # nothing above this share of her height (from the top) is below the hem
 ANKLE = 0.035        # a foot piece is its boot and this share of her height above the boot
 BRIDGE = 0.07        # the hem is bridged across gaps (the coat's slit) up to this share of her height wide
+FACE_STEP = 6        # the face outline is sampled every this many rows (the page clips the drawn eyes to it)
+# The painted eye read at these radii (1.0 is the measured eye's edge) and the halo around it: the radii and the
+# glow's alpha falloff are the pieces test's (art/prototypes/lumi-pieces/rig.json, measured ring by ring on the hub);
+# the colours at each radius are measured here, on each drawing. The two agree to a point or two — same character.
+EYE_STOPS = [0.0, 0.74, 0.84, 0.92, 0.985]
+GLOW_RGB = [240, 120, 50]
+GLOW_STOPS = [[1.05, 0.41], [1.15, 0.34], [1.25, 0.248], [1.35, 0.178], [1.45, 0.123], [1.55, 0.085], [1.65, 0.061],
+              [1.75, 0.043], [1.85, 0.03], [1.95, 0.022], [2.05, 0.015], [2.15, 0.013], [2.25, 0.009], [2.35, 0.008],
+              [2.45, 0.0]]
 # `keep`: boxes (x0, y0, x1, y1) in the matte's full-resolution pixels that stay on the body whatever they touch.
 # `chin`, `neck`: where the head's weight starts to fall and where it reaches zero, as shares of her height from
 # the hood top — the hood's lower edge and the shoulders below it, read off debug-split.png.
@@ -55,6 +67,9 @@ FACINGS = [
     # the in-betweens she turns through (sixteen facings, 22.5° apart)
     dict(name='ssw', src='art/lumi/lumi-iso-ssw.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='wsw', src='art/lumi/lumi-iso-wsw.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    # the seam between side-on and the first view from behind: the bow and medallions are a sliver here and gone in
+    # wnw, so the morph has something to shrink rather than dissolve. A back-ish view: no eye, the hood edge-on.
+    dict(name='wbw', src='art/lumi/lumi-iso-wbw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
     dict(name='wnw', src='art/lumi/lumi-iso-wnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
     dict(name='nnw', src='art/lumi/lumi-iso-nnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
 ]
@@ -170,6 +185,39 @@ def split(f):
             eyes.append(dict(cx=ex.mean(), cy=ey.mean(), rx=2.2 * ex.std(), ry=2.2 * ey.std()))
         info['eyes'] = sorted(eyes, key=lambda e: e['cx'])
         info['faceBlack'] = np.median(rgb[face & dark], axis=0).round().astype(int).tolist()
+        # The page draws the eyes in code over the painted ones (the pieces test's way), so it needs the face to clip
+        # them to, the face's width at the eye rows for a glance, and the painted eye's colour from the middle out.
+        # The outline: the face's own left and right edge every FACE_STEP rows, down one side and back up the other.
+        fys = np.where(face.any(axis=1))[0]
+        rows_f = list(range(int(fys.min()), int(fys.max()) + 1, FACE_STEP))
+        if rows_f[-1] != int(fys.max()):
+            rows_f.append(int(fys.max()))
+        fcx = float(np.median(np.where(face)[1]))
+        left, right = [], []
+        for y in rows_f:
+            xs_f = np.where(face[y])[0]
+            if not len(xs_f):
+                continue
+            # only the run of dark that holds the face's own middle: low down the hood's dark meets the collar's
+            # shadow in a second run, and taking the row's min and max there folded the outline back on itself
+            cuts = np.where(np.diff(xs_f) > 1)[0]
+            runs = np.split(xs_f, cuts + 1)
+            run = min(runs, key=lambda q: abs((q[0] + q[-1]) / 2 - fcx))
+            left.append((float(run[0]), float(y)))
+            right.append((float(run[-1]), float(y)))
+        info['facePoly'] = left + right[::-1]
+        eye_rows = face[int(min(e['cy'] for e in eyes)):int(max(e['cy'] for e in eyes)) + 1]
+        info['faceW'] = float(np.median([np.ptp(np.where(r)[0]) for r in eye_rows if r.any()]))
+        # the eye's colour at the pieces test's radii, measured on this drawing (they agree to a point or two — the
+        # same character, the same palette — so the shape of the profile and the glow's falloff are the pieces')
+        e0 = info['eyes'][0]
+        rho = np.sqrt(((X - e0['cx']) / max(1e-6, e0['rx'])) ** 2 + ((Y - e0['cy']) / max(1e-6, e0['ry'])) ** 2)
+        stops = []
+        for r0 in EYE_STOPS:
+            band = (alpha > 200) & (rho >= max(0.0, r0 - 0.06)) & (rho < r0 + 0.06)
+            col = np.median(rgb[band], axis=0) if band.sum() > 6 else np.array(info['faceBlack'])
+            stops.append([r0, col.round().astype(int).tolist()])
+        info['eyeBody'] = stops
     info['chin'] = top + f['chin'] * fh
     info['neck'] = top + f['neck'] * fh
     cols = np.where(raw > 0)[0]
@@ -191,6 +239,10 @@ def split(f):
     if f['eyes']:
         rig['eyes'] = [dict(cx=S(e['cx']), cy=S(e['cy']), rx=round(e['rx'] * s, 2), ry=round(e['ry'] * s, 2)) for e in info['eyes']]
         rig['faceBlack'] = info['faceBlack']
+        rig['facePoly'] = [[S(px), S(py)] for px, py in info['facePoly']]
+        rig['faceW'] = round(info['faceW'] * s, 2)
+        rig['eyeBody'] = info['eyeBody']
+        rig['eyeGlow'] = dict(colour=GLOW_RGB, stops=GLOW_STOPS)
     print(f['name'], json.dumps({k: v for k, v in rig.items() if k not in ('eyes',)}))
     return rig, scaled
 
