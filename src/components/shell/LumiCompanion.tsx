@@ -10,19 +10,16 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   wave: 120, // a quick gesture: 24 frames ≈ 3 s, the pace Chanté checked the sheet at
-  // The foot row's four orders, at the pace Chanté chose the foot sheet at ("gif 2 feels smoother"): ~2–4 s each.
-  glance: 160,
-  scuff: 160,
-  foot: 160,
-  dawdle: 160,
+  glance: 160, // the pace Chanté chose the sheet at ("gif 2 feels smoother"): 13 frames ≈ 2 s
 };
 /**
  * Loops mixed into the breathing now and then, one pass at a time, never the
- * same one twice running. All four are orders over the one foot sheet
- * (2026-09-13) — a look at the ground, one scuff, two, and a dawdle — so a
- * single drawing gives her idle four different breaks.
+ * same one twice running when there are several. Since 2026-09-13 the glance:
+ * her eyes lower to the ground and come back up. (The scuffs cut from the same
+ * sheet were dropped on review: the rest pose's boot stayed under the moving
+ * one.)
  */
-const VARIATIONS: LumiLoop[] = ["glance", "scuff", "foot", "dawdle"];
+const VARIATIONS: LumiLoop[] = ["glance"];
 /** Loops played in answer to something, never on the idle schedule. */
 const REACTIONS: LumiLoop[] = ["wave"];
 /**
@@ -81,8 +78,8 @@ const DEBUG = process.env.NODE_ENV === "development";
  * - a wave when you arrive — the page opened, or its tab shown again, after
  *   thirty minutes or more with no tab of the app visible (and on a first
  *   visit in this browser) — once, at the next rest frame, then back to breathing
- * - every 20–45 s one pass of a variation, never the same one twice running:
- *   a glance at the ground, one scuff of her boot, two, or a dawdle
+ * - every 20–45 s one pass of a variation: the glance, her eyes lowering to
+ *   the ground and back (never the same one twice running, once there are several)
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
  * Every loop is one drawing and hands over at the same rest cell.
@@ -133,14 +130,25 @@ export function LumiCompanion() {
       show(current, f);
       after(FRAME_MS[current], tick);
     };
-    const scheduleVariation = () =>
-      VARIATIONS.length &&
-      after(between(20000, 45000), () => {
-        if (pending) return; // a cue or a reaction is already waiting; it plays instead
-        const choices = VARIATIONS.filter((loop) => loop !== last);
+    // One variation timer at a time; a finished variation starts the next.
+    let nextVariation: ReturnType<typeof setTimeout> | undefined;
+    const scheduleVariation = () => {
+      if (!VARIATIONS.length) return;
+      clearTimeout(nextVariation);
+      nextVariation = setTimeout(() => {
+        // A cue or a reaction is already waiting: it plays, and the variation waits another turn. (Returning
+        // without rescheduling stopped the variations for good whenever the waiting loop was a reaction.)
+        if (pending) {
+          scheduleVariation();
+          return;
+        }
+        // Never the same one twice running, unless there is only one — the filter would leave nothing to play.
+        const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
-      });
+      }, between(20000, 45000));
+      timers.push(nextVariation);
+    };
 
     // Arriving: away long enough, and she waves.
     const arrive = () => {

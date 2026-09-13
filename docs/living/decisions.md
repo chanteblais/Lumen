@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-13 · Lumi glances at the ground now and then
+
+**Decision.** While nothing else is happening, every 20–45 seconds Lumi's eyes lower to the ground for about two seconds and come back up, then she goes on breathing. It is her one idle variation: only her eyes move, and it stops under reduced motion like the rest of her idle life.
+**Rationale.** Chanté asked for movement that breaks up the idle pose without feeling repetitive, and kept the glance on review ("only glance really worked"). It stays within the wave entry's rule that motion on a timer stays below what pulls the eye: nothing but the eyes moves, slowly, and it asks nothing of the user. *(The fit with that rule is Claude's reading. The 20–45 s pace is what Chanté reviewed; whether it should be rarer is still open — `art-direction.md` §9, question 4.)*
+**Implications.**
+- The boot scuffs drawn with it were dropped. A future idle variation meets the same bar; a movement of the body is more likely a reaction to something than a timer.
+- Nothing is asked of the user or stored about them; it is animation state in the browser.
+
+**Principle.** V§7, EP§11.
+**Replaces.** Breath and blink as the whole of her idle life ([engineering log](../decisions.md), same date).
+
 ## 2026-09-13 · Lists is called the Library, and for now it is only its room
 
 **Decision.** The nav item and page *Lists* are renamed **Library** (`/library`; `/lists` redirects), set in a painted reading room with Lumi standing in it. The list view came off the page the same day: nothing sits on the painting. The lists themselves are unchanged — Lumi files into them, Today draws its path from them, and her context reads them — but no page shows them; filing, ticking and correcting happen in conversation.

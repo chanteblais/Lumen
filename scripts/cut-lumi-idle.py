@@ -44,17 +44,16 @@ cast and redrawn in the warm tone the cream sheets had, and the lantern's
 light on the ground — a warm blend of the ground and an orange light — is
 lifted off as a translucent warm glow, so on the paper she lights it a little.
 
-The foot play (2026-09-13, from art/lumi/lumi-foot-play.png, generated from
-art/prompts/lumi-foot-play.md) is another generation of the same drawing, so
-only two parts are taken from it onto the wave's first cell: the eyes (lowered
-to the ground and held, one cell's eyes through the held phase) and her right
-boot (on the viewer's left) where it lifts and scuffs. Its cells are aligned on
-the whole hood, the lantern side and the other boot first; everything else is
-`rest`, so it hands over like the wave. LumiSprite plays the row four ways.
+The glance (2026-09-13) takes only the eyes of art/lumi/lumi-foot-play.png
+(generated from art/prompts/lumi-foot-play.md), another generation of the same
+drawing: three of its cells, aligned on the whole hood, the lantern side and
+the other boot, give their eyes to the wave's first cell — two steps down, then
+down. Everything else is `rest`, so it hands over like the wave. The sheet's
+boot scuffs were cut too and dropped on review (the glance section says why).
 
 Output: public/lumi-idle.webp is 24 columns × 5 rows of 160×208 cells: breath
 (nine cells) with open / half-shut / shut eyes in rows 0–2, the wave (24
-cells, eyes open) in row 3, the foot play (24 cells, eyes open) in row 4;
+cells, eyes open) in row 3, the glance (4 cells, eyes open) in row 4;
 public/lumi-heads.png is one row of six 176px squares, the hood 172px wide with
 its bottom on row 161 like the earlier cut.
 """
@@ -426,17 +425,15 @@ def monotone_lower(cells, order, start, lifting):
 print('lower cloak on the rise, px² from rest:', monotone_lower(wave, WAVE_RISE, rest, lifting=True))
 print('lower cloak on the fall, px² from rest:', monotone_lower(wave, WAVE_FALL, donor, lifting=False))
 
-# The foot play (2026-09-13, generated from art/prompts/lumi-foot-play.md, approved by Chanté): 24 in-betweens of
-# another generation of the drawing — rest, the eyes lowering to the ground, her right boot (on the viewer's left)
-# lifting and scuffing, the eyes rising, rest. Only the eyes and the moving boot are taken from it, onto the wave's
-# first cell; everything else is `rest`, so the loop hands over to the breath and the wave without a swap.
-FOOT_SRC = os.path.join(ROOT, 'art', 'lumi', 'lumi-foot-play.png')
-FOOT_FRAMES = 24
-FOOT_REST = [0, 1, *range(18, 24)]   # the rest pose, exactly (the sheet's eyes are back up from cell 18)
-FOOT_EYES_DOWN = range(4, 16)        # the eyes down and still: all cell 5's
-FOOT_EYES_UP = {17: 16}              # the look up was drawn twice alike: one cell's eyes
-FOOT_PLAY = range(8, 16)             # the boot moves only here; elsewhere it is rest's
-BOOT_TOP = FEET_Y - 34               # the boots and the hem's lower edge lie below this row
+# The glance (2026-09-13): her eyes lower to the ground, from art/lumi/lumi-foot-play.png (generated from
+# art/prompts/lumi-foot-play.md, approved by Chanté). Only the eyes are taken from it, onto the wave's first cell,
+# after aligning its cells on everything that holds; everything else is `rest`, so the glance hands over to the
+# breath and the wave without a swap. The sheet also lifts and scuffs a boot, and those cells were cut the same way —
+# only the boot pixels that differed from `rest`, feathered in — but that never erased the rest pose's boot, so the
+# moving boot grew out of it ("a foot's growing out of her foot", Chanté); dropped on review. A part that moves has
+# to leave where it was: the whole region from the source cell, not the difference.
+GLANCE_SRC = os.path.join(ROOT, 'art', 'lumi', 'lumi-foot-play.png')
+GLANCE_EYES = [2, 3, 5]              # the sheet's cells whose eyes the row takes: two steps down, then down (row 0)
 
 
 def eye_mask(cell):
@@ -460,46 +457,19 @@ def with_eyes(base, src):
     return straight(w * premul(src) + (1 - w) * premul(base))
 
 
-def with_boot(base, src):
-    """`base` with `src`'s moving boot: where the two disagree about what is dark or opaque, below BOOT_TOP on her
-    free side — blobs only, dilated to take the boot's edge and where it was, feathered."""
-    dark = lambda c: (c[:, :, :3].sum(axis=2) < 200) & (c[:, :, 3] > 200)
-    opaque = lambda c: c[:, :, 3] > 127
-    boot = (dark(src) ^ dark(base)) | (opaque(src) ^ opaque(base))
-    boot[:BOOT_TOP] = False
-    boot[:, col0:] = False
-    boot = ndi.binary_opening(boot, iterations=1)
-    lab, k = ndi.label(boot)
-    sizes = ndi.sum(boot, lab, range(1, k + 1)) if k else []
-    boot = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 20])
-    m = ndi.binary_fill_holes(ndi.binary_dilation(boot, iterations=3))
-    w = ndi.gaussian_filter(m.astype(float), 1.2)[:, :, None]
-    return straight(w * premul(src) + (1 - w) * premul(base))
-
-
-foot_sheet = Sheet(FOOT_SRC, GROUND_BOX)
-foot_boxes = [(r, b) for r, (y0, y1) in enumerate(foot_sheet.rows()) for b in foot_sheet.frames(y0, y1, COLS)]
-assert len(foot_boxes) == FOOT_FRAMES, len(foot_boxes)
-foot_matted = [(r, *foot_sheet.matte(b)) for r, b in foot_boxes]
-foot_scale = {r: FIGURE_H / np.median([height(m) for rr, _, m in foot_matted if rr == r]) for r in sorted({r for r, _, _ in foot_matted})}
-print('foot row scales', {r: round(float(s), 3) for r, s in foot_scale.items()})
-foot_scaled = [scale(rgba, main, foot_scale[r]) for r, rgba, main in foot_matted]
-drawn = [place(rgba, main, W, H, FEET_Y, cx=hood_right(main) - anchor) for rgba, main in foot_scaled]
-held_foot = np.zeros((H, W))
-held_foot[:head_rows] = 1          # the whole hood: it holds in this sheet, only the eyes move inside it
-held_foot[head_rows:, col0:] = 1   # the ribbon's right side, the lantern and the other boot
-foot_aligned = [align(c, rest, held_foot) for c in drawn]
-print('foot overlap with the rest cell on the held parts, after aligning:', [round(float(o), 3) for _, o in foot_aligned])
-drawn = [c for c, _ in foot_aligned]
-foot = []
-for i in range(FOOT_FRAMES):
-    if i in FOOT_REST:
-        foot.append(rest)
-        continue
-    cell = with_eyes(rest, drawn[5] if i in FOOT_EYES_DOWN else drawn[FOOT_EYES_UP.get(i, i)])
-    if i in FOOT_PLAY:
-        cell = with_boot(cell, drawn[i])
-    foot.append(cell)
+glance_sheet = Sheet(GLANCE_SRC, GROUND_BOX)
+glance_row = glance_sheet.rows()[0]
+glance_matted = [glance_sheet.matte(b) for b in glance_sheet.frames(*glance_row, COLS)]
+glance_scale = FIGURE_H / np.median([height(m) for _, m in glance_matted])
+print('glance row scale', round(float(glance_scale), 3))
+drawn = [scale(rgba, main, glance_scale) for rgba, main in (glance_matted[i] for i in GLANCE_EYES)]
+drawn = [place(rgba, main, W, H, FEET_Y, cx=hood_right(main) - anchor) for rgba, main in drawn]
+held_glance = np.zeros((H, W))
+held_glance[:head_rows] = 1          # the whole hood: it holds in this sheet, only the eyes move inside it
+held_glance[head_rows:, col0:] = 1   # the ribbon's right side, the lantern and the other boot
+glance_aligned = [align(c, rest, held_glance) for c in drawn]
+print('glance overlap with the rest cell on the held parts, after aligning:', [round(float(o), 3) for _, o in glance_aligned])
+glance = [rest] + [with_eyes(rest, c) for c, _ in glance_aligned]
 
 # The breath: the wave's first cell, stretched, so the two loops are one drawing.
 rises = [BREATH_RISE * (1 - np.cos(2 * np.pi * i / BREATH_FRAMES)) / 2 for i in range(BREATH_FRAMES)]
@@ -512,7 +482,7 @@ lids = lambda cell, keep: cell if keep is None else eyes_shut(cell, keep)
 eye_rows = [
     [[breathe(lids(rest, keep), rise) for rise in rises] for keep in KEEP],
     [wave],
-    [foot],
+    [glance],
 ]
 body = np.zeros((H * sum(len(rows) for rows in eye_rows), W * BODY_COLS, 4), dtype=np.uint8)
 for r, cells in enumerate(row for rows in eye_rows for row in rows):

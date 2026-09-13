@@ -175,6 +175,18 @@ for i, c in enumerate(cells):
     coverage.append(cov)
     print(f'{i:5d} {c:4d}  ' + '  '.join(f'{p:>15}' for p in parts) + '   ' + ' '.join(f'{k} {v}' for k, v in cov.items()))
 
+# A part that moves keeps its size. The foot play's boot grew to 1.25× its rest coverage because the cut drew the
+# lifted boot over the rest one instead of moving it — read as motion, sent to review, "a foot growing out of her
+# foot". The wave's arm and cloak stay within 0.97–1.12×, the glance's eyes within 0.92–1.15×.
+warned = []
+for n in sorted(moving & set(names)):
+    vals = [cv[n] for cv in coverage]
+    lo, hi = min(vals) / max(vals[0], 1e-6), max(vals) / max(vals[0], 1e-6)
+    if hi > 1.2 or lo < 0.8:
+        warned.append(n)
+        print(f'LOOK at {n} at 3×: its coverage runs {lo:.2f}–{hi:.2f}× the first cell\'s. A part that moves keeps its size; '
+              'one that grows may be drawn over the rest pose instead of replacing it.')
+
 for span, direction, region in monotone:
     a, b = (int(v) for v in span.split('-'))
     vals = [measure(cell(cells[i]))[region].sum() for i in range(a, b + 1)]

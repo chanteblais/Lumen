@@ -13,22 +13,21 @@ import type { CSSProperties } from "react";
  *   rows 0–2 the nine-cell breath (the wave sheet's first cell stretched up to
  *   2px at the hood top with the feet held) with open / half-shut / shut eyes;
  *   row 3 the 24-cell wave (`art/lumi/lumi-wave.png`, 2026-09-13), eyes open;
- *   row 4 the 24-cell foot play (`art/lumi/lumi-foot-play.png`, 2026-09-13),
- *   eyes open — the wave's first cell with only the eyes and her right boot
- *   taken from that sheet. A blink during a row without eye rows shows the open
- *   cell. Every row is one drawing, so loops hand over at the rest cell without
- *   a swap.
+ *   row 4 the four-cell glance (2026-09-13): the wave's first cell with the
+ *   eyes of `art/lumi/lumi-foot-play.png` lowering to the ground. A blink
+ *   during a row without eye rows shows the open cell. Every row is one
+ *   drawing, so loops hand over at the rest cell without a swap.
  *
  * A loop is an order over one row's cells (`LUMI_LOOP_ROW`, `LUMI_LOOP_CELLS`),
- * so one row can play several ways; every loop starts at the rest cell and
+ * so one row could play several ways; every loop starts at the rest cell and
  * ends at or next to it. A new state is a new cell or a new order, never a new
  * component.
  */
 export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
 export const LUMI_EYES = ["open", "half", "closed"] as const;
 /** The body sheet's rows of drawings, top to bottom. */
-export const LUMI_ROWS = ["breath", "wave", "foot"] as const;
-export const LUMI_LOOPS = ["breath", "wave", "glance", "scuff", "foot", "dawdle"] as const;
+export const LUMI_ROWS = ["breath", "wave", "glance"] as const;
+export const LUMI_LOOPS = ["breath", "wave", "glance"] as const;
 /** Columns in the body sheet — the most cells in a row. */
 export const LUMI_IDLE_FRAMES = 24;
 
@@ -44,19 +43,9 @@ const hold = (cell: number, n: number) => Array.from({ length: n }, () => cell);
 export const LUMI_LOOP_ROW: Record<LumiLoop, LumiRow> = {
   breath: "breath",
   wave: "wave",
-  glance: "foot",
-  scuff: "foot",
-  foot: "foot",
-  dawdle: "foot",
+  glance: "glance",
 };
 
-// The foot row: rest 0–1 · the eyes lower 2–3 · eyes down and still 4–7 · the boot lifts and scuffs 8–15 (out at
-// 10 and 13) · the sheet's own look up 16–17 · rest 18–23. The look up replays the look down (3, then 2): the drawn
-// one rose half way and held for two frames. The loop ends next to rest; the breath takes over at the rest cell.
-const DOWN = [0, 2, 3];
-const UP = [3, 2];
-const SCUFF = [8, 9, 10, 11];
-const SCUFF_AGAIN = [12, 13, 14, 15];
 /**
  * Each loop as the order its row's cells play in. A cell may play more than
  * once; shorter rows leave the sheet's trailing columns empty.
@@ -64,10 +53,9 @@ const SCUFF_AGAIN = [12, 13, 14, 15];
 export const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
   breath: run(9),
   wave: run(24), // rest 0–1 · the hand rises 2–7 · two waves 8–15 · it lowers 16–21 · rest 22–23
-  glance: [...DOWN, ...hold(4, 8), ...UP], // a look at the ground, nothing more
-  scuff: [...DOWN, ...hold(4, 2), ...SCUFF, ...hold(4, 2), ...UP],
-  foot: [...DOWN, ...hold(4, 2), ...SCUFF, ...SCUFF_AGAIN, ...hold(4, 2), ...UP],
-  dawdle: [...DOWN, ...hold(4, 2), ...SCUFF, ...SCUFF_AGAIN, ...hold(4, 3), ...SCUFF, ...hold(4, 3), ...UP],
+  // rest 0 · the eyes lower 1–2 · eyes on the ground 3, held · back up by the same steps (the sheet's own look up rose
+  // half way and held for two frames); it ends next to rest and the breath takes over at the rest cell
+  glance: [0, 1, 2, ...hold(3, 8), 2, 1],
 };
 /** Frames in each loop. */
 export const LUMI_LOOP_FRAMES = Object.fromEntries(LUMI_LOOPS.map((loop) => [loop, LUMI_LOOP_CELLS[loop].length])) as Record<LumiLoop, number>;
@@ -75,7 +63,7 @@ export const LUMI_LOOP_FRAMES = Object.fromEntries(LUMI_LOOPS.map((loop) => [loo
 export const LUMI_ROW_EYES: Record<LumiRow, readonly LumiEyes[]> = {
   breath: LUMI_EYES,
   wave: ["open"],
-  foot: ["open"],
+  glance: ["open"],
 };
 const eyeRows = (rows: readonly LumiRow[]) => rows.reduce((n, row) => n + LUMI_ROW_EYES[row].length, 0);
 
