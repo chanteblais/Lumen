@@ -682,12 +682,37 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   font-size: 21px;
   line-height: 1.3;
   color: var(--ink);
-  padding: 6px 6px;
-  min-height: 40px;
-  max-height: 120px;
+  padding: 4px 6px;
+  min-height: 36px; /* one line at rest; grows with what you write, then scrolls */
+  max-height: 168px;
+  overflow-y: auto;
 }
 .companion-form textarea::placeholder { color: var(--ink-mute); }
-.companion-send { width: 40px; height: 40px; }
+/* Its own small send, not the chat's `.send` (which came later in the file and
+   won, at 54px, making the bubble tall). A 34px forest medallion — parchment
+   arrow, brass hairline set off the plate — and at rest, with nothing to send,
+   a parchment disc with a brass hairline rather than a greyed-out one. The hit
+   area reaches 44px. */
+.companion-send {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 1px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #f3efe7;
+  border: 1px solid var(--forest);
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass-soft);
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.companion-send::before { content: ""; position: absolute; inset: -5px; border-radius: inherit; }
+.companion-send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass); }
+.companion-send:disabled { background: var(--paper-deep); color: var(--brass); border-color: var(--brass-soft); box-shadow: none; cursor: default; }
 
 /* ---------- Chat surfaces ---------- */
 .card {

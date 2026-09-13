@@ -46,7 +46,7 @@ export function CompanionBubble({ onClose, onSend }: Props) {
     const el = input.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
   };
 
   // Escape or a click anywhere else closes; the companion button toggles itself.
@@ -137,8 +137,8 @@ export function CompanionBubble({ onClose, onSend }: Props) {
             }
           }}
         />
-        <button type="submit" className="send companion-send" aria-label="Send" disabled={value.trim().length === 0 || busy}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <button type="submit" className="companion-send" aria-label="Send" disabled={value.trim().length === 0 || busy}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 19V5M6 11l6-6 6 6" />
           </svg>
         </button>
