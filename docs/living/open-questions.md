@@ -102,7 +102,9 @@ Related: [Garden](../product/today-garden.md).
 
 ## 17. When may Lumi mention a number?
 
-**Status: Open.** No burden-inducing tally of unfinished things. Whether a contextual count or elapsed gap usefully explains a pattern remains a behavioural choice. Do not silently loosen the current persona while adopting product examples.
+**Status: Decided for time away (2026-09-13); open for counts inside patterns.** No burden-inducing tally of unfinished things. **Time away:** in conversation, Lumi may name how long someone has been away when it helps them get their bearings, never so the absence sounds owed ([decision](decisions.md)). Pages still show neither the gap nor what piled up. **Still open:** whether a contextual count usefully explains a pattern ("you've moved this three times"). Don't loosen the persona for that while adopting product examples.
+
+**How the time-away half was settled.** The persona said never say how long it's been. The model strategy's own example names the gap: *"You disappeared for four days. We don't need to reconstruct the four days."* In voice eval run 5 Lumi echoed the user's "two weeks" while declining to reconstruct them, which read as the documents disagreeing rather than as a bad reply. Review feedback Chanté relayed recommended allowing elapsed time when it helps orient the user, while avoiding anything that makes absence feel like a debt, and judging a number, a time reference or an explanation by whether it adds burden or costs agency. Chanté adopted it the same day; the persona and the context block's re-entry line changed with the decision.
 
 Related: [Lumi](../philosophy/lumi.md).
 
@@ -126,7 +128,9 @@ Related: [Motion & Interaction](../design/motion-and-interaction.md).
 
 ## 21. How do we evaluate Lumi’s model?
 
-**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. The new voice-evaluation run is ungraded. Runtime choices do not establish product philosophy.
+**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. Voice-eval runs 4 and 5 carry Claude's provisional grades, not blind ([log](../voice-eval-log.md)). Runtime choices do not establish product philosophy.
+
+**Method, from review feedback Chanté relayed (2026-09-13); proposed until she settles it:** a grader who is involved grades blind on consistent criteria rather than abstaining, and every run records its grader. Voice and usefulness are graded separately. Rules about numbers, time and explaining herself serve burden and agency; they aren't prohibitions. The largest gap is judgement across short conversations with tools: does Lumi use what she knows, respond well to correction, leave reflection alone when appropriate, and make the next move easier? The nine single-reply scenarios can't show this, and a paired same-clock run is needed before any conclusion about the brief.
 
 Related: [Model strategy](../product/lumi-model-strategy.md).
 
