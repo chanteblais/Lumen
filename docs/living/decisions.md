@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · On a phone, the nav is a bar along the bottom with its names showing
+
+**Decision.** Below 768px the rail becomes a bar along the bottom of the screen: the five icons, each with its name under it, the place you're in marked with a star. Nothing opens, pins or locks there.
+**Rationale.** Chanté's ask, from her phone: move the nav to the bottom. *(Claude's reading: a phone has no hover, so the names were a tap on the compass star away; with the bar's width there is room for them, and showing them removes that tap. This sits beside her desktop preference for icons with expandable names rather than against it — to confirm with her.)*
+**Implications.**
+- The rule stands: an icon's name is always reachable. On a phone it is simply always visible.
+- Pin and lock are desktop behaviours only; nothing on a phone depends on them.
+- The page and the composer stop above the bar; nothing is drawn under it.
+
+**Principle.** V§14, `spaces.md` §35 (mobile preserves the hierarchy, not the literal layout), §36.
+**Replaces.** The phone trial in the entry below.
+
 ## 2026-09-13 · The nav is icons, with the names a hover away
 
 **Decision.** The places are icons on a narrow green rail that is always there; their names are on a parchment sheet that opens from the rail on hover, focus or tap, and can be pinned open. The rail marks where you are with a star.
@@ -14,7 +26,7 @@
 - Icons can carry meaning, but only where the name is always a hover, focus or tap away. An icon with no way to see its name is still out.
 - The names stay plain (`spaces.md` §3): *Home, Today, Library*, never place-names the user has to decode.
 - Pinning the sheet out (the rail's top half) and locking it in (the bottom half) are optional and undone the same way; nothing may depend on either.
-- Phones are a trial (the rail plus a tap on the compass star); to revisit.
+- Phones were a trial (the rail plus a tap on the compass star); superseded by the bottom bar (entry above).
 
 **Principle.** V§14, `spaces.md` §3 and §21.
 **Replaces.** The sidebar of plain names ([engineering log](../decisions.md), same date).

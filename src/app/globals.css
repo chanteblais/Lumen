@@ -143,7 +143,7 @@ body::after {
 /* ---------- The rail and its parchment (components/shell/Sidebar.tsx) ----------
    The rail is always there, the same deep green on every page. The parchment
    with the names is folded away until it is shown: hovered, reached by
-   keyboard, opened (a tap on a phone) or pinned — always floating over the
+   keyboard or pinned — always floating over the
    page, which never moves for it. Folded, it lets the pointer through and each
    row is only as wide as the rail; shown, a row is as wide as its name, so a
    click on the parchment beside a name pins rather than following the link. The shown state is a set
@@ -160,7 +160,6 @@ body::after {
   --nav-delay: 180ms;     /* a moment's grace before it folds, so a pointer passing out and back doesn't flicker it */
   --nav-vis-delay: 380ms; /* hidden once the fade is done */
 }
-.nav[data-open],
 .nav:has(:focus-visible) {
   --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s;
 }
@@ -197,8 +196,7 @@ body::after {
 }
 
 /* The painted compass star and moon are buttons (their halves of the rail do
-   the same, in Sidebar's click handler): the star pins the parchment out (opens
-   it, on a phone) and glows while it's kept out; the moon locks it in, away
+   the same, in Sidebar's click handler): the star pins the parchment out and glows while it's kept out; the moon locks it in, away
    from hover, and glows while it's locked. The moon's centre is 101px up
    from the rail's foot in the source's pixels. */
 .nav-toggle,
@@ -950,10 +948,58 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 
 /* ---------- Mobile ---------- */
 @media (max-width: 767px) {
-  /* The rail stays, narrower; the parchment only floats (the compass star opens it). Trial, 2026-09-13. */
-  .shell { --rail-x: 6px; --rail-top: 6px; --rail-w: 48px; }
-  .shell { --rail-h: max(500px, min(calc(100dvh - 12px), 780px)); }
-  .nav-icon::before { width: 38px; height: 38px; }
+  /* The rail lies down along the bottom (Chanté's ask, 2026-09-13): the same
+     painted green, turned on its side, with every place's icon and its name
+     on it, so nothing has to be opened to read where a place is. No parchment,
+     no compass star or moon, no pin on a phone. The page takes the full width
+     and stops above the bar. */
+  .shell { --bar-h: 62px; --bar-gap: 6px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .nav { grid-row: 2; height: calc(var(--bar-h) + var(--bar-gap)); }
+  .main { grid-row: 1; }
+  .nav-rail {
+    top: 0;
+    left: var(--bar-gap);
+    right: var(--bar-gap);
+    width: auto;
+    height: var(--bar-h);
+    background: none;
+  }
+  /* The rail's plain length, rotated a quarter turn so its brass rules run
+     along the top and bottom, with its corners chamfered like the rail's ends. */
+  .nav-rail::before {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: var(--bar-h);
+    height: calc(100vw - 2 * var(--bar-gap));
+    transform: translate(-50%, -50%) rotate(90deg);
+    clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px);
+  }
+  .nav-toggle, .nav-lock, .nav-panel::before, .nav-head, .nav-foot { display: none; }
+  .nav-panel { top: 0; left: var(--bar-gap); right: var(--bar-gap); width: auto; height: var(--bar-h); pointer-events: auto; }
+  .nav-list { flex-direction: row; gap: 0; height: 100%; margin: 0; padding: 0 6px; }
+  .nav-item { flex: 1; width: auto; height: 100%; flex-direction: column; justify-content: center; gap: 3px; }
+  .nav-icon { width: auto; height: 28px; padding: 0; }
+  .nav-icon::before { left: 50%; width: 36px; height: 34px; }
+  .nav-item .name {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: color 160ms ease;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: #d4ad6c; /* the painted brass, like the icons */
+    background: none;
+    pointer-events: auto;
+  }
+  .nav-item:hover .name { background: none; }
+  .nav-item[aria-current="page"] .name { background: none; color: #f3d292; }
+  /* You are here: the brass star on the bar's top rule, over the open place. */
+  .nav-mark { left: 50%; top: calc(var(--bar-h) * 9.5 / 118); margin: -5px 0 0 -5px; }
   .main { box-shadow: none; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
