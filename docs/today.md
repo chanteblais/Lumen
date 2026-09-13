@@ -8,7 +8,7 @@
 Today is not a task list with a "today" filter and not a dashboard. Its job is to make the user's cognitive load *lower* after opening it than before. Traditional apps show everything the user has committed to and leave the interpreting and deciding to them; Today does the interpreting and proposes one thing.
 
 ## Principles
-1. **Lists holds everything. Today holds only what matters now.** The broader structure (School, Work, Personal, Later, …) lives in Lists. Today curates a manageable path through the day from that context: deadlines, fixed commitments, stated priorities, list order, estimated effort, unfinished work, dependencies, previous conversations, what's been avoided, time available, and today's capacity. Curated, not accumulated.
+1. **The Library holds everything. Today holds only what matters now.** The broader structure (School, Work, Personal, Later, …) lives in the lists the Library keeps. Today curates a manageable path through the day from that context: deadlines, fixed commitments, stated priorities, list order, estimated effort, unfinished work, dependencies, previous conversations, what's been avoided, time available, and today's capacity. Curated, not accumulated. *(As built, 2026-09-13: Lists became the **Library** on 2026-09-13, and for now it has no list view — the lists are kept and Lumi files into them, but they can't be browsed anywhere (Lists, below). The planner sees only some of the signals named here: How the plan is built → Inputs.)*
 2. **One thing dominates.** At almost any moment there is one visually dominant task — *Right now* — and everything else is visually subordinate. Opening Today while overwhelmed should communicate within about a second: *this is the thing we're doing.*
 3. **A path, not a pile.** Right now → After that → Later. The further from "right now", the less attention it demands, and the more it can be collapsed. The user always knows Lumi is keeping track of the rest so they don't have to hold it.
 4. **"Everything else can wait."** Naming what *doesn't* matter yet is real prioritisation information, not motivational copy. "You've got practicum at 5. Nothing else is especially time-sensitive." "These three are enough for today." Lumi closes open loops.
@@ -25,14 +25,14 @@ Today is not a task list with a "today" filter and not a dashboard. Its job is t
 Top to bottom, in one paper panel on the right of the garden (2026-09-12; the closing line on a slip beneath it, Lumi standing in the room), in the shell:
 - **Greeting line** (deterministic, `core/ai/greeting.ts`): "Good morning, Chanté."
 - **Lumi's day line** (from the plan, one or two sentences, in voice): "You've got practicum at 5. Nothing else is especially time-sensitive." Lumi's bust beside it, small.
-- **Capacity prompt** — only when today has no capacity report and the plan hasn't been accepted yet: *How much have we got today?* Not much · Normal-ish · Lots · (skip). Answering regenerates the plan. Asked at most once per day, dismissable, never blocking.
-- **RIGHT NOW** — the dominant card: title (display serif, large), a quiet marginal note beneath it in small caps (list · ~minutes; `.pill`, no box), the next action in one line, **Start with Lumi** (primary), **Not this** (secondary). Quiet links beneath: *Break it down* (opens chat with that intent). One card. No carousel, no "1 of 3".
-- **AFTER THAT** — up to three rows, each: title · list · ~minutes (the last two as one marginal note). Complete/reopen circle. Nothing else. If the plan holds more, a single collapsed line — *A few more, when you get there* — no number.
+- **Capacity prompt** — only when today has no capacity report (from here or from chat), it hasn't been skipped today, and there is a path to shape: *How much have we got today?* Not much · Normal-ish · Lots · Skip. Answering re-cuts the plan, unless the answer matches what the plan already assumed. Asked at most once per day, never blocking.
+- **RIGHT NOW** — the dominant card: a complete circle, the title (display serif, large), a quiet marginal note beneath it in small caps (list · ~minutes; `.pill`, no box), the first step in one line (*First* · …), **Start with Lumi** (primary), **Not this** (secondary), and a quiet *Break it down* link (opens chat with that intent). One card. No carousel, no "1 of 3". With nothing to choose from: *Nothing queued.* and one line.
+- **AFTER THAT** — up to three rows (one on a low day), each: title · list · ~minutes (the last two as one marginal note). Complete circle. Nothing else. Whatever the plan leaves off isn't shown at all — no collapsed line, no number; the closing slip (*Everything else can wait*) is the only sign there's more. *(This spec planned a wordless collapse here — "A few more, when you get there" — and [`living/decisions.md`](living/decisions.md) → *Never a count of what's undone* still gives it as how collapses read. It was never built; whether Today wants one is Chanté's call.)*
 - **LATER** — fixed-time commitments only (things with a `due_at` today): "Practicum · 5:00 pm". Reads as the shape of the day, not a list.
 - **Everything else can wait.** One closing line from the plan when there are open intentions not on the path.
 - **Lumi** — the corner companion already present in the shell. Tap her for a speech bubble and say a thing ("add take out compost") without leaving the page; the path refreshes once she's done. Nothing else.
 
-That's the page. When *Right now* is completed, the path advances (code, not the model): After-that's first row becomes Right now with a one-line acknowledgement in Lumi's voice; the day line updates only if the plan says something changes.
+That's the page. When *Right now* is closed — ticked here, done in chat, anywhere — the path advances in code, not the model (`core/domain/plan-sync.ts` → `advancePlan`): After-that's first row becomes Right now with a plain fixed first step (*Pick it up where it opens.*), and nothing else changes — the day line and the closing slip stay as cut, and nothing is said. When the path runs out while other things are still open, the next open re-cuts it (`first_items`, below). *(This spec promised a one-line acknowledgement in Lumi's voice here; it isn't built. The Garden canon — `product/today-garden.md` §22, on the `docs/today-garden` branch — wants completion acknowledged proportionately, sometimes just "Done.", so it is intended rather than cut; left for Chanté to decide.)*
 
 ### Cut from the mockup, and why
 | Mockup element | Decision | Why |
@@ -41,9 +41,9 @@ That's the page. When *Right now* is completed, the path advances (code, not the
 | Focus timer widget (25 min ± / Start) | **Not on Today.** Timer appears in the session bar once *Start with Lumi* begins a session (M5) | A second "start" control competes with the one that matters; a timer sitting idle is a small pressure |
 | Quick capture (Add a task · Task/Note/Idea) | **Not in V1.** Chat is capture; Lumi files it | A second input surface with a type picker is a system to manage. Revisit if chat-capture proves too slow in daily use |
 | "1 of 3" carousel on Right now | **Cut.** *Not this* is the only way to change the current task | A carousel invites scanning options — exactly what one-thing-dominates prevents |
-| Today / This Week / Someday tabs | **Lists' job.** Today has no tabs | Horizon-switching is planning, not starting |
+| Today / This Week / Someday tabs | **The Library's job.** Today has no tabs | Horizon-switching is planning, not starting |
 | Search, settings icons in the header | **Settings stays in nav; search post-V1** | Nothing to search yet |
-| "Other items (2)" | **Replaced** by a wordless collapse ("A few more, when you get there") | A count of undone things — see `ef-burden-log.md` |
+| "Other items (2)" | **Cut.** Nothing past the path is shown; the closing slip says the rest can wait (a wordless collapse, "A few more, when you get there", was planned and not built — Anatomy → After that) | A count of undone things — see `ef-burden-log.md` |
 | "Small steps still move the world." (sidebar) | **Keep as the sidebar aside** if it stays the *only* line of its kind | Borderline inspirational; the brief's own rule says warmth comes from Lumi, not copy. One aside is the ceiling |
 
 ## Lists (the pile)
@@ -54,28 +54,28 @@ Introduced by this brief as a first-class section: the user's broader structure,
 ## How the plan is built
 `core/ai/plan.ts` → `buildDayPlan(inputs) → DayPlan`. Curation is judgement, so the **model proposes** (structured output) and **code applies guardrails**, the same pattern as beliefs.
 
-Inputs (all already in the domain, or added below): open intentions with list, estimate, due_at, last_touched_at; today's capacity report; time now and time left in the day (user timezone); fixed-time intentions today; avoidance signals from `events` (touched repeatedly, declined before, never started); recent conversation summary; relevant beliefs (strategies, patterns, preferences).
+Inputs as built (`describeInputs` in `plan.ts`, from one snapshot via `planInputs` in `today-plan.ts`): the person's name; local weekday and time, and the part of the day; today's capacity report and its flags, or "not stated; assume normal"; how long since they were last here (the gap this sitting began after), with "keep it light" after a week or more; the fixed-time intentions today, by title and time, to leave out; up to 40 candidates, each with id, title, list and estimate, flagged with *declined today* (and the reason), *untouched for two weeks+* (derived stale), the next action, the due date and the first 80 characters of the note; on an `asked` re-cut, the ask in their words and Lumi's pick; and up to 12 beliefs of kind strategy, pattern, anti-pattern or preference.
 
-Output:
+**Planned, not wired:** time left in the day (only the clock time is given), avoidance signals beyond today (touched repeatedly, declined on earlier days, never started — only *untouched two weeks+* reaches the planner), and a recent-conversation summary. Beliefs may carry some of this once reflection writes it (an `anti_pattern` such as "intentions touched repeatedly, never entered a session").
+
+Output (`DayPlanJson` in `db/schema.ts`; the date and capacity live on the `day_plans` row, not in the plan):
 ```ts
-type DayPlan = {
-  localDate: string;
-  capacity?: "low" | "normal" | "high";
-  dayLine: string;                 // "You've got practicum at 5. Nothing else is time-sensitive."
-  rightNow: { intentionId; firstStep: string };
-  afterThat: { intentionId }[];    // ≤ 3
-  later: { intentionId }[];        // fixed-time today, by time
-  restCanWait: boolean;            // open intentions exist beyond the path
-  closingLine?: string;            // "These three are enough for today."
+type DayPlanJson = {
+  dayLine: string;                              // "You've got practicum at 5. Nothing else is time-sensitive."
+  rightNow: { intentionId; firstStep } | null;  // null only when nothing is open, or all of it was declined today
+  afterThat: { intentionId }[];                 // ≤ 3
+  later: { intentionId }[];                     // fixed-time today, code-derived
+  restCanWait: boolean;                         // open intentions exist beyond the path
+  closingLine?: string;                         // "These three are enough for today." Only when restCanWait
 };
 ```
-Guardrails: Right now must be open and not declined today; After that ≤ 3 (≤ 1 on a low day); Later is exactly the fixed-time set, code-derived; no counts in any line; lines pass the voice rules. Regenerated when: a new local day starts; capacity is reported or changed; *Not this* (with the reason as input); the user asks in chat ("replan", "what should I do now"). Advanced (not regenerated) when Right now is completed.
+Guardrails (`clampPlan`, pure, tested): ids must be open candidates, no repeats; Right now must not be declined today (unless Lumi pinned it from an ask, below); if the model gives no usable Right now, the most recently touched open, undeclined candidate is used, with its next action or *The smallest first piece of it, nothing more.*; After that ≤ 3 (≤ 1 on a low day); Later is exactly the fixed-time set; counts ("three things") are stripped from both lines. The voice rules live in the planner prompt; code doesn't check them. With nothing open (or everything declined today) there is no model call, just a fixed day line. Cut when a local day has no plan yet (`new_day`) or its plan has run out (`first_items`), and re-cut only on the triggers below. Advanced, not regenerated, when anything on the path is closed.
 
 Persisted in `day_plans` so the path is **stable across reloads** — the one thing must not change every time the page opens.
 
 **Cut before it's needed.** Generation is primed in the background when the app is opened (home page) and after every chat turn, so Today normally finds the plan already there instead of waiting several seconds on the model. If the day's plan was cut with nothing to choose from (or everything on it has been ticked off) and intentions have since arrived — brain-dump in chat, then Today — it is re-cut once (`reason: first_items`). A plan with a Right now is never touched by this.
 
-**Re-cut only on purpose (M4).** The one thing moves on three triggers and no others: a capacity answer (`capacity`; skipped when it matches what the plan assumed), a *Not this* answer (`declined`), and letting things go during the coming-back pass (`reentry`). Chat-side triggers are applied once after the reply streams.
+**Re-cut only on purpose (M4).** The one thing moves on four triggers and no others (`recutTodaysPlan` in `core/ai/today-plan.ts`): a capacity answer, from Today's prompt or chat (`capacity`; skipped when it matches what the plan assumed), a *Not this* answer (`declined`), letting things go during the coming-back pass (`reentry`), and an ask in chat for a different shape of day (`asked`, below). Chat-side triggers are applied once after the reply streams.
 
 **Asked in chat (`asked`, 2026-09-12).** "I need an easy task", "what should I do now", "quick wins", a replan: Lumi picks the thing in her reply and calls `reshape_today` with the ask in the user's words and the id (and first step) of what she picked. After the reply, the path is re-cut with the ask as a planner input — the ask outranks the default order, the day line may answer it in a few words — and `clampPlan` pins Lumi's pick as Right now so Today shows what she just said. The pin wins over a decline earlier today (the ask is the user's later word). If she names nothing, the planner chooses within the ask. In the same turn an ask wins over a capacity or decline re-cut; both still reach the planner from the snapshot. The ask is kept on the `plan.generated` event, not on the row. Nothing on Today asks for or shows the ask.
 
