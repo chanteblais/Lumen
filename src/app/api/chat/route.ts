@@ -8,6 +8,7 @@ import { selectBeliefs } from "@/core/ai/memory-select";
 import { loadLibraryOrNothing } from "@/core/domain/library";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { hasReply } from "@/core/ai/reply";
 import { primeTodaysPlan, type Recut } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
 import { listRecentActivity } from "@/core/domain/activity";
@@ -159,8 +160,10 @@ export async function POST(req: Request) {
     sendReasoning: false,
     messageMetadata: ({ part }) => (part.type === "start" ? { createdAt: new Date().toISOString() } : undefined),
     onError: () => LUMI_ERROR,
-    onEnd: async ({ responseMessage, isAborted }) => {
-      if (isAborted && responseMessage.parts.length === 0) return;
+    onEnd: async ({ responseMessage }) => {
+      // She can say nothing (a plain "ok" can need no answer), and a turn stopped
+      // before a word leaves nothing either: no words and no tools is not saved (core/ai/reply.ts).
+      if (!hasReply(responseMessage)) return;
       await saveMessage(db(), conversation.id, responseMessage);
     },
   });

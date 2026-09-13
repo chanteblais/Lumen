@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LUMI_LOST_THREAD, ThinkingDots, hasReply, textOf, useHeldChat } from "@/components/chat/chat-client";
+import { LUMI_LOST_THREAD, ThinkingDots, hasReply, latestReply, textOf, useHeldChat } from "@/components/chat/chat-client";
 import { Ledger } from "@/components/chat/Ledger";
 
 /**
@@ -26,7 +26,7 @@ export function AddLine({ onClose }: { onClose: () => void }) {
     void sendMessage({ text: `Add to my list: ${text}`, metadata: { createdAt: new Date().toISOString() } });
   };
 
-  const reply = [...messages].reverse().find((m) => m.role === "assistant");
+  const reply = latestReply(messages);
   const replyText = reply ? textOf(reply) : "";
 
   return (

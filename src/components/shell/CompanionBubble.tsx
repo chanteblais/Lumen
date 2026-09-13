@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { LUMI_LOST_THREAD, ThinkingDots, hasReply, textOf, useAutoResize, useHeldChat } from "@/components/chat/chat-client";
+import { LUMI_LOST_THREAD, ThinkingDots, hasReply, latestReply, textOf, useAutoResize, useHeldChat } from "@/components/chat/chat-client";
 import { Ledger } from "@/components/chat/Ledger";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 
@@ -102,7 +102,7 @@ export function CompanionBubble({ onClose, onSend }: Props) {
     input.current?.focus();
   };
 
-  const reply = [...messages].reverse().find((m) => m.role === "assistant");
+  const reply = latestReply(messages);
   const replyText = reply ? textOf(reply) : undefined;
 
   useEffect(() => {
