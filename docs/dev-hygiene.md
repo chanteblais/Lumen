@@ -16,7 +16,7 @@
 4. Skim *Traps* for the area you're about to touch.
 
 ## Session end (≤ 3 minutes, before the last commit)
-1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link.
+1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link — in every reply while it runs, not only the one that started it.
 2. Merged branches deleted; nothing of yours in `git stash list`; your worktree committed or clean.
 3. Anything that cost a turn → a *Traps* row. Land one *Backlog* item, or re-rank it if something moved.
 4. Fix what this doc got wrong; add a *Change log* line.
@@ -25,7 +25,8 @@
 | Guard | Catches | Runs | Where |
 |---|---|---|---|
 | Preflight | `node_modules` missing, a symlink, or behind `package-lock.json` (names each package) · generated route types pointing at routes that no longer exist (removes them; Next writes them again) · `.env.local` missing, or missing a key `.env.example` requires (key names only, never values) | before `npm run check` and `npm run dev` (npm's `precheck` / `predev`); by hand as `npm run preflight`. Env problems fail `dev` and are a note on `check`; skipped in CI | `scripts/preflight.mjs` |
-| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit | before every merge; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
+| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit, the CSS prefix audit | before every merge; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
+| CSS prefix audit | a rule in the compiled stylesheet that kept `-webkit-<prop>` but lost `<prop>` (lightningcss drops the unprefixed one when the prefixed line follows it) | inside `npm run check`; by hand as `npm run check:css` | `scripts/check-css-prefixes.mjs` |
 | pre-commit hook | `.claude/` bookkeeping staged; direct commits to `main` | every commit | `.githooks/pre-commit` |
 | Port etiquette | killing or reusing someone else's server; two servers in one checkout | before starting any server (by hand) | `CLAUDE.md`, `branching.md` → Dev servers |
 
@@ -36,6 +37,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 |---|---|---|---|---|
 | 2026-09-13 | A `javascript_tool` script in the Claude-in-Chrome tab hangs until *CDP … timed out after 45000ms*; dispatched clicks seem to do nothing, or land a step late | the automation tab is hidden (`document.visibilityState === "hidden"`): `requestAnimationFrame` never fires, timers are throttled to ~1s, React commits an untrusted event's update later, and CSS transitions freeze (a fade reads as still visible) | by hand: check `document.visibilityState` first | never await `requestAnimationFrame` there; wait with `setTimeout` of 300ms or more before reading state; read computed custom properties and attributes rather than a transitioned value |
 | 2026-09-13 | A Claude-in-Chrome click on an element lands on whatever is next to it (a click on the nav's parchment hit the top bar, so it looked like the click handler was broken) | the extension's screenshot coordinate frame (1448px wide here) is not the page's CSS pixels (`innerWidth` 1728), so a coordinate read off a screenshot is off by the ratio — ~19% at the right edge of a 280px panel | by hand: `document.elementFromPoint(x, y)` at the coordinate, or compare `innerWidth` with the frame the screenshot reports | click by element (`ref` from `find`/`read_page`, or `el.click()` in `javascript_tool`), or scale coordinates by `innerWidth / frame width`; `resize_window` didn't change `innerWidth` either — test a phone width in a same-origin `<iframe>` of the page instead |
+| 2026-09-13 | No glass surface blurs on Home, Today or the Library; in Chrome `getComputedStyle(sidebar).backdropFilter` is `none`, and the served CSS has only `-webkit-backdrop-filter` in those rules | the source wrote `backdrop-filter` then `-webkit-backdrop-filter` in each rule; lightningcss (Turbopack's CSS pass in dev, Tailwind's optimize in a build) folds the pair into one property and the later prefixed line wins, so the unprefixed one is dropped. Order-dependent, not value-dependent (prefixed-first keeps both). Chrome ignores the prefix, so nothing errors | CSS prefix audit (`npm run check:css`) | write the unprefixed property only; the pipeline adds `-webkit-` for Safari from its targets |
 | 2026-09-13 | A page 404s on a long-running dev server (the app shell renders, *This page could not be found*) though its `page.tsx` exists | the server, orphaned from an earlier session and up since the day before, had lived through branch switches, a route rename and a merge-conflict reverse in its checkout, and its route table lost the page | by hand: the same route on a fresh server works; `ps -o lstart -p $PID` shows the old one's age | review from your own fresh server in your own worktree; stop the stale one only with Chanté's say (it isn't yours) |
 | 2026-09-13 | Lumi fails in a worktree's dev server after the OpenAI switch | `.env.local` was copied into the worktree before `main` started needing `OPENAI_API_KEY` | preflight (keys against `.env.example`) | copy the key from the main checkout's `.env.local` |
 | 2026-09-13 | `tsc`: *Cannot find module '@ai-sdk/openai'* right after merging `main` | the merge added a package; the worktree's `node_modules` predates it | preflight (installed versions against the lockfile) | `npm ci` |
@@ -68,4 +70,5 @@ Only these; everything else Claude decides, does and records here.
 
 ## Change log
 - 2026-09-13 — Started, from the stale `.next/dev/types` and the missing `@ai-sdk/openai` hit while merging `docs/today-spec-as-built`. Preflight landed; review links are always clickable (`CLAUDE.md` → Review server).
+- 2026-09-13 — Trap and guard: lightningcss dropped `backdrop-filter` from every rule that also wrote `-webkit-backdrop-filter` after it, so no glass blurred in Chrome. The source now writes the unprefixed property alone, and `scripts/check-css-prefixes.mjs` (in `npm run check`) fails on any compiled rule that kept a prefix without its twin.
 - 2026-09-13 — Trap: a stale dev server 404s a route that exists (the Library spatial-map session, which also merged `main` mid-branch and needed `npm ci` from the preflight, as the doc predicted).

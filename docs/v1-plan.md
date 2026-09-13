@@ -1,5 +1,7 @@
 # Coherence — V1 Implementation Plan
 
+*The 2026-09-13 [documentation reconciliation](living/reconciliation.md) does not expand these milestones. Lists/Library §50 describes a candidate minimal experience, not automatic authorization to add search, grouping, drag interactions or a knowledge palace to V1. Schedule such changes explicitly.*
+
 Small milestones, each shippable to Vercel. Every milestone ends with the question: **did this reduce executive-function burden or add to it?** Estimates assume AI-assisted sessions.
 
 ## M0 — Shell (½ day) — **done 2026-09-11 (`feat/m0-shell`), merged**
