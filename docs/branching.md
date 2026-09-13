@@ -26,7 +26,8 @@ The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. 
    | anything visual — tokens, classes, ornaments, the companion | `docs/design-system.md`; `docs/design-philosophy.md` if a principle bent |
    | persona, tools, greeting, check-ins | `docs/architecture.md`; `docs/voice-eval-log.md` if a scenario was run |
    | copy or a control that asks the user to set, keep, rate or confirm anything | `docs/ef-burden-log.md` (a row, with its verdict) |
-   | a decision that moved | `docs/decisions.md` (append) |
+   | a decision that moved | `docs/decisions.md` (append); if it changes how the product behaves or why, also `docs/living/decisions.md`, and the affected canonical doc from `PROJECT-CANON.md` |
+   | behaviour that now differs from the canon | surface it to Chanté: code changes, doc changes, or a new entry in `docs/living/open-questions.md`; never silently |
    | a working rule, port, script or session convention | `CLAUDE.md`, `docs/branching.md`, `docs/README.md` index |
    | `art/**`, `scripts/*lumi*`, `LumiSprite.tsx`, `LumiCompanion.tsx` loops | `docs/animation-pipeline.md` (ledger row, backlog, touch points, gates) and `art/README.md` (sheet table, what the cut corrects), on top of `docs/design-system.md` |
 3. **Fix what's stale on the branch,** before the merge — its own `docs: …` commit is fine, amending the last commit is fine, "I'll do it after the merge" is not. If the audit finds something on `main` that's already stale (someone else's), land that docs fix first, then push.

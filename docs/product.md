@@ -1,5 +1,7 @@
 # Coherence — Product Brief (condensed)
 
+> **Partly superseded (2026-09-12).** This is the first brief, kept while the canon is assembled ([`PROJECT-CANON.md`](../PROJECT-CANON.md)). Three things in it no longer hold; see [`living/decisions.md`](living/decisions.md): the visual direction (now a painted, animated world, not "no decorative imagery"), gamification (now in, and only ever positive), and the nav (now four rooms: Home · Garden · Library · Study). The one question, the pillars and Lumi's voice still stand. It retires to `docs/archive/` once `philosophy/product-vision.md` and `philosophy/lumi.md` cover it.
+
 Coherence is an AI companion for **task initiation, momentum, re-entry and body doubling** — not a task manager.
 
 ## The one question

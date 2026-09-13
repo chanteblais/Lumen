@@ -2,6 +2,8 @@
 
 *v0.1 — DRAFT · 2026-09-11 · distilled from the brief and the two mockups (`mockups/`). Not yet validated against Chanté's reactions the way Glåüm's is (that doc passed a blind sort). Treat as a working hypothesis; promote to v1.0 after a naming/falsification pass.*
 
+> **Partly superseded (2026-09-12).** The direction has moved from *the book* to *a painted, animated world*, and rewards are now in (only ever positive), so §1–2's "no decorative imagery" order and §3's "never gamified" no longer hold ([`living/decisions.md`](living/decisions.md)). §3's other principles still stand. What survives of the book is [open question 13](living/open-questions.md). It retires once `design/visual-language.md` replaces it.
+
 ---
 
 ## 1. The book and the machine
