@@ -1291,6 +1291,9 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   cursor: pointer;
   transition: transform 160ms ease, filter 160ms ease;
 }
+/* No rod drawn at the bottom (2026-09-13, Chanté preferred the scroll without it): the parchment's own edge
+   ends it. The button stays where the rod was, so tapping under the scroll still rolls it up. */
+.shell:has(.home-scene) .opening-rod { background: none; box-shadow: none; }
 /* A taller target than the 10px rod it looks like. */
 .shell:has(.home-scene) .opening-rod::after { content: ""; position: absolute; inset: -9px 0; }
 .shell:has(.home-scene) .opening-rod:hover { filter: brightness(1.15); transform: translateY(-1px); }
