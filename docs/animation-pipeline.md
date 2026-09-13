@@ -10,7 +10,7 @@
 
 ## Session start (≤ 3 minutes)
 
-1. `ls art/lumi/` — any sheet not in the `art/README.md` table is new and uncut (`art/scenery/` is the painted rooms, `art/archived/` the earlier character's sheets). Sheets marked *retired with the character* are the earlier Lumi (before the lantern, 2026-09-12): reference for technique, never cut again. A sheet that carries a title, numbers or notes is cropped to its rows of cells before measuring, or the text counts as figures.
+1. `ls art/lumi/` — any sheet not in the `art/README.md` table is new and uncut (`art/scenery/` is the painted rooms, a folder per place, `art/archived/` the earlier character's sheets). Sheets marked *retired with the character* are the earlier Lumi (before the lantern, 2026-09-12): reference for technique, never cut again. A sheet that carries a title, numbers or notes is cropped to its rows of cells before measuring, or the text counts as figures.
 2. Read the *Ledger* (last two rows) and the top three of the *Efficiency backlog*, and the *Bets under test* in `docs/art-direction.md` §8 — work that tests an open bet is worth more than work that tests none. Decide which backlog move this session will land — the top one unless the animation at hand needs another first.
 3. `python3 -c "import numpy, scipy, PIL"` — the scripts need all three (2.5 / 1.18 / 12.2 on 2026-09-12, `/usr/local/bin/python3`).
 4. Port check (`lsof -nP -iTCP:3005 -sTCP:LISTEN -t`, then `lsof -a -p $PID -d cwd`) before starting a review server; the rules are in `CLAUDE.md`.

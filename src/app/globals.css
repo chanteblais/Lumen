@@ -692,7 +692,7 @@ body::after {
 }
 
 /* ---------- Home: the room ----------
-   Home is set in a painted room (art/scenery/home-background.png → public/home-room.webp):
+   Home is set in a painted room (art/scenery/home/background.png → public/home-room.webp):
    an evening study, lamp-lit — the same book, read by lantern light. The page
    renders one fixed layer (`.home-scene`) behind the shell and the rest is
    the room's light on the same tokens: `.shell:has(.home-scene)` re-maps the
@@ -846,7 +846,7 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 }
 
 /* ---------- Today: the garden ----------
-   Today is set in a painted greenhouse (art/scenery/today-background.png →
+   Today is set in a painted greenhouse (art/scenery/today/background.png →
    public/today-room.webp), laid out after the mockup (art/mockups/today-mockup.png):
    the page is one paper panel on the right, the closing line a small green
    slip beneath it, and the room is left open — Lumi stands in it rather than
@@ -962,7 +962,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 520; --lumi-y: 870; } /* see Library: the reading room */
+  body:has(.library-scene) { --lumi-x: 700; --lumi-y: 900; } /* see Library: the reading room */
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
@@ -976,7 +976,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library-background.png → public/library-room.webp). For
+   room (art/scenery/library/background.png → public/library-room.webp). For
    now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the rug in front of the reading table. The sidebar, the top bar,
    the grain and the way her spot is mapped are shared with Today (the
@@ -998,6 +998,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
 }
 .library-page { flex: 1 0 auto; }
-/* Lumi's spot (--lumi-x/y above) is on the rug at the front-left corner of the
-   reading table: she covers the near chair and the table's end, both further
-   back than her feet. */
+/* Lumi's spot (--lumi-x/y above) is on the rug in front of the reading table,
+   between the floor cushion and the table's front leg: she covers the table's
+   apron and runner, both further back than her feet. */
