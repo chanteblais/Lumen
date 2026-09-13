@@ -4,7 +4,7 @@
  * carries, the chat tools, forgetting, isolation and failure.
  */
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { consolidate, consolidateAfter, type ConsolidationInputs, type RawProposal } from "@/core/ai/consolidate";
 import { buildContextBlock } from "@/core/ai/context";
@@ -450,6 +450,31 @@ describe("each user's Library is their own", () => {
 });
 
 describe("the watermark", () => {
+  it("moves past a watermark whose time has microseconds: the message it points at is never read again (live, 2026-09-13)", async () => {
+    const u = await createTestUser(db, "Micro");
+    const c = await ensureMainConversation(db, u.id);
+    await say(u, "2026-09-12T06:21:00Z", "user", "Planning the garden: raised beds first, then a plum tree in the autumn.");
+    const last = await say(u, "2026-09-12T06:22:02Z", "assistant", "Raised beds first.");
+    await say(u, "2026-09-12T07:47:15Z", "user", "Back again: the tax forms need doing before Friday, all three of them.");
+    const newest = await say(u, "2026-09-12T07:47:22Z", "assistant", "Before Friday, then.");
+    // Postgres stores microseconds (a row's now()); a Date read back keeps milliseconds. The real rows all look like this.
+    await db.execute(sql`update messages set created_at = created_at + interval '849636 microseconds' where conversation_id = ${c.id}`);
+    // The first visit is already consolidated: the watermark is its last message, which ends its sitting.
+    await db.update(conversations).set({ summaryThroughMessageId: last }).where(eq(conversations.id, c.id));
+
+    expect((await unconsolidatedMessages(db, c.id, last)).map((m) => m.id)).not.toContain(last);
+    const propose = vi.fn<(inputs: ConsolidationInputs) => Promise<RawProposal>>(async () => ({ episode: { summary: "You sorted out the tax forms." }, threads: [], notes: [] }));
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-12T12:00:00Z"), propose } });
+    const lines = logged.mock.calls.map((x) => String(x[0]));
+    logged.mockRestore();
+    expect(propose).toHaveBeenCalledTimes(1);
+    expect(propose.mock.calls[0][0].batch.map((m) => m.id)).not.toContain(last);
+    const [moved] = await db.select().from(conversations).where(eq(conversations.id, c.id));
+    expect(moved.summaryThroughMessageId).toBe(newest);
+    expect(lines.some((l) => l.includes("moved past"))).toBe(false);
+  });
+
   it("reads from the latest episode's end when the watermark message is gone, not from the start", async () => {
     const u = await createTestUser(db, "Wim");
     const c = await ensureMainConversation(db, u.id);

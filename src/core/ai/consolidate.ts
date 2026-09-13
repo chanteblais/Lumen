@@ -378,6 +378,11 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
   );
   if (!batch.length) return { status: "nothing" };
   const through = batch[batch.length - 1];
+  // Never claim the watermark onto itself: that "moves" nothing and succeeds, so a run would repeat it forever.
+  if (through.id === from) {
+    console.error(`[consolidate] the stretch after the watermark ends on the watermark itself (conversation ${conversation.id}); not claiming it`);
+    return { status: "nothing" };
+  }
   const heard: Heard[] = batch.filter((m) => m.role === "user" && m.text).map((m) => ({ messageId: m.id, text: m.text }));
   const said = batch.reduce((n, m) => n + m.text.length, 0);
 

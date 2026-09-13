@@ -6,7 +6,7 @@
  * (`memory-rules.ts`) and appends an event with no words in it. See
  * docs/architecture.md → The Library.
  */
-import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { conversations, episodes, events, messages, threadNotes, threads, type Episode, type NoteSource, type Thread, type ThreadNote, type ThreadNoteKind } from "@/db/schema";
 import { normalizeText } from "@/core/words";
@@ -431,27 +431,26 @@ export async function isForgotten(db: Db, userId: string, content: string): Prom
  * stands in for it, so a missing message never re-reads the whole conversation.
  */
 export async function unconsolidatedMessages(db: Db, conversationId: string, watermarkId: string | null, limit = 200) {
-  let after: Date | undefined;
-  if (watermarkId) {
-    const [w] = await db.select({ createdAt: messages.createdAt }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
-    after = w?.createdAt;
-    if (!after) {
-      const [e] = await db
-        .select({ endedAt: episodes.endedAt })
-        .from(episodes)
-        .where(eq(episodes.conversationId, conversationId))
-        .orderBy(desc(episodes.endedAt))
-        .limit(1);
-      after = e?.endedAt;
-      console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${after ? `the latest episode's end (${after.toISOString()})` : "the start (no episode either)"}`);
-    }
+  const inConversation = eq(messages.conversationId, conversationId);
+  const read = (after: SQL | undefined) => db.select().from(messages).where(and(inConversation, after)).orderBy(asc(messages.createdAt), asc(messages.id)).limit(limit);
+  if (!watermarkId) return read(undefined);
+  const [w] = await db.select({ id: messages.id }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
+  if (w) {
+    // Compared inside Postgres, at its precision: `created_at` keeps microseconds and a Date read back keeps
+    // milliseconds, so `> watermark.createdAt` from JS would read the watermark message itself again — and when it
+    // ends its sitting, that one message is the whole stretch, claimed onto itself forever (live, 2026-09-13).
+    // The id breaks a tie between messages stored in the same microsecond.
+    return read(sql`(${messages.createdAt}, ${messages.id}) > (select w.created_at, w.id from ${messages} as w where w.id = ${watermarkId})`);
   }
-  return db
-    .select()
-    .from(messages)
-    .where(and(eq(messages.conversationId, conversationId), after ? gt(messages.createdAt, after) : undefined))
-    .orderBy(asc(messages.createdAt))
-    .limit(limit);
+  const [e] = await db
+    .select({ endedAt: episodes.endedAt })
+    .from(episodes)
+    .where(eq(episodes.conversationId, conversationId))
+    .orderBy(desc(episodes.endedAt))
+    .limit(1);
+  console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${e ? `the latest episode's end (${e.endedAt.toISOString()})` : "the start (no episode either)"}`);
+  // An episode's end was a message's time read into a Date (milliseconds): compare at that precision.
+  return read(e ? sql`date_trunc('milliseconds', ${messages.createdAt}) > ${e.endedAt}` : undefined);
 }
 
 /** The conversation, with its watermark still where a run found it. */
