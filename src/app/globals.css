@@ -479,7 +479,7 @@ body::after {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 14px 16px 14px 18px;
+  padding: 10px 14px 10px 16px;
   background: var(--card);
   border: 1px solid var(--rule-strong);
   border-radius: 999px;
@@ -516,8 +516,8 @@ body::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 54px;
+  height: 54px;
   border-radius: 999px;
   background: var(--forest);
   color: #f3efe7;
