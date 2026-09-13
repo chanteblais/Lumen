@@ -23,7 +23,9 @@ const DOCKS = "(min-width: 768px)";
  * place, and a brass star on its rule beside the one you're in. The names
  * are on the parchment, which slides out while the pointer is over the rail
  * (or keyboard focus is in it) and floats over the page. A click on the
- * parchment, or on the compass star, pins it open and the page makes room.
+ * parchment, or on the compass star, pins it open and the page makes room;
+ * a click that unpins folds it at once, even with the pointer still over it
+ * (hover can't reopen it until the pointer has left, or it looks stuck open).
  * On a phone there is no hover: the compass star opens it over the page,
  * and a tap on a place, outside it or Escape folds it away.
  */
@@ -31,6 +33,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
   const pathname = usePathname();
   const [pinned, setPinned] = useState(pinnedAtLoad);
   const [open, setOpen] = useState(false);
+  const [resting, setResting] = useState(false);
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -53,6 +56,7 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
     if (!window.matchMedia(DOCKS).matches) return setOpen((o) => !o);
     const next = !pinned;
     setPinned(next);
+    setResting(!next);
     document.cookie = `${NAV_PIN_COOKIE}=${next ? "pinned" : "folded"}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
 
@@ -63,7 +67,14 @@ export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
 
   const shown = open || pinned;
   return (
-    <aside ref={ref} className="nav" data-pinned={pinned || undefined} data-open={open || undefined}>
+    <aside
+      ref={ref}
+      className="nav"
+      data-pinned={pinned || undefined}
+      data-open={open || undefined}
+      data-resting={resting || undefined}
+      onPointerLeave={() => setResting(false)}
+    >
       <div className="nav-rail" aria-hidden>
         <Diamond size={7} className="nav-spark nav-spark-head" />
         <Diamond size={7} className="nav-spark nav-spark-foot" />

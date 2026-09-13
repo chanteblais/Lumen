@@ -164,8 +164,9 @@ body::after {
 @media (min-width: 768px) {
   .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
+/* Not while resting: just unpinned by a click with the pointer still over it. */
 @media (hover: hover) {
-  .nav:hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
+  .nav:not([data-resting]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
 }
 
 .nav-rail {
