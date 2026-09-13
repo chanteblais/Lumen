@@ -9,13 +9,38 @@ const HEIGHT = 150;
 /** Time per frame of each loop. */
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
+  wave: 120, // a quick gesture: 24 frames ≈ 3 s, the pace Chanté checked the sheet at
 };
 /**
  * Loops mixed into the breathing now and then, one pass at a time. Empty since
  * the lantern character (2026-09-12): the sway and the playful foot were drawn
- * of the earlier character, and her new sheet has no in-betweened variation yet.
+ * of the earlier character, and no idle variation is drawn of her yet.
  */
 const VARIATIONS: LumiLoop[] = [];
+/** Loops played in answer to something, never on the idle schedule. */
+const REACTIONS: LumiLoop[] = ["wave"];
+/**
+ * Away this long, then back, is an arrival, and she waves. Thirty minutes: the
+ * gap that starts a new sitting for the greeting (`SITTING_GAP_MS` in
+ * `core/domain/conversations.ts`, not imported — that module brings the database).
+ * "Away" is time with no tab of the app visible in this browser.
+ */
+const ARRIVAL_GAP_MS = 30 * 60_000;
+/** A beat after the page appears, so the wave follows the arrival rather than racing it. */
+const ARRIVAL_DELAY_MS = 900;
+const SEEN_KEY = "lumi-last-seen";
+const readSeen = () => {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+};
+const markSeen = () => {
+  try {
+    localStorage.setItem(SEEN_KEY, String(Date.now()));
+  } catch {}
+};
 /**
  * How long a frame fades in over the last: most of the frame time of the
  * faster of the two loops involved, so it is fully in before the next arrives.
@@ -44,15 +69,17 @@ const DEBUG = process.env.NODE_ENV === "development";
  * leaving the page (`CompanionBubble`). On Home she just hands you the
  * composer. No state of her own to maintain.
  *
- * Idle life, all of it off under `prefers-reduced-motion`:
- * - the sheet's nine-frame breath loop, each frame fading in over the last
- *   (two frames mounted: the last one underneath, the new one fading in on top)
+ * Life, all of it off under `prefers-reduced-motion`:
+ * - the nine-frame breath loop, each frame fading in over the last (two frames
+ *   mounted: the last one underneath, the new one fading in on top)
+ * - a wave when you arrive — the page opened, or its tab shown again, after
+ *   thirty minutes or more with no tab of the app visible (and on a first
+ *   visit in this browser) — once, at the next rest frame, then back to breathing
  * - every so often one pass of a variation (none drawn of the lantern
- *   character yet; when there are, never the same one twice running), then
- *   back to breathing
+ *   character yet; when there are, never the same one twice running)
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
- * One pose throughout — small movements, never a swap to another drawing.
+ * Every loop is one drawing and hands over at the same rest cell.
  */
 export function LumiCompanion() {
   const pathname = usePathname();
@@ -77,7 +104,7 @@ export function LumiCompanion() {
     const between = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
     const show = (loop: LumiLoop, frame: number) => setPose(({ cur }) => ({ cur: { loop, frame }, prev: cur }));
 
-    // The loop: breath by default; a variation runs its frames once, then hands
+    // The loop: breath by default; another loop runs its frames once, then hands
     // back to breath at frame 0 (every loop starts from the same rest pose).
     let current: LumiLoop = "breath";
     let pending: LumiLoop | null = null;
@@ -88,8 +115,10 @@ export function LumiCompanion() {
       if (f === 0) {
         // Loops only hand over at the rest frame, which they all share.
         if (current !== "breath") {
+          // A variation schedules the next one; a reaction just hands back.
+          const finished = current;
           current = "breath";
-          scheduleVariation();
+          if (VARIATIONS.includes(finished)) scheduleVariation();
         } else if (pending) {
           current = pending;
           pending = null;
@@ -101,11 +130,25 @@ export function LumiCompanion() {
     const scheduleVariation = () =>
       VARIATIONS.length &&
       after(between(20000, 45000), () => {
-        if (pending) return; // a cue is already waiting; it plays instead
+        if (pending) return; // a cue or a reaction is already waiting; it plays instead
         const choices = VARIATIONS.filter((loop) => loop !== last);
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
       });
+
+    // Arriving: away long enough, and she waves.
+    const arrive = () => {
+      if (Date.now() - readSeen() >= ARRIVAL_GAP_MS) after(ARRIVAL_DELAY_MS, () => (pending = "wave"));
+      markSeen();
+    };
+    const visible = () => document.visibilityState === "visible";
+    const onVisibility = () => (visible() ? arrive() : markSeen());
+    const onPageHide = () => visible() && markSeen();
+    // While a tab is visible she counts as seen; a hidden tab doesn't keep the time fresh.
+    const heartbeat = setInterval(() => visible() && markSeen(), 60_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    if (visible()) arrive();
 
     // Blink: half → shut → half → open, ~0.3s. Occasionally doubled.
     const blink = (then: () => void) => {
@@ -121,8 +164,8 @@ export function LumiCompanion() {
       after(between(2500, 6500), () => blink(Math.random() < 0.2 ? () => after(180, () => blink(scheduleBlink)) : scheduleBlink));
     ack.current = () => blink(() => {});
 
-    // A cue from the debug strip: a variation plays at the next rest frame
-    // (the same hand-over as a scheduled one); a blink plays now.
+    // A cue from the debug strip: a loop plays at the next rest frame (the same
+    // hand-over as a scheduled one); a blink plays now.
     const onCue = (e: Event) => {
       const what = (e as CustomEvent<Cue>).detail;
       if (what === "blink") blink(() => {});
@@ -136,6 +179,9 @@ export function LumiCompanion() {
     return () => {
       ack.current = null;
       timers.forEach(clearTimeout);
+      clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
       if (DEBUG) window.removeEventListener(CUE_EVENT, onCue);
     };
   }, []);
@@ -182,10 +228,10 @@ export function LumiCompanion() {
 }
 
 /**
- * Dev-only buttons above the companion: play each variation (or a blink) on
- * demand instead of waiting for the schedule. A handle at the right end folds
- * them away (remembered per browser). Not a control in the product — it never
- * ships (`NODE_ENV === "development"` only).
+ * Dev-only buttons above the companion: play each variation and reaction (or a
+ * blink) on demand instead of waiting for the schedule or an arrival. A handle
+ * at the right end folds them away (remembered per browser). Not a control in
+ * the product — it never ships (`NODE_ENV === "development"` only).
  */
 const FOLD_KEY = "lumi-debug-folded";
 const foldListeners = new Set<() => void>();
@@ -210,7 +256,7 @@ const subscribeFolded = (fn: () => void) => {
 let toggled = false; // animate the fold only once a click has asked for it, not on load
 
 function DebugStrip() {
-  const cues: Cue[] = [...VARIATIONS, "blink"];
+  const cues: Cue[] = [...VARIATIONS, ...REACTIONS, "blink"];
   // Read through a store so the server renders it open and the client catches up without a state-in-effect.
   const folded = useSyncExternalStore(subscribeFolded, readFolded, () => false);
   const toggle = () => {
