@@ -70,7 +70,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 
 - **Shell:** CSS grid `272px minmax(0,1fr)`, **viewport-height** (`.shell { height: 100dvh }`); sidebar `.sidebar` scrolls internally, with an inner 10px inset frame line (`::after`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
 - **Content width:** `max-w-[1080px]`, left-aligned within main.
-- **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right; the footer aside and dividers are hidden.
+- **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right in a row that wraps (right-aligned) when it runs out of room; the footer aside and dividers are hidden. The nav's desktop `flex-col mt-8` is overridden in the mobile block (`flex-direction: row; margin-top: 0`).
 - **Radii:** cards `6px` (a plate, not a bubble); user notes `8px` with a `2px` tail corner; chips, icon buttons, composer, send `999px`.
 - **Shadow:** one token, `--shadow` (two soft layers). Nothing else casts.
 

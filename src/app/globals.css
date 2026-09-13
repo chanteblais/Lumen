@@ -670,7 +670,8 @@ body::after {
   .sidebar::after, .sidebar::before { display: none; }
   .main { box-shadow: none; }
   .sidebar .sidebar-foot, .sidebar .tagline, .sidebar .rule-short, .sidebar .divider { display: none; }
-  .sidebar nav { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  /* A row that wraps, right of the wordmark: overrides the nav's desktop `flex-col mt-8` (utilities lose to unlayered CSS). */
+  .sidebar nav { display: flex; flex-direction: row; margin-top: 0; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   .nav-item { padding: 6px 10px; margin: 0; }
   .nav-item .nav-mark { display: none; }
   .nav-item .name { font-size: 15px; }
