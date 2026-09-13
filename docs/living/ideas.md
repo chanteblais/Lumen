@@ -35,7 +35,7 @@ The *recognition* survives the resolution of question 14. Noticing beginning, ch
 
 **Lumi reads or sits nearby during focus.** Accepted, as direction (EP§11: breathe, blink, sway, read, sit nearby, occasionally look up). How to draw and animate it is `art-direction.md` bet 6.
 
-**Drop a thing onto Lumi to start together.** Promising. EP§16's example of a manual move that also tells Lumi something. It would be a direct way into *Start with Lumi*. See question 20.
+**Drop a thing onto Lumi to start together.** Promising. EP§16's example of a manual move that also tells Lumi something. It would have been a direct way into *Start with Lumi*, which was removed with focus sessions on 2026-09-13. See question 20.
 
 **Lumi as a resident of Home.** Exploring. She stands and moves in the painted room, not only in the corner. `art-direction.md` §6, bet 4. EP§15 applies: scenery needs an experiential purpose.
 

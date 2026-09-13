@@ -70,6 +70,8 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
         {rightNow ? (
           <>
             <h2 className="today-now-title font-display text-ink">{rightNow.title}</h2>
+            {/* After a Not this, Lumi's one line on why this fits instead. */}
+            {plan.note && <p className="today-now-note font-display italic">{plan.note}</p>}
             <Note i={rightNow} />
             <p className="mt-4 text-[17px] leading-snug text-ink-soft">
               <span className="label mr-3">First</span>
