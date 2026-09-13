@@ -33,10 +33,10 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `176c6fe3225e` |
+| `docs/philosophy/lumi.md` | `07bd0f4e7f9e` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `5261a044fa57` |
+| `docs/living/decisions.md` | `9eeab4214d03` |
 | `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/lumi-environment`, Chanté's live test): the product decisions gained *When something feels too big, Lumi asks before she hands over a step*, and `lumi.md` §5 and §14 follow it. The brief already says resistance is information to adapt to (break it down, swap it, let it rest, ask whether it needs doing) and that the states behind not starting need different things; the rule itself is the *how*, so it went into the persona (*What you're for* → Starting).
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/lumi-environment`): `lumi.md` §6 now says each turn carries where the user is and that her persona holds a map of the app. The brief already says the places are views of one life and that she lives in them and is on every page; which page, what each lets the user do and what isn't built are the *how*, so they went into the persona (*The app, and where they are*), which would otherwise go stale inside the brief as pages change.
 - **2026-09-13 · places: no focus sessions; Today's changes happen on its card** (`feat/today-in-place`): the product decisions gained *Today does its own organising, and focus sessions are set aside for now*, two foundation entries are marked partly superseded or suspended, and the canon map's Home and Study rows say sessions are gone. The brief's places line said "Focus sessions happen with you on Home" and its context list named sessions: both would have had her offering something that no longer exists. Now Today's first thing is turned down or broken into steps on its card, and company while someone works is a conversation. Voice eval run logged in `voice-eval-log.md` (scenario 7 is the body-double ask).
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.

@@ -39,6 +39,9 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
  * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
  */
 export async function POST(req: Request) {
+  // Dev timings for the log line: getting ready (auth, loads, selection), her first word, the whole turn.
+  const startedAt = Date.now();
+  let firstWordAt: number | undefined;
   const { user, previous } = await requireVisit();
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
@@ -111,6 +114,7 @@ export async function POST(req: Request) {
   const oldestInView = all[0]?.metadata?.createdAt;
   const libraryView = selectLibrary(library.threads, library.notes, library.episodes, turn, { now: new Date(), windowStartsAt: oldestInView ? new Date(oldestInView) : new Date() });
 
+  const readyAt = Date.now();
   const result = streamText({
     model: chatModel(),
     tools,
@@ -149,11 +153,14 @@ export async function POST(req: Request) {
     ],
     messages: await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }),
     providerOptions: chatProviderOptions,
+    onChunk: ({ chunk }) => {
+      if (chunk.type === "text-delta") firstWordAt ??= Date.now();
+    },
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""} ready=${readyAt - startedAt}ms firstWord=${firstWordAt ? `${firstWordAt - startedAt}ms` : "-"} done=${Date.now() - startedAt}ms`);
       }
     },
   });

@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-09-13 · When something feels too big, Lumi asks before she hands over a step
+
+**Decision.** Told in words that something feels too big, Lumi asks one short question about what makes it big (all of it, one part, or just today) before offering anything, then answers that: a smaller piece, a different thing, or letting it wait.
+**Rationale.** Chanté, trying "this one feels too big" from the bubble on Today: "She gave me instructions on how to do it" (Lumi had said *Just go over to the compost container. You don't need to carry it out yet.*, the smallest piece). Asked what she'd have wanted, she chose one question first.
+**Implications.** Lumi's persona (*What you're for* → Starting) and `lumi.md` §5 and §14. Today's card is unchanged: *Not this → Too big* still swaps in the smallest thing at once, and *Break it down* still offers steps to pick from, because those are choices the user made by tapping. The *Break it down* quick start in chat still goes straight to a first action: asking for a breakdown is the answer to the question.
+**Principle.** Diagnose before prescribing (`lumi.md` §15, run 1); resistance changes the plan (EP§7); starting is its own problem (EP§10); one decision at a time (EP§3).
+**Replaces.** *Too big: the smallest piece* as the first reply in conversation (`lumi.md` §14, from the removed *Not this* persona section).
+
+---
+
 ## 2026-09-13 · Today does its own organising, and focus sessions are set aside for now
 
 **Decision.** Nothing on Today sends you to Home. *Not this* re-cuts the path on the card and shows what fits instead, with Lumi's one line on why; *Break it down* shows a few small steps on the card to pick the first from. *Start with Lumi* and focus sessions — the session bar, check-ins, the abandoned-session greeting and the *Body double* quick start — are removed from the product for now. Plan with Lumi is not being built.
