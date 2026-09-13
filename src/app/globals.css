@@ -227,8 +227,8 @@ body::after {
 .nav-lock::before { background: radial-gradient(circle, rgba(236, 228, 200, 0.5), rgba(236, 228, 200, 0) 62%); } /* moonlight, a little cooler */
 .nav-toggle:hover::before,
 .nav-lock:hover::before { opacity: 0.5; }
-.nav-toggle[aria-expanded="true"]::before,
-.nav-lock[aria-pressed="true"]::before { opacity: 1; }
+.nav-toggle[aria-expanded="true"]::before { opacity: 1; }
+.nav-lock[aria-pressed="true"]::before { opacity: 0.65; } /* locked, the moon glows softer than the pinned star (Chanté: a bit less) — still brighter than a hover */
 
 /* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
    every page, and the greeting's scroll on Home's dark room. */
