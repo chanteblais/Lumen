@@ -42,7 +42,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Rule / strong | parchment at .16 / .40 | Every hairline |
 | Shadow | two black layers (.25 / .35) | Plates and the scroll |
 
-The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today has a painting of its own (below); Lists, Insights and Settings stay ivory. The room is not a theme, it is where Home is.
+The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today and the Library have paintings of their own (below); Insights and Settings stay ivory. The room is not a theme, it is where Home is.
 
 **Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today-background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) and laid out after the mockup (`art/mockups/today-mockup.png`): the page is **one paper panel on the right**, the closing line a small green slip beneath it at the foot of the page, and the room left open — Lumi stands in it. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped to it) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory**. The veil (`::after`, `rgba(44,30,16,…)`) is heaviest under the sidebar and along the top, clear over the room.
 
@@ -57,6 +57,17 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 | Grain / foxing / gutter | Grain at .14; foxing and the gutter shadow off |
 
 Not carried over from the mockup: the filter tabs, the plant per category, the *In Season* panel with step counts (its corner is left open), the *Plant something new* button and the quote's copy — `decisions.md` 2026-09-12 · Today, set in the garden.
+
+**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library-background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed) and takes **Today's shape**: one layer (`.library-scene`) behind the shell, the lists on **one paper panel on the right**, the room left open, Lumi standing in it. The painting is lamplit, but the page is paper, so **the tokens stay ivory**. Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and the panel's card.
+
+| Piece | In the reading room |
+|---|---|
+| `.library-page` | Below 1100px a centred 720px column; from 1100px it aligns the panel right at `clamp(440px, 36vw, 540px)` |
+| `.library-panel` | Today's plate (card at .97, 20px blur, 10px radius, hairline .10, shadow .08 / .24), padding 24 / 30. Top to bottom: the *Library* kicker with the *Add something* chip (15px) on the same line, a divider, *Everything, kept.* (display 22px), then each list |
+| `.library-list` | One list: its name (display 24px) with a rule running beside it, rows at 10px padding; 26px between lists |
+| Lumi | From 1100px (landscape) she stands on the rug at the front-left of the reading table — `--lumi-x: 520; --lumi-y: 870` in the painting's pixels, mapped through the same cover fit as Today. She covers the near chair and the table's end, both further back than her feet |
+
+The painting carries words — signs over its bays (*Personal*, *Coherence*, *School*, *Glåüm*, *Lumi's Notes*, *Archive*, *Ideas*, *Psychology*) and a banner (*More Thoughtful Humans*). They are part of the painting, not the interface: nothing reads them, and they don't match the user's lists (`art-direction.md` §1).
 
 ---
 
@@ -76,7 +87,7 @@ Not carried over from the mockup: the filter tabs, the plant per category, the *
 
 Heading defaults: none imposed. Headings are display-font lines set per surface; there is no `h1` style to fight.
 
-**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Coherence*, *Lists · Coherence*; Home is just *Coherence*.
+**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Coherence*, *Library · Coherence*; Home is just *Coherence*.
 
 ---
 

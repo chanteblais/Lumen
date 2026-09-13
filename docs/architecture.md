@@ -44,7 +44,7 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
    - time since last visit (`users.last_seen_at`), phrased in buckets ("3 hours", "9 days")
    - today's capacity report, if any
    - open intentions (≤ 25, newest-touched first; stale ones flagged `stale: 14d`), with ids
-   - **recent changes** (≤ 12, newest first, last 36h; `core/domain/activity.ts`): every `intention.*` change joined to its title and current status, phrased by who did it — *they ticked "X" done on Today or Lists* (`payload.via: "app"`) vs *you marked "X" done* (a tool). This is how "add back the one I just checked off" works: ticks on a page never appear in the transcript, so the block carries them, with the id, and the persona says act on it rather than ask. Chat-only (pages don't load it).
+   - **recent changes** (≤ 12, newest first, last 36h; `core/domain/activity.ts`): every `intention.*` change joined to its title and current status, phrased by who did it — *they ticked "X" done on Today or in the Library* (`payload.via: "app"`) vs *you marked "X" done* (a tool). This is how "add back the one I just checked off" works: ticks on a page never appear in the transcript, so the block carries them, with the id, and the persona says act on it rather than ask. Chat-only (pages don't load it).
    - recently done (≤ 5) with ids and when, so a mistaken tick can be undone by id (`reopen_intention`)
    - **active focus session** (M5), if any: id, goal, first step, minutes elapsed of planned, approach — with the instruction that Lumi is keeping them company (answer what they say, briefly; start nothing new). With none running, the last session that ended in the last day and a half (goal, first step, how it ended, when) for continuity — "pick it back up". A tap on the check-in or End arrives as this very message and gets a *Just now* line (what was tapped; that the session is already closed on Done/End; the intention id on Done so `complete_intention` is one call away)
    - beliefs (≤ 40), grouped by kind, ordered by confidence; strategies with evidence counts; low-confidence ones marked *tentative*
@@ -60,7 +60,7 @@ Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `c
 | `create_intention {title, next_action?, note?, due_at?, effort_hint?}` | insert; event `intention.created` |
 | `update_intention {id, title?, next_action?, note?, due_at?, effort_hint?}` | patch; bumps `last_touched_at`; event |
 | `complete_intention {id}` / `drop_intention {id, reason?}` | status change; event |
-| `reopen_intention {id}` | done/dropped → open (a mistaken tick, a change of mind); event `intention.reopened {via: "chat"}`. Same domain call as the circle on Today/Lists (`via: "app"`). Does not touch today's path |
+| `reopen_intention {id}` | done/dropped → open (a mistaken tick, a change of mind); event `intention.reopened {via: "chat"}`. Same domain call as the circle on Today/Library (`via: "app"`). Does not touch today's path |
 | `report_capacity {level, flags?, note?}` | event `capacity.reported` (source of truth for "today") |
 | `reshape_today {ask, right_now?, first_step?}` | writes nothing itself: raises `onPlanChange({ reason: "asked", ask })` so the turn's `after()` re-cuts today's path around what the user asked for in chat ("something easy"), pinning the intention Lumi named in her reply as Right now. Ledger line *Reshaped Today · ask*. Event `plan.generated {reason: "asked", ask}` when the re-cut lands |
 | `start_focus_session {goal, first_step, approach?, minutes?, intention_id?}` | insert session (`minutes` defaults to `preferences.session_minutes`; `check_in_minutes` copied from preferences); `approach` = the strategy being tried, worded like an existing strategy belief when one fits; a session still open is closed as `stopped_early` first and reflected on; touches the intention; event `session.started`; returns the `SessionView` the client reads to show the bar (M5) |
@@ -164,7 +164,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
 │   │   ├── insights/page.tsx     what Lumi noticed in the mail — "do any of these still need doing?"
-│   │   ├── lists/page.tsx        the pile
+│   │   ├── library/page.tsx      the pile, in the Library (`/lists` redirects here, next.config.ts)
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── knows/page.tsx        "What Lumi knows" — beliefs, grouped, correct/delete inline
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
@@ -206,7 +206,7 @@ Every `src/app/api/**/route.ts` must call `requireUser()` (or check `CRON_SECRET
 |---|---|---|---|---|
 | `/api/chat` | POST | `requireUser()` | One streamed turn, for both clients (the chat page and the companion's speech bubble; each has its own `useChat`, the server holds the one transcript). Body `{ id, message }` — the new user `UIMessage` only; the server loads the last 30 from the database, persists the user message, streams `claude-opus-5` with `instructions: [persona (cache_control ephemeral), context block]` at `effort: low` with server-side refusal fallbacks, and persists the assistant message in `onEnd`. `maxDuration = 60`. Dev logs a `[chat] tokens …` line with cache read/write counts | M2 |
 
-| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Lists. Complete also advances today's plan (`reflectClosedInPlan`). Both events carry `via: "app"`, which is how the chat context tells a tick on a page from a tool call | M3 |
+| `/api/intentions/[id]` | PATCH | `requireUser()` | `{ action: "complete" \| "reopen" }` from Today / Library. Complete also advances today's plan (`reflectClosedInPlan`). Both events carry `via: "app"`, which is how the chat context tells a tick on a page from a tool call | M3 |
 | `/api/capacity` | POST | `requireUser()` | Today's capacity prompt. `{ level }` writes `capacity.reported` and re-cuts the path (`recutTodaysPlan(…, "capacity")` — skipped when the answer matches what the plan already assumed), returning `{ level, rightNow }`; `{ skip: true }` writes `capacity.asked {skipped}` so it isn't asked again today. `maxDuration = 60` (model call) | M4 |
 
 | `/api/session` | POST | `requireUser()` | The one check-in answer that needs no reply: `{ id, response: "ok" }` (Yep) writes `session.check_in {response: ok, minute}` — no model call, no message. Returns `{ ok: true }`, or `{ ok: false, ended: true }` when that session is no longer running (swept as abandoned, or ended elsewhere) so the client drops the bar. Stuck / Got distracted / Done / End go through `/api/chat` instead, because Lumi answers them | M5 |

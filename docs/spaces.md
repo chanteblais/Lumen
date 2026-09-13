@@ -672,10 +672,10 @@ Currently, Lumi may simply occupy a corner or fixed location. Long-term, she can
 |---|---|---|
 | **Home** | `/` — the conversation, the greeting, re-entry, the companion bubble | yes — a lamplit room (`public/home-room.webp`) |
 | **Garden** | `/today` — the path (Right now · After that · Later), capacity, *Not this* | yes — a daylit greenhouse (`public/today-room.webp`); Lumi stands in it from 1100px |
-| **Library** | `/lists` — the minimum: open intentions grouped by list, tick, one *Add something* → Chat; moving and renaming happen in conversation | not yet — `art/scenery/library-background.png` has arrived, is untracked, and isn't in `art-direction.md` §1 |
+| **Library** | `/library` (was `/lists`, which redirects) — the minimum: open intentions grouped by list, tick, one *Add something* → Chat; moving and renaming happen in conversation | yes — a lamplit reading room (`public/library-room.webp`); Lumi stands by the reading table from 1100px |
 | **Study** | no page. Focus Together is a session bar inside Home (`features.md` → Home) | no |
 
-**The nav today** reads **Home · Today · Lists · Insights · Settings** — not the four of §3. **Insights** (what Lumi noticed in the mail) and **Settings** have no space. By §4's test, Insights' single question (*do any of these still need doing?*) is Library work, stewardship of what you're carrying; whether it folds into the Library or stays its own item is open.
+**The nav today** reads **Home · Today · Library · Insights · Settings** — not the four of §3. *Library* is the first of §3's design names to reach the nav (Chanté, 2026-09-13, as §3's "labels can evolve" allows): it replaced *Lists* when its painting arrived. Today is still *Today*, not *Garden*. **Insights** (what Lumi noticed in the mail) and **Settings** have no space. By §4's test, Insights' single question (*do any of these still need doing?*) is Library work, stewardship of what you're carrying; whether it folds into the Library or stays its own item is open.
 
 ### Tensions to settle
 
@@ -684,7 +684,7 @@ Currently, Lumi may simply occupy a corner or fixed location. Long-term, she can
 3. **Is Lumi's World a feature? (`art-direction.md` §9, question 1).** §6 and §25–28 largely answer it: the world may change slowly with the relationship, is never tended, unlocked or awarded, and is never needed to use the app. There is no separate place called Lumi's World here. Left for Chanté to close.
 4. **The four nav names (§3).** Adding *Focus* means a Study page. Today, focus is a bar in the conversation, started by Lumi, deliberately not something the user sets up. A Study page must keep that: entered with a thing, not configured.
 5. **The garden's vocabulary (§8).** Plant · Tend · Let rest · Prune · Harvest do not appear in the UI today. The current words are *Done*, *Let go* and *Not this*. Any swap passes §8's own test (natural and immediately understandable) and goes through a voice-eval run, since the words are also Lumi's.
-6. **Library sections emerge from life (§13) vs default lists.** Lists today start as School · Work · Personal · Later (`users.preferences.lists`), a default rather than something that emerged. Emergent sections need Lumi to propose and file them, never a taxonomy for the user to build (§15).
+6. **Library sections emerge from life (§13) vs default lists.** Lists today start as School · Work · Personal · Later (`users.preferences.lists`), a default rather than something that emerged. Emergent sections need Lumi to propose and file them, never a taxonomy for the user to build (§15). The Library's painting already names bays — *Personal*, *School*, *Coherence*, *Glåüm*, *Lumi's Notes*, *Archive*, *Ideas*, *Psychology* — that aren't the user's lists; for now they are scenery, and whether sections should ever appear in the room is part of this tension.
 7. **Lumi moving between places (§21, §29).** Walking needs an in-betweened walk cycle and four isometric facings (`art-direction.md` §6–7; bet 4). Until then, continuity between spaces comes from light, material and her being there, not a journey.
 
 ### Already consistent
