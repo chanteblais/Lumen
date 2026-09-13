@@ -3,13 +3,21 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Ledger } from "@/components/chat/Ledger";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 
 type Props = { onClose: () => void; onSend?: () => void };
 
 const LUMI_ERROR = "I lost the thread for a second. Say that again?";
+
+// Placement, in px (the CSS matches: .companion gap 14, bubble 330 wide).
+const BUBBLE_W = 330;
+const BUBBLE_GAP = 14;
+const BUBBLE_MAX = 560;
+const WINDOW_MARGIN = 24;
+/** Less room than this above her and the bubble opens beside her instead. */
+const ROOM_ABOVE = 300;
 
 /**
  * A speech bubble above the corner companion: say one thing to Lumi from any
@@ -37,8 +45,31 @@ export function CompanionBubble({ onClose, onSend }: Props) {
         prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
       }),
   );
-  const { messages, sendMessage, status, error } = useChat<CoherenceUIMessage>({ transport, generateId: () => crypto.randomUUID() });
+  const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({ transport, generateId: () => crypto.randomUUID() });
   const busy = status === "submitted" || status === "streaming";
+
+  // The bubble never runs off the window. Above her when there's room; where she
+  // stands high in a painting (Today), beside her, growing down. Either way it is
+  // capped (`--bubble-max`) and a long reply scrolls inside it, following her words
+  // unless you've scrolled up to reread. Written to the DOM, not state: no re-render.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = bubble.current;
+      const her = el?.parentElement?.querySelector(".companion-btn")?.getBoundingClientRect();
+      if (!el || !her) return;
+      const above = her.top - BUBBLE_GAP - WINDOW_MARGIN;
+      const beside = window.innerWidth - her.right - BUBBLE_GAP - BUBBLE_W >= WINDOW_MARGIN ? "right" : "left";
+      const side = above >= ROOM_ABOVE ? "above" : beside;
+      const room = side === "above" ? above : window.innerHeight - her.top - WINDOW_MARGIN;
+      el.dataset.side = side;
+      el.style.setProperty("--bubble-max", `${Math.min(BUBBLE_MAX, room)}px`);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const exchange = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true);
 
   useEffect(() => input.current?.focus(), []);
 
@@ -46,7 +77,7 @@ export function CompanionBubble({ onClose, onSend }: Props) {
     const el = input.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
   };
 
   // Escape or a click anywhere else closes; the companion button toggles itself.
@@ -81,6 +112,7 @@ export function CompanionBubble({ onClose, onSend }: Props) {
     const text = value.trim();
     if (!text || busy) return;
     setSaid((s) => ({ text, n: (s?.n ?? 0) + 1 }));
+    pinned.current = true;
     setValue("");
     requestAnimationFrame(resize);
     void sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
@@ -94,10 +126,23 @@ export function CompanionBubble({ onClose, onSend }: Props) {
     .map((p) => p.text)
     .join("");
 
+  useEffect(() => {
+    const el = exchange.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [said, status, replyText, reply?.parts.length]);
+
   return (
     <div ref={bubble} className="companion-bubble" role="dialog" aria-label="Say something to Lumi">
       {said && (
-        <div className="companion-exchange" aria-live="polite">
+        <div
+          ref={exchange}
+          className="companion-exchange"
+          aria-live="polite"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+          }}
+        >
           <p key={said.n} className="companion-said">{said.text}</p>
           {status === "submitted" && (
             <p className="thinking-dots" aria-label="Lumi is thinking"><span>·</span><span>·</span><span>·</span></p>
@@ -137,11 +182,20 @@ export function CompanionBubble({ onClose, onSend }: Props) {
             }
           }}
         />
-        <button type="submit" className="send companion-send" aria-label="Send" disabled={value.trim().length === 0 || busy}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 19V5M6 11l6-6 6 6" />
-          </svg>
-        </button>
+        {/* While she talks, the send is a stop: it interrupts her and keeps what she'd said. */}
+        {busy ? (
+          <button type="button" className="companion-send" aria-label="Stop Lumi" onClick={() => void stop()}>
+            <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
+              <rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor" />
+            </svg>
+          </button>
+        ) : (
+          <button type="submit" className="companion-send" aria-label="Send" disabled={value.trim().length === 0}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19V5M6 11l6-6 6 6" />
+            </svg>
+          </button>
+        )}
       </form>
     </div>
   );
