@@ -3,12 +3,14 @@
  * it and proposes what to keep — an episode (what you talked about, where it
  * was left) and, for subjects that run through their life, notes filed under
  * Library threads with each touched thread's summary rewritten. Code clamps the
- * proposal (`clampConsolidation`) and applies it in one transaction that also
- * moves the conversation's watermark, so a stretch is consolidated once.
+ * proposal (`clampConsolidation`) and applies it in one transaction whose last
+ * statement moves the conversation's watermark, so a stretch is consolidated
+ * once and the conversation row is locked only for the commit. A lease taken
+ * before the model call keeps two instances from paying for the same stretch.
  * Runs off the response (`after()`) at the end of a chat turn and on opening
- * Home. A failed model call leaves the watermark where it was; the stretch waits
- * for the next run. The user never sees it happen and never tidies anything.
- * See docs/architecture.md → The Library.
+ * Home. A failed run leaves the watermark where it was and records the failure;
+ * the stretch waits 10 minutes, then an hour, then six. The user never sees it
+ * happen and never tidies anything. See docs/architecture.md → The Library.
  */
 import { generateText, Output } from "ai";
 import { z } from "zod";
@@ -19,6 +21,8 @@ import { appendEvent } from "@/core/domain/events";
 import {
   addAliases,
   claimWatermark,
+  CONSOLIDATION_LEASE_MS,
+  consolidationRetryAt,
   createThread,
   fileNote,
   findThreadByName,
@@ -29,8 +33,11 @@ import {
   NOTE_KINDS,
   NOTE_MAX,
   NOTE_MIN,
+  recordConsolidationFailure,
+  releaseConsolidationLease,
   reviseSummary,
   setEpisodeThreads,
+  takeConsolidationLease,
   shelveThread,
   whyNotShelve,
   SUMMARY_MAX,
@@ -60,6 +67,10 @@ export const LEFT_OFF_MAX = 200;
 const MESSAGE_CHARS = 1200;
 const PROMPT_THREADS = 40;
 const PROMPT_NOTE_THREADS = 6;
+/** How much of a proposal the clamp reads; it keeps far less. */
+const PROPOSED_THREADS = 12;
+const PROPOSED_NOTES = 40;
+const PROPOSED_SHELVINGS = 12;
 
 /* ------------------------------------------------------------- batch */
 
@@ -88,35 +99,36 @@ export function pickBatch(msgs: BatchMessage[], now: Date): BatchMessage[] {
 
 /* ------------------------------------------------------------- model */
 
-const ProposalSchema = z.object({
+/**
+ * No length or count limits here: one string over a `.max` fails the whole
+ * object, and the stretch with it. The limits are in the descriptions, and
+ * `clampConsolidation` truncates and caps whatever comes back.
+ */
+export const ProposalSchema = z.object({
   episode: z
     .object({
-      summary: z.string().max(EPISODE_MAX).describe("1–3 plain sentences: what you talked about and how it went"),
-      left_off: z.string().max(LEFT_OFF_MAX).optional().describe("Only if something was left open"),
+      summary: z.string().describe(`1–3 plain sentences, under ${EPISODE_MAX} characters: what you talked about and how it went`),
+      left_off: z.string().optional().describe(`Only if something was left open; under ${LEFT_OFF_MAX} characters`),
     })
     .optional(),
-  threads: z
-    .array(
-      z.object({
-        ref: z.string().describe("An id from Threads already held, or new:<short-key> for a new thread"),
-        title: z.string().max(TITLE_MAX).optional().describe("For a new thread: what they call it"),
-        aliases: z.array(z.string().max(40)).max(6).optional().describe("Other words they use for it — new ones only"),
-        summary: z.string().max(SUMMARY_MAX).optional().describe("The whole summary, rewritten to take in what's new"),
-      }),
-    )
-    .max(6),
-  notes: z
-    .array(
-      z.object({
-        thread: z.string().describe("A ref from threads above, or an id from Threads already held"),
-        kind: z.enum(NOTE_KINDS),
-        content: z.string().max(NOTE_MAX).describe("One specific sentence"),
-        source: z.enum(["user_said", "lumi_inferred"]),
-        their_words: z.string().max(300).optional().describe("For user_said: their exact words, copied"),
-        supersedes: z.string().optional().describe("The id of a current note this one replaces"),
-      }),
-    )
-    .max(20),
+  threads: z.array(
+    z.object({
+      ref: z.string().describe("An id from Threads already held, or new:<short-key> for a new thread"),
+      title: z.string().optional().describe(`For a new thread: what they call it, under ${TITLE_MAX} characters`),
+      aliases: z.array(z.string()).optional().describe("Other words they use for it — new ones only, a few words each"),
+      summary: z.string().optional().describe(`The whole summary, rewritten to take in what's new, under ${SUMMARY_MAX} characters`),
+    }),
+  ).describe("Six at most"),
+  notes: z.array(
+    z.object({
+      thread: z.string().describe("A ref from threads above, or an id from Threads already held"),
+      kind: z.enum(NOTE_KINDS),
+      content: z.string().describe(`One specific sentence, under ${NOTE_MAX} characters`),
+      source: z.enum(["user_said", "lumi_inferred"]),
+      their_words: z.string().optional().describe("For user_said: their exact words, copied"),
+      supersedes: z.string().optional().describe("The id of a current note this one replaces"),
+    }),
+  ).describe("Twenty at most"),
   shelve: z
     .array(
       z.object({
@@ -124,8 +136,8 @@ const ProposalSchema = z.object({
         under: z.string().describe("The broader thread it belongs under: an id from Threads already held, or a ref from threads above"),
       }),
     )
-    .max(6)
-    .optional(),
+    .optional()
+    .describe("Six at most"),
 });
 export type RawProposal = z.infer<typeof ProposalSchema>;
 
@@ -224,7 +236,8 @@ export function clampConsolidation(
   const episodeSummary = clean(raw.episode?.summary, EPISODE_MAX);
   const episode = episodeSummary.length >= 10 ? { summary: episodeSummary, leftOff: clean(raw.episode?.left_off, LEFT_OFF_MAX) || null } : null;
 
-  for (const t of raw.threads ?? []) {
+  const proposedThreads = (raw.threads ?? []).slice(0, PROPOSED_THREADS);
+  for (const t of proposedThreads) {
     if (held.has(t.ref)) continue;
     if (!t.ref.startsWith("new:")) continue; // an invented id
     const title = clean(t.title, TITLE_MAX);
@@ -236,7 +249,7 @@ export function clampConsolidation(
   const resolve = (ref: string) => (held.has(ref) ? ref : (toExisting.get(ref) ?? (fresh.has(ref) ? ref : undefined)));
 
   const notes: PlannedNote[] = [];
-  for (const n of raw.notes ?? []) {
+  for (const n of (raw.notes ?? []).slice(0, PROPOSED_NOTES)) {
     if (notes.length >= MAX_NOTES_PER_RUN) break;
     const thread = resolve(n.thread);
     if (!thread || !NOTE_KINDS.includes(n.kind)) continue;
@@ -266,7 +279,7 @@ export function clampConsolidation(
   // ones earns its place by gathering NEW_SECTION_MIN_THREADS of them, one a run.
   const heldOrEarned = (ref: string) => (held.has(ref) ? ref : (toExisting.get(ref) ?? (earnedKeys.has(ref) ? ref : undefined)));
   const candidates: { thread: string; under: string }[] = [];
-  for (const s of raw.shelve ?? []) {
+  for (const s of (raw.shelve ?? []).slice(0, PROPOSED_SHELVINGS)) {
     const thread = heldOrEarned(s.thread);
     const under = heldOrEarned(s.under) ?? (fresh.has(s.under) ? s.under : undefined);
     if (thread && under && thread !== under && !held.get(thread)?.parentId) candidates.push({ thread, under });
@@ -299,7 +312,7 @@ export function clampConsolidation(
   };
   const summaries: ConsolidationPlan["summaries"] = [];
   const aliases: ConsolidationPlan["aliases"] = [];
-  for (const t of raw.threads ?? []) {
+  for (const t of proposedThreads) {
     const id = held.has(t.ref) ? t.ref : toExisting.get(t.ref);
     if (!id || !touched(id)) continue;
     const summary = clean(t.summary, SUMMARY_MAX);
@@ -317,11 +330,12 @@ export function clampConsolidation(
 /* --------------------------------------------------------------- run */
 
 type Deps = {
-  propose: (inputs: ConsolidationInputs) => Promise<RawProposal>;
+  /** Null: the model returned nothing usable — a failure, not an empty stretch. */
+  propose: (inputs: ConsolidationInputs) => Promise<RawProposal | null>;
   now: () => Date;
 };
 
-async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposal> {
+async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposal | null> {
   const r = await generateText({
     model: chatModel(),
     instructions: [
@@ -332,16 +346,25 @@ async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposa
     output: Output.object({ schema: ProposalSchema, name: "consolidation" }),
     providerOptions: effortOptions("low"),
   });
-  return r.output ?? { threads: [], notes: [] };
+  // An empty stand-in here would move the watermark past the stretch with nothing kept.
+  return r.output ?? null;
 }
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };
 
 export type ConsolidationResult =
   | { status: "nothing" }
+  /** The stretch failed recently; it's tried again from `until`. */
+  | { status: "waiting"; until: Date }
+  /** Another run holds the stretch (its lease), or already moved past it. */
+  | { status: "busy" }
   | { status: "failed" }
+  /** Another run claimed the stretch while this one's model call ran; everything this run wrote rolled back. */
   | { status: "lost" }
   | { status: "done"; messages: number; episodeId: string | null; threadsCreated: number; notesFiled: number; summaries: number; shelved: number };
+
+/** Thrown from inside the transaction when the watermark claim is lost, so every write before it rolls back. */
+class LostClaim extends Error {}
 
 /** Consolidate one stretch — the oldest one that's ready — for this user. */
 export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, deps: Partial<Deps> = {}): Promise<ConsolidationResult> {
@@ -364,25 +387,57 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
     return (await claimWatermark(db, conversation.id, from, through.id)) ? { status: "done", messages: batch.length, episodeId: null, threadsCreated: 0, notesFiled: 0, summaries: 0, shelved: 0 } : { status: "lost" };
   }
 
-  const held = await listThreads(db, user.id, PROMPT_THREADS);
-  const likely = rankThreads(held, batch.map((m) => m.text).join(" ")).slice(0, PROMPT_NOTE_THREADS);
-  const notes = await listCurrentNotes(db, user.id, likely.map((t) => t.id), 80);
+  const retryAt = await consolidationRetryAt(db, user.id, from, now);
+  if (retryAt && retryAt > now) return { status: "waiting", until: retryAt };
 
-  let raw: RawProposal;
+  // The lease before the model call: a second instance on the same stretch stops here instead of paying for one too.
+  const lease = new Date(now.getTime() + CONSOLIDATION_LEASE_MS);
+  if (!(await takeConsolidationLease(db, conversation.id, from, now, lease))) return { status: "busy" };
+  const stretch = { from, through: through.id };
   try {
-    raw = await d.propose({ batch, threads: held, notes, timezone: user.timezone });
-  } catch (e) {
-    console.error("[consolidate] model step failed; the stretch waits for the next run", e);
-    return { status: "failed" };
-  }
-  const plan = clampConsolidation(raw, { threads: held, notes, heard });
+    const held = await listThreads(db, user.id, PROMPT_THREADS);
+    const likely = rankThreads(held, batch.map((m) => m.text).join(" ")).slice(0, PROMPT_NOTE_THREADS);
+    const notes = await listCurrentNotes(db, user.id, likely.map((t) => t.id), 80);
 
+    let raw: RawProposal | null;
+    try {
+      raw = await d.propose({ batch, threads: held, notes, timezone: user.timezone });
+      if (!raw) throw new Error("the model returned no structured output");
+    } catch (e) {
+      console.error("[consolidate] model step failed; the stretch waits and backs off", e);
+      await recordConsolidationFailure(db, user.id, stretch, now);
+      return { status: "failed" };
+    }
+    const plan = clampConsolidation(raw, { threads: held, notes, heard });
+
+    try {
+      return await applyPlan(db, user, { plan, batch, conversationId: conversation.id, from, now });
+    } catch (e) {
+      if (e instanceof LostClaim) return { status: "lost" };
+      console.error("[consolidate] applying the stretch failed; it rolled back and backs off", e);
+      await recordConsolidationFailure(db, user.id, stretch, now);
+      return { status: "failed" };
+    }
+  } finally {
+    await releaseConsolidationLease(db, conversation.id, lease).catch((e) => console.error("[consolidate] couldn't release the lease; it runs out on its own", e));
+  }
+}
+
+/**
+ * Write the clamped plan in one transaction. The watermark claim is its last
+ * statement: the conversation row is locked only for the commit, and a lost
+ * claim throws `LostClaim`, which rolls back everything written before it.
+ */
+async function applyPlan(
+  db: Db,
+  user: Pick<User, "id">,
+  { plan, batch, conversationId, from, now }: { plan: ConsolidationPlan; batch: BatchMessage[]; conversationId: string; from: string | null; now: Date },
+): Promise<ConsolidationResult> {
+  const through = batch[batch.length - 1];
   return db.transaction(async (txRaw) => {
     const tx = txRaw as unknown as Db;
-    if (!(await claimWatermark(tx, conversation.id, from, through.id))) return { status: "lost" } as const;
-
     const episode = plan.episode
-      ? await insertEpisode(tx, { userId: user.id, conversationId: conversation.id, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: batch[0].createdAt, endedAt: through.createdAt, throughMessageId: through.id })
+      ? await insertEpisode(tx, { userId: user.id, conversationId, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: batch[0].createdAt, endedAt: through.createdAt, throughMessageId: through.id })
       : undefined;
 
     const created = new Map<string, string>();
@@ -428,6 +483,8 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
       payload: { messages: batch.length, threads_created: created.size, notes: filed, summaries: revised, shelved },
       occurredAt: now,
     });
+    // Last: row-locks the conversation only for the commit. Lost → throw, and all of the above rolls back.
+    if (!(await claimWatermark(tx, conversationId, from, through.id))) throw new LostClaim();
     return { status: "done", messages: batch.length, episodeId: episode?.id ?? null, threadsCreated: created.size, notesFiled: filed, summaries: revised, shelved } as const;
   });
 }
@@ -435,16 +492,17 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
 const inflight = new Map<string, Promise<void>>();
 
 /**
- * Fire-and-forget for `after()`: catch up on up to three ready stretches, one
- * run per user per process at a time. Never throws.
+ * Fire-and-forget for `after()`: catch up on up to `passes` ready stretches
+ * (three by default; a chat turn needs one), one run per user per process at a
+ * time. Never throws.
  */
-export function consolidateAfter(db: Db, user: Pick<User, "id" | "timezone">): Promise<void> {
+export function consolidateAfter(db: Db, user: Pick<User, "id" | "timezone">, opts: { passes?: number; deps?: Partial<Deps> } = {}): Promise<void> {
   const running = inflight.get(user.id);
   if (running) return running;
   const run = (async () => {
     try {
-      for (let i = 0; i < 3; i++) {
-        const r = await consolidate(db, user);
+      for (let i = 0; i < (opts.passes ?? 3); i++) {
+        const r = await consolidate(db, user, opts.deps);
         if (process.env.NODE_ENV !== "production" && r.status !== "nothing") console.log(`[consolidate] ${JSON.stringify(r)}`);
         if (r.status !== "done") break;
       }

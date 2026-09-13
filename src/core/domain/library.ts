@@ -6,7 +6,7 @@
  * (`memory-rules.ts`) and appends an event with no words in it. See
  * docs/architecture.md → The Library.
  */
-import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lte, or, sql } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { conversations, episodes, events, messages, threadNotes, threads, type Episode, type NoteSource, type Thread, type ThreadNote, type ThreadNoteKind } from "@/db/schema";
 import { normalizeText } from "@/core/words";
@@ -425,15 +425,79 @@ export async function unconsolidatedMessages(db: Db, conversationId: string, wat
     .limit(limit);
 }
 
+/** The conversation, with its watermark still where a run found it. */
+const atWatermark = (conversationId: string, from: string | null) =>
+  and(eq(conversations.id, conversationId), from ? eq(conversations.summaryThroughMessageId, from) : isNull(conversations.summaryThroughMessageId));
+
 /**
  * Move the watermark from where this run found it to the last message it
  * consolidated — only if nobody moved it first. False: another run got there.
+ * In a transaction, make it the last statement: the UPDATE row-locks the
+ * conversation, and `saveMessage` touches that row on every chat turn.
  */
 export async function claimWatermark(db: Db, conversationId: string, from: string | null, to: string): Promise<boolean> {
+  const rows = await db.update(conversations).set({ summaryThroughMessageId: to }).where(atWatermark(conversationId, from)).returning({ id: conversations.id });
+  return rows.length > 0;
+}
+
+/** How long a run holds a stretch: longer than a slow model call, short enough that a run that died frees it soon. */
+export const CONSOLIDATION_LEASE_MS = 3 * 60_000;
+
+/**
+ * Take the stretch for one run before paying for its model call: set the lease
+ * when none is held (or it has run out) and the watermark is still where this
+ * run found it. One conditional UPDATE, committed on its own — safe through the
+ * transaction pooler, where a session advisory lock is not. False: another
+ * instance holds it, or already moved past it.
+ */
+export async function takeConsolidationLease(db: Db, conversationId: string, from: string | null, now: Date, until: Date): Promise<boolean> {
   const rows = await db
     .update(conversations)
-    .set({ summaryThroughMessageId: to })
-    .where(and(eq(conversations.id, conversationId), from ? eq(conversations.summaryThroughMessageId, from) : isNull(conversations.summaryThroughMessageId)))
+    .set({ consolidatingUntil: until })
+    .where(and(atWatermark(conversationId, from), or(isNull(conversations.consolidatingUntil), lte(conversations.consolidatingUntil, now))))
     .returning({ id: conversations.id });
   return rows.length > 0;
+}
+
+/** Let the stretch go — only this run's lease, never one another run took after it ran out. */
+export async function releaseConsolidationLease(db: Db, conversationId: string, until: Date): Promise<void> {
+  await db
+    .update(conversations)
+    .set({ consolidatingUntil: null })
+    .where(and(eq(conversations.id, conversationId), eq(conversations.consolidatingUntil, until)));
+}
+
+export const CONSOLIDATION_FAILED = "memory.consolidation_failed";
+/** After one failure of a stretch wait 10 minutes, after two an hour, after three or more six hours. */
+export const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
+const FAILURE_WINDOW_MS = 7 * 86_400_000;
+
+/** Pure: when a stretch that failed at these times (newest first) may be tried again, or null when it never failed. */
+export function retryAfterFailures(failedAt: Date[]): Date | null {
+  if (!failedAt.length) return null;
+  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1];
+  return new Date(failedAt[0].getTime() + wait);
+}
+
+/** A run over the stretch starting after `from` failed: a fact, so the next runs back off (`consolidationRetryAt`). */
+export async function recordConsolidationFailure(db: Db, userId: string, stretch: { from: string | null; through: string }, now: Date): Promise<void> {
+  await appendEvent(db, { userId, type: CONSOLIDATION_FAILED, subjectType: "user", subjectId: userId, payload: { from: stretch.from, through: stretch.through }, occurredAt: now });
+}
+
+/** When the stretch after this watermark may be tried again, from its recent failures; null when it hasn't failed. */
+export async function consolidationRetryAt(db: Db, userId: string, from: string | null, now: Date): Promise<Date | null> {
+  const rows = await db
+    .select({ at: events.occurredAt })
+    .from(events)
+    .where(
+      and(
+        eq(events.userId, userId),
+        eq(events.type, CONSOLIDATION_FAILED),
+        gte(events.occurredAt, new Date(now.getTime() - FAILURE_WINDOW_MS)),
+        sql`${events.payload} @> ${JSON.stringify({ from })}::jsonb`,
+      ),
+    )
+    .orderBy(desc(events.occurredAt))
+    .limit(CONSOLIDATION_BACKOFF_MS.length);
+  return retryAfterFailures(rows.map((r) => r.at));
 }
