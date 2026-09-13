@@ -10,6 +10,7 @@ import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
 import { FreshOnReturn } from "@/components/shell/FreshOnReturn";
 import { LumiCompanion } from "@/components/shell/LumiCompanion";
 import { SCENE_FADE_SCRIPT } from "@/components/shell/RoomScene";
+import { OPEN_ON_CARD_SCRIPT } from "@/components/chat/open-on-card";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -40,6 +41,8 @@ export default async function RootLayout({ children, sheet }: LayoutProps<"/">) 
       <body>
         {/* First in the body, so it is watching before any room's painting is parsed (RoomScene). */}
         <script dangerouslySetInnerHTML={{ __html: SCENE_FADE_SCRIPT }} />
+        {/* Likewise before the chat is parsed: it opens on the greeting card from the first paint (MessageList). */}
+        <script dangerouslySetInnerHTML={{ __html: OPEN_ON_CARD_SCRIPT }} />
         <AuthProvider>
           <TimezoneCapture />
           <FreshOnReturn />
