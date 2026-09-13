@@ -78,7 +78,18 @@ Protected-first (`src/proxy.ts`): every route requires sign-in except `/sign-in`
 - **Empty** — *Nothing on your lists. Tell Lumi what's on your mind and she'll file it here.*; a list with nothing in it, *Nothing filed here.*; Today, Due soon and Completed each have one plain line.
 - Every change is an event with `via: "app"`; Lumi's context reads *they ticked / moved / let go "X" … in Lists*, and *they changed the date on "X" in Lists*. Nothing for the user to keep (`ef-burden-log.md`).
 
-### Library (`/library`, was Lists) — spec: `today.md` → Lists — **built M3 (2026-09-12), minimum; renamed and set in its room 2026-09-13; the list view moved to Lists (above) the same day**
+### Library (`/library`, was Lists) — spec: `today.md` → Lists — **built M3 (2026-09-12), minimum; renamed and set in its room 2026-09-13; the list view moved to Lists (above) the same day; sections on its bookcases 2026-09-13 (`feat/library-sections`)**
+
+- **Sections, shelves and books** (2026-09-13, Chanté's ask, after her mockup of a thread open as a book; the model is in *The Library — memory that consolidates*, below).
+  - **`/library`**: each section's name is lettered on a bookcase plaque, in the order sections arrived: the centre bay, then the ladder bay, then the stair bay (slots `collection_02`, `01`, `03` of the spatial map, which is still a proposal). The whole bookcase is the link, and its plaque warms on hover or focus. When threads stand on their own (or there are more sections than bookcases), a paper slip on the reading circle's table reads *On the table*. With nothing in the Library the room is as it was. Below 768px there's no room: a parchment list of the sections, then the loose threads. The same list is there for screen readers.
+  - **`/library/[id]`**: parchment over the room, with a trail back (*Library › Coherence › Memory & Continuity*). A thread that holds threads opens as its shelves: its name and one line of its summary, the books sitting directly in it on a plain shelf, then each shelf under a dark gilt plaque, with its books as spines titled with the thread's name. The spines' colours are only decoration. A link reads its own book. A thread that holds nothing opens as its book.
+  - **`/library/[id]/book`**: the thread open as a two-page book.
+    - Left page: *Where we've arrived* (the summary), *What we've settled — for now* (decisions), *Where it stands* (progress).
+    - Right page: *Still alive* (questions), *Ideas*, *Details*, *How this thread changed* (earlier → now), *Visits* (the visits that touched it) and *Last revised*.
+    - Each note says whether it's *your words* or *Lumi's reading*. Empty headings aren't shown. One page below 900px.
+  - **`/library/table`**: the loose threads as papers, then any section without a bookcase.
+  - **No counts, no controls:** nothing to drag, name, tidy or confirm. Where a thread belongs is corrected by telling Lumi. Lumi steps out while a sheet is open, as with Lists.
+  - **Signs read from the database on every render** (`force-dynamic`), as the note below asks. If the Library can't be read, the room shows bare and a sheet says so in one line.
 
 **Who:** Signed-in.
 **What:** The pile. Open intentions grouped by list (School · Work · Personal · Later by default; `users.preferences.lists`), *(until 2026-09-13, when it came off the painting)* in one column on a paper panel under the running head (*Library* kicker, the *Add something* chip beside it, a divider, then the line *Everything, kept.*); each row is a complete circle (the tick draws itself when ticked), the title, the next action if any, and the estimate or due date as a marginal note in small caps. No per-list counts. With nothing filed anywhere, one line and a tailpiece. One **Add something** chip → Chat with the composer prefilled ("Add to my list: "). Moving between lists and renaming lists happen in conversation for now; drag/reorder later.

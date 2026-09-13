@@ -198,7 +198,8 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
 │   │   ├── insights/page.tsx     what Lumi noticed in the mail — "do any of these still need doing?"
-│   │   ├── library/page.tsx      the Library's room, nothing on it yet
+│   │   ├── library/page.tsx      the Library's room with each section's name on a bookcase and loose threads on the table
+│   │   ├── library/[id]/page.tsx a thread over the room: its shelves of books if it holds threads, else its book · [id]/book/page.tsx always the book · table/page.tsx the loose threads
 │   │   ├── lists/page.tsx        Lists opened directly: the sheet over the Library's room
 │   │   ├── @sheet/               a parallel slot for sheets opened from the nav: (.)lists/page.tsx intercepts /lists so Lists opens over the page you were on; default.tsx and [...catchAll]/page.tsx keep it empty otherwise
 │   │   ├── settings/page.tsx     name, timezone, session defaults
@@ -214,6 +215,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── chat/                 Conversation, Message, Ledger, Composer, QuickStarts, LumiAvatar
 │   │   ├── insights/             LeadsSection (looks, then asks), LeadActions (Still needs doing · Let it go)
 │   │   ├── focus/                SessionBar (the bar + the check-in card + the client timer)
+│   │   ├── library/              LibraryRoom (names on the painted bookcases; room-slots.ts from the spatial-map manifest) · LibrarySheet · ShelfView · BookView · load.ts (reads that never throw)
 │   │   ├── lists/                ListsPanel (server: loads the rows) · ListsSheet (the sheet, its rows, ⋯ menu and Add line) · ListGlyphs · CompleteCircle
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested

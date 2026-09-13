@@ -60,7 +60,20 @@ The nav is the same on every page — the painted rail and its parchment (Compon
 
 Not carried over from the mockup: the filter tabs, the plant per category, the *In Season* panel with step counts (its corner is left open), the *Plant something new* button and the quote's copy — `decisions.md` 2026-09-12 · Today, set in the garden.
 
-**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library/background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed): since 2026-09-13 an isometric cutaway like Home's and Today's rooms, on a dark ground (`#231912`, which is also the scene's own colour, so the fade-in has no seam). The frontal painting it replaced is archived as `art/archived/scene_mockups/library-background-frontal.png`. **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
+**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library/background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed): since 2026-09-13 an isometric cutaway like Home's and Today's rooms, on a dark ground (`#231912`, which is also the scene's own colour, so the fade-in has no seam). The frontal painting it replaced is archived as `art/archived/scene_mockups/library-background-frontal.png`. **The room is the page, with what the Library holds lettered onto it** (2026-09-13, `feat/library-sections`):
+- **The stage.** `.library-stage` is a fixed box the size of the painting under its cover fit (`--px`), so everything on it is placed in painting coordinates and its type scales with the room. The numbers are in `components/library/room-slots.ts`, copied from `art/scenery/library/library-views.json`.
+- **Plaques.**
+  - `.library-case` is one link per bookcase face. Side walls are `skewY` along the wall.
+  - `.library-case-name` is the section's name as gilt lettering on the painted plaque: Cormorant 500, `#dcb46f`, a dark text-shadow, never under 12px, cut at a word past twice the manifest's characters per line.
+  - `.library-case-glow` is warm lamplight over the plaque on hover or focus. There is no chip and no chrome at rest.
+- **The table.** `.library-slip` is a small italic paper slip tilted −7° on the reading circle's table.
+- **Below 768px.** `.library-plain` / `.library-plain-head` are a parchment list, visually hidden above that width.
+- **The sheet.** `.library-veil` / `.library-sheet` share the Lists sheet's frame (its selectors name both). Inside it:
+  - `.library-crumbs`, the trail, with brass `›`
+  - `.library-head` / `.library-kicker` / `.library-title` / `.library-line`
+  - **the section view:** `.library-shelf-plaque` (a dark plaque with a gilt hairline and a sparkle each side) over `.library-spines` on a wooden board, and `.library-spine` (116×180px, 18px type, `data-tone` 0–3: green, oxblood, navy, olive, chosen from the id and meaningless)
+  - **the book:** `.library-spread`, two `.library-leaf` pages with a gutter that stack below 900px, each `.library-part` headed by a sparkle and `.library-part-title`, and notes carrying `.library-source` (*your words* / *Lumi's reading*), plus `.library-change*`, `.library-visit*` and `.library-revised`
+  - **the table page:** `.library-papers` / `.library-paper` (`.is-section`) A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
 
 | Piece | In the reading room |
 |---|---|
