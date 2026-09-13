@@ -41,6 +41,8 @@
 
 **Principle.** V§4, V§16–17, EP§18.
 
+**Addendum, same day.** [`docs/product/ai-and-information-architecture.md`](../product/ai-and-information-architecture.md), Chanté's, joins the canon as the *why* of the AI layer; [`architecture.md`](../architecture.md) stays the *how* as built. Its seams are requirements now (§57): conversation ≠ state, state ≠ history, explicit ≠ inferred, memory ≠ application state, language generation ≠ state mutation, priority ≠ attention, spaces ≠ separate data silos. So is its pace: the philosophy implemented minimally, seams before sophistication (§58), no ontology before the experience needs it (§56). Most of the seams already hold in the code: tools are the only write path, events are append-only, beliefs carry source, confidence and supersession, judgements are derived, and every page reads one state. Where the code doesn't meet the document yet is open questions 10–12, 19, 22, 24 and 25. *(Which seams hold is Claude's reading of the code.)*
+
 ## 2026-09-13 · Lumi is a designed behaviour system, not a model's personality
 
 **Decision.** Lumi's behaviour is documented in [`docs/philosophy/lumi.md`](../philosophy/lumi.md), implemented in `persona.ts` and the tool descriptions, and checked by evaluation. Her identity must not live only in one system prompt or in behaviour that happens to emerge from one model.
@@ -112,6 +114,15 @@
 
 **Principle.** §11 (only what the current decision needs), §14.
 **Replaces.** The V1 nav *Home · Today · Lists · Insights · Settings* as the intended model ([`features.md`](../features.md) → Navigation).
+
+**Addendum, 2026-09-13.** [`docs/product/spaces.md`](../product/spaces.md), Chanté's, is the place document. It keeps everything above and adds:
+- A feature is placed by the cognitive mode it belongs to, and never gets a space just for being a feature (§4). The same object appears differently in each space.
+- Navigation stays plain: *Home · Today · Lists · Focus*, with Garden, Library and Study as design vocabulary and the labels tested (§3; open question 15).
+- Spaces are views of one life context. Lumi carries the continuity, and context travels (§19–20).
+- The environment earns imagery the interface doesn't, and a rich environment never means a dense interface (§23–24).
+- Spaces change slowly with the relationship: discovered, not awarded, never decaying, never a judgement (§25–27). Nothing about the world is required to use the product (§28).
+
+**Not reconciled:** it words two questions differently. The Library asks *What am I holding, and where does it belong?* (above: *Where have I been?*), and the Study *What are we doing now?* (above: *What am I doing now?*). The questions above stand until Chanté picks (open questions 2 and 3).
 
 ## 2026-09-12 · Rewards: earning coherence ⚠ contested
 
