@@ -137,6 +137,8 @@ body::after {
   grid-template-columns: calc(var(--rail-x) + var(--rail-w)) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* Signed out (the sign-in and sign-up pages) there is no nav, so no rail column. */
+.shell:not(:has(> .nav)) { grid-template-columns: minmax(0, 1fr); }
 
 /* ---------- The rail and its parchment (components/shell/Sidebar.tsx) ----------
    The rail is always there, the same deep green on every page. The parchment

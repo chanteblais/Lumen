@@ -1,15 +1,14 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import { isPublicPath } from "@/lib/public-paths";
 
 // Protected-first: every surface is signed-in (docs/features.md). Only the
 // auth pages themselves are public. This wall is defence in depth — every
 // page and route also calls requireUser() itself (Clerk's recommended
 // resource-based check; the route-auth audit enforces it for API routes).
-const PUBLIC_PREFIXES = ["/sign-in", "/sign-up"];
+// The public pages are listed in src/lib/public-paths.ts.
 
 export default clerkMiddleware(async (auth, req) => {
-  const path = req.nextUrl.pathname;
-  const isPublic = PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
-  if (!isPublic) await auth.protect();
+  if (!isPublicPath(req.nextUrl.pathname)) await auth.protect();
 });
 
 export const config = {

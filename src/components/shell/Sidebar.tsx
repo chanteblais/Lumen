@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
+import { isPublicPath } from "@/lib/public-paths";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
 import { BookIcon, GearIcon, HomeIcon, SprigIcon, SunIcon } from "./NavIcons";
 
@@ -33,6 +34,9 @@ const PINS = "(min-width: 768px)";
  *   hover never opens it; the same again, or a pin, lets it out.
  * On a phone there is no hover: the compass star opens it over the page,
  * and a tap on a place, outside it or Escape folds it away.
+ * Not on the sign-in and sign-up pages: the nav belongs to the space you
+ * enter once signed in (decided by the path, so it never flashes while the
+ * session loads).
  */
 export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   const pathname = usePathname();
@@ -82,6 +86,8 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
     if (rail && e.clientX <= rail.right && e.clientY > rail.top + rail.height / 2) return toggleLock();
     togglePin();
   }
+
+  if (isPublicPath(pathname)) return null;
 
   const pinned = mode === "pinned";
   const locked = mode === "locked";
