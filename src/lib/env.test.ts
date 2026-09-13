@@ -55,6 +55,15 @@ describe("validateServerEnv", () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("missing: DATABASE_URL"));
   });
 
+  it("refuses to start production with the local test user switched on, naming only the key", () => {
+    expect(() => validateServerEnv({ ...BASE, COHERENCE_DEV_USER: "1" }, { production: true })).toThrow(
+      /^COHERENCE_DEV_USER is set in production/,
+    );
+    const warn = vi.fn();
+    expect(() => validateServerEnv({ ...BASE, COHERENCE_DEV_USER: "1" }, { production: false, warn })).not.toThrow();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("is silent when everything is set", () => {
     const warn = vi.fn();
     validateServerEnv(BASE, { production: true, warn });
