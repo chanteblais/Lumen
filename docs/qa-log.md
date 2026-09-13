@@ -6,6 +6,28 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (7) — no way to sign in from an incognito window (`fix/sign-in-path`)
+
+Chanté: "The site doesn't give a log in option in incognito."
+
+### Fixed
+- **Signed out, `/sign-in` and `/sign-up` showed no form.** Production (www.burlyman.ca) was healthy from the outside: `/` redirected to `/sign-in`, Clerk's scripts and `/v1/environment` answered, every request was 200. In a fresh headless Chrome profile, though, the `SignIn` root box stayed empty and the URL kept gaining `?redirect_url=…/sign-in`. A trace of `Clerk.redirectToSignIn` showed the call coming from the sign-in UI's fallback route. The cause is the Lists sheet's `app/@sheet/[...catchAll]`, which adds `catchAll: ["sign-in"]` to `useParams()`. `@clerk/nextjs` infers the component's path by removing every catch-all param from the pathname, so it read `/` and treated `/sign-in` as an unknown step. Both pages now pass `routing="path"` and their own `path`. It has been broken signed out since `775002c` (the Lists sheet, this morning); a signed-in browser never sees the sign-in form, so nobody noticed.
+
+### Known and deliberate
+- `TimezoneCapture`'s first-visit refresh isn't involved (the loop was the same with the cookie already set).
+
+### Verified (live, port 3006, worktree on the branch)
+- Fresh profile, signed out: `/sign-in` and `/sign-up` each mount Clerk's card (2 inputs, Continue with Google) and the URL stays clean. `npm run check` passes; `client.db.test.ts` timed out once under the full run and passed on its own (5/5).
+- Production is only verifiable after deploy: re-run the fresh-profile probe against www.burlyman.ca/sign-in.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- An incognito window on the deployed site: the sign-in card appears, and Continue with Google signs in and lands on Home.
+
+---
+
 ## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
 
 Chanté: "It's a big flash of white and things loading faster than others. It doesn't feel very smooth."
