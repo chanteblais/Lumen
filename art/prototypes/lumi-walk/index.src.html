@@ -1,5 +1,5 @@
 <title>Lumi walks Home</title>
-<meta name="description" content="Lumi rigged from one drawing per direction, walking through Home's painted room.">
+<meta name="description" content="Lumi rigged from five isometric drawings, walking through Home's painted room.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
@@ -88,7 +88,7 @@
   <header>
     <p class="eyebrow">Walk test · Home · isometric</p>
     <h1>Lumi walks Home</h1>
-    <p class="lede">Two drawings of her, one turned toward you and one turned away, each mirrored for the other side. Code moves the pieces: her boots step, the cloak sways and the hood follows a beat late. Click the floor to send her somewhere, or let her walk the tour.</p>
+    <p class="lede">Five drawings of her at the room’s angle, three of them mirrored, so she can face eight ways. She walks only along those eight, turns through the drawings between, and code moves the pieces: boots that step, legs drawn from under the cloak to each boot, a cloak that sways. Click the floor to send her somewhere, or let her walk the tour.</p>
   </header>
 
   <div class="frame"><canvas id="stage" aria-label="Home's painted room with Lumi walking in it. Click the floor to send her there."></canvas></div>
@@ -132,12 +132,12 @@
     <div class="notes">
       <h2>What to look at</h2>
       <ul>
-        <li>Her boots: each one stays put on the floor while it carries her, then lifts and steps.</li>
-        <li>Behind the low table, the tabletop, the lantern and the plant cover her; in front of the cushions, she covers them.</li>
-        <li>At a corner she stops, dips and changes drawing. Does that read as turning round?</li>
-        <li>The hood and the hem of the cloak trail her sway by a beat. Too much, too little?</li>
+        <li>She faces the way she walks, whichever of the eight ways it is — no walking sideways.</li>
+        <li>At a corner she stops and turns through the drawings in between, each a moment long. A quarter turn is one drawing; half round is three.</li>
+        <li>Her legs run from under the cloak to her boots every step, and the slit of her coat stays filled.</li>
+        <li>The table and cushions, as before: mapped by hand, and still the rough part.</li>
       </ul>
-      <p class="small">Her height is in the painting's own pixels; the table stands about 65. Heights and pace here are for judging, not settings in the app.</p>
+      <p class="small">Her height is in the painting’s own pixels; the table stands about 65. Heights and pace here are for judging, not settings in the app.</p>
     </div>
   </section>
 </main>
@@ -155,9 +155,8 @@
   var params = new URLSearchParams(location.search);
   var GRID = params.get('grid');
   var STILL_T = params.has('t') ? parseFloat(params.get('t')) : null;
-  var HEADLESS = !!GRID || STILL_T !== null;
   var reduceMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  var reduced = !HEADLESS && !!(reduceMq && reduceMq.matches);
+  var reduced = !GRID && STILL_T === null && !!(reduceMq && reduceMq.matches);
 
   // ---- tuning: painting px at her height of 120 (scaled with her), seconds -------------------------
   var T = {
@@ -172,12 +171,17 @@
     headLag: 0.12,    // the hood follows the sway this much of a stride later
     hemLag: 0.2,      // the hem later still, swinging the other way
     hemSwing: 1.5,
-    stopDist: 18,     // she slows over this distance before a stop
+    stopDist: 18,     // she slows over this distance before a corner she has to turn at
     accel: 0.3,       // seconds to reach full pace
-    turn: 0.26,       // stop, dip, change drawing
+    turnLead: 0.05,   // from stopping to the first new drawing
+    turnStep: 0.09,   // each drawing she turns through
+    turnSettle: 0.1,  // after the last, before she walks on
+    pulse: 0.14,      // the small squash that carries each change of drawing
     breath: 1.3,      // px at the hood top, resting
     breathS: 3.2,
-    clearance: 24     // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
+    clearance: 24,    // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
+    cell: 5,          // the path grid, in ground units
+    turnCost: 14      // px a path pays for each 45° of turning, so it turns rarely
   };
 
   // ---- small maths -------------------------------------------------------------------------------------
@@ -201,7 +205,7 @@
     return inside;
   }
 
-  // ---- the room: isometric ground, furniture, paths ------------------------------------------------------
+  // ---- the room: isometric ground, furniture ---------------------------------------------------------------
   var B = ROOM.iso.slope;
   function toUV(x, y) { return { u: (x + y / B) / 2, v: (y / B - x) / 2 }; }
   function fromUV(u, v) { return { x: u - v, y: (u + v) * B }; }
@@ -215,8 +219,8 @@
     };
   });
   function clearanceUV() { return T.clearance * sizeMul() / UV_PX; }
-  function blocked(p, extra) {
-    var q = toUV(p.x, p.y), c = clearanceUV() + (extra || 0);
+  function blocked(p) {
+    var q = toUV(p.x, p.y), c = clearanceUV();
     for (var i = 0; i < OCC.length; i++) {
       var o = OCC[i];
       if (q.u > o.u0 - c && q.u < o.u1 + c && q.v > o.v0 - c && q.v < o.v1 + c) return true;
@@ -224,41 +228,111 @@
     return false;
   }
   function standable(p) { return inPoly(p, ROOM.walkable) && !blocked(p); }
-  function segmentClear(a, b) {
-    var d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / 4));
-    for (var i = 1; i < n; i++) {
-      var p = { x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n };
-      if (!inPoly(p, ROOM.walkable) || blocked(p, -0.5)) return false;
+
+  // ---- eight directions: five drawings, three mirrored ---------------------------------------------------------
+  // Clockwise round the ring. Each has its step on the ground (du, dv): the path grid moves only along these, so
+  // she always faces the way she walks (Chanté: "when she turns, she's walking sideways like a crab").
+  var DIRS = [
+    { id: 's', img: 's', mirror: false, step: [1, 1], say: 'toward you' },
+    { id: 'sw', img: 'sw', mirror: false, step: [0, 1], say: 'toward you, to the left' },
+    { id: 'w', img: 'w', mirror: false, step: [-1, 1], say: 'to the left' },
+    { id: 'nw', img: 'nw', mirror: false, step: [-1, 0], say: 'away, to the left' },
+    { id: 'n', img: 'n', mirror: false, step: [-1, -1], say: 'away from you' },
+    { id: 'ne', img: 'nw', mirror: true, step: [0, -1], say: 'away, to the right' },
+    { id: 'e', img: 'w', mirror: true, step: [1, -1], say: 'to the right' },
+    { id: 'se', img: 'sw', mirror: true, step: [1, 0], say: 'toward you, to the right' }
+  ];
+  DIRS.forEach(function (d) {
+    var p = fromUV(d.step[0], d.step[1]), l = Math.hypot(p.x, p.y);
+    d.v = { x: p.x / l, y: p.y / l };
+    d.len = l;
+    if (!RIG[d.img]) d.img = RIG.sw ? (d.id === 'n' || d.id === 'nw' || d.id === 'ne' ? 'nw' : 'sw') : Object.keys(RIG)[0];
+  });
+  function dirFor(v, fallback) {
+    var l = Math.hypot(v.x, v.y);
+    if (l < 1e-6) return fallback;
+    var best = fallback, bd = -2;
+    DIRS.forEach(function (d, i) { var dot = (d.v.x * v.x + d.v.y * v.y) / l; if (dot > bd) { bd = dot; best = i; } });
+    return best;
+  }
+  function ringDist(a, b) { var d = ((b - a) % 8 + 8) % 8; return d > 4 ? d - 8 : d; }
+
+  // ---- paths on the ground grid: eight directions, few turns -----------------------------------------------------
+  var gridCache = { key: '' };
+  function ground() {
+    var key = ui.size;
+    if (gridCache.key === key) return gridCache;
+    var uvs = ROOM.walkable.map(function (p) { return toUV(p[0], p[1]); });
+    var u0 = Math.min.apply(null, uvs.map(function (q) { return q.u; })), v0 = Math.min.apply(null, uvs.map(function (q) { return q.v; }));
+    var u1 = Math.max.apply(null, uvs.map(function (q) { return q.u; })), v1 = Math.max.apply(null, uvs.map(function (q) { return q.v; }));
+    var nu = Math.ceil((u1 - u0) / T.cell) + 1, nv = Math.ceil((v1 - v0) / T.cell) + 1, free = new Uint8Array(nu * nv);
+    for (var j = 0; j < nv; j++) for (var i = 0; i < nu; i++) free[j * nu + i] = standable(fromUV(u0 + i * T.cell, v0 + j * T.cell)) ? 1 : 0;
+    gridCache = { key: key, u0: u0, v0: v0, nu: nu, nv: nv, free: free };
+    return gridCache;
+  }
+  function nearestFree(G, p) {
+    var q = toUV(p.x, p.y), ci = Math.round((q.u - G.u0) / T.cell), cj = Math.round((q.v - G.v0) / T.cell);
+    for (var r = 0; r < 6; r++) {
+      var best = -1, bd = Infinity;
+      for (var dj = -r; dj <= r; dj++) for (var di = -r; di <= r; di++) {
+        var i = ci + di, j = cj + dj;
+        if (i < 0 || j < 0 || i >= G.nu || j >= G.nv || !G.free[j * G.nu + i]) continue;
+        var c = fromUV(G.u0 + i * T.cell, G.v0 + j * T.cell), dd = Math.hypot(c.x - p.x, c.y - p.y);
+        if (dd < bd) { bd = dd; best = j * G.nu + i; }
+      }
+      if (best >= 0) return best;
     }
-    return true;
+    return -1;
   }
   function findPath(a, b) {
-    if (segmentClear(a, b)) return [b];
-    var nodes = [a, b];
-    var c = clearanceUV() + 4 / UV_PX;
-    OCC.forEach(function (o) {
-      [[o.u0 - c, o.v0 - c], [o.u1 + c, o.v0 - c], [o.u1 + c, o.v1 + c], [o.u0 - c, o.v1 + c]].forEach(function (uv) {
-        var p = fromUV(uv[0], uv[1]);
-        if (inPoly(p, ROOM.walkable) && !blocked(p, -1)) nodes.push(p);
-      });
-    });
-    var n = nodes.length, dist = new Array(n).fill(Infinity), prev = new Array(n).fill(-1), done = new Array(n).fill(false);
-    dist[0] = 0;
-    for (var it = 0; it < n; it++) {
-      var k = -1;
-      for (var i = 0; i < n; i++) if (!done[i] && (k < 0 || dist[i] < dist[k])) k = i;
-      if (k < 0 || dist[k] === Infinity) break;
-      done[k] = true;
-      for (var j = 0; j < n; j++) {
-        if (done[j]) continue;
-        var dd = dist[k] + Math.hypot(nodes[j].x - nodes[k].x, nodes[j].y - nodes[k].y);
-        if (dd < dist[j] && segmentClear(nodes[k], nodes[j])) { dist[j] = dd; prev[j] = k; }
+    var G = ground(), start = nearestFree(G, a), goal = nearestFree(G, b);
+    if (start < 0 || goal < 0) return null;
+    var N = G.nu * G.nv, S8 = N * 8, cost = new Float64Array(S8).fill(Infinity), prev = new Int32Array(S8).fill(-1);
+    var heap = [], push = function (f, s) {
+      heap.push([f, s]);
+      for (var i = heap.length - 1; i > 0;) { var p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; var t = heap[p]; heap[p] = heap[i]; heap[i] = t; i = p; }
+    }, pop = function () {
+      var top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        for (var i = 0; ;) { var l = 2 * i + 1, r = l + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; var t = heap[m]; heap[m] = heap[i]; heap[i] = t; i = m; }
+      }
+      return top;
+    };
+    var gp = fromUV(G.u0 + (goal % G.nu) * T.cell, G.v0 + Math.floor(goal / G.nu) * T.cell);
+    var hfun = function (n) { var p = fromUV(G.u0 + (n % G.nu) * T.cell, G.v0 + Math.floor(n / G.nu) * T.cell); return Math.hypot(p.x - gp.x, p.y - gp.y); };
+    for (var d0 = 0; d0 < 8; d0++) { cost[start * 8 + d0] = 0; push(hfun(start), start * 8 + d0); }
+    var found = -1;
+    while (heap.length) {
+      var it = pop(), s = it[1], n = Math.floor(s / 8), dcur = s % 8;
+      if (it[0] - hfun(n) > cost[s] + 1e-6) continue;
+      if (n === goal) { found = s; break; }
+      var i = n % G.nu, j = Math.floor(n / G.nu);
+      for (var k = 0; k < 8; k++) {
+        var st = DIRS[k].step, ni = i + st[0], nj = j + st[1];
+        if (ni < 0 || nj < 0 || ni >= G.nu || nj >= G.nv || !G.free[nj * G.nu + ni]) continue;
+        if (st[0] && st[1] && (!G.free[j * G.nu + ni] || !G.free[nj * G.nu + i])) continue;   // no cutting a corner
+        var nn = nj * G.nu + ni, ns = nn * 8 + k;
+        var c = cost[s] + DIRS[k].len * T.cell + (k === dcur ? 0 : T.turnCost * Math.abs(ringDist(dcur, k)));
+        if (c < cost[ns]) { cost[ns] = c; prev[ns] = s; push(c + hfun(nn), ns); }
       }
     }
-    if (prev[1] < 0) return null;
-    var path = [], at = 1;
-    while (at > 0) { path.unshift(nodes[at]); at = prev[at]; }
-    return path;
+    if (found < 0) return null;
+    var nodes = [];
+    for (var s2 = found; s2 >= 0; s2 = prev[s2]) nodes.unshift(Math.floor(s2 / 8));
+    var pts = nodes.map(function (m) { return fromUV(G.u0 + (m % G.nu) * T.cell, G.v0 + Math.floor(m / G.nu) * T.cell); });
+    // keep only the corners
+    var out = [];
+    for (var q = 1; q < pts.length; q++) {
+      var last = q === pts.length - 1;
+      if (last) { out.push(pts[q]); break; }
+      var d1 = dirFor({ x: pts[q].x - pts[q - 1].x, y: pts[q].y - pts[q - 1].y }, 0), d2 = dirFor({ x: pts[q + 1].x - pts[q].x, y: pts[q + 1].y - pts[q].y }, 0);
+      if (d1 !== d2) out.push(pts[q]);
+    }
+    if (!out.length) out.push(pts[0]);
+    out[out.length - 1] = { x: b.x, y: b.y };
+    if (Math.hypot(pts[0].x - a.x, pts[0].y - a.y) > 2) out.unshift(pts[0]);
+    return out;
   }
 
   // ---- state ----------------------------------------------------------------------------------------------
@@ -269,25 +343,29 @@
   function resetSim() {
     var start = ROOM.tour[0].at;
     S = {
-      x: start[0], y: start[1], facing: 'front', mirror: false, dir: { x: -0.87, y: 0.5 },
+      x: start[0], y: start[1], dirIdx: 1,
       path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
-      r: 0, phi: 0, turnT: 0, pending: null, settle: 0, settleFrom: [[0, 0], [0, 0]],
+      r: 0, phi: 0, turnQueue: [], turnT: 0, pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]],
       feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, nextBlink: 1.2, blinks: [], cam: null
     };
   }
+  function turning() { return S.turnQueue.length > 0 || S.turnT > 0; }
 
-  function startWalk(path, rest) {
-    S.path = path; S.legRest = rest;
-  }
+  function startWalk(path, rest) { S.path = path; S.legRest = rest; }
   function nextLeg() {
     S.leg = (S.leg + 1) % ROOM.tour.length;
     var t = ROOM.tour[S.leg], path = findPath({ x: S.x, y: S.y }, { x: t.at[0], y: t.at[1] });
     // a leg with no way round is skipped after a moment, so the tour never stalls
     if (path) startWalk(path, t.rest); else { S.hold = Math.max(0.5, t.rest); S.waiting = true; }
   }
-  function facingFor(d) {
-    var f = d.y > 0.08 ? 'front' : d.y < -0.08 ? 'back' : S.facing;
-    return { facing: f, mirror: Math.abs(d.x) < 0.05 ? S.mirror : d.x > 0 };
+  function beginTurn(to) {
+    S.r = 0;
+    S.settleFrom = S.feet.map(function (f) { return f.slice(); });
+    S.settle = 0.24;
+    var d = ringDist(S.dirIdx, to), sgn = d > 0 ? 1 : -1;
+    S.turnQueue = [];
+    for (var k = 1; k <= Math.abs(d); k++) S.turnQueue.push(((S.dirIdx + sgn * k) % 8 + 8) % 8);
+    S.turnT = T.turnLead;
   }
   function footOffsets(phi, L, liftPx) {
     var out = [];
@@ -309,10 +387,15 @@
       S.nextBlink = S.time + 2.5 + random() * 4;
     }
     S.blinks = S.blinks.filter(function (b) { return S.time - b < 0.6; });
+    if (S.pulse > 0) S.pulse = Math.max(0, S.pulse - dt);
 
-    if (S.turnT > 0) {
+    if (turning()) {
       S.turnT -= dt;
-      if (S.pending && S.turnT <= T.turn / 2) { S.facing = S.pending.facing; S.mirror = S.pending.mirror; S.pending = null; }
+      if (S.turnT <= 0 && S.turnQueue.length) {
+        S.dirIdx = S.turnQueue.shift();
+        S.pulse = T.pulse;
+        S.turnT = S.turnQueue.length ? T.turnStep : T.turnSettle;
+      }
     } else if (S.path.length) {
       var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
       if (d < 0.4) {
@@ -322,27 +405,25 @@
           S.settle = 0.24; S.r = 0; S.hold = S.legRest; S.waiting = true;
         }
       } else {
-        var dir = { x: dx / d, y: dy / d }, want = facingFor(dir);
-        if (S.r < 0.02 && (want.facing !== S.facing || want.mirror !== S.mirror)) {
-          S.dir = dir;
-          if (reduced) { S.facing = want.facing; S.mirror = want.mirror; }
-          else { S.turnT = T.turn; S.pending = want; }
-        } else {
-          S.dir = dir;
-          // slow for the next stop: the end of the path, or a corner where she has to change drawing
-          var remain = d, prevPt = tgt;
-          for (var i = 1; i < S.path.length; i++) {
-            var nd = { x: S.path[i].x - prevPt.x, y: S.path[i].y - prevPt.y }, nl = Math.hypot(nd.x, nd.y) || 1;
-            var nf = facingFor({ x: nd.x / nl, y: nd.y / nl });
-            if (nf.facing !== want.facing || nf.mirror !== want.mirror) break;
-            remain += nl; prevPt = S.path[i];
-          }
-          var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
-          S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
-          var move = Math.min(d, T.speed * m * S.r * dt);
-          S.x += dir.x * move; S.y += dir.y * move;
-          S.phi = frac(S.phi + move / (2 * L));
+        var want = dirFor({ x: dx, y: dy }, S.dirIdx), dd = ringDist(S.dirIdx, want);
+        if (dd !== 0 && d > 6) {
+          if (reduced) S.dirIdx = want;
+          else if (Math.abs(dd) === 1 && S.r > 0.3) { S.dirIdx = want; S.pulse = T.pulse; }   // an eighth of a turn, on the move
+          else { beginTurn(want); return; }                                                   // stop, then turn through the drawings between
         }
+        // slow for the next corner she has to stop at (more than an eighth of a turn), or the end
+        var remain = d, prevPt = tgt, prevDir = S.dirIdx;
+        for (var i = 1; i < S.path.length; i++) {
+          var nd = { x: S.path[i].x - prevPt.x, y: S.path[i].y - prevPt.y }, nl = Math.hypot(nd.x, nd.y);
+          var ndir = dirFor(nd, prevDir);
+          if (nl > 6 && Math.abs(ringDist(prevDir, ndir)) > 1) break;
+          remain += nl; prevPt = S.path[i]; prevDir = ndir;
+        }
+        var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
+        S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
+        var move = Math.min(d, T.speed * m * S.r * dt);
+        S.x += dx / d * move; S.y += dy / d * move;
+        S.phi = frac(S.phi + move / (2 * L));
       }
     } else if (S.waiting) {
       // resting at a stop (a rest of 0 is a corner: she goes on at once)
@@ -351,8 +432,9 @@
     }
     if (S.settle > 0) S.settle -= dt;
 
+    var moving = S.path.length > 0 && !turning();
     var walkW = smooth(S.r / 0.35);
-    if (S.path.length && S.turnT <= 0) {
+    if (moving && S.r > 0) {
       S.feet = footOffsets(S.phi, L, T.lift * m).map(function (f) { return [f[0] * walkW, f[1] * walkW]; });
     } else if (S.settle > 0) {
       var e = smooth(1 - S.settle / 0.24);
@@ -361,10 +443,10 @@
       });
     } else {
       S.feet = [[0, 0], [0, 0]];
+      S.phi = 0;
     }
-    if (!S.path.length || S.turnT > 0) S.phi = S.settle > 0 ? S.phi : 0;
     // lean into the walk on a spring, so she rocks back a touch when she stops
-    var leanTarget = S.path.length && S.turnT <= 0 ? T.lean * S.r : 0;
+    var leanTarget = moving ? T.lean * S.r : 0;
     S.leanV += (70 * (leanTarget - S.lean) - 9 * S.leanV) * dt;
     S.lean += S.leanV * dt;
   }
@@ -375,7 +457,7 @@
     var key = ui.size + '@' + D.toFixed(3);
     if (prepared.key === key) return prepared;
     prepared = { key: key };
-    ['front', 'back'].forEach(function (f) {
+    Object.keys(RIG).forEach(function (f) {
       var R = RIG[f], q = ROOM.lumi.height * sizeMul() / R.height, sc = q * D;
       var w = Math.max(1, Math.round(R.size[0] * sc)), h = Math.max(1, Math.round(R.size[1] * sc));
       var layers = {};
@@ -456,7 +538,7 @@
   // Draw her into figCanvas; returns where the canvas goes, in painting px.
   var bodyImage = null;
   function drawFigure(D) {
-    var prep = prepare(D), P = prep[S.facing], m = sizeMul();
+    var prep = prepare(D), dir = DIRS[S.dirIdx], P = prep[dir.img], m = sizeMul();
     var padX = Math.ceil(P.w * 0.22), padT = Math.ceil(P.h * 0.08), padB = Math.ceil(P.h * 0.05);
     var W = P.w + 2 * padX, H = P.h + padT + padB;
     if (figCanvas.width !== W || figCanvas.height !== H) { figCanvas.width = W; figCanvas.height = H; }
@@ -464,7 +546,7 @@
     var bctx = bodyCanvas.getContext('2d');
     if (!bodyImage) bodyImage = bctx.createImageData(W, H);
 
-    var walking = S.path.length > 0 && S.turnT <= 0;
+    var walking = S.path.length > 0 && !turning();
     var w = walking ? smooth(S.r / 0.35) : 0, phi = S.phi, c2 = frac(2 * phi), TAU = 2 * Math.PI;
     var still = reduced;
     var bob = still ? 0 : -T.bob * m * Math.sin(Math.PI * c2) * w * D;
@@ -474,29 +556,30 @@
     var head = T.sway * m * 0.8 * Math.sin(TAU * (phi - T.headLag)) * w * D;
     var hem = -T.hemSwing * m * Math.sin(TAU * (phi - T.hemLag)) * w * D;
     var lean = -S.lean * P.height;
-    var dip = S.turnT > 0 && !still ? Math.sin(Math.PI * (1 - S.turnT / T.turn)) * 1.8 * m * D : 0;
+    // each change of drawing rides on a small squash, so the new drawing arrives on a motion rather than a flash
+    var pa = still || S.pulse <= 0 ? 0 : Math.sin(Math.PI * (1 - S.pulse / T.pulse));
+    var dip = pa * 1.4 * m * D;
     var breath = still ? 0 : T.breath * m * (1 - Math.cos(TAU * S.time / T.breathS)) / 2 * (1 - w) * D;
-    var syAll = (1 - squash) * (1 + breath / P.height);
+    var syAll = (1 - squash) * (1 + breath / P.height) * (1 - 0.02 * pa);
     var hemTop = P.hem - 0.24 * P.height;
     var wHead = function (y) { return 1 - smooth((y - P.chin) / Math.max(1, P.neck - P.chin)); };
     var wHem = function (y) { return smooth((y - hemTop) / Math.max(1, P.feet - hemTop)); };
-    var headDY = -T.bob * m * 0.45 * Math.sin(Math.PI * frac(2 * (phi - 0.06))) * w * D - bob * 0.0;
+    var headDY = -T.bob * m * 0.45 * Math.sin(Math.PI * frac(2 * (phi - 0.06))) * w * D;
     var mapY = function (j) { return P.feet + (j - P.feet) * syAll + bob + dip + (headDY - bob * 0.25) * wHead(j) * (walking ? 1 : 0); };
     var xoff = function (j) {
       var h = clamp((P.feet - j) / P.height, 0, 1.1);
       return sway * 0.6 + (roll + lean) * h + head * wHead(j) + hem * wHem(j);
     };
-    var sxScale = 1 + squash * 0.7;
+    var sxScale = (1 + squash * 0.7) * (1 - 0.07 * pa);
     warp(P, bodyImage, W, H, mapY, xoff, sxScale, padX, padT);
     bctx.putImageData(bodyImage, 0, 0);
 
-    // blinks: her own black drawn down over each eye
+    // blinks: her own black drawn down over each eye, wide enough to take the painted rim and glow
     var R = P.R, a = blinkAmount();
     if (R.eyes && a > 0.01) {
       bctx.fillStyle = 'rgb(' + R.faceBlack.join(',') + ')';
       R.eyes.forEach(function (e) {
         var ys = e.cy * P.sy, cy = padT + mapY(ys), cx = padX + P.rootX + (e.cx * P.sx - P.rootX) * sxScale + xoff(ys);
-        // wide enough to take the painted rim and its glow too, or a shut eye leaves an orange ring
         var rx = e.rx * P.sx * 1.7, ry = e.ry * P.sy * syAll * 1.4;
         bctx.save();
         bctx.beginPath();
@@ -507,17 +590,33 @@
       });
     }
 
-    // feet first (the one nearer the bottom of the page last), then the body over them
     var fctx = figCanvas.getContext('2d');
     fctx.clearRect(0, 0, W, H);
-    var dl = { x: S.mirror ? -S.dir.x : S.dir.x, y: S.dir.y };
+    var dl = { x: dir.mirror ? -dir.v.x : dir.v.x, y: dir.v.y };
     var feet = [0, 1].map(function (k) {
       var s = S.feet[k][0] * D, l = S.feet[k][1] * D;
       return { k: k, x: dl.x * s, y: dl.y * s - l, ground: P.contact[k][1] + dl.y * s };
-    }).sort(function (p, q) { return p.ground - q.ground; });
-    feet.forEach(function (f) { fctx.drawImage(P.layers['foot-' + f.k], padX + f.x, padT + f.y); });
+    });
+    // legs first: from a hip under the cloak (moving with the body) to the ankle (moving with the boot), every frame,
+    // so a step never leaves a boot floating or a gap under the hem
+    if (R.legs) {
+      fctx.lineCap = 'round';
+      R.legs.forEach(function (leg, k) {
+        var hy = leg.hip[1] * P.sy, hx = padX + P.rootX + (leg.hip[0] * P.sx - P.rootX) * sxScale + xoff(hy);
+        var ax = padX + leg.ankle[0] * P.sx + feet[k].x, ay = padT + leg.ankle[1] * P.sy + feet[k].y;
+        fctx.strokeStyle = 'rgb(' + leg.colour.join(',') + ')';
+        fctx.lineWidth = leg.width * P.sx;
+        fctx.beginPath();
+        fctx.moveTo(hx, padT + mapY(hy));
+        fctx.lineTo(ax, ay);
+        fctx.stroke();
+      });
+    }
+    feet.slice().sort(function (p, q) { return p.ground - q.ground; }).forEach(function (f) {
+      fctx.drawImage(P.layers['foot-' + f.k], padX + f.x, padT + f.y);
+    });
     fctx.drawImage(bodyCanvas, 0, 0);
-    return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D };
+    return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D, mirror: dir.mirror };
   }
 
   // ---- the scene ----------------------------------------------------------------------------------------------
@@ -561,7 +660,7 @@
     ctx.restore();
 
     ctx.save();
-    if (S.mirror) { ctx.translate(S.x, 0); ctx.scale(-1, 1); ctx.translate(-S.x, 0); }
+    if (fig.mirror) { ctx.translate(S.x, 0); ctx.scale(-1, 1); ctx.translate(-S.x, 0); }
     ctx.drawImage(figCanvas, S.x - fig.rootX, S.y - fig.feetY, fig.w, fig.h);
     ctx.restore();
 
@@ -666,7 +765,7 @@
       if (ui.tour) { setTour(false); return; }
       setTour(true);
       hint.textContent = '';
-      if (!S.path.length) { S.leg = -1 + ROOM.tour.length; S.hold = 0; S.waiting = false; nextLeg(); }
+      if (!S.path.length) { S.leg = ROOM.tour.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
     });
     if (reduced) {
       tourBtn.disabled = true;
@@ -698,15 +797,14 @@
       hint.textContent = '';
       setTour(false);
       if (reduced) {
-        var d = { x: p.x - S.x, y: p.y - S.y }, l = Math.hypot(d.x, d.y) || 1, f = facingFor({ x: d.x / l, y: d.y / l });
-        S.x = p.x; S.y = p.y; S.facing = f.facing; S.mirror = f.mirror; S.path = [];
+        S.dirIdx = dirFor({ x: p.x - S.x, y: p.y - S.y }, S.dirIdx);
+        S.x = p.x; S.y = p.y; S.path = [];
         return;
       }
       S.hold = 0; S.waiting = false;
       startWalk(path, Infinity);
     });
 
-    var FACING = { front: 'toward you', back: 'away from you' };
     var last = performance.now(), lastText = '';
     function frame(now) {
       var dt = Math.min(0.05, (now - last) / 1000) * ui.pace;
@@ -717,9 +815,9 @@
       }
       lastCam = camera(stage.width, stage.height, ui.view === 'follow' ? 2.3 : 1, false);
       render(sctx, stage.width, stage.height, lastCam);
-      var state = S.turnT > 0 ? 'turning' : S.path.length ? 'walking' : 'resting';
-      var text = '<span><b>' + state + '</b></span><span>' + FACING[S.facing] + ', to the ' + (S.mirror ? 'right' : 'left') + '</span>' +
-        '<span>' + Math.round(T.speed * sizeMul() * (S.path.length ? S.r : 0)) + ' px a second</span>' +
+      var state = turning() ? 'turning' : S.path.length ? 'walking' : 'resting';
+      var text = '<span><b>' + state + '</b></span><span>facing ' + DIRS[S.dirIdx].say + '</span>' +
+        '<span>' + Math.round(T.speed * sizeMul() * (S.path.length && !turning() ? S.r : 0)) + ' px a second</span>' +
         '<span>one step ' + T.step.toFixed(2) + ' s</span><span>height ' + ui.size + ' px</span>';
       if (text !== lastText) { readout.innerHTML = text; lastText = text; }
       requestAnimationFrame(frame);

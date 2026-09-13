@@ -19,7 +19,7 @@ def uri(path, mime):
 rig = json.load(open(os.path.join(HERE, 'rig-walk.json')))
 room = json.load(open(os.path.join(HERE, 'room-home.json')))
 parts = {f'{f}-{l}': uri(os.path.join(HERE, 'parts', f'{f}-{l}.png'), 'image/png')
-         for f in ('front', 'back') for l in ('body', 'foot-0', 'foot-1')}
+         for f in rig for l in ('body', 'foot-0', 'foot-1')}   # every facing split.py wrote
 html = open(os.path.join(HERE, 'index.src.html')).read()
 html = (html.replace('/*RIG*/null', json.dumps(rig, separators=(',', ':')))
             .replace('/*ROOM*/null', json.dumps(room, separators=(',', ':')))
