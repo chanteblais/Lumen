@@ -13,13 +13,13 @@ import { shelfPath } from "@/core/domain/library";
 import { normalizeText } from "@/core/words";
 import { overlapScore, termWeights, type TurnSignals } from "./memory-select";
 
-export const OPEN_THRESHOLD = 5;
-export const MAX_OPEN = 2;
-export const NOTES_PER_THREAD = 6;
+const OPEN_THRESHOLD = 5;
+const MAX_OPEN = 2;
+const NOTES_PER_THREAD = 6;
 export const INDEX_SIZE = 12;
-export const EPISODES_SHOWN = 3;
-export const EPISODE_DAYS = 14;
-export const RESTING_AFTER_DAYS = 30;
+const EPISODES_SHOWN = 3;
+const EPISODE_DAYS = 14;
+const RESTING_AFTER_DAYS = 30;
 
 const PHRASE = { message: 10, focus: 6, recent: 3 } as const;
 const BODY_WEIGHT = 0.5;

@@ -21,12 +21,12 @@ export function useDialogFocus(container: RefObject<HTMLElement | null>, active:
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Tab" || e.defaultPrevented) return;
       const stops = [...el.querySelectorAll<HTMLElement>(TABBABLE)].filter((s) => s.getClientRects().length > 0);
-      if (stops.length === 0) {
+      const first = stops[0];
+      const last = stops.at(-1);
+      if (!first || !last) {
         e.preventDefault();
         return;
       }
-      const first = stops[0];
-      const last = stops[stops.length - 1];
       const at = document.activeElement;
       const inside = at instanceof Node && el.contains(at);
       const wrap = e.shiftKey ? !inside || at === first || at === el : !inside || at === last;

@@ -72,7 +72,7 @@ describe("PATCH /api/intentions/[id]", () => {
     expect(res.status).toBe(200);
     const today = localDate(new Date(), user.timezone);
     const [y, m, d] = today.split("-").map(Number);
-    const tomorrow = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.UTC(y!, m! - 1, d! + 1)).toISOString().slice(0, 10);
     expect((await getIntention(testDb, user.id, i.id))?.dueAt?.toISOString()).toBe(startOfLocalDay(tomorrow, user.timezone).toISOString());
 
     expect((await patch(i.id, { action: "date", text: "someday maybe" })).status).toBe(422);

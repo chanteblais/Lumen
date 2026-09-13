@@ -13,27 +13,28 @@ import { normalizeText } from "@/core/words";
 import { chainIds } from "./chains";
 import { appendEvent } from "./events";
 import { cleanContent, contentKey, isNearDuplicate, screenMemory } from "./memory-rules";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
 export const NOTE_MIN = 3;
 export const NOTE_MAX = 280;
 export const SUMMARY_MAX = 900;
 export const TITLE_MAX = 80;
-export const ALIAS_MAX = 40;
-export const MAX_ALIASES = 8;
-export const THREAD_LIMIT = 100;
-export const NOTE_LIMIT = 600;
+const ALIAS_MAX = 40;
+const MAX_ALIASES = 8;
+const THREAD_LIMIT = 100;
+const NOTE_LIMIT = 600;
 /** Episodes older than this don't ride along; they stay in the table. */
-export const EPISODE_RECENT_DAYS = 14;
+const EPISODE_RECENT_DAYS = 14;
 
-export type LibraryActor = "user" | "lumi" | "consolidation";
+type LibraryActor = "user" | "lumi" | "consolidation";
 
 export const NOTE_KINDS = ["idea", "decision", "question", "progress", "detail"] as const satisfies readonly ThreadNoteKind[];
 
 /* -------------------------------------------------------------- pure */
 
 /** A title or alias as it's compared: "The Book!" ≈ "the book". */
-export function nameKey(s: string): string {
+function nameKey(s: string): string {
   return normalizeText(s);
 }
 
@@ -65,7 +66,7 @@ export function findThreadByName<T extends Pick<Thread, "title" | "aliases">>(he
  * A section, then a shelf in it, then a book: a thread sits at most this many
  * levels deep. Deeper nesting would ask the user to navigate a filing tree.
  */
-export const MAX_SHELF_DEPTH = 3;
+const MAX_SHELF_DEPTH = 3;
 
 type Shelvable = { id: string; parentId?: string | null };
 
@@ -103,7 +104,7 @@ export function whyNotShelve(held: Shelvable[], threadId: string, parentId: stri
 }
 
 export type ShelfBooks<T> = { shelf: T | null; books: T[] };
-export type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
+type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
 export type LibraryShelves<T> = { sections: LibrarySection<T>[]; loose: T[] };
 
 const byAge = <T extends Pick<Thread, "createdAt">>(a: T, b: T) => a.createdAt.getTime() - b.createdAt.getTime();
@@ -170,7 +171,7 @@ export async function listNoteHistory(db: Db, userId: string, threadId: string, 
     .limit(limit);
 }
 
-export async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
+async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
   const since = new Date(now.getTime() - EPISODE_RECENT_DAYS * 86_400_000);
   return db
     .select()
@@ -180,7 +181,7 @@ export async function listRecentEpisodes(db: Db, userId: string, now: Date, limi
     .limit(limit);
 }
 
-export type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
+type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
 
 /** Everything a turn chooses from — or nothing, and say so: the Library failing never takes the conversation down. */
 export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = new Date()): Promise<LibraryState> {
@@ -195,7 +196,7 @@ export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = n
 
 /* ------------------------------------------------------------ writes */
 
-export type Skip = { skipped: string };
+type Skip = { skipped: string };
 
 export async function createThread(
   db: Db,
@@ -218,10 +219,13 @@ async function insertThread(db: Db, userId: string, title: string, input: { alia
   // Only their own (checked) word brings back a forgotten thread; an inference or a consolidation run never does.
   if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
   const summary = input.summary ? cleanSummary(input.summary) : null;
-  const [row] = await db
-    .insert(threads)
-    .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
-    .returning();
+  const row = returnedRow(
+    await db
+      .insert(threads)
+      .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
+      .returning(),
+    "createThread",
+  );
   await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor, ...(input.theirWord ? { their_word: true } : {}) }, occurredAt: now });
   return { thread: row, existed: false };
 }
@@ -258,10 +262,13 @@ async function insertNote(
   if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
   const replaced = input.supersedes ? current.find((n) => n.id === input.supersedes) : undefined;
   if (input.supersedes && !replaced) return { skipped: "supersedes a note that isn't current on this thread" };
-  const [note] = await db
-    .insert(threadNotes)
-    .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
-    .returning();
+  const note = returnedRow(
+    await db
+      .insert(threadNotes)
+      .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
+      .returning(),
+    "fileNote",
+  );
   if (replaced) await db.update(threadNotes).set({ supersededById: note.id }).where(eq(threadNotes.id, replaced.id));
   await db.update(threads).set({ lastDiscussedAt: now }).where(eq(threads.id, thread.id));
   await appendEvent(db, {
@@ -308,11 +315,13 @@ export async function insertEpisode(
   db: Db,
   input: { userId: string; conversationId: string; summary: string; leftOff: string | null; startedAt: Date; endedAt: Date; throughMessageId: string; threadIds?: string[] },
 ): Promise<Episode> {
-  const [row] = await db
-    .insert(episodes)
-    .values({ ...input, threadIds: input.threadIds ?? [] })
-    .returning();
-  return row;
+  return returnedRow(
+    await db
+      .insert(episodes)
+      .values({ ...input, threadIds: input.threadIds ?? [] })
+      .returning(),
+    "insertEpisode",
+  );
 }
 
 /**
@@ -343,6 +352,8 @@ export async function shelveThread(
       .set({ parentId, shelvedBy: parentId ? (theirs ? "user" : "lumi") : theirs ? "user" : null })
       .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
       .returning();
+    // Read without a lock, so it can be forgotten in between: then it's gone, not shelved.
+    if (!row) return { skipped: "not found" };
     await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor, ...(opts.theirWord ? { their_word: true } : {}) } });
     return { thread: row };
   });
@@ -495,16 +506,18 @@ export async function releaseConsolidationLease(db: Db, conversationId: string, 
     .where(and(eq(conversations.id, conversationId), eq(conversations.consolidatingUntil, until)));
 }
 
-export const CONSOLIDATION_FAILED = "memory.consolidation_failed";
+const CONSOLIDATION_FAILED = "memory.consolidation_failed";
 /** After one failure of a stretch wait 10 minutes, after two an hour, after three or more six hours. */
-export const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
+const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
 const FAILURE_WINDOW_MS = 7 * 86_400_000;
 
 /** Pure: when a stretch that failed at these times (newest first) may be tried again, or null when it never failed. */
 export function retryAfterFailures(failedAt: Date[]): Date | null {
-  if (!failedAt.length) return null;
-  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1];
-  return new Date(failedAt[0].getTime() + wait);
+  const [first] = failedAt;
+  if (!first) return null;
+  // In range: failedAt has at least one entry, so the index is 0 up to the last step.
+  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1]!;
+  return new Date(first.getTime() + wait);
 }
 
 /** A run over the stretch starting after `from` failed: a fact, so the next runs back off (`consolidationRetryAt`). */

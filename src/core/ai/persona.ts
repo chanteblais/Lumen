@@ -79,6 +79,3 @@ If a message is exactly one of these, it's a button the user tapped, not a full 
 
 ## Shape of a good reply
 Usually two to five short lines. Sometimes one. A single concrete next step beats any amount of advice. When in doubt, say less and ask what's actually in front of them.`;
-
-/** The landing-page chips live in their own module, so the client doesn't bundle the prompt. */
-export { QUICK_STARTS, type QuickStart } from "./quick-starts";

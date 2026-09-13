@@ -1,7 +1,5 @@
 import { LumiSprite, headCell, type LumiExpression } from "./LumiSprite";
 
-export { LUMI_EXPRESSIONS, type LumiExpression } from "./LumiSprite";
-
 type Props = { size?: number; expression?: LumiExpression; className?: string };
 
 /**

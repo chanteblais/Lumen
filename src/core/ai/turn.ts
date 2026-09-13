@@ -21,8 +21,8 @@ import type { Recut } from "./today-plan";
 /* ------------------------------------------------------------ the body */
 
 /** A brain dump or a long voice transcript fits; a runaway paste doesn't. */
-export const MAX_MESSAGE_CHARS = 20_000;
-export const MAX_PARTS = 8;
+const MAX_MESSAGE_CHARS = 20_000;
+const MAX_PARTS = 8;
 
 // Structured handoffs (declined, session_event, start_intention) are no longer sent or read (2026-09-13,
 // today-in-place); a message that still carries those fields is plain talk. createdAt is not read: the server stamps it.
@@ -62,7 +62,7 @@ const WhereBody = z.object({ path: z.string().max(200), via: z.enum(["home", "bu
 
 const ChatBody = z.object({ message: IncomingMessage, where: WhereBody.nullish() });
 
-export type IncomingMessage = z.infer<typeof IncomingMessage>;
+type IncomingMessage = z.infer<typeof IncomingMessage>;
 
 /** The new user message, and where they are (undefined: not said, or not a place in the nav), from a request body; undefined when the body isn't one (the route answers 400). */
 export function parseChatBody(raw: unknown): { message: IncomingMessage; where?: Where } | undefined {
@@ -159,7 +159,7 @@ export type TurnOutcome = {
 };
 
 /** Tool writes that can change which intentions today's path chooses from. */
-export const PLAN_SHAPING_TOOLS: ReadonlySet<string> = new Set(["create_intention", "update_intention", "complete_intention", "reopen_intention", "drop_intention", "keep_lead"]);
+const PLAN_SHAPING_TOOLS: ReadonlySet<string> = new Set(["create_intention", "update_intention", "complete_intention", "reopen_intention", "drop_intention", "keep_lead"]);
 
 /**
  * Whether to prime today's path after the turn: always when there is none yet

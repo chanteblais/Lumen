@@ -19,7 +19,7 @@ import type { EmailMessage, EmailReader } from "./types";
 export const MAIL_PAGE = 30;
 export const MAIL_PAGES = 2;
 
-export type ScanOutcome =
+type ScanOutcome =
   | { status: "fresh"; scan: MailScan }
   | { status: "looked"; scan: MailScan; suggested: Lead[] }
   | { status: "disconnected" };
@@ -54,8 +54,9 @@ async function readBack(reader: EmailReader, after: Date, before: Date | undefin
     const page = await reader.recent({ since: after, before: cursor, max: MAIL_PAGE });
     const fresh = page.filter((m) => !read.has(m.id));
     for (const m of fresh) read.set(m.id, m);
-    if (page.length < MAIL_PAGE || fresh.length === 0) return { messages: [...read.values()], pages: used };
-    cursor = fresh.reduce((oldest, m) => (m.receivedAt < oldest ? m.receivedAt : oldest), fresh[0].receivedAt);
+    const [first] = fresh;
+    if (page.length < MAIL_PAGE || !first) return { messages: [...read.values()], pages: used };
+    cursor = fresh.reduce((oldest, m) => (m.receivedAt < oldest ? m.receivedAt : oldest), first.receivedAt);
     if (used === pages) return { messages: [...read.values()], pages: used, rest: { after, before: cursor } };
   }
   return { messages: [...read.values()], pages };

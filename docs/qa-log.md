@@ -6,6 +6,42 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (9) — the code review (`docs/code-review-2026-09-13`, `chore/hygiene`, `fix/data-integrity`, `fix/companion-chat`, `fix/ai-and-routes`, `chore/strictness`)
+
+Chanté: "review this project and see if anything needs to be refactored or can otherwise be improved", then "document everything and fix it". Every finding has an id and a status in `docs/code-review-2026-09-13.md`. The review doc landed first (3010037), then `chore/hygiene` (24d00d0), `fix/data-integrity` (7301a16), `fix/companion-chat` (e25489c), `fix/ai-and-routes` (90421dc) and `chore/strictness`. Every row is now `fixed` or `decided`.
+
+### Fixed
+- **Data integrity (A).** The main theme was read-then-write with no transaction or lock. Keeping a lead, completing or dropping an intention, parallel plan updates, evidence counters, reflection, focus sessions and the main conversation are now each one transaction, a row lock or a unique index (migration `0006`). Consolidation no longer holds up the next chat message; a failure backs off instead of retrying on every turn; a lease stops two instances paying for the same model call. Reflection's window ends with the session. Mail paging no longer skips older mail. Dead code went, and DB tests cover each fix.
+- **AI layer and routes (B).** Due dates from mail no longer land a day early west of UTC. Mail reaches the model as quoted data. "Their word" needs a real quote. Chat errors are logged with ids only. Bad request bodies get a 400 on every route. Re-cuts of Today run one at a time per user. The prompt now caches the conversation history, not only the persona. One structured-call helper replaces four copies. Found in the live click-through: consolidation kept re-reading its own watermark message, from millisecond against microsecond timestamps.
+- **Companion and UI (C).** Closing the bubble, pressing Escape or leaving Home mid-turn no longer cancels Lumi's tools. The mic can't stay on. A let-go row stays gone. The animation timers no longer grow without bound. Dialog focus is trapped and handed back. Reduced motion holds the dots and the mic still. The chat clients share one module.
+- **Tooling (D).** The preflight fails on an absolute `core.hooksPath` and checks nested packages. The route-auth audit is per handler and can't pass vacuously. Security headers are on. Server env is checked at startup. Node is pinned in `.nvmrc`.
+- **Strictness (E).** `noUncheckedIndexedAccess` is on, and its 202 errors are fixed. It turned up two real bugs: "constructor" typed as a date threw a `RangeError` (a 500 from the Lists date field), and a thread forgotten while being shelved still logged `library.shelved`. 131 exports used only in their own file are unexported, and four dead exports are gone. The canon now says Lumi sees roughly the last 30 to 40 messages. Production is pinned to Node 22 with `engines`.
+- `npm run check` passes on `chore/strictness` (typecheck, lint, 59 files / 362 tests, route-auth, CSS prefixes, the brief).
+
+### Known and deliberate
+- The pool still warms all 10 connections on a cold instance (A15): 510 → 90 ms on Today, and instances are reused.
+- No join table for `episodes.thread_ids`; the GIN index does the job at V1 scale (A22).
+- No foreign keys on history pointers whose target may be deleted first (A23; `domain.md` → Pointers without foreign keys).
+- No minimum stretch size for consolidation: a short visit is still its own episode (B18, `decisions.md`).
+- The nav stays usable over the Lists sheet, so it isn't `inert` (C7).
+- `@huggingface/transformers` stays despite 4 audit highs: the flagged packages are Node-side, and the library runs only in the browser worker (D5, `pre-prod.md`).
+- `core.hooksPath` turns absolute whenever Claude Code makes a worktree. That's its own setup step, outside the repo, and the preflight catches it (E4, `dev-hygiene.md`).
+- Preview deploys aren't set up and fail at startup by design (E7, Chanté: "Let's skip preview").
+- `core/domain/sessions.ts` and `core/focus.ts` keep their unused exports: they're kept for sessions coming back (E2).
+
+### Open
+- Checks that need a deploy: the security headers on the live URL (`pre-prod.md`), and a build log showing Node 22 once `engines` ships.
+- Re-cuts are serialised per process only (B8), so two instances can still race; revisit if that ever shows up.
+
+### Highest-value manual tests
+- Ask Lumi to add something, then close the bubble (or leave Home) before she answers. The item still appears.
+- In Lists, type "constructor" in a date field. It says the date wasn't understood, with no server error.
+- Two quick changes to Today in chat ("something easy", then "make today smaller"): Today shows the second.
+- After the next production deploy, Vercel's build log shows Node 22.x.
+- After starting a new Claude worktree, run `npm run preflight` in any checkout. It names the absolute `core.hooksPath` and the fix.
+
+---
+
 ## Sweep 2026-09-13 (8) — Lumi knows the app and where you are (`feat/lumi-environment`)
 
 Chanté: "I'd like Lumi to be aware of her environment and the app's functionality."

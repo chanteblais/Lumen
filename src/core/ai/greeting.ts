@@ -1,6 +1,6 @@
 import { gapBucket, localDayDiff } from "@/core/time";
 
-export type GreetingState = {
+type GreetingState = {
   /** First name if known; the greeting stays warm without it. */
   displayName?: string | null;
   /** Last time the user was here; undefined on first visit. */

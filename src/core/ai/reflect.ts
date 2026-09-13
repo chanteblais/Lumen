@@ -25,7 +25,7 @@ const MAX_MODEL_CONFIDENCE = 0.6;
 const MIN_MODEL_CONFIDENCE = 0.05;
 const NOTE_MAX = 200;
 /** What happened just after the session still belongs to it (Lumi's reply to "Done", her confirm_belief); later conversation doesn't. */
-export const REFLECTION_TAIL_MS = 5 * 60_000;
+const REFLECTION_TAIL_MS = 5 * 60_000;
 
 /**
  * One proposed operation, flat so structured output stays simple. No length or
@@ -40,14 +40,14 @@ const RawOpSchema = z.object({
   confidence: z.number().optional().describe(`For create, ${MIN_MODEL_CONFIDENCE}–${MAX_MODEL_CONFIDENCE}. Modest: one session is thin evidence`),
   note: z.string().optional().describe("For contradict: what went against it, in a few words"),
 });
-export type RawOp = z.infer<typeof RawOpSchema>;
+type RawOp = z.infer<typeof RawOpSchema>;
 
 const ReflectionSchema = z.object({
   ops: z.array(RawOpSchema).describe(`${MAX_OPS_PER_RUN} at most`),
 });
 
 /** Evidence already recorded for a belief during the session — its op, from the event's type. */
-export type RecordedOp = { op: BeliefOp["op"]; id?: string };
+type RecordedOp = { op: BeliefOp["op"]; id?: string };
 const OP_OF_EVENT: Record<string, BeliefOp["op"]> = { "memory.noted": "create", "memory.confirmed": "confirm", "memory.contradicted": "contradict", "memory.revised": "revise", "memory.retired": "retire" };
 
 const REFLECTION_RULES = `You are the reflection step behind Lumi, a companion for getting started. One focus session has just ended. From the session, its check-ins, the conversation around it and what is already believed, propose belief operations — or none.
@@ -95,7 +95,7 @@ export function deterministicSessionOps(session: Pick<FocusSession, "approach" |
 }
 
 /** A session that barely began says nothing a model call could learn from; only the code step runs. */
-export const MIN_MINUTES_FOR_MODEL_STEP = 3;
+const MIN_MINUTES_FOR_MODEL_STEP = 3;
 export function worthModelStep(s: Pick<FocusSession, "outcome" | "startedAt" | "endedAt">): boolean {
   if (s.outcome === "completed") return true;
   if (!s.endedAt) return false;
@@ -103,7 +103,7 @@ export function worthModelStep(s: Pick<FocusSession, "outcome" | "startedAt" | "
 }
 
 /** Did this session use this strategy — as its named approach, or as its first step? */
-export function sessionUsedStrategy(session: Pick<FocusSession, "approach" | "firstStep">, belief: Pick<MemoryNote, "kind" | "content">): boolean {
+function sessionUsedStrategy(session: Pick<FocusSession, "approach" | "firstStep">, belief: Pick<MemoryNote, "kind" | "content">): boolean {
   return (session.approach ? matchesStrategy(session.approach, belief) : false) || matchesStrategy(session.firstStep, belief);
 }
 
@@ -225,7 +225,10 @@ export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone
   // Evidence Lumi already recorded during the session (confirm_belief in the
   // reply to "Done", say) is not recorded twice: those beliefs are off limits here.
   const touchedDuring = await listEventsSince(db, user.id, Object.keys(OP_OF_EVENT), session.startedAt, 30, until);
-  const already: RecordedOp[] = touchedDuring.filter((e) => e.subjectId).map((e) => ({ op: OP_OF_EVENT[e.type], id: e.subjectId! }));
+  const already: RecordedOp[] = touchedDuring.flatMap((e) => {
+    const op = OP_OF_EVENT[e.type];
+    return op && e.subjectId ? [{ op, id: e.subjectId }] : [];
+  });
   const touchedIds = new Set(already.map((o) => o.id));
   const code = deterministicSessionOps(session, beliefs).filter((o) => !("id" in o) || !touchedIds.has(o.id));
   const first = await applyBeliefOps(db, user.id, code, "reflection");

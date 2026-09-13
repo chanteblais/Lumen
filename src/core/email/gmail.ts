@@ -51,7 +51,7 @@ export function gmailReader(token: string, fetchImpl: typeof fetch = fetch): Ema
 
 /* ------------------------------------------------------------- parsing */
 
-export type GmailRaw = {
+type GmailRaw = {
   id: string;
   threadId: string;
   internalDate?: string;
@@ -85,7 +85,10 @@ export function parseGmailMessage(raw: GmailRaw): EmailMessage | undefined {
 
 export function parseAddress(s: string): { name: string; address: string } {
   const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(s);
-  if (m) return { name: m[1].trim() || m[2].split("@")[0], address: m[2].trim() };
+  if (m) {
+    const [, name = "", address = ""] = m;
+    return { name: name.trim() || (address.split("@")[0] ?? ""), address: address.trim() };
+  }
   const address = s.trim();
   return { name: address.split("@")[0] || address, address };
 }

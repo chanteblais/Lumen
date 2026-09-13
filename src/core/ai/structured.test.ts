@@ -22,7 +22,7 @@ describe("proposeStructured", () => {
     generateText.mockResolvedValue({ output: { ok: true } });
     const out = await proposeStructured({ name: "day_plan", kind: "plan", persona: true, rules: "RULES", inputs: "INPUTS", prompt: "Choose.", schema, effort: "medium" });
     expect(out).toEqual({ ok: true });
-    const call = generateText.mock.calls[0][0];
+    const call = generateText.mock.calls[0]![0];
     expect(call.instructions).toEqual([
       { role: "system", content: PERSONA, providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } }, openai: { promptCacheBreakpoint: { mode: "explicit" } } } },
       { role: "system", content: "RULES" },
@@ -36,7 +36,7 @@ describe("proposeStructured", () => {
   it("sends no persona for the memory steps, and null when the model gave nothing", async () => {
     generateText.mockResolvedValue({ output: undefined });
     expect(await proposeStructured({ name: "consolidation", kind: "consolidate", rules: "R", inputs: "I", prompt: "P", schema, effort: "low" })).toBeNull();
-    const call = generateText.mock.calls[0][0];
+    const call = generateText.mock.calls[0]![0];
     expect(call.instructions.map((m: { content: string }) => m.content)).toEqual(["R", "I"]);
     expect(call.providerOptions.openai.promptCacheKey).toBe("lumi-consolidate");
   });

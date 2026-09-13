@@ -114,8 +114,8 @@ describe("POST /api/chat", () => {
     const call = streamCalls.at(-1) as { messages: { role: string; content: { type: string; text?: string }[] }[] };
     const last = call.messages.at(-1)!.content;
     expect(last.map((p) => p.type)).toEqual(["text", "text", "text"]);
-    expect(last[1].text).toContain("Call the vet");
-    expect(last[2].text).toContain("## Right now");
+    expect(last[1]!.text).toContain("Call the vet");
+    expect(last[2]!.text).toContain("## Right now");
     const kept = responseOptions.originalMessages?.at(-1) as unknown as { parts: { type: string; data?: unknown }[] };
     expect(kept.parts[1]).toEqual({ type: "data-shared-file", data: { name: "list.txt", kind: "text" } });
 
@@ -150,7 +150,7 @@ describe("POST /api/chat", () => {
     afters.length = 0;
     await say("I need to oil the gate");
     const tools = streamCalls.at(-1)!.tools as Record<string, { execute: (input: unknown, opts: unknown) => Promise<unknown> }>;
-    await tools.create_intention.execute({ title: "Oil the gate" }, { toolCallId: "t1", messages: [] });
+    await tools.create_intention!.execute({ title: "Oil the gate" }, { toolCallId: "t1", messages: [] });
     await runAfters();
     expect(prime).toHaveBeenCalledTimes(1);
   });
@@ -167,8 +167,8 @@ describe("POST /api/chat", () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const reply = (responseOptions.onError as (e: unknown) => string)(Object.assign(new Error("upstream"), { requestBodyValues: { input: "my secret plan is to sleep" } }));
     expect(reply).toBe("I lost the thread for a second. Say that again?");
-    expect(String(logged.mock.calls[0][0])).toContain(`user=${user.id}`);
-    expect(String(logged.mock.calls[0][0])).not.toContain("secret plan");
+    expect(String(logged.mock.calls[0]![0])).toContain(`user=${user.id}`);
+    expect(String(logged.mock.calls[0]![0])).not.toContain("secret plan");
     // A reply that can't be saved (an id that isn't one): logged, not thrown.
     await expect((responseOptions.onEnd as (e: unknown) => Promise<void>)({ responseMessage: { id: "not-a-uuid", role: "assistant", parts: [{ type: "text", text: "ok" }] }, isAborted: false })).resolves.toBeUndefined();
     expect(logged.mock.calls.some((c) => String(c[0]).startsWith("[chat] couldn't save"))).toBe(true);

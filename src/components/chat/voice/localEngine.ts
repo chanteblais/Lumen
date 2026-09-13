@@ -96,7 +96,7 @@ const HALLUCINATIONS = new Set(["you", "thank you.", "thanks.", "thank you for w
 
 function rms(audio: Float32Array): number {
   let sum = 0;
-  for (let i = 0; i < audio.length; i++) sum += audio[i] * audio[i];
+  for (const s of audio) sum += s * s;
   return Math.sqrt(sum / (audio.length || 1));
 }
 
@@ -112,7 +112,9 @@ function resample(input: Float32Array, ratio: number): Float32Array {
     const pos = i * ratio;
     const j = Math.floor(pos);
     const frac = pos - j;
-    out[i] = input[j] * (1 - frac) + (input[Math.min(j + 1, input.length - 1)] ?? input[j]) * frac;
+    const a = input[j] ?? 0; // j < input.length: i < input.length / ratio
+    const b = input[Math.min(j + 1, input.length - 1)] ?? a;
+    out[i] = a * (1 - frac) + b * frac;
   }
   return out;
 }

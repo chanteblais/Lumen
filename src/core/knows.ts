@@ -14,9 +14,9 @@ export const KNOWS_LINES = {
   later: "Your name and timezone, soon.",
 } as const;
 
-export const KIND_ORDER: readonly BeliefKind[] = ["project", "fact", "preference", "strategy", "pattern", "anti_pattern"];
+const KIND_ORDER: readonly BeliefKind[] = ["project", "fact", "preference", "strategy", "pattern", "anti_pattern"];
 
-export const KIND_HEADINGS: Record<BeliefKind, string> = {
+const KIND_HEADINGS: Record<BeliefKind, string> = {
   project: "What you're working on",
   fact: "About you",
   preference: "How you like her to be",

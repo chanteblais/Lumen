@@ -6,6 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { dayPlans, type DayPlanJson, type DayPlanRow, type Intention, type PlanReason } from "@/db/schema";
 import { appendEvent } from "./events";
+import { returnedRow } from "./rows";
 
 export async function getPlanForDate(db: Db, userId: string, localDate: string): Promise<DayPlanRow | undefined> {
   const [row] = await db
@@ -19,7 +20,7 @@ export async function getPlanForDate(db: Db, userId: string, localDate: string):
 
 /** `ask`: what the user asked for in chat when the reason is `asked` — kept on the event, since asks are a learning signal ("easy", three days running). */
 export async function savePlan(db: Db, userId: string, localDate: string, plan: DayPlanJson, reason: PlanReason, capacity?: string, ask?: string): Promise<DayPlanRow> {
-  const [row] = await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning();
+  const row = returnedRow(await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning(), "savePlan");
   await appendEvent(db, {
     userId,
     type: reason === "advanced" ? "plan.advanced" : reason === "first_step" ? "plan.first_step" : "plan.generated",
@@ -70,13 +71,14 @@ export function planAfterDecline(plan: DayPlanJson, open: Queued[], declinedIds:
     const i = byId.get(a.intentionId);
     if (i && i.id !== gone && !declinedIds.has(i.id)) queued.push(i);
   }
-  if (!queued.length) return null;
-  let pick = queued[0];
+  const [first] = queued;
+  if (!first) return null;
+  let pick = first;
   if (reason === "too_big" || reason === "too_tired") {
     const size = (i: Queued) => i.estimateMinutes ?? Number.POSITIVE_INFINITY;
-    pick = queued.reduce((best, i) => (size(i) < size(best) ? i : best), queued[0]);
+    pick = queued.reduce((best, i) => (size(i) < size(best) ? i : best), first);
   } else if (reason === "unclear") {
-    pick = queued.find((i) => i.nextAction) ?? queued[0];
+    pick = queued.find((i) => i.nextAction) ?? first;
   }
   return {
     ...plan,
