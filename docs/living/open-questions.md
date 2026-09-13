@@ -109,9 +109,9 @@ OpenAI models are to be prototyped alongside the current Anthropic implementatio
 - **Scenarios.** The nine existing ones, plus what the strategy adds: a pattern across days, a four-day gap, reflection that should stay reflective, a spiral that shouldn't, a framing worth challenging, a context-rich turn where reciting is the failure. Some need structured context that doesn't exist yet (question 22).
 - **Beyond voice.** Tools are the only write path, so a candidate must call them reliably and never invent ids. The persona's byte-stable prefix is a caching convention, and each provider caches differently. Latency and cost matter too.
 - **Scope.** Does "Lumi's model" cover only the conversation, or also the planner, lead-finding and reflection calls, which are Lumi's judgement in structured form?
-- **Privacy.** A second provider would receive conversations, beliefs and mail gists. Its retention terms, and a privacy note that names whoever runs Lumi (`pre-prod.md` names Anthropic only).
+- **Privacy.** A second provider would receive conversations, beliefs and mail gists. Its retention terms, and a privacy note that names whoever runs Lumi (`pre-prod.md` now names OpenAI).
 
-*Meanwhile:* `claude-opus-5` behind `src/core/ai/model.ts`.
+*Meanwhile:* `gpt-6-astra` behind `src/core/ai/model.ts` since 2026-09-13 (Chanté's switch), for all four calls; `LUMI_MODEL=anthropic:claude-opus-5` runs the Anthropic implementation for a comparison, and `scripts/voice-eval.mjs` follows it. OpenAI is now the provider receiving conversations, beliefs and mail gists (`store: false`); the privacy note in `pre-prod.md` names it.
 
 **22. What structured context does Lumi need that Coherence doesn't hold?** *(2026-09-13)*
 The model strategy lists what Coherence should remember: tasks, lists, priorities, projects, Library threads, decisions, patterns, preferences, capacity, commitments, history, re-entry state, Garden state, and the relationships between them. Held today: intentions, lists, capacity, sessions, day plans, beliefs (projects and patterns live here, flat on purpose, sticky decision 15), leads, and events. Missing or thin:
