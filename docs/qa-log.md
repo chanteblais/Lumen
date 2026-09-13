@@ -6,6 +6,26 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (5) — the old chat flashed on opening Home (`fix/home-opens-on-greeting`)
+
+Chanté: "When I first land on the home page, sometimes my old chat is there for a second and then it disappears."
+
+### Fixed
+- **The page painted from the top, then scrolled to the greeting.** Home opens on the greeting card with the earlier conversation one scroll up, but the scroll to the card was MessageList's `useEffect`, which runs only after React hydrates — ~1s on Home in dev, less in prod. The server HTML (streamed into `S:0` and revealed by React's inline `$RC`) paints before that, at scroll 0: the old conversation, then the jump. Now `OPEN_ON_CARD_SCRIPT` (`components/chat/open-on-card.ts`), inlined in the layout beside the scene fade script, watches for `[data-opens-here]` (the card's wrapper) being added to the document and scrolls it into place in the same microtask checkpoint, so before any paint — on the first HTML and on client navigations alike. MessageList's effect still runs after it, and corrects for anything that shifts (fonts).
+
+### Known and deliberate
+- A handoff from Today (`?start=…`) still lands on the card for a moment and then follows the new message down — that's the chat following the newest line, as before.
+
+### Verified (live, port 3006, worktree on the branch)
+- In the page: scroll `.chat-scroll` to 0 (card 9,587px down, 28 earlier messages above it), take the transcript out and put it back the way `$RC` does. Synchronously after the insert the scroll is still 0; after the mutation microtask — before a paint could happen — it is 9,575 with the card 12px from the top (the scroll padding), identical to where the page settles on its own. `npm run check` passes.
+- Not verifiable from the automation tab: frame-by-frame first paint (the tab is hidden, so rAF doesn't run) and an iframe load of `/` (the frame headers from `chore/hygiene` refuse it — dev-hygiene traps).
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- Hard-reload Home a few times (and open it from Today in the nav): it should open on the greeting with no glimpse of the old conversation. Scroll up: the earlier chat is all there.
+
 ## Sweep 2026-09-13 (4) — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
 
 Chanté, from Today's speech bubble: "I need to buy new headphones and also call Kendra" got *Noted · Buy new headphones · Personal*, *Noted · Call Kendra · Personal*, then *Updated · Buy new headphones*, *Updated · Call Kendra*. And Lumi's shadow was clipping the bubble.
