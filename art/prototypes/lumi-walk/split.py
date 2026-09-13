@@ -52,6 +52,11 @@ FACINGS = [
     dict(name='s', src='art/lumi/lumi-iso-s.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='w', src='art/lumi/lumi-iso-w.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='n', src='art/lumi/lumi-iso-n.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
+    # the in-betweens she turns through (sixteen facings, 22.5° apart)
+    dict(name='ssw', src='art/lumi/lumi-iso-ssw.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='wsw', src='art/lumi/lumi-iso-wsw.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='wnw', src='art/lumi/lumi-iso-wnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
+    dict(name='nnw', src='art/lumi/lumi-iso-nnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
 ]
 OUT = os.path.join(HERE, 'parts')
 os.makedirs(OUT, exist_ok=True)
