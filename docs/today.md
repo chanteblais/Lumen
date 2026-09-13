@@ -101,5 +101,5 @@ Each is a real user message in the one transcript (decision #11 in `architecture
 
 ## Open questions for Chanté
 1. ~~**The product name?**~~ Answered: first Lumen, then **Coherence** (2026-09-12, `decisions.md`); the character stays Lumi.
-2. **Nav:** the mockup shows Today · Lists · Focus · Chat · Insights · Archive. Proposal: **Today · Lists · Chat · Settings** in V1 (Focus lives inside Chat/sessions; Insights and Archive post-V1), Today first as the landing page once it exists — Chat remains the landing until M3 ships.
-3. **Should Today become the landing page** at M3, with the conversation one click away? The brief implies yes.
+2. ~~**Nav.**~~ Answered: Chat (now Home) · Today · Lists · Insights · Settings shipped in M3. The intended model has since become four rooms: **Home · Garden · Library · Study**, with Today becoming the Garden (2026-09-12, [`living/decisions.md`](living/decisions.md)). Where Lists and Insights go is [open](living/open-questions.md).
+3. ~~**Should Today become the landing page?**~~ Answered: no. Home, the conversation, stays the landing (2026-09-12), and the rooms decision keeps it so.
