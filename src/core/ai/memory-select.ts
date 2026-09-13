@@ -36,7 +36,8 @@ const CHATTER = contentWords(
   "want wants need needs today tonight tomorrow just really like know think thinking going make time thing things something anything nothing okay ok yes yeah no not please thank thanks lumi can could would should will do did does done doing about some any now still again one also maybe sure good right day week back where when how why who which there here was were are am have has had been but so if as from up out into over than too very much more most all feel feeling bit lot let lets start started work working hey hi hello morning evening",
 );
 
-function termWeights(signals: TurnSignals): Map<string, number> {
+/** What a turn is about, as weighted content words: the message 3, a session or Start with Lumi 2, recent turns 1. Chatter left out. */
+export function termWeights(signals: TurnSignals): Map<string, number> {
   const weights = new Map<string, number>();
   const add = (text: string | null | undefined, w: number) => {
     if (!text) return;

@@ -12,7 +12,7 @@ export type ActionSource = "app" | "chat";
 export type EventInput = {
   userId: string;
   type: string;
-  subjectType?: "intention" | "session" | "note" | "user" | "lead";
+  subjectType?: "intention" | "session" | "note" | "user" | "lead" | "thread" | "episode";
   subjectId?: string;
   payload?: Record<string, unknown>;
   occurredAt?: Date;

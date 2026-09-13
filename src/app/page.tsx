@@ -5,6 +5,7 @@ import { RoomScene } from "@/components/shell/RoomScene";
 import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
+import { consolidateAfter } from "@/core/ai/consolidate";
 import { reflectAfterSession } from "@/core/ai/reflect";
 import { primeTodaysPlan } from "@/core/ai/today-plan";
 import { ensureMainConversation, isInSitting, loadRecentMainMessages } from "@/core/domain/conversations";
@@ -20,6 +21,8 @@ export default async function Home() {
   const { user, previous } = await requireVisit();
   // Cut today's path now, off the response, so Today opens with it ready.
   after(() => primeTodaysPlan(db(), user));
+  // Fold the last visit's conversation into Lumi's memory (an episode, the Library), off the response.
+  after(() => consolidateAfter(db(), user));
   const [conversation, initialMessages, open, sitting, session] = await Promise.all([
     ensureMainConversation(db(), user.id),
     loadRecentMainMessages(db(), user.id),

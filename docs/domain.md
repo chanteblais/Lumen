@@ -88,6 +88,47 @@ Active belief = `retired_at IS NULL`. Confidence drifts: each `contradict` lower
 
 What may be stored is decided in code before the insert (`core/domain/memory-rules.ts`): never secrets or instruction-like text; one line, no markup. Which active beliefs a chat turn sees is derived at read time (`core/ai/memory-select.ts`): up to 5 preferences and 3 strategies always, then the ones the conversation is about, then the freshest projects and facts, ≤ 12. A guess below 0.5 that nothing has confirmed for 60 days *fades* — out of the block, still in `recall_memory` and Settings; nothing is stored for it.
 
+### `episodes` — recent memory (2026-09-13, `0004`)
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id / conversation_id | fk | cascade |
+| summary | text | a few sentences, in Lumi's words: what you talked about |
+| left_off | text null | where it was left, when something was left open |
+| started_at / ended_at | timestamptz | the first and last message it covers |
+| through_message_id | uuid | the last message it covers — the watermark moved here |
+| thread_ids | jsonb string[] | threads it touched; a forgotten thread's id is removed |
+| created_at | | |
+
+One per stretch of conversation, written by consolidation (`core/ai/consolidate.ts`) once the stretch is over. The conversation's `summary_through_message_id` is the watermark: messages up to it are folded in.
+
+### `threads` — the Library (2026-09-13, `0004`)
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk | cascade |
+| title | text | what they call it |
+| aliases | jsonb string[] | other words they use for it ("the book", "my novel"), ≤ 8 — how a mention is recognised |
+| summary | text null | Lumi's quick orientation — what it is, where it stands, what's open — rewritten as notes arrive |
+| summary_revised_at | timestamptz null | |
+| last_discussed_at | timestamptz | a note filed or the summary rewritten. *Resting* (30 days) is derived from it, never stored |
+| created_at | | |
+
+### `thread_notes`
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id / thread_id | fk | cascade |
+| kind | text | `idea | decision | question | progress | detail` |
+| content | text | one specific sentence, ≤ 280 |
+| source | text | `user_said` (their words matched a message) · `lumi_inferred` (her reading) |
+| source_message_id | uuid null | the message their words came from |
+| episode_id | uuid null | fk, set null — the episode it was filed in |
+| superseded_by_id | uuid null | the note that replaced it: history, not current |
+| created_at | | |
+
+Current note = `superseded_by_id IS NULL`. A thread is a life-model object, not a project table: intentions stay flat and aren't linked to threads yet, and how the Library room shows threads (Collections, Thread Groups, shelves) isn't modelled. What may be stored runs through the same screens as beliefs. Forgetting deletes — a note with its lineage, or a thread with all its notes — and leaves a `library.forgotten` tombstone.
+
 ### `events` (append-only)
 | column | type | notes |
 |---|---|---|
@@ -113,6 +154,10 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
 | `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }`; `.noted` and `.revised` also carry `source`; `.contradicted` / `.retired` may carry a free-text `note`. No belief content in any of them |
 | `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`wasForgotten`); no words are kept |
+| `memory.consolidated` | `{ messages, threads_created, notes, summaries }` (2026-09-13) — one stretch of conversation folded into memory; `subject_id` is its episode, when one was written |
+| `library.thread_created` / `.summary_revised` | `{ by: 'user'|'lumi'|'consolidation' }` — the subject is the thread |
+| `library.noted` | `{ note, kind, source, supersedes, by }` — a note filed under the thread (the subject); `supersedes` is the note it replaced, or null |
+| `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
 | `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
@@ -184,6 +229,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **No** — 2026-09-13 on `feat/lumi-library`, for Chanté to apply after `0003`. Until it is, the Library can't be read or written: chat carries on without it, and consolidation logs its failure and leaves the stretch for later |
 | `0003_memory_source_message.sql` | `memory_notes.source_message_id` (uuid null, no FK): the user message a belief came from | No (additive, nullable) | **No** — 2026-09-13 on `feat/lumi-memory`, for Chanté to apply. Until it is, beliefs can't be read or written (the column is selected): chat carries on without them and Settings says it can't reach them |
 | `0002_leads.sql` | `leads` table (what Lumi noticed in the mail: title, why, list, due, sender/subject/received, status, `intention_id` when kept) + two indexes | No (create-only) | **Yes** — 2026-09-12, applied by Claude with `npm run db:migrate` on `feat/email-insights` (additive, per `branching.md` → Claude sessions) |
 | `0001_lists_estimates_day_plans.sql` | `intentions.list`, `intentions.estimate_minutes`; `day_plans` table (one persisted path per user per local date: `plan` jsonb, `capacity`, `reason`) + index | No (additive) | **Yes** — 2026-09-13 (applied by Chanté; journaled) |

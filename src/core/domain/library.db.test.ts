@@ -1,0 +1,255 @@
+/**
+ * The Library end to end on a real Postgres (PGlite, migrations applied):
+ * consolidation filing and refining threads across visits, what a later turn
+ * carries, the chat tools, forgetting, isolation and failure.
+ */
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { consolidate, type ConsolidationInputs, type RawProposal } from "@/core/ai/consolidate";
+import { buildContextBlock } from "@/core/ai/context";
+import { selectLibrary } from "@/core/ai/library-select";
+import { buildTools } from "@/core/ai/tools";
+import type { Db } from "@/db/client";
+import { conversations, episodes, messages, type User } from "@/db/schema";
+import { createTestUser, openTestDb } from "@/db/test-db";
+import { ensureMainConversation } from "./conversations";
+import { listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing } from "./library";
+import type { Heard } from "./memory-rules";
+
+let db: Db;
+let close: () => Promise<void>;
+beforeAll(async () => {
+  ({ db, close } = await openTestDb());
+}, 60_000);
+afterAll(async () => {
+  await close();
+});
+
+async function say(u: User, at: string, role: "user" | "assistant", text: string): Promise<string> {
+  const c = await ensureMainConversation(db, u.id);
+  const id = randomUUID();
+  await db.insert(messages).values({ id, conversationId: c.id, role, parts: [{ type: "text", text }], createdAt: new Date(at) });
+  return id;
+}
+const clock = (iso: string) => () => new Date(iso);
+const said = (text: string): Heard => ({ messageId: randomUUID(), text });
+const toolsFor = (user: User, ...heard: Heard[]) => buildTools({ db, userId: user.id, timezone: "UTC", userWords: heard });
+
+type Callable = { execute?: (input: never, options: never) => unknown };
+async function call(t: Callable, input: object): Promise<Record<string, unknown>> {
+  return (await t.execute!(input as never, { toolCallId: "test", messages: [] } as never)) as Record<string, unknown>;
+}
+
+describe("consolidation", () => {
+  it("files a subject they keep coming back to, refines it, and brings it back when it comes up", async () => {
+    const u = await createTestUser(db, "Rae");
+    await say(u, "2026-09-10T19:00:00Z", "user", "I've been working on my book again, the one about the two sisters.");
+    await say(u, "2026-09-10T19:01:00Z", "assistant", "The sisters book. Where are you in it?");
+    const ferryMsg = await say(u, "2026-09-10T19:04:00Z", "user", "For my book I think the ending should happen on the ferry.");
+    const lastOfFirst = await say(u, "2026-09-10T19:05:00Z", "assistant", "The ferry ending. That fits.");
+
+    const first = await consolidate(db, u, {
+      now: clock("2026-09-12T09:00:00Z"),
+      propose: async () => ({
+        episode: { summary: "You worked on your book about two sisters and settled on a ferry ending.", left_off: "Whether the ferry scene opens or closes the last chapter." },
+        threads: [{ ref: "new:book", title: "The book", aliases: ["my book"], summary: "A novel about two sisters. The ending is set on the ferry." }],
+        notes: [
+          { thread: "new:book", kind: "idea", content: "The ending happens on the ferry.", source: "user_said", their_words: "the ending should happen on the ferry" },
+          { thread: "new:book", kind: "detail", content: "The book is about two sisters.", source: "lumi_inferred" },
+        ],
+      }),
+    });
+    expect(first).toMatchObject({ status: "done", threadsCreated: 1, notesFiled: 2 });
+
+    const [book] = await listThreads(db, u.id);
+    expect(book).toMatchObject({ title: "The book", aliases: ["my book"], summary: "A novel about two sisters. The ending is set on the ferry." });
+    expect((await listCurrentNotes(db, u.id, [book.id])).find((x) => x.content === "The ending happens on the ferry.")).toMatchObject({ source: "user_said", sourceMessageId: ferryMsg });
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
+    expect(conversation.summaryThroughMessageId).toBe(lastOfFirst);
+    const [episode] = await db.select().from(episodes).where(eq(episodes.userId, u.id));
+    expect(episode).toMatchObject({ threadIds: [book.id], leftOff: "Whether the ferry scene opens or closes the last chapter." });
+
+    // Two days later they come back to it, and the ending changes.
+    await say(u, "2026-09-12T10:00:00Z", "user", "Back on the book. Actually the ending moves to the lighthouse, not the ferry.");
+    await say(u, "2026-09-12T10:01:00Z", "assistant", "Lighthouse it is. The ferry can still carry them there.");
+    let seen: ConsolidationInputs | undefined;
+    const second = await consolidate(db, u, {
+      now: clock("2026-09-12T11:00:00Z"),
+      propose: async (inputs) => {
+        seen = inputs;
+        const ferry = inputs.notes.find((x) => x.content.includes("ferry"))!;
+        return {
+          episode: { summary: "You moved the book's ending from the ferry to the lighthouse." },
+          threads: [{ ref: book.id, aliases: ["the novel"], summary: "A novel about two sisters. The ending is set at the lighthouse now; the ferry carries them there." }],
+          notes: [{ thread: book.id, kind: "decision", content: "The ending happens at the lighthouse.", source: "user_said", their_words: "the ending moves to the lighthouse", supersedes: ferry.id }],
+        };
+      },
+    });
+    expect(seen?.threads.map((t) => t.id)).toEqual([book.id]);
+    expect(second).toMatchObject({ status: "done", threadsCreated: 0, notesFiled: 1, summaries: 1 });
+    expect((await listCurrentNotes(db, u.id, [book.id])).map((x) => x.content).sort()).toEqual(["The book is about two sisters.", "The ending happens at the lighthouse."]);
+    expect((await listNoteHistory(db, u.id, book.id)).map((x) => x.content)).toEqual(["The ending happens on the ferry."]);
+
+    // That evening it comes up again: the turn carries the refined summary, the notes that bear on it, and both visits.
+    const evening = new Date("2026-09-12T20:00:00Z");
+    const state = await loadLibraryOrNothing(db, u.id, evening);
+    const view = selectLibrary(state.threads, state.notes, state.episodes, { message: "I want to write the lighthouse scene for the novel tonight" }, { now: evening, windowStartsAt: new Date("2026-09-12T19:59:00Z") });
+    expect(view.open.map((o) => o.thread.id)).toEqual([book.id]);
+    expect(view.open[0].notes[0].content).toBe("The ending happens at the lighthouse.");
+    expect(view.episodes).toHaveLength(2);
+    const block = buildContextBlock({ displayName: "Rae", timezone: "UTC", now: evening, library: view });
+    expect(block).toContain("You moved the book's ending from the ferry to the lighthouse.");
+    expect(block).toContain("The ending is set at the lighthouse now");
+    expect(block).toContain('"The ending happens at the lighthouse." · their word');
+    expect(block).not.toContain("The ending happens on the ferry.");
+  });
+
+  it("doesn't start a thread for a passing mention, but remembers the visit", async () => {
+    const u = await createTestUser(db, "Sam");
+    await say(u, "2026-09-11T09:00:00Z", "user", "My cousin mentioned a pottery class, anyway can we sort out the tax forms today?");
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Tax forms. Which one is first?");
+    const r = await consolidate(db, u, {
+      now: clock("2026-09-11T12:00:00Z"),
+      propose: async () => ({
+        episode: { summary: "You started on the tax forms." },
+        threads: [{ ref: "new:pottery", title: "Pottery class" }],
+        notes: [{ thread: "new:pottery", kind: "detail", content: "Their cousin mentioned a pottery class.", source: "lumi_inferred" }],
+      }),
+    });
+    expect(r).toMatchObject({ status: "done", threadsCreated: 0, notesFiled: 0 });
+    expect(await listThreads(db, u.id)).toEqual([]);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+  });
+
+  it("keeps a stretch for the next run when the model call fails", async () => {
+    const u = await createTestUser(db, "Ted");
+    await say(u, "2026-09-11T09:00:00Z", "user", "Let's plan the week — the grant report, the dentist and my mum's birthday.");
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Grant report first. The rest are quick.");
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = await consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose: async () => Promise.reject(new Error("provider down")) });
+    quiet.mockRestore();
+    expect(failed).toEqual({ status: "failed" });
+    const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
+    expect(c.summaryThroughMessageId).toBeNull();
+    const retried = await consolidate(db, u, { now: clock("2026-09-11T13:00:00Z"), propose: async () => ({ episode: { summary: "You planned the week around the grant report." }, threads: [], notes: [] }) });
+    expect(retried).toMatchObject({ status: "done" });
+  });
+
+  it("consolidates a stretch once when two runs race", async () => {
+    const u = await createTestUser(db, "Uma");
+    await say(u, "2026-09-11T09:00:00Z", "user", "Can you help me plan groceries for the week, something cheap and easy?");
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Lentils, eggs, rice. Two big cooks.");
+    const propose = vi.fn(async (): Promise<RawProposal> => ({ episode: { summary: "You planned the week's groceries together." }, threads: [], notes: [] }));
+    const results = await Promise.all([consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose }), consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose })]);
+    expect(results.map((r) => r.status).sort()).toEqual(["done", "lost"]);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+  });
+
+  it("waits while the visit is still going, and moves past a stretch with nothing in it", async () => {
+    const u = await createTestUser(db, "Val");
+    await say(u, "2026-09-12T10:00:00Z", "user", "hi");
+    const propose = vi.fn(async (): Promise<RawProposal> => ({ threads: [], notes: [] }));
+    expect(await consolidate(db, u, { now: clock("2026-09-12T10:05:00Z"), propose })).toEqual({ status: "nothing" });
+    expect(await consolidate(db, u, { now: clock("2026-09-12T11:00:00Z"), propose })).toMatchObject({ status: "done", episodeId: null });
+    expect(propose).not.toHaveBeenCalled();
+  });
+});
+
+describe("the Library in conversation", () => {
+  it("starts a thread only on their word, files to it, opens it and finds it", async () => {
+    const u = await createTestUser(db, "Wes");
+    const words = "start a thread for my garden plan, I want raised beds";
+    const refused = await call(toolsFor(u, said("hmm")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds." });
+    expect(String(refused.error)).toMatch(/their word/);
+
+    const tools = toolsFor(u, said(words));
+    const added = await call(tools.add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "I want raised beds" });
+    expect(added).toMatchObject({ thread: "Garden plan", held_as: "their word" });
+    expect(await call(tools.open_thread, { id: added.thread_id })).toMatchObject({ title: "Garden plan", notes: [{ content: "The garden gets raised beds.", held_as: "their word" }] });
+    expect((await call(tools.search_library, { query: "raised beds" })).notes).toMatchObject([{ content: "The garden gets raised beds.", thread: "Garden plan" }]);
+    expect(await call(tools.add_to_library, { thread_id: added.thread_id, kind: "decision", content: "the garden gets raised beds" })).toMatchObject({ already_held: true });
+  });
+
+  it("forgets a note for good: the conversation stays, and it isn't filed again from it", async () => {
+    const u = await createTestUser(db, "Xan");
+    const text = "for the garden plan I want raised beds and a plum tree by the fence";
+    const m1 = await say(u, "2026-09-11T09:00:00Z", "user", text);
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Raised beds and a plum tree. Good bones for a garden.");
+    const added = await call(toolsFor(u, { messageId: m1, text }).add_to_library, { new_thread: "Garden plan", kind: "idea", content: "A plum tree goes by the fence.", their_words: "a plum tree by the fence" });
+    const threadId = String(added.thread_id);
+
+    const words = "forget the plum tree idea";
+    expect(await call(toolsFor(u, said(words)).forget_from_library, { note_id: added.id, their_words: words })).toEqual({ ok: true, forgot: "note" });
+    expect(await listCurrentNotes(db, u.id, [threadId])).toEqual([]);
+    const conversation = await ensureMainConversation(db, u.id);
+    expect(await db.select().from(messages).where(eq(messages.conversationId, conversation.id))).toHaveLength(2);
+
+    const refiled = await consolidate(db, u, {
+      now: clock("2026-09-11T12:00:00Z"),
+      propose: async () => ({
+        episode: { summary: "You sketched the garden plan." },
+        threads: [],
+        notes: [{ thread: threadId, kind: "idea", content: "A plum tree goes by the fence.", source: "user_said", their_words: "a plum tree by the fence" }],
+      }),
+    });
+    expect(refiled).toMatchObject({ status: "done", notesFiled: 0 });
+    expect(await listCurrentNotes(db, u.id, [threadId])).toEqual([]);
+  });
+
+  it("forgets a whole thread on their word", async () => {
+    const u = await createTestUser(db, "Yas");
+    const added = await call(toolsFor(u, said("start a thread for the Lisbon trip, we're going in April")).add_to_library, { new_thread: "Lisbon trip", kind: "detail", content: "The Lisbon trip is in April.", their_words: "we're going in April" });
+    expect(String((await call(toolsFor(u, said("never mind")).forget_from_library, { thread_id: added.thread_id, their_words: "forget the trip" })).error)).toMatch(/their word/);
+    const words = "forget the Lisbon trip entirely";
+    expect(await call(toolsFor(u, said(words)).forget_from_library, { thread_id: added.thread_id, their_words: words })).toEqual({ ok: true, forgot: "thread" });
+    expect(await listThreads(db, u.id)).toEqual([]);
+    expect(await call(toolsFor(u).open_thread, { id: added.thread_id })).toHaveProperty("error");
+  });
+});
+
+describe("each user's Library is their own", () => {
+  it("another user can't open, add to, find or forget a thread, and consolidation never shows them another's", async () => {
+    const a = await createTestUser(db, "Ava");
+    const b = await createTestUser(db, "Bo");
+    const held = await call(toolsFor(a, said("start a thread for my garden plan, raised beds")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "raised beds" });
+    const id = held.thread_id;
+
+    const other = toolsFor(b, said("add to the garden plan and forget the garden plan"));
+    expect(await call(other.open_thread, { id })).toHaveProperty("error");
+    expect(await call(other.add_to_library, { thread_id: id, kind: "idea", content: "Tomatoes along the wall.", their_words: "add to the garden plan" })).toHaveProperty("error");
+    expect(await call(other.search_library, { query: "garden raised beds" })).toEqual({ threads: [], notes: [] });
+    expect(await call(other.forget_from_library, { thread_id: id, their_words: "forget the garden plan" })).toHaveProperty("error");
+    expect(await call(other.forget_from_library, { note_id: held.id, their_words: "forget the garden plan" })).toHaveProperty("error");
+
+    await say(b, "2026-09-11T09:00:00Z", "user", "I'm thinking about my own garden plan, maybe raised beds too.");
+    await say(b, "2026-09-11T09:01:00Z", "assistant", "Raised beds are forgiving.");
+    let seen: ConsolidationInputs | undefined;
+    await consolidate(db, b, {
+      now: clock("2026-09-11T12:00:00Z"),
+      propose: async (inputs) => {
+        seen = inputs;
+        return { threads: [], notes: [{ thread: String(id), kind: "idea", content: "Tomatoes along the wall.", source: "lumi_inferred" }] };
+      },
+    });
+    expect(seen?.threads).toEqual([]);
+    expect(seen?.notes).toEqual([]);
+    expect((await listCurrentNotes(db, a.id, [String(id)])).map((x) => x.content)).toEqual(["The garden gets raised beds."]);
+    expect((await loadLibraryOrNothing(db, b.id)).threads).toEqual([]);
+  });
+});
+
+describe("when the Library can't be reached", () => {
+  it("a turn carries on without it", async () => {
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken = {
+      select: () => {
+        throw new Error('relation "threads" does not exist');
+      },
+    } as unknown as Db;
+    const state = await loadLibraryOrNothing(broken, randomUUID());
+    quiet.mockRestore();
+    expect(state).toMatchObject({ threads: [], notes: [], episodes: [], unavailable: true });
+    expect(buildContextBlock({ displayName: "C", timezone: "UTC", libraryUnavailable: true })).toContain("Couldn't read the Library this turn");
+  });
+});

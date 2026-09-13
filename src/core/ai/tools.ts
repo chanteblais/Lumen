@@ -12,7 +12,9 @@ import type { UserPreferences } from "@/db/schema";
 import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { dismissLead, keepLead } from "@/core/domain/leads";
+import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS } from "@/core/domain/library";
 import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
+import { matchNotes, rankThreads } from "./library-select";
 import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
@@ -319,6 +321,89 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
         safe(async () => {
           const found = rankForRecall(await listActiveBeliefs(db, userId), input.query);
           return { memories: found.map((b) => ({ id: b.id, kind: b.kind, content: b.content, held_as: heldAs(b.source), sure: confidenceWord(b.confidence) })) };
+        }),
+    }),
+
+    open_thread: tool({
+      description:
+        "Read a thread from the Library in full — its summary, current notes and how the thinking changed — when they bring up a subject that's in the index but not open, or want to go deeper. id from the context or search_library.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const thread = await getOwnedThread(db, userId, input.id);
+          if (!thread) return { error: "not found — use a thread id from the context or search_library" };
+          const [notes, earlier] = await Promise.all([listCurrentNotes(db, userId, [thread.id], 40), listNoteHistory(db, userId, thread.id, 10)]);
+          return {
+            id: thread.id,
+            title: thread.title,
+            also_called: thread.aliases,
+            summary: thread.summary,
+            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading", when: n.createdAt.toISOString().slice(0, 10) })),
+            earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: n.createdAt.toISOString().slice(0, 10) })),
+          };
+        }),
+    }),
+
+    search_library: tool({
+      description: "Look through the Library for something they're reaching for — 'that idea about the ending', 'what did I decide about the title?'. A few words. Returns the threads and notes that match.",
+      inputSchema: z.object({ query: z.string().min(2).max(120) }),
+      execute: (input) =>
+        safe(async () => {
+          const [held, notes] = await Promise.all([listThreads(db, userId), listCurrentNotes(db, userId)]);
+          const titles = new Map(held.map((t) => [t.id, t.title] as const));
+          return {
+            threads: rankThreads(held, input.query, notes)
+              .slice(0, 3)
+              .map((t) => ({ id: t.id, title: t.title, summary: t.summary })),
+            notes: matchNotes(notes, input.query).map((n) => ({ id: n.id, thread_id: n.threadId, thread: titles.get(n.threadId), kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading" })),
+          };
+        }),
+    }),
+
+    add_to_library: tool({
+      description:
+        "Keep something for a thread when they ask you to ('keep that for the book', 'add it to my practicum notes'), or when they settle something about a thread open in the context. thread_id from the context; new_thread only when they ask you to start one, with their_words. When it changes a note already there, supersedes that note's id. The rest is filed between visits on its own — don't file everything.",
+      inputSchema: z.object({
+        thread_id: z.string().uuid().optional(),
+        new_thread: z.string().min(2).max(80).optional().describe("A title — only when they asked for a new thread"),
+        kind: z.enum(NOTE_KINDS),
+        content: z.string().min(3).max(280).describe("One specific sentence"),
+        their_words: z.string().max(300).optional().describe("Their exact words, copied — required for a new thread"),
+        supersedes: z.string().uuid().optional(),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const heard = findTheirWords(input.their_words, userWords);
+          let threadId = input.thread_id;
+          if (!threadId) {
+            if (!input.new_thread) return { error: "thread_id, or new_thread when they asked for one" };
+            if (!heard) return { error: "a new thread goes on their word — their_words must be copied from what they said" };
+            const made = await createThread(db, userId, { title: input.new_thread }, "user");
+            if ("skipped" in made) return { error: whyNot(made.skipped) };
+            threadId = made.thread.id;
+          }
+          const r = await fileNote(
+            db,
+            userId,
+            { threadId, kind: input.kind, content: input.content, source: heard ? "user_said" : "lumi_inferred", sourceMessageId: (heard ?? userWords.at(-1))?.messageId, supersedes: input.supersedes },
+            heard ? "user" : "lumi",
+          );
+          if ("skipped" in r) return r.skipped === "already_held" ? { already_held: true, id: r.existing?.id } : { error: whyNot(r.skipped) };
+          const thread = await getOwnedThread(db, userId, threadId);
+          return { id: r.note.id, thread_id: threadId, thread: thread?.title, content: r.note.content, held_as: heard ? "their word" : "your reading", ...(r.replaced ? { replaced: r.replaced.id } : {}) };
+        }),
+    }),
+
+    forget_from_library: tool({
+      description:
+        "They asked you to forget something in the Library: a note (note_id) or a whole thread (thread_id). Deleted for good and not filed again from the conversation, which itself is not touched. their_words: what they said, copied exactly (checked).",
+      inputSchema: z.object({ note_id: z.string().uuid().optional(), thread_id: z.string().uuid().optional(), their_words: z.string().min(1).max(300) }),
+      execute: (input) =>
+        safe(async () => {
+          if (!findTheirWords(input.their_words, userWords)) return { error: "their_words must be copied from what they said — forgetting goes on their word" };
+          if (input.note_id) return (await forgetNote(db, userId, input.note_id)).length ? { ok: true, forgot: "note" } : { error: whyNot("not found") };
+          if (input.thread_id) return (await forgetThread(db, userId, input.thread_id)) ? { ok: true, forgot: "thread" } : { error: whyNot("not found") };
+          return { error: "note_id or thread_id" };
         }),
     }),
 
