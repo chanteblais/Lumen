@@ -47,8 +47,8 @@ BRIDGE = 0.07        # the hem is bridged across gaps (the coat's slit) up to th
 # `chin`, `neck`: where the head's weight starts to fall and where it reaches zero, as shares of her height from
 # the hood top — the hood's lower edge and the shoulders below it, read off debug-split.png.
 FACINGS = [
-    dict(name='sw', src='art/lumi/lumi-iso-front.png', eyes=True, chin=0.46, neck=0.58, keep=[(495, 1064, 660, 1165)]),
-    dict(name='nw', src='art/lumi/lumi-iso-back.png', eyes=False, chin=0.50, neck=0.62, keep=[(630, 1015, 745, 1135)]),
+    dict(name='sw', src='art/lumi/lumi-iso-front.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='nw', src='art/lumi/lumi-iso-back.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
     dict(name='s', src='art/lumi/lumi-iso-s.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='w', src='art/lumi/lumi-iso-w.png', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='n', src='art/lumi/lumi-iso-n.png', eyes=False, chin=0.50, neck=0.62, keep=[]),

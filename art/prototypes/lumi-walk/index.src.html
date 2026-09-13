@@ -132,7 +132,7 @@
     <div class="notes">
       <h2>What to look at</h2>
       <ul>
-        <li>She faces the way she walks, whichever of the eight ways it is — no walking sideways.</li>
+        <li>She faces the way she walks, whichever of the eight ways it is. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking.</li>
         <li>At a corner she stops and turns through the drawings in between, each a moment long. A quarter turn is one drawing; half round is three.</li>
         <li>Her legs run from under the cloak to her boots every step, and the slit of her coat stays filled.</li>
         <li>The table and cushions, as before: mapped by hand, and still the rough part.</li>
@@ -246,6 +246,17 @@
     d.v = { x: p.x / l, y: p.y / l };
     d.len = l;
     if (!RIG[d.img]) d.img = RIG.sw ? (d.id === 'n' || d.id === 'nw' || d.id === 'ne' ? 'nw' : 'sw') : Object.keys(RIG)[0];
+  });
+  // Where each drawing really faces on the page, from its face (or the sun on the back of its hood) measured by
+  // facings.py: turned `turned` degrees on the ground from facing you (or away), toward the viewer's left, mirrored
+  // where the page mirrors it. The audit and the floor plan judge her against this, not against the label.
+  DIRS.forEach(function (d) {
+    var R = RIG[d.img];
+    if (!R || typeof R.turned !== 'number') { d.face = d.v; return; }
+    var th = R.turned * Math.PI / 180, base = R.back ? [-1, -1] : [1, 1];
+    var du = (base[0] * Math.cos(th) - Math.sin(th)) / Math.SQRT2, dv = (base[1] * Math.cos(th) + Math.sin(th)) / Math.SQRT2;
+    var p = fromUV(du, dv), l = Math.hypot(p.x, p.y);
+    d.face = { x: (d.mirror ? -p.x : p.x) / l, y: p.y / l };
   });
   function dirFor(v, fallback) {
     var l = Math.hypot(v.x, v.y);
@@ -731,6 +742,17 @@
       }
       ctx.fillStyle = '#fff4d6';
       ctx.beginPath(); ctx.arc(S.x, S.y, 3 / D, 0, 2 * Math.PI); ctx.fill();
+      // two arrows at her feet: red where her face points (measured on the drawing), white where she is walking
+      var arrow = function (v, colour, len) {
+        ctx.strokeStyle = colour; ctx.lineWidth = 3 / D;
+        ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(S.x + v.x * len, S.y + v.y * len); ctx.stroke();
+        ctx.beginPath(); ctx.arc(S.x + v.x * len, S.y + v.y * len, 3.5 / D, 0, 2 * Math.PI); ctx.fillStyle = colour; ctx.fill();
+      };
+      arrow(DIRS[S.dirIdx].face, 'rgba(230, 60, 70, 0.95)', 34 * sizeMul());
+      if (S.path.length) {
+        var nx = S.path[0].x - S.x, ny = S.path[0].y - S.y, nl = Math.hypot(nx, ny);
+        if (nl > 0.5) arrow({ x: nx / nl, y: ny / nl }, 'rgba(255, 250, 235, 0.95)', 26 * sizeMul());
+      }
     }
   }
 
@@ -764,7 +786,9 @@
   function runAudit() {
     document.body.classList.add('chromeless');
     var dt = 1 / 60, pick = rng(11);
-    var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0 };
+    var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0, faceOffDeg: {} };
+    // how far each direction's drawing faces from the way she walks in it — the number that says "walking forward"
+    DIRS.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
     function run(frames) {
       for (var i = 0; i < frames; i++) {
         var x0 = S.x, y0 = S.y, d0 = S.dirIdx, r0 = S.r, inTurn = turning(), snap0 = S.snapped || 0;
@@ -777,7 +801,7 @@
         if ((S.snapped || 0) !== snap0) { log.snappedPx += (S.snapped || 0) - snap0; continue; }
         var mx = S.x - x0, my = S.y - y0, len = Math.hypot(mx, my);
         if (len < 1e-6) continue;
-        var v = DIRS[S.dirIdx].v, ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
+        var v = DIRS[S.dirIdx].face, ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
         log.walkedPx += len;
         if (ang > 25) log.sidewaysPx += len;
         if (ang > log.worstDeg) { log.worstDeg = ang; log.worstAt = { x: Math.round(S.x), y: Math.round(S.y), facing: DIRS[S.dirIdx].id, t: +S.time.toFixed(2) }; }
@@ -808,10 +832,31 @@
     document.title = 'ready';
   }
 
+  // `?trace=start,step,count` steps the tour and writes, at each sample, where she is, the drawing she shows, the way
+  // that drawing faces and the way she is heading — the numbers behind a frame grid, for when a picture is ambiguous
+  function runTrace() {
+    document.body.classList.add('chromeless');
+    var g = params.get('trace').split(',').map(parseFloat), rows = [];
+    for (var i = 0; i < g[2]; i++) {
+      simulateTo(g[0] + i * g[1]);
+      var nx = S.path.length ? S.path[0].x - S.x : 0, ny = S.path.length ? S.path[0].y - S.y : 0, nl = Math.hypot(nx, ny) || 1;
+      var f = DIRS[S.dirIdx].face;
+      rows.push({ t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), dir: DIRS[S.dirIdx].id, face: [+f.x.toFixed(2), +f.y.toFixed(2)],
+        heading: S.path.length ? [+(nx / nl).toFixed(2), +(ny / nl).toFixed(2)] : null, next: S.path.length ? [Math.round(S.path[0].x), Math.round(S.path[0].y)] : null,
+        state: turning() ? 'turning' : S.path.length ? 'walking' : 'resting' });
+    }
+    var pre = document.createElement('pre');
+    pre.id = 'audit';
+    pre.textContent = rows.map(function (r) { return JSON.stringify(r); }).join('\n');
+    document.querySelector('main').appendChild(pre);
+    document.title = 'ready';
+  }
+
   // ---- the page --------------------------------------------------------------------------------------------------
   function start() {
     resetSim();
     if (params.get('audit')) { runAudit(); return; }
+    if (params.get('trace')) { runTrace(); return; }
     if (GRID) { runGrid(); return; }
     var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
     var readout = document.getElementById('readout'), hint = document.getElementById('hint');
