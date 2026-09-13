@@ -1,6 +1,6 @@
 # Spaces of Coherence
 
-*Canonical. Written by Chanté, added 2026-09-13. Formatted as Markdown, substance unchanged. The text as received ends partway through §29; the break is marked, not guessed. It is the place document [`PROJECT-CANON.md`](../../PROJECT-CANON.md) was waiting for. Where it moves or differs from what is already decided: [decisions](../living/decisions.md) → *Four places, each answering one question*, and [open questions](../living/open-questions.md) 2, 3, 5, 7, 14 and 15. How context travels underneath the spaces is [AI & Information Architecture](ai-and-information-architecture.md).*
+*Canonical. Written by Chanté, added 2026-09-13. Formatted as Markdown, substance unchanged. The text as received ends partway through §29; the break is marked, not guessed. It is the place document [`PROJECT-CANON.md`](../../PROJECT-CANON.md) was waiting for. Where it moves or differs from what is already decided: [decisions](../living/decisions.md) → *Four places, each answering one question*, and [open questions](../living/open-questions.md) 2, 3, 5, 7, 14 and 15. How context travels underneath the spaces is [AI & Information Architecture](ai-and-information-architecture.md). The Garden's own document is [Today / Garden](today-garden.md).*
 
 ---
 

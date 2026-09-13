@@ -2,6 +2,8 @@
 
 *Spec, 2026-09-12. Source: Chanté's Today-page philosophy brief and the `mockups/` Today mockup. Status: **built** — Lists (minimum) and Today v1 in M3; the capacity prompt, *Not this* with reasons and re-entry in M4 (2026-09-12); *Start with Lumi* opening a focus session in M5 (2026-09-12). Current behaviour: `features.md` → Today.*
 
+*The canon for this page is [`product/today-garden.md`](product/today-garden.md), Chanté's Garden document (2026-09-13): what Today is trying to become. This spec is the page as built and how it got there. Where the two differ: [open questions](living/open-questions.md) 5, 16, 20, 22, 26 and 27.*
+
 ## The one question Today answers
 **What should I be doing right now?**
 
