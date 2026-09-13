@@ -285,7 +285,7 @@ The first two need scenarios, and structured context that doesn't exist yet (que
 
 Lumi's body follows the same rules as her words:
 - **Presence, not performance.**
-- **She moves in answer** to something that happened.
+- **She moves in answer** to something that happened. Her one drawn gesture so far is a wave when the user arrives, once *(current, 2026-09-13; [decision](../living/decisions.md))*: §8's test, applied to motion — about something that changed, and ignorable at no cost.
 - **States come from the app,** never set by the user.
 - **Celebrate small.**
 - **One motion in view at a time.**

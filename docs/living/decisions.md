@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · Lumi waves when you arrive
+
+**Decision.** When the user arrives — the app opened, or its tab shown again, after thirty minutes or more away, or a first visit — Lumi waves once, a moment later, then goes back to breathing. It is her one drawn gesture, and a reaction, not an idle animation: it never plays on a schedule.
+**Rationale.** Warmth through behaviour, not slogans (EP§13: "welcoming you back without guilt"): returning is met by her, not by a count or a message. She moves in answer to something that happened (`lumi.md` §16), and arriving is an event, not time passing, so it passes §8's test for anything she starts: about something that changed, and ignorable at no cost — no reply, nothing recorded. Once per arrival, so presence doesn't become interruption (EP§11). *(The fit with §8 is Claude's reading; Chanté approved the wave and its trigger on review.)*
+**Implications.**
+- Nothing is asked of the user and nothing is stored about them: arrival is measured in the browser, as an animation cue, not domain state.
+- A second reaction (a look-up when a reply lands, a small brightening at *Done*) must pass the same test and stay rarer than the idle life. Motion that plays on a timer belongs to the idle loops, and those stay below what pulls the eye.
+- Moving between pages is not an arrival.
+
+**Principle.** V§7, V§8, EP§11, EP§13.
+**Replaces.** Breath and blink as her only motion ([engineering log](../decisions.md), same date).
+
 ## 2026-09-13 · Coherence remembers; Lumi understands
 
 **Decision.** Coherence, not the language model, holds the user's life as durable structured context. Each turn assembles the subset Lumi needs, and Lumi's job is to interpret it and respond. ([model strategy](../product/lumi-model-strategy.md))
