@@ -65,4 +65,5 @@ Only these; everything else Claude decides, does and records here.
 - A change to how *she* works: what she runs, reviews or applies herself (migrations, the review checklist).
 
 ## Change log
+- 2026-09-13 — Trap row: a signed-out `curl` to a protected page answers 404, not a redirect; smoke-test with `Accept: text/html` or `/sign-in`. No guard — it only misleads a hand check.
 - 2026-09-13 — Started, from the stale `.next/dev/types` and the missing `@ai-sdk/openai` hit while merging `docs/today-spec-as-built`. Preflight landed; review links are always clickable (`CLAUDE.md` → Review server).
