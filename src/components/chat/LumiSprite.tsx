@@ -81,24 +81,30 @@ export function cellSize(sheet: keyof typeof SHEETS, height: number) {
   return { width: (height * s.w) / s.h, height };
 }
 
-type Props = { cell: LumiCell; height: number; className?: string; style?: CSSProperties };
+type Props = { cell: LumiCell; height: number; className?: string; style?: CSSProperties; mask?: boolean };
 
-/** One cell of a sheet. Decorative: the parent labels it. */
-export function LumiSprite({ cell, height, className = "", style }: Props) {
+/**
+ * One cell of a sheet. Decorative: the parent labels it. With `mask`, the cell
+ * is the element's mask instead of its picture — her silhouette, to fill with a
+ * colour (her cast shadow, the room's light on her).
+ */
+export function LumiSprite({ cell, height, className = "", style, mask = false }: Props) {
   const s = SHEETS[cell.sheet];
   const pct = (i: number, n: number) => (n > 1 ? (i / (n - 1)) * 100 : 0);
-  return (
-    <span
-      aria-hidden
-      className={`block ${className}`}
-      style={{
-        ...cellSize(cell.sheet, height),
-        backgroundImage: `url(${s.src})`,
-        backgroundRepeat: "no-repeat",
-        backgroundSize: `${s.cols * 100}% ${s.rows * 100}%`,
-        backgroundPosition: `${pct(cell.col, s.cols)}% ${pct(cell.row, s.rows)}%`,
-        ...style,
-      }}
-    />
-  );
+  const image = `url(${s.src})`;
+  const size = `${s.cols * 100}% ${s.rows * 100}%`;
+  const position = `${pct(cell.col, s.cols)}% ${pct(cell.row, s.rows)}%`;
+  const paint: CSSProperties = mask
+    ? {
+        maskImage: image,
+        WebkitMaskImage: image,
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+        maskSize: size,
+        WebkitMaskSize: size,
+        maskPosition: position,
+        WebkitMaskPosition: position,
+      }
+    : { backgroundImage: image, backgroundRepeat: "no-repeat", backgroundSize: size, backgroundPosition: position };
+  return <span aria-hidden className={`block ${className}`} style={{ ...cellSize(cell.sheet, height), ...paint, ...style }} />;
 }

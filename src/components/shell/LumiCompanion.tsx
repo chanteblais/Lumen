@@ -218,6 +218,11 @@ export function LumiCompanion() {
           aria-expanded={onHome ? undefined : open}
         >
           <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(pose.cur.loop, pose.prev.loop)}ms` } as CSSProperties} aria-hidden>
+            {/* Her shadow is drawn here, not in the sprite, so it takes the ground she stands on: a
+                cast shadow (her current frame's silhouette laid on the floor, away from the room's
+                light) and a contact shadow under her feet. */}
+            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, "open")} height={HEIGHT} mask className="companion-cast" />
+            <span className="companion-shadow" />
             {stack.map((p, i) => (
               <LumiSprite
                 key={key(p)}
@@ -226,6 +231,8 @@ export function LumiCompanion() {
                 className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
               />
             ))}
+            {/* The room's light on her: a colour multiplied over her silhouette (none on the paper). */}
+            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, eyes)} height={HEIGHT} mask className="companion-light" />
           </span>
         </button>
       </div>

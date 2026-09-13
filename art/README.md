@@ -49,7 +49,7 @@ Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The
 | A phase not drawn, a stray rest frame mid-row | play what exists, forward then in reverse; skip the stray — the order lives in `LumiSprite` → `LUMI_LOOP_CELLS` |
 | The hood rim and its sun redrawn a little every frame (IoU ~0.98) | hold one frame's head across the phase (the foot cut's `hold_head`, in git history) |
 | Frames a pixel off each other | settle on the head silhouette to a quarter pixel (the foot cut's `settle`, in git history) |
-| A cold shadow and a grey rim from the contrasting ground | shadow found by its blue cast and redrawn warm; edges de-matted against the ground |
+| A cold shadow and a grey rim from the contrasting ground | shadow found by its blue cast and redrawn warm; edges de-matted against the ground. For the hands-free Lumi the shadow is cut away instead (`Sheet(shadow=False)`) and the page draws it — a baked cream shadow looked pasted on over a painted floor (`docs/design-system.md` → Lumi companion) |
 | The lantern's light pooling on the ground | found by its warm cast, lifted off as a translucent warm glow (`GLOW_RGB`, `GLOW_MAX`) |
 | No blink row | lids drawn down over her own eyes (`eyes_shut`: half-shut keeps the bottom half, shut a thin lens; the eye's halo on the face goes with the lid) |
 | No in-betweens at all | the rest cell alone, stretched ≤ 2px at the hood top with the feet held, nine frames (`breathe`) |

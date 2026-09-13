@@ -34,11 +34,15 @@ def ruled(frac):
 
 
 class Sheet:
-    def __init__(self, path, glow=True, ground_box=GROUND_BOX):
+    def __init__(self, path, glow=True, shadow=True, ground_box=GROUND_BOX):
+        """`glow`: keep a lantern's light on the ground as a translucent warm glow. `shadow`: keep the shadow under
+        her feet, redrawn in the cream sheets' tone; off, it is cut away with the ground and the page draws her
+        shadow (the hands-free Lumi: a cream shadow read as a pale smudge on a painted floor)."""
         self.src = np.array(Image.open(path).convert('RGB')).astype(int)
         (y0, y1), (x0, x1) = ground_box
         self.paper = np.median(self.src[y0:y1, x0:x1].reshape(-1, 3), axis=0)
         self.glow = glow
+        self.shadow = shadow
         self.unrule()
         self.d_all = np.abs(self.src - self.paper).sum(axis=2)
         self.lum = self.src.mean(axis=2)
@@ -107,7 +111,7 @@ class Sheet:
         outside = ~inside
         alpha = np.where(inside, 255.0, 0.0)
         dark = np.clip((ground_l - l) - 6, 0, None) * 4.5
-        sh = outside & below & (chroma < 40) & (dark > 0)
+        sh = outside & below & (chroma < 40) & (dark > 0) & self.shadow
         alpha = np.where(sh, np.clip(dark, 0, 170), alpha)
         rgb = np.where(sh[:, :, None], SHADOW_RGB, rgb)
         if self.glow:

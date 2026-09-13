@@ -75,7 +75,7 @@ def hood(main):
 
 def load(spec):
     """The spec's sheet as cells: matted, each row scaled to FIGURE_H, placed by the hood."""
-    sheet = Sheet(os.path.join(ART, spec['sheet']), glow=False)
+    sheet = Sheet(os.path.join(ART, spec['sheet']), glow=False, shadow=False)   # the page draws her shadow
     rows = sheet.rows()
     per = spec['cells'] // len(rows)
     boxes = [(r, b) for r, (y0, y1) in enumerate(rows) for b in sheet.frames(y0, y1, per)]
