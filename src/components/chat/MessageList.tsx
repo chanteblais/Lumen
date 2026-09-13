@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
@@ -25,33 +25,22 @@ const SIX_HOURS = 6 * 3_600_000;
  * chat feels fresh every time you come to it — and the earlier conversation
  * is one scroll up, untouched. From the first message onward it follows the
  * newest line, as any chat does.
+ *
+ * Below it, `.chat-scroll::after` leaves one view's height of nothing: it is
+ * what lets the card sit at the top of the view when little follows it (and
+ * stay put while Home's scroll rolls up), and it lets the whole conversation
+ * be scrolled just out of sight.
  */
 export function MessageList({ messages, cardAt, card, thinking, error }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const firstScroll = useRef(true);
   const fresh = messages.length <= cardAt && !thinking && !error;
-  // While fresh, the part below the card is padded to fill the scroll region,
-  // so the card can sit at the top with quiet paper beneath it and the earlier
-  // conversation out of view above. Measured, because the region is a flex child;
-  // re-measured whenever the card changes height (Home's scroll rolling up), so
-  // the page keeps its length and the card stays where it hangs.
-  const [room, setRoom] = useState(0);
-  useLayoutEffect(() => {
-    const cardEl = cardRef.current;
-    const region = cardEl?.closest<HTMLElement>(".chat-scroll");
-    if (!fresh || !cardEl || !region) return setRoom(0);
-    const measure = () => setRoom(Math.max(0, region.clientHeight - cardEl.offsetHeight - 48));
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(cardEl);
-    return () => observer.disconnect();
-  }, [fresh]);
   useEffect(() => {
     if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
     else endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
     firstScroll.current = false;
-  }, [messages, fresh, room]);
+  }, [messages, fresh]);
 
   const earlier = render(messages.slice(0, cardAt));
   const current = render(messages.slice(cardAt));
@@ -64,7 +53,7 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
         </div>
       )}
       <div ref={cardRef}>{card}</div>
-      <div className="chat-now mt-10 flex flex-col gap-7" aria-live="polite" style={room ? { minHeight: room } : undefined}>
+      <div className="chat-now mt-10 flex flex-col gap-7" aria-live="polite">
         {current}
         {thinking && (
           <div className="msg msg-lumi" aria-label="Lumi is thinking">

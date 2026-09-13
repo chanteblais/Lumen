@@ -236,7 +236,15 @@ body::after {
   overflow-y: auto;
   padding-bottom: 24px;
   scrollbar-gutter: stable;
+  container-type: size;
 }
+/* One view's height of nothing after the conversation. It lets the greeting
+   sit at the top of the view on a fresh open (and hold still while Home's
+   scroll rolls up), and lets the whole conversation be scrolled just out of
+   sight — on Home, to see the room. It is all one scroll up, and a new line
+   brings it back: MessageList follows the newest line to its end marker,
+   which sits above this space. */
+.chat-scroll::after { content: ""; display: block; height: 100cqb; }
 .composer-dock {
   flex: none;
   padding: 18px 0 28px;
