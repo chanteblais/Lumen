@@ -627,7 +627,23 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   border-radius: 8px;
   box-shadow: var(--shadow);
   animation: bubble-in 160ms ease-out;
+  /* Never off the window: at most 560px, and no more than the room it opens
+     into, measured by the component (`--bubble-max`). A long reply scrolls
+     inside .companion-exchange. */
+  display: flex;
+  flex-direction: column;
+  max-height: var(--bubble-max, 560px);
 }
+/* Where she stands high in a painting there isn't room above her: the bubble
+   opens beside her, level with her hood, and grows down; the tail points at her. */
+.companion-bubble[data-side="right"],
+.companion-bubble[data-side="left"] { position: absolute; top: 0; margin-right: 0; }
+.companion-bubble[data-side="right"] { left: calc(100% + 14px); }
+.companion-bubble[data-side="left"] { right: calc(100% + 14px); }
+.companion-bubble[data-side="right"]::after,
+.companion-bubble[data-side="left"]::after { top: 34px; bottom: auto; border: 0; }
+.companion-bubble[data-side="right"]::after { right: auto; left: -7px; border-left: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule-strong); }
+.companion-bubble[data-side="left"]::after { right: -7px; border-right: 1px solid var(--rule-strong); border-top: 1px solid var(--rule-strong); }
 .companion-bubble::after {
   content: "";
   position: absolute;
@@ -648,6 +664,11 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   padding: 2px 6px 10px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--rule);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass-soft) transparent;
 }
 /* What you said, as a bubble of its own that slides in from the box — so the
    send visibly lands (the earlier muted one-liner read as nothing happening). */
@@ -667,7 +688,7 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 .companion-reply p { font-size: 17px; line-height: 1.5; color: var(--ink); }
 .companion-reply p + p { margin-top: 0.6em; }
 .companion-reply .ledger { margin-top: 8px; }
-.companion-form { display: flex; align-items: flex-end; gap: 10px; }
+.companion-form { flex: none; display: flex; align-items: flex-end; gap: 10px; }
 .companion-form textarea {
   flex: 1;
   resize: none;
@@ -678,12 +699,39 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   font-size: 21px;
   line-height: 1.3;
   color: var(--ink);
-  padding: 6px 6px;
-  min-height: 40px;
-  max-height: 120px;
+  padding: 4px 6px;
+  min-height: 36px; /* one line at rest; grows with what you write, then scrolls */
+  max-height: 168px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass-soft) transparent;
 }
 .companion-form textarea::placeholder { color: var(--ink-mute); }
-.companion-send { width: 40px; height: 40px; }
+/* Its own small send, not the chat's `.send` (which came later in the file and
+   won, at 54px, making the bubble tall). A 34px forest medallion — parchment
+   arrow, brass hairline set off the plate — and at rest, with nothing to send,
+   a parchment disc with a brass hairline rather than a greyed-out one. The hit
+   area reaches 44px. */
+.companion-send {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 1px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #f3efe7;
+  border: 1px solid var(--forest);
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass-soft);
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.companion-send::before { content: ""; position: absolute; inset: -5px; border-radius: inherit; }
+.companion-send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--brass); }
+.companion-send:disabled { background: var(--paper-deep); color: var(--brass); border-color: var(--brass-soft); box-shadow: none; cursor: default; }
 
 /* ---------- Chat surfaces ---------- */
 .card {
@@ -1333,7 +1381,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    the painting's own pixels (--lumi-x/y), mapped through the cover fit (one
    painting pixel is --px on screen), so she stays on the same flagstone as
    the window resizes. Only where that spot is clear of the nav and the
-   panel; elsewhere she keeps her corner. The bubble still opens above her. */
+   panel; elsewhere she keeps her corner. Standing this high, the bubble
+   usually opens beside her (CompanionBubble measures the room). */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
     --px: max(calc(100vw / 1536), calc(100vh / 1024));
