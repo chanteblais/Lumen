@@ -1,165 +1,173 @@
 # Open questions
 
-*What isn't decided. Nothing here is a rule. Until Chanté decides, the code keeps doing what it does, and new work avoids locking an answer in. When a question is decided, it moves to [`decisions.md`](decisions.md) and leaves a line here saying so. Numbers are stable, so references stay valid. **V§** is the [Product Vision](../philosophy/product-vision.md); **EP§** is the [Experience Principles](../philosophy/experience-principles.md).*
+*Current register after the approved 2026-09-13 reconciliation. IDs 1–27 are preserved; 28 records an implementation gap. “Resolved” settles only the stated principle, not every associated design or delivery choice. The [previous register](../archive/2026-09-13-before-reconciliation/docs/living/open-questions.md) preserves its complete rationale and original references. Approved requirements: [decisions](decisions.md) and [Shared terminology](../product/shared-model.md).*
 
-**Each entry:** the question · why it matters · meanwhile (what the product does now) · related.
+No entry authorizes a code change or expands [V1](../v1-plan.md). Questions about implementation remain open even when the intended behaviour is clearer.
 
-**Needs a decision first:** 14 (rewards and the foundation documents). Questions 6–8 depend on it.
+## 1. What does Home keep?
 
----
+**Status: Principle clarified; interface open.** Home supports arrival, reflection and silence without a compulsory task or conversation. Decide which quick-start chips, re-entry prompts and session controls remain. Current Home still hosts them.
 
-## The spaces
+Related: [Home](../product/home.md).
 
-**1. What does Home keep?** *(2026-09-12)*
-Home is "arrive and inhabit" (EP§15) and, in Chanté's words, "asks nothing of you". It currently asks, gently: the first landing's "What are we working with today?", four quick-start chips, the re-entry offer, "Pick it back up, or let it go?" after an abandoned session, and the focus check-in card. The re-entry offer is the vision's own example (V§8). The four chips are the one to look at against EP§3 ("menus masquerading as assistance") and the one-second test (EP§21).
-*Meanwhile:* unchanged. *Related:* [`features.md`](../features.md) → Home; the EF-burden log accepted the chips on condition they "never grow beyond four".
+## 2. How does Focus move into the Study?
 
-**2. Do focus sessions leave Home for the Study?** *(2026-09-12; partly answered by V§14)*
-The vision places Focus in the Study. EP§11 describes Lumi there: breathing, reading, sitting nearby, occasionally looking up. EP§18 has a task Today surfaces "move naturally into Focus". Still open: do sessions, the session bar and check-ins move off Home? Does starting one take you to the Study? M5 kept sessions on one surface on purpose ("a second timer surface would bring back the idle-timer pressure"), and they start only through Lumi. *2026-09-13:* [`spaces.md`](../product/spaces.md) §16–18 describes the Study as the current intention, a first action, an optional timer, minimal controls and Lumi, with most of Coherence receding and leaving never marked as failure. It asks *What are we doing now?*; the decided question is *What am I doing now?*. [`today-garden.md`](../product/today-garden.md) §60 words it a third way (the Garden asks *What?*, the Study *How do we stay with it?*), wants the move from Garden to Study to feel natural (§18), and says starting doesn't always mean a session: sometimes the best thing is *Go do it* and leaving the app (§19).
-*Meanwhile:* sessions run on Home. *Related:* question 18.
+**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Sessions still run on Home. The summary question is “What are we doing now?”; this is not mandated UI copy.
 
-**3. How does the Library hold *where have I been*?** *(2026-09-12; mostly answered by V§14, EP§14)*
-Lists lives in the Library ("organize and retrieve"), which "may expand because the user's life has accumulated more threads, knowledge, and history" (EP§14). Still open: how that record appears (finished things, sessions, what Lumi noticed and remembers) without becoming a report card, or visual richness becoming "a judgment of how productive the user has been" (EP§14). *2026-09-13:* [`spaces.md`](../product/spaces.md) §11–15 has the Library holding accumulated threads. Sections grow from what exists in the user's life, never unlocked (§13); things stay manipulable (§14); it stays navigable through Lumi's retrieval, never a taxonomy to maintain (§15). It asks *What am I holding, and where does it belong?*, with *Where did this thread begin?* and *What became of that idea?* as what it answers later (§12). The decided question is *Where have I been?* Which one the Library answers, or both, is Chanté's call. [`today-garden.md`](../product/today-garden.md) §59 adds a third, *What am I carrying?*, and sends a user who wants to survey everything in School, Work, Personal and Later to the Library, which has no list view today.
-*Meanwhile:* the Library (renamed from Lists, 2026-09-13) is only its painted room; no page shows the lists ([decision](decisions.md)). The painting's boards are blank (repainted 2026-09-13; the version with words is `art/mockups/library-background.png`), and Chanté's spatial IA (`art/scenery/library/library-spatial-information-architecture.md`) makes them fixed architectural collection slots whose names emerge from each user's life — who names a slot, and when, is part of this question. *Related:* questions 12 and 20.
+Related: [Study](../product/focus-study.md).
 
-**4. Where does Insights (the mail) belong?** *(2026-09-12)*
-Neither foundation document places it. Candidates: the Library (what arrived and is being held), the Garden (something that may need planting), or Home, through Lumi. It is already an inbox that needs no processing, so EP§1's worry doesn't apply.
-*Meanwhile:* its own page.
+## 3. How does the broad Library become navigable?
 
-**5. What does tending look like in the Garden?** *(2026-09-12; partly answered by V§15, EP§15)*
-The concepts are named (planting an intention, tending active work, letting something rest, pruning what's no longer relevant), with the warning that users shouldn't have to "decipher an elaborate gardening simulation". Still open: which of these becomes a visible gesture, and where. Does *letting something rest* equal moving it to Later (EP§16)? Does pruning happen in the Garden or the Library? Is the path (Right now → After that → Later) the *tending active work* view? *2026-09-13:* [`spaces.md`](../product/spaces.md) §8 adds *Harvest* (bring something to completion) and says the words appear in the UI only when natural and immediately understandable; the metaphor stays partly implicit. *2026-09-13, mostly answered by [`today-garden.md`](../product/today-garden.md) §23–29 and §76:* planting begins something that needn't have an Action yet; tending is the central action, and one section written or one hard call made counts; resting is *Not today* without guilt, still part of the model; pruning is removal from active attention, not deletion; harvest is used sparingly, with no reward economy. Gardening words only where they come naturally, and never for what isn't attention, cultivation, timing, growth, rest or selective care. Its question is worded *What deserves my attention today?* and *What needs tending today?*; the decided one is *What matters today?*. Still open: which of these become visible gestures, whether *resting* is Later, and where pruning happens.
-*Meanwhile:* the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens.
+**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques. It remains a proposal, not approved interaction design.
 
-**15. Which names does the user see?** *(2026-09-12)*
-The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary. *2026-09-13, mostly answered by [`spaces.md`](../product/spaces.md) §3:* primary navigation stays plain (*Home · Today · Lists · Focus*), Garden, Library and Study are the internal names, and the labels evolve through testing ("Poetry should deepen clarity, not replace it"). Still open: Insights and Settings, which §3 leaves out, and a *Focus* item before there is a Study (question 2). Since then the nav says *Library*, a place name, where §3 has *Lists*: Chanté chose it on review, so the Library departs from §3 on purpose and *Today* keeps the function name.
-*Meanwhile:* Home · Today · Library · Insights · Settings — *Library* is the first place name in the nav (Chanté, 2026-09-13); *Today* stays.
+Related: [Library](../product/lists-library.md).
 
-**26. When does the Garden change during the day?** *(2026-09-13; from [`today-garden.md`](../product/today-garden.md) §20, §51, §56, §149–151)*
-The Garden doc wants Today to be *the day as it exists now*. Opened at 10pm it shouldn't show the 9am plan (§56). It quietly recalculates when something took longer than expected, or there are forty minutes before the user has to leave (§20). It changes at meaningful moments (opening Today, completing something, capacity changing, consequential news, a request, returning after meaningful time), never visibly without reason, and says what changed when the change is large (§150–151). The decision *Today is a path, not a pile* keeps the path "stable across reloads and re-cut only on purpose". The two may agree, since a meaningful moment is a purpose. The code cuts one plan per date and re-cuts on capacity, *Not this*, re-entry and a request in conversation; completing something advances the path without a new cut. Nothing re-cuts as the day runs out, and the planner is told the time and part of day, not what's left of it (`src/core/ai/today-plan.ts`, `plan.ts`). Open: which of §150's moments re-cut, whether opening Today hours later is one, and how Lumi says what changed without the ground shifting under the user.
-*Meanwhile:* one cut per date, re-cut on purpose. *Related:* question 24; [`today.md`](../today.md).
+## 4. Where does Insights belong?
 
-## Rewards and growth
+**Status: Open.** Insights remains its own page. Decide whether mail context is accessed through Library, Home or another appropriate projection without creating a processing obligation. Integrations feed the shared model; they must not flood Today.
 
-**14. ⚠ Rewards or inhabited growth?** *(2026-09-12)*
-In conversation, Chanté described earning *coherence* for completing tasks and showing up, spent on plants and things for Lumi; the notes behind it list seven behaviours to credit. Both foundation documents contradict it:
-- **V§14:** "not points … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward."
-- **EP§14:** "Growth reflects history, not achievement", with "points, currencies, unlock requirements, productivity XP, completion-based decoration" to watch for, and "Complete five tasks to unlock a rose bush" as the anti-example.
-- **EP§20:** watch for "rewards intended to bring users back without functional reason".
+Related: [Garden §99](../product/today-garden.md#99-connected-services-should-feed-context-not-dominate-the-garden).
 
-The ways forward:
-- **(a) The foundation stands.** No currency; the places grow on their own from continuity and history.
-- **(b) The conversation stands.** V§14 and EP§14 are amended on purpose, with the reason recorded.
-- **(c) A reconciliation**, stated explicitly: for example, recognising beginning, choosing and returning in Lumi's words and in how the places grow, with no balance, no shop and no unlocks.
+## 5. Which tending interactions become visible?
 
-*2026-09-13:* [`spaces.md`](../product/spaces.md) §8, §13 and §25–27, Chanté's most recent writing on this, describes (a) in detail. No XP, levels, task-completion currencies, unlocking through productivity or completion-driven decoration. Changes are "discovered rather than awarded" and reflect duration, context, exploration and relationship, not output. It isn't a decision until Chanté says so. [`today-garden.md`](../product/today-garden.md) §33 calls it non-negotiable that the Garden's growth reflects continuity, not output (*Finish a Focus session → earn seeds* is on its avoid list), and §66 gives a test: *would this environmental change make sense as accumulated history even if the user never knew what behaviour caused it?* That isn't recorded as a decision either.
+**Status: Semantics clarified; gestures open.** Planting, tending, resting and pruning describe behaviour without requiring gardening vocabulary. Rest has temporal scope; pruning from active attention is not deletion. Decide which gestures appear and where. Today remains the existing paper-panel path.
 
-*Meanwhile:* nothing built. Both versions agree: nothing decays, no streaks, absence costs nothing.
+Related: [Garden](../product/today-garden.md).
 
-**6. What counts, and is anything shown as a number?** *(depends on 14)*
-If there is earning: which of the seven behaviours count (ideas); whether rewarding *doing* invites ticking things off; whether letting go counts; whether a balance shows as a number (V§12 rules out productivity scores). If growth is history: what the places respond to, and how "an established Garden" never reads as a verdict on a hard month (EP§14).
+## 6. What can environmental growth respond to?
 
-**7. Where do things live, and do they need care?** *(depends on 14)*
-Home, the Garden, or a *Lumi's World* (`art-direction.md` §9 Q1)? Nothing can cost anything when neglected, so either nothing needs care or care only adds. *2026-09-13:* [`spaces.md`](../product/spaces.md) §6 and §26: nothing to decorate, purchase, unlock or maintain; the Garden doesn't die and the Library doesn't gather dust. For the places, *do they need care* is answered (no), whatever 14 decides.
+**Status: Reward counting closed; continuity design open.** No earning balance, task-completion currency or unlock thresholds. Decide whether and how accumulated context changes a place without producing a hidden output score or making a hard month visible as failure.
 
-**8. Whose growth is it?** *(depends on 14)*
-The user's life moving forward (V§19), the places, Lumi's world, or all three?
+Related: [Shared environment principles](../product/shared-model.md#environment-and-scope).
 
-## Lumi and the AI
+## 7. Where does growth live, and does it need care?
 
-**9. When should Lumi speak first?**
-Today she speaks unprompted only at check-ins (the greeting is copy, not a message). The foundation gives her room to help the user return when distracted (V§7) and to name a pattern (V§12), and rules out notifications meant to raise engagement (EP§11, §20). Candidates: a deadline today, something in the mail, a long absence. There are no notifications. What would any of them have to be to stay useful and not become engagement?
+**Status: Care requirement closed; placement open.** The world and Lumi require no maintenance, and absence costs nothing. Decide which environmental changes belong in existing spaces. A separate Lumi’s World is not approved by this reconciliation.
 
-**10. How much can Lumi do without asking?**
-Automate administration, not agency (V§4). The user holds authority over what matters, what is deferred or abandoned, and what is enough (V§5). Today Lumi files, completes and drops things without confirmation (dropping only after the user says so) and pins her pick on Today. Where is the line for rescheduling, deleting, or acting on mail? EP§17 suggests the line follows the consequences. *2026-09-13, the principle answered by [AI & IA](../product/ai-and-information-architecture.md) §33–35:* confirmation is proportional to uncertainty, consequence and reversibility. Interpretation, tentative inference, a proposed change and a committed change are different things, and mistakes should be cheap to undo. Still open: where the line falls for rescheduling, deleting and mail, and what a *proposed* change looks like when only tools write state.
+Related: [Spaces](../product/spaces.md).
 
-**11. How do stated and inferred priorities meet?**
-The planner infers from deadlines, list order, avoidance and capacity, and there is no priority field, by design. V§5: an inferred priority is never objective truth. EP§5 warns against "treating deadlines as equivalent to importance". EP§16 makes a vertical drag in Lists a statement of relative priority. When the user says "X matters most this week", or drags it up, is that a belief, a position, or something that expires? *2026-09-13, mostly answered by [AI & IA](../product/ai-and-information-architecture.md) §14–16:* importance, urgency, priority and attention relevance are different things. Priority is reasoned in context, never stored as a universal truth, and a manual move is kept as its own signal beside urgency, so Lumi can name both ("I know you've got the paper above this, but…"). Still open: how a stated priority stops being current (§53: superseded, not deleted).
+## 8. How does a place grow?
 
-**12. How is long-term memory shown?**
-The product should get easier as it knows you (V§16), and advanced users "can inspect or directly manipulate more structure" (EP§19). Beliefs exist, with confidence and evidence, and *What Lumi knows* (M6) is planned as a page for correcting. How does a user see what Lumi remembers without it becoming something to curate? Does it belong in the Library? *2026-09-13, partly answered by [AI & IA](../product/ai-and-information-architecture.md) §36 and §51:* mostly through conversation, with no enormous memory interface. *Why do you think mornings work better for me?* gets a reason and a hedge; *Stop treating that as something I'm working toward* archives it. Still open: whether a page exists at all.
+**Status: Open within settled boundaries.** Growth is slow, familiar and optional, arising from continuity rather than rewards. Concrete triggers, assets and presentation remain open; do not imply these mechanisms are already built.
 
-**16. Do *Not this* and coming back cover what the foundation names?** *(2026-09-12; partly answered by EP§7)*
-EP§7 frames the chips as "possible lightweight responses", and its five match the current six minus *Don't feel like it*. So a short set is the intended shape, not a chip per reason. Still open:
-- **Lumi's replies.** They break down and replace, but don't offer to defer or ask whether it needs doing at all (V§9).
-- **Coming back.** The pass covers *still matters* and *let go*, not *already done* or *reschedule* (V§8).
-- **Keep *Don't feel like it*?**
+Related: [Garden](../product/today-garden.md).
 
-*2026-09-13:* [`today-garden.md`](../product/today-garden.md) §10 lists six responses: *Too big*, *Too tired*, *Don't know how*, *Something else matters more*, *Bad timing*, *Just nope*. The code has *Don't feel like it* where it has *Bad timing*, and *Something else is more important* (`src/core/declines.ts`). Lumi's answers there include deferring something and questioning whether it needs doing (the first bullet above). §11: don't over-interrogate, and a *Nope* can just mean nope (*Fair. Let's do something else.*). Every chip currently opens the conversation, so a *Just nope* still arrives as a message for Lumi to answer.
+## 9. What may Lumi initiate?
 
-*Leaning:* keep the chips few, widen the replies.
-*Meanwhile:* unchanged.
+**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings/check-ins remain as built.
 
-**17. May Lumi name a number: a pattern, or a gap?** *(2026-09-12; widened 2026-09-13)*
-The persona says "never count their things back to them" and, when someone comes back, "never … say how long it's been". The canon's own examples do both: "You've moved this three times" (V§12) and "You disappeared for four days. We don't need to reconstruct the four days." ([model strategy](../product/lumi-model-strategy.md)). A count of undone things is a bill. A number that names a pattern, or names a gap only in order to set it down, may not be. *Leaning:* allow both, when the number serves the next sentence; keep the ban on counts of what's undone. This touches the cached persona prompt. [`today-garden.md`](../product/today-garden.md) §53 has another: *We've put this on Today four times now. Something seems to be getting in the way*, with *Deferred 6× ⚠️* as what to avoid (§54).
+Related: [Lumi](../philosophy/lumi.md).
 
-**18. Should check-ins run on a timer?** *(2026-09-12)*
-EP§11: "Lumi intervenes when useful, not because an engagement timer says it is time to speak", and watch for "excessive check-ins". The focus check-in card appears every 15 minutes by default (`check_in_minutes`) and at the planned end. It is the interface asking, not Lumi. The user agreed to it when the session started, and *Yep* costs one tap with no reply (EF-burden log: accepted). It is still timer-driven. Keep it, lengthen it, make it the default only for some people (learned), or have the interface stay silent unless the session runs long?
-*Meanwhile:* 15 minutes. *Related:* question 2.
+## 10. Where are the boundaries of autonomous action?
 
-**19. How does inference show itself?** *(2026-09-12; from EP§17)*
-Lumi guesses each thing's list and estimate when she files it, and on Today and in Lists the guess looks exactly like something the user said. Beliefs already carry `user_said` or `lumi_inferred`; intentions don't. EP§17 asks for uncertainty in proportion to importance, with no warning labels on harmless guesses. Which guesses matter enough to show (a due date Lumi inferred? an estimate that shapes a low day?), and how quietly? *2026-09-13, the storage half answered by [AI & IA](../product/ai-and-information-architecture.md) §10–11:* keep explicit, observed, inferred and derived information apart. For consequential facts like a deadline or a category, keep source, confidence and whether the user confirmed it, and don't show provenance constantly. Intentions today keep only `source_message_id`.
-*Meanwhile:* nothing distinguishes them.
+**Status: Principle settled; operations open.** Confirmation follows uncertainty, consequence and reversibility. Separate interpretation, proposal and committed change. Decide rescheduling, deletion and mail-action boundaries; the reconciliation does not authorize external actions or change existing tools.
 
-**20. How does direct manipulation reach Lumi?** *(2026-09-12; from EP§5–6, EP§16)*
-The foundation wants correction by hand: reorder, recategorise, defer and abandon easily; drag vertically for priority and horizontally for list; *Later* means stop foregrounding it; perhaps drop a thing onto Lumi to start together. Today, Lists offers only the tick; moving, deferring and dropping go through conversation; and nothing in the planner treats *Later* as "don't foreground". Implementation should follow (decisions → *Direct manipulation*). The design choices are still open:
-- What a vertical position means across two columns.
-- Whether After that on Today can be reordered.
-- How a drag becomes an event, and a belief, that Lumi sees (EP§18).
-- How a user drags on a phone.
+Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 
-*2026-09-13:* [`today-garden.md`](../product/today-garden.md) §44 answers the second bullet for Today: quick changes without an edit mode (drag something above another item, remove something, add something, move something to Later, swap the current Action), updating shared state where appropriate, with non-drag alternatives for each (§146). The Today page has the tick, *Start with Lumi*, *Not this* and *Break it down*; everything else goes through Lumi.
+## 11. How are stated priorities represented over time?
 
-*Meanwhile:* the tick only; the rest through Lumi.
+**Status: Semantics settled; representation open.** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. Decide representation, expiry and supersession of scoped priority signals. No universal priority score is implied.
 
-**21. Which model is Lumi, and how do we decide?** *(2026-09-13; decisions → *chosen separately*)*
-OpenAI models are to be prototyped alongside the current Anthropic implementation, judged on Lumi's requirements ([model strategy](../product/lumi-model-strategy.md); [`lumi.md`](../philosophy/lumi.md) §17). Open:
-- **Method.** The same scenarios, the same context block and the same persona intent for every model. Transcripts graded **blind** by Chanté, without knowing which model wrote them. Claude builds the harness but shouldn't be the judge of a comparison with Claude in it.
-- **Scenarios.** The nine existing ones, plus what the strategy adds: a pattern across days, a four-day gap, reflection that should stay reflective, a spiral that shouldn't, a framing worth challenging, a context-rich turn where reciting is the failure. Some need structured context that doesn't exist yet (question 22).
-- **Beyond voice.** Tools are the only write path, so a candidate must call them reliably and never invent ids. The persona's byte-stable prefix is a caching convention, and each provider caches differently. Latency and cost matter too.
-- **Scope.** Does "Lumi's model" cover only the conversation, or also the planner, lead-finding and reflection calls, which are Lumi's judgement in structured form?
-- **Privacy.** A second provider would receive conversations, beliefs and mail gists. Its retention terms, and a privacy note that names whoever runs Lumi (`pre-prod.md` now names OpenAI).
+Related: [Shared terminology](../product/shared-model.md#priority-and-temporal-scope).
 
-*Meanwhile:* `gpt-6-astra` behind `src/core/ai/model.ts` since 2026-09-13 (Chanté's switch), for all four calls; `LUMI_MODEL=anthropic:claude-opus-5` runs the Anthropic implementation for a comparison, and `scripts/voice-eval.mjs` follows it. OpenAI is now the provider receiving conversations, beliefs and mail gists (`store: false`); the privacy note in `pre-prod.md` names it.
+## 12. How can the user inspect and correct memory?
 
-**22. What structured context does Lumi need that Coherence doesn't hold?** *(2026-09-13)*
-The model strategy lists what Coherence should remember: tasks, lists, priorities, projects, Library threads, decisions, patterns, preferences, capacity, commitments, history, re-entry state, Garden state, and the relationships between them. Held today: intentions, lists, capacity, sessions, day plans, beliefs (projects and patterns live here, flat on purpose, sticky decision 15), leads, and events. Missing or thin:
-- **Library threads.**
-- **Garden state.**
-- **Relationships between things.**
-- **A clear record of *moving something forward without choosing it*.** Due-date changes sit inside `intention.updated` diffs; there is no deferral event, and nothing derived reads them.
-- **Retrieval once the context caps bite.**
+**Status: Principle settled; surface open.** Make meaningful explanations and correction available without a memory-curation obligation. Decide whether a dedicated page is useful, what it shows and how it relates to Library and conversation.
 
-Which of these become structure, and which become derived views over events?
+Related: [Library](../product/lists-library.md).
 
-*2026-09-13:* [AI & IA](../product/ai-and-information-architecture.md) names the shapes: threads, intentions, actions and commitments (§3); states beyond open and done, such as waiting, resting, blocked and archived (§7); relationships (§40–41); and genealogy (§54). It also sets the pace: the smallest model that keeps the distinctions the experience needs (§56), and a V1 of simple threads or categories, manual ordering, basic status, events, and provenance for important AI-created state (§58). Today an intention is both Intention and Action (its `next_action`), and projects are beliefs on purpose (sticky decision 15). [`today-garden.md`](../product/today-garden.md) adds what the Garden reasons with: degrees of commitment (*needs tending* vs *if there's room*, §49), dependencies (§129), a decision or a question as the thing for Right now (§133–134), how often something has come back to Today (§53), and progress that isn't completion, such as a stalled thing picked back up or a vague intention turned into a clear next action (§131–132). None of these is held today; the planner orders by time-sensitivity, then small avoided things, then the clearest first step (`src/core/ai/plan.ts`).
-*Related:* question 3 (the Library), question 11 (priorities), question 24 (context assembly), `lumi.md` §6.
+## 13. What survives of the book?
 
-**24. What does context assembly need beyond one block?** *(2026-09-13; from [AI & IA](../product/ai-and-information-architecture.md) §22–23, §25–26, §30, §49, §52–53)*
-The canon wants context chosen for the moment: by space, compressed further in the Study, fading with time, inspectable, and reconciled when memory and state disagree. Today:
-- **No space context.** The block is the same at Home and when the user taps Lumi on Today or in the Library; a message from the bubble doesn't say where it came from.
-- **No Study compression.** During a focus session the block still carries every open intention.
-- **Only intentions fade.** Stale after 14 days untouched is derived. A belief weakens only when contradicted, or is retired by the user, and never with time.
-- **Not observable.** `context.test.ts` tests assembly, but nothing records what a given turn included or left out.
-- **Memory and state can diverge.** A `project` belief can outlive the intention it was about being dropped; nothing links them (§52–53).
+**Status: Shared direction resolved; concrete design open.** Editorial typography, material restraint and crisp legibility survive within inhabited places. Book-only and no-imagery prohibitions are retired. Exact components, spatial composition and token changes require their own design work.
 
-*Meanwhile:* one capped block for every page and every turn. *Related:* questions 12 and 22, `lumi.md` §6.
+Related: [Visual Language](../design/visual-language.md).
 
-**25. What should Coherence not keep?** *(2026-09-13; from [AI & IA](../product/ai-and-information-architecture.md) §50–51)*
-"Lumi should know enough to be genuinely useful without collecting information merely because it might someday be useful." Today, mail bodies are never stored (a lead keeps sender, subject and Lumi's line). The conversation, beliefs (retired softly) and events are kept indefinitely. Export and delete exist only as a cascade on the user row, and beyond `forget_belief` there is no way to ask for either. Every inference Lumi writes is durable, and everything goes to one model provider. Open: what gets a lifetime, which inferences should stay ephemeral, what could stay on the device, and how a deletion reaches events and beliefs.
-*Meanwhile:* [`architecture.md`](../architecture.md) → Privacy posture. *Related:* question 21 (a second provider), [`pre-prod.md`](../pre-prod.md).
+## 14. Rewards or inhabited growth?
 
-**23. How much reflection, and when back to action?** *(2026-09-13)*
-The strategy wants Lumi to "move fluidly between practical and reflective conversation" and to tell useful reflection from rumination. The persona leans hard toward action: "A single concrete next step beats any amount of advice. When in doubt, say less." The action bias serves initiation (V§6). The risk is a Lumi who can't sit with a real question about direction or meaning (V§19). When does she stay in reflection, how does she notice it has become circling, and is reflective conversation something Home offers on purpose (EP§15: arriving, talking, *reflecting*)?
-*Meanwhile:* action-weighted. *Related:* `lumi.md` §5, §14.
+**Status: Resolved 2026-09-13.** Chanté approved continuity-based environmental growth. No earning/spending coherence, completion unlocks, reward economy or absence punishment. Recognition of beginning and returning survives through proportionate behaviour. Earlier proposals remain in the decision history and ideas register.
 
-## Design
+Related: [Approved decision](decisions.md#2026-09-13--approved-documentation-reconciliation).
 
-**13. What survives of the book?** *(2026-09-12)*
-Ivory paper, serif type, fine rules, rationed ornaments and paper plates over paintings. In inhabited places, is the book the interface's language, or does it fade? EP§12 (empty space does work) holds either way. [`today-garden.md`](../product/today-garden.md) §36–37 keeps the book in the interface layer (restrained parchment and editorial surfaces, consistent type, crisp and legible over the scenery) under *antique book × inhabited world × crisp modern interface*.
-*Meanwhile:* the shipped UI is still the book; Insights and Settings are plain ivory, and the Library is its painting with nothing on it.
+## 15. Which names does the user see?
 
-**27. Is Lumi there on a phone?** *(2026-09-13; from [`today-garden.md`](../product/today-garden.md) §147–148)*
-On a small screen the Garden keeps Right now → After that → Later *and Lumi's presence*, with the environment more suggestive than a shrunk desktop (§148). Under reduced motion she stays, present through posture and state changes, not animation (§147). Today reduced motion stills her breathing, blinking and wave but keeps her; under 768px she is hidden on every page (`src/app/globals.css`). Open: what her presence is on a phone (a small still, a line of hers, a way to open the bubble) without crowding a page whose one thing must read in about a second.
-*Meanwhile:* hidden under 768px. *Related:* [`features.md`](../features.md) → Lumi in the corner; [`art-direction.md`](../art-direction.md) §6.
+**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library / Insights / Settings is the current navigation. Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
 
-**Art questions** (companion or resident, a layered "puppet" Lumi, the model sheet) are tracked in [`art-direction.md`](../art-direction.md) §6, §8 and §9, and not repeated here.
+Related: [Spaces](../product/spaces.md).
+
+## 16. How do Not this and re-entry respond?
+
+**Status: Principles clarified; controls open.** Rejection need not be interrogated. Re-entry may include still relevant, already done elsewhere, changed, deferred or let go. Decide the smallest useful controls and replies; preserve current behaviour as implementation evidence rather than treating every example as a new chip.
+
+Related: [Garden](../product/today-garden.md).
+
+## 17. When may Lumi mention a number?
+
+**Status: Open.** No burden-inducing tally of unfinished things. Whether a contextual count or elapsed gap usefully explains a pattern remains a behavioural choice. Do not silently loosen the current persona while adopting product examples.
+
+Related: [Lumi](../philosophy/lumi.md).
+
+## 18. What should check-in defaults be?
+
+**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Current timed check-ins remain as built; Study’s presence should not become supervision or engagement pressure.
+
+Related: [Study](../product/focus-study.md).
+
+## 19. How should consequential inference appear?
+
+**Status: Principle settled; UI/storage open.** Explicit, observed, inferred and derived information differ. Decide which guesses need visible provenance or confirmation and how quietly. Existing intention provenance and belief labels do not fully implement the four categories.
+
+Related: [Shared terminology](../product/shared-model.md#objects-and-knowledge).
+
+## 20. How does direct manipulation express scope?
+
+**Status: Optional correction approved; interaction/event design open.** Equivalent input methods should agree when operation and timescale agree. Not today is not a list move or a tomorrow date. Define event representation, Today reordering, durable organization, undo and non-drag/mobile alternatives. Do not infer a permanent preference from one rearrangement.
+
+Related: [Motion & Interaction](../design/motion-and-interaction.md).
+
+## 21. How do we evaluate Lumi’s model?
+
+**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. The new voice-evaluation run is ungraded. Runtime choices do not establish product philosophy.
+
+Related: [Model strategy](../product/lumi-model-strategy.md).
+
+## 22. Which richer concepts become structure first?
+
+**Status: Open.** Current intentions combine Intention and Action; lists, beliefs, sessions and events hold a smaller model. Decide minimal representation of Threads, relationships, commitments, scoped exclusions and outcomes. Preserve conceptual distinctions without prematurely building the entire ontology or expanding V1.
+
+Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
+
+## 23. How does Lumi balance reflection and action?
+
+**Status: Role clarified; behavioural evaluation open.** Home supports reflection without compulsory taskification; usefulness is not conversation length. Determine and evaluate when to stay with ambiguity, challenge gently or help the user return to action. Current action-weighted prompt remains unchanged.
+
+Related: [Home](../product/home.md).
+
+## 24. How does context selection evolve beyond one block?
+
+**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance.
+
+Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
+
+## 25. What should Coherence retain, forget, export or delete?
+
+**Status: Open.** Distinguish relevance decay, archival, supersession and deletion. Decide retention periods, ephemeral inference, user export/delete controls and propagation to history and beliefs. Product direction is not an implemented privacy guarantee.
+
+Related: [Architecture](../architecture.md).
+
+## 26. When should Today adapt during the day?
+
+**Status: Open.** Stability and meaningful adaptation are compatible. Decide elapsed-time/re-entry triggers, how changing circumstances affect the plan and when a substantial change needs explanation. Current documented triggers remain as built; no background recuration was added.
+
+Related: [Today as built](../today.md).
+
+## 27. How is Lumi present on mobile?
+
+**Status: Open.** Preserve cognitive hierarchy, accessibility and reduced-motion presence without shrinking desktop scenery or adding clutter. Current implementation hides Lumi below 768px. Decide the mobile representation; the reconciliation changes no UI.
+
+Related: [Visual Language](../design/visual-language.md).
+
+## 28. What can session endings actually tell us?
+
+**Status: New implementation gap.** The session sweep can mark an open session abandoned, and deterministic reflection can contradict a strategy for abandonment. Study allows leaving the app while continuing work. Decide how unknown endings, explicit abandonment and richer outcomes affect learning without asking users to report more. Timeout or inactivity alone must not be treated as proof of an ineffective strategy. Code remains unchanged.
+
+Related: [Architecture](../architecture.md).

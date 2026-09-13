@@ -28,57 +28,63 @@ function Note({ i }: { i: Intention }) {
   );
 }
 
-export async function PlanSection({ user, part }: { user: User; part: "dayline" | "path" | "closing" }) {
+/**
+ * The page's three layers, each quieter than the last: `voice` (Lumi's day line
+ * and, once a day, the capacity question — set on the painting), `now` (the one
+ * card) and `rest` (After that, Later and the closing line on one faint slip).
+ */
+export async function PlanSection({ user, part }: { user: User; part: "voice" | "now" | "rest" }) {
   const { snap, plan, byId } = await getTodaysPlan(user);
-
-  if (part === "dayline") {
-    return <p className="today-dayline mt-2 font-display text-ink-soft">{plan.dayLine}</p>;
-  }
-  if (part === "closing") {
-    return plan.restCanWait ? <p className="today-aside font-display italic">{plan.closingLine ?? "Everything else can wait."}</p> : null;
-  }
 
   const rightNow = plan.rightNow ? byId.get(plan.rightNow.intentionId) : undefined;
   const afterThat = plan.afterThat.map((a) => byId.get(a.intentionId)).filter((i): i is Intention => Boolean(i));
   const later = plan.later.map((l) => byId.get(l.intentionId)).filter((i): i is Intention => Boolean(i));
-  // Once a day, skippable, and only when there is a path to shape.
-  const askCapacity = !snap.capacity && !snap.capacitySkipped && Boolean(rightNow || afterThat.length);
 
-  return (
-    <>
-      {askCapacity && <CapacityPrompt />}
+  if (part === "voice") {
+    // Once a day, skippable, and only when there is a path to shape.
+    const askCapacity = !snap.capacity && !snap.capacitySkipped && Boolean(rightNow || afterThat.length);
+    return (
+      <>
+        <p className="today-dayline mt-2 font-display text-ink-soft">{plan.dayLine}</p>
+        {askCapacity && <CapacityPrompt />}
+      </>
+    );
+  }
 
+  if (part === "now") {
+    return (
       <section className="today-now" aria-label="Right now">
-        <p className="label">Right now</p>
         {rightNow ? (
           <>
-            <div className="mt-4 flex items-start gap-4">
-              <CompleteCircle key={rightNow.id} id={rightNow.id} label={rightNow.title} size={30} />
-              <div className="min-w-0 flex-1">
-                <h2 className="today-now-title font-display text-ink">{rightNow.title}</h2>
-                <Note i={rightNow} />
-                <p className="mt-4 text-[17px] leading-snug text-ink-soft">
-                  <span className="label mr-3">First</span>
-                  {plan.rightNow!.firstStep}
-                </p>
-              </div>
-            </div>
+            <h2 className="today-now-title font-display text-ink">{rightNow.title}</h2>
+            <Note i={rightNow} />
+            <p className="mt-4 text-[17px] leading-snug text-ink-soft">
+              <span className="label mr-3">First</span>
+              {plan.rightNow!.firstStep}
+            </p>
             <RightNowActions key={rightNow.id} id={rightNow.id} title={rightNow.title} />
           </>
         ) : (
-          <p className="mt-4 font-display text-[22px] leading-[1.3] text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
+          <p className="font-display text-[22px] leading-[1.3] text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
         )}
       </section>
+    );
+  }
 
+  const closing = plan.restCanWait ? (plan.closingLine ?? "Everything else can wait.") : null;
+  if (!afterThat.length && !later.length && !closing) return null;
+
+  return (
+    <div className="today-rest">
       {afterThat.length > 0 && (
         <section className="today-part" aria-label="After that">
-          <p className="label">After that</p>
+          <p className="label label-mute">After that</p>
           <ul className="mt-1 flex flex-col">
             {afterThat.map((i) => (
               <li key={i.id} className="row">
-                <CompleteCircle id={i.id} label={i.title} />
+                <CompleteCircle id={i.id} label={i.title} size={22} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[17px] leading-snug text-ink">{i.title}</p>
+                  <p className="text-[16px] leading-snug text-ink">{i.title}</p>
                   <Note i={i} />
                 </div>
               </li>
@@ -89,19 +95,21 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
 
       {later.length > 0 && (
         <section className="today-part" aria-label="Later">
-          <p className="label">Later</p>
+          <p className="label label-mute">Later</p>
           <ul className="mt-1 flex flex-col">
             {later.map((i) => (
-              <li key={i.id} className="row row-quiet">
-                <span className="w-[26px]" />
-                <p className="min-w-0 flex-1 text-[17px] text-ink-soft">{i.title}</p>
+              <li key={i.id} className="row">
+                <span className="w-[22px] flex-none" />
+                <p className="min-w-0 flex-1 text-[16px] text-ink-soft">{i.title}</p>
                 <span className="label label-mute">{fmtTime(i.dueAt!, user.timezone)}</span>
               </li>
             ))}
           </ul>
         </section>
       )}
-    </>
+
+      {closing && <p className="today-closing font-display italic">{closing}</p>}
+    </div>
   );
 }
 

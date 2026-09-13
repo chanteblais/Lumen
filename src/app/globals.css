@@ -3,7 +3,7 @@
 /* ---------- Tokens: antique book × modern editorial ---------- */
 :root {
   --paper: #efeae2;        /* page ground */
-  --paper-deep: #e6e0d5;   /* sidebar, chips */
+  --paper-deep: #e6e0d5;   /* chips, icon buttons */
   --card: #f8f5ef;         /* composer, Today's cards, the companion bubble */
   --ink: #1b1a17;
   --ink-soft: #3f3c36;
@@ -69,9 +69,9 @@ body {
 .composer textarea:focus-visible { outline: 0; } /* the pill carries the ring */
 
 /* Scrollbars in the paper's own colours, never the browser's grey. */
-.main, .chat-scroll, .sidebar { scrollbar-width: thin; scrollbar-color: rgba(156, 126, 78, 0.28) transparent; }
+.main, .chat-scroll { scrollbar-width: thin; scrollbar-color: rgba(156, 126, 78, 0.28) transparent; }
 
-/* Very subtle paper grain over everything, so cards and sidebar are paper too.
+/* Very subtle paper grain over everything, so cards and the nav's parchment are paper too.
    Fixed, never interactive. */
 body::before {
   content: "";
@@ -125,76 +125,267 @@ body::after {
 
 /* ---------- Shell ---------- */
 .shell {
+  --rail-x: 10px;   /* the rail floats in from the corner */
+  --rail-top: 10px;
+  --rail-h: max(560px, min(calc(100dvh - 2 * var(--rail-top)), 780px));
+  --rail-w: 64px;   /* the green rail, always there */
+  --panel-w: 196px; /* a 4px gap, then the 192px parchment the names are on */
   position: relative;
   z-index: 0;
   height: 100dvh;
   display: grid;
-  grid-template-columns: 272px minmax(0, 1fr);
+  grid-template-columns: calc(var(--rail-x) + var(--rail-w)) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* Signed out (the sign-in and sign-up pages) there is no nav, so no rail column. */
+.shell:not(:has(> .nav)) { grid-template-columns: minmax(0, 1fr); }
 
-.sidebar {
+/* ---------- The rail and its parchment (components/shell/Sidebar.tsx) ----------
+   The rail is always there, the same deep green on every page. The parchment
+   with the names is folded away until it is shown: hovered, reached by
+   keyboard or pinned — always floating over the
+   page, which never moves for it. Folded, it lets the pointer through and each
+   row is only as wide as the rail; shown, a row is as wide as its name, so a
+   click on the parchment beside a name pins rather than following the link. The shown state is a set
+   of custom properties, so the three ways in share one list of values. */
+.nav {
   position: relative;
-  background: var(--paper-deep);
-  border-right: 1px solid var(--rule);
-  padding: 44px 36px 40px;
+  z-index: 30;
+  min-height: 0;
+  --nav-o: 0;
+  --nav-v: hidden;
+  --nav-x: -8px;
+  --nav-pe: none;
+  --nav-reach: calc(var(--rail-x) + var(--rail-w));
+  --nav-delay: 180ms;     /* a moment's grace before it folds, so a pointer passing out and back doesn't flicker it */
+  --nav-vis-delay: 380ms; /* hidden once the fade is done */
+}
+.nav:has(:focus-visible) {
+  --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s;
+}
+@media (min-width: 768px) {
+  .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
+}
+/* Not while resting (just unpinned or unlocked with the pointer still over it), nor locked away (the moon). */
+@media (hover: hover) {
+  .nav:not([data-resting]):not([data-locked]):hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: fit-content; --nav-delay: 40ms; --nav-vis-delay: 0s; }
+}
+
+/* Chanté's painted rail (art/ui/nav-rail.png, cut by scripts/cut-nav-art.py).
+   The head (the compass star) and the foot (the moon) keep their proportions;
+   the plain length between stretches to the rail's height. The numbers in the
+   calc()s are the source's pixels: 118px wide, a 267px head, a 236px foot. It
+   floats in from the corner and stops short of the floor, as in the mockup. */
+.nav-rail {
+  position: absolute;
+  top: var(--rail-top);
+  left: var(--rail-x);
+  z-index: 2;
+  width: var(--rail-w);
+  height: var(--rail-h);
+  background:
+    url("/nav-rail-head.webp") top / 100% auto no-repeat,
+    url("/nav-rail-foot.webp") bottom / 100% auto no-repeat;
+  filter: drop-shadow(0 8px 18px rgba(20, 14, 8, 0.32));
+}
+.nav-rail::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--rail-w) * 267 / 118 - 1px) 0 calc(var(--rail-w) * 236 / 118 - 1px);
+  background: url("/nav-rail-body.webp") 0 0 / 100% 100% no-repeat;
+}
+
+/* The painted compass star and moon are buttons (their halves of the rail do
+   the same, in Sidebar's click handler): the star pins the parchment out and glows while it's kept out; the moon locks it in, away
+   from hover, and glows while it's locked. The moon's centre is 101px up
+   from the rail's foot in the source's pixels. */
+.nav-toggle,
+.nav-lock {
+  position: absolute;
+  z-index: 4;
+  left: var(--rail-x);
+  width: var(--rail-w);
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.nav-toggle { top: calc(var(--rail-top) + var(--rail-w) * 110.5 / 118 - 24px); }
+.nav-lock { top: calc(var(--rail-top) + var(--rail-h) - var(--rail-w) * 101 / 118 - 24px); }
+.nav-toggle::before,
+.nav-lock::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 140, 0.55), rgba(255, 214, 140, 0) 62%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.nav-lock::before { background: radial-gradient(circle, rgba(236, 228, 200, 0.5), rgba(236, 228, 200, 0) 62%); } /* moonlight, a little cooler */
+.nav-toggle:hover::before,
+.nav-lock:hover::before { opacity: 0.5; }
+.nav-toggle[aria-expanded="true"]::before,
+.nav-lock[aria-pressed="true"]::before { opacity: 1; }
+
+/* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
+   every page, and the greeting's scroll on Home's dark room. */
+.nav-panel,
+.shell:has(.home-scene) .opening {
+  --paper: #f1e7d2;
+  --paper-deep: rgba(43, 34, 22, 0.07);
+  --ink: #2b2216;
+  --ink-soft: #4f4231;
+  --ink-mute: #7f6f57;
+  --brass: #8b6a38;
+  --brass-soft: #c9ad78;
+  --rule: rgba(43, 34, 22, 0.16);
+  --rule-strong: rgba(43, 34, 22, 0.38);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  color: var(--ink);
+}
+
+/* No z-index and no transform, so its sheet sits under the rail while its
+   words sit over it. */
+.nav-panel {
+  position: absolute;
+  top: calc(var(--rail-top) + 20px);
+  left: 0;
+  width: calc(var(--rail-x) + var(--rail-w) + var(--panel-w));
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  pointer-events: var(--nav-pe);
 }
-/* Inner frame line: the ruled border of a book plate... */
-.sidebar::after {
+.nav-panel::before {
   content: "";
   position: absolute;
-  inset: 10px;
-  border: 1px solid var(--rule);
-  pointer-events: none;
+  z-index: 1;
+  inset: 0 0 0 calc(var(--rail-x) + var(--rail-w) + 4px); /* 4px clear of the rail */
+  /* Chanté's painted sheet (art/ui/nav-parchment.png, cut by scripts/cut-nav-art.py):
+     the head and foot hold the corner flourishes and keep their proportions
+     (67px each at the pieces' 384px width); the body between stretches. */
+  --cap: calc((var(--panel-w) - 4px) * 67 / 384);
+  background:
+    url("/nav-parchment-head.webp") top / 100% auto no-repeat,
+    url("/nav-parchment-foot.webp") bottom / 100% auto no-repeat,
+    url("/nav-parchment-body.webp") 0 calc(var(--cap) - 1px) / 100% calc(100% - 2 * var(--cap) + 2px) no-repeat;
+  filter: drop-shadow(0 10px 22px rgba(27, 26, 23, 0.26));
 }
-/* ...with crossed corners, the way a ruled border is drawn by hand. */
-.sidebar::before {
-  --c: var(--rule-strong);
-  content: "";
-  position: absolute;
-  inset: 4px;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c));
-  background-repeat: no-repeat;
-  background-size: 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px;
-  background-position:
-    left 0 top 6px, left 6px top 0,
-    right 0 top 6px, right 6px top 0,
-    left 0 bottom 6px, left 6px bottom 0,
-    right 0 bottom 6px, right 6px bottom 0;
+.nav-panel::before,
+.nav-head,
+.nav-foot,
+.nav-item .name {
+  opacity: var(--nav-o);
+  visibility: var(--nav-v);
+  transform: translateX(var(--nav-x));
+  transition: opacity 160ms ease var(--nav-delay), transform 200ms ease var(--nav-delay), visibility 0s linear var(--nav-vis-delay);
 }
+.nav-head, .nav-list, .nav-foot { position: relative; z-index: 3; }
 
-.nav-item {
+.nav-head {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 196px;
+  padding: 26px 16px 0 calc(var(--rail-x) + var(--rail-w) + 20px);
+  text-align: center;
+}
+.nav-wordmark { margin-top: 14px; font-size: 30px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+.nav-tagline { margin-top: 12px; font-size: 17px; font-style: italic; line-height: 1.25; color: var(--ink-soft); }
+/* The parchment's marks (after the mockup): a slender star between hairlines
+   that fade toward their ends — short over the wordmark, the full measure
+   under the tagline. */
+.flourish { display: flex; align-items: center; gap: 7px; color: var(--brass); }
+.flourish .hair { flex: 1; height: 1px; opacity: 0.85; }
+.flourish .hair:first-child { background: linear-gradient(to left, var(--brass), transparent); }
+.flourish .hair:last-child { background: linear-gradient(to right, var(--brass), transparent); }
+.nav-crest { width: 72px; }
+.nav-divider { align-self: stretch; margin-top: 22px; }
+
+.nav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.nav-item {
   position: relative;
-  align-items: baseline;
-  padding: 12px 16px 12px 32px; /* room for the mark, then the name */
-  margin: 0 -16px;
-  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  width: var(--nav-reach);
+  height: 50px;
   color: var(--ink);
   text-decoration: none;
-  transition: background-color 160ms ease;
+  pointer-events: auto;
 }
-.nav-item:hover { background: rgba(27, 26, 23, 0.04); }
-.nav-item[aria-current="page"] { background: rgba(27, 26, 23, 0.07); }
-/* The brass diamond points at the open chapter. */
-.nav-item .nav-mark {
+.nav-icon {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--rail-x) + var(--rail-w));
+  height: 100%;
+  padding-left: var(--rail-x);
+  color: #d4ad6c; /* the painted brass */
+  transition: color 160ms ease;
+}
+.nav-icon::before {
+  content: "";
   position: absolute;
-  left: 11px;
+  left: calc(50% + var(--rail-x) / 2); /* the cell's centre is past the rail's inset: centre on the icon */
   top: 50%;
-  transform: translate(-3px, -50%);
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%, -50%);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.nav-icon svg { position: relative; }
+.nav-item:hover .nav-icon,
+.nav-item[aria-current="page"] .nav-icon { color: #f3d292; }
+.nav-item:hover .nav-icon::before { background: rgba(243, 210, 146, 0.08); }
+.nav-item[aria-current="page"] .nav-icon::before { background: rgba(243, 210, 146, 0.12); border-color: rgba(243, 210, 146, 0.24); }
+/* You are here: a brass star on the rail's painted right-hand rule (108.5px
+   across its 118), beside the open place. */
+.nav-mark {
+  position: absolute;
+  left: calc(var(--rail-x) + var(--rail-w) * 108.5 / 118 - 5px);
+  top: 50%;
+  margin-top: -5px;
+  color: #e8c987;
   opacity: 0;
+  transform: scale(0.6);
   transition: opacity 200ms ease, transform 200ms ease;
 }
-.nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: translate(0, -50%); }
-.nav-item .name { font-size: 19px; }
+.nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: none; }
+.nav-item .name {
+  flex: none;
+  min-width: 168px; /* a tile that reaches in toward the sheet's inner rule, whatever the name's length */
+  margin: 0 0 0 12px;
+  pointer-events: var(--nav-pe); /* folded, a name overflowing the rail takes no clicks, even while it fades */
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.nav-item:hover .name { background: rgba(43, 34, 22, 0.06); }
+.nav-item[aria-current="page"] .name { background: rgba(139, 106, 56, 0.16); }
+
+.nav-foot {
+  margin: 40px 18px 0 calc(var(--rail-x) + var(--rail-w) + 28px);
+  padding-bottom: 24px;
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+.nav-foot .ornament { margin-left: 8px; vertical-align: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel::before, .nav-head, .nav-foot, .nav-item .name, .nav-mark { transition: none; transform: none; }
+}
 
 .auth-link {
   color: var(--ink-soft);
@@ -236,7 +427,15 @@ body::after {
   overflow-y: auto;
   padding-bottom: 24px;
   scrollbar-gutter: stable;
+  container-type: size;
 }
+/* One view's height of nothing after the conversation. It lets the greeting
+   sit at the top of the view on a fresh open (and hold still while Home's
+   scroll rolls up), and lets the whole conversation be scrolled just out of
+   sight — on Home, to see the room. It is all one scroll up, and a new line
+   brings it back: MessageList follows the newest line to its end marker,
+   which sits above this space. */
+.chat-scroll::after { content: ""; display: block; height: 100cqb; }
 .composer-dock {
   flex: none;
   padding: 18px 0 28px;
@@ -290,9 +489,94 @@ body::after {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* Her shadow and the room's light on her (2026-09-13), drawn here rather than
+   baked into the sprite, so they take the ground she stands on — a shadow
+   painted into the sheet was cream, made for the paper, and on a painted floor
+   read as a pale smudge that made her look pasted on. The companion is its own
+   layer, so a blend mode can't reach the painting behind her; instead:
+   - the contact shadow darkens whatever is behind it (a backdrop filter under
+     a soft oval mask), so it is the floor's own colour, only darker;
+   - the cast shadow is her current frame's silhouette, filled with the room's
+     shade, laid on the floor away from the room's light (off on the paper);
+   - the light is a colour multiplied over her silhouette (off on the paper).
+   Positions are in the cell, which is mirrored: her feet are at 45% across and
+   200/208 down. Each room sets the variables (Today, the Library, Home). */
+.companion-shadow {
+  position: absolute;
+  left: 45%;
+  top: 96.2%;
+  width: 52%;
+  height: 9%;
+  z-index: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  /* unprefixed and alone: the CSS pipeline adds -webkit- for Safari (design-system.md → Home: the room) */
+  backdrop-filter: brightness(var(--lumi-contact, 0.8)) saturate(1.15);
+  mask-image: radial-gradient(closest-side, #000 25%, rgba(0, 0, 0, 0.55) 62%, transparent);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+@supports not (backdrop-filter: brightness(1)) {
+  .companion-shadow { background: rgba(60, 40, 22, 0.28); }
+}
+.companion-cast {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: rgb(var(--lumi-shade, 60 40 22));
+  opacity: var(--lumi-cast-a, 0.35);
+  filter: blur(1.5px);
+  transform-origin: 45% 96.2%;
+  /* flipped below her feet and leaned; the lean is negated because the cell is mirrored */
+  transform: skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1));
+  transition: transform 220ms ease;
+}
+.companion-light {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-color: var(--lumi-light, #fff);
+  mix-blend-mode: multiply;
+  opacity: var(--lumi-light-a, 0);
+}
+/* On hover she lifts 3px; her shadows stay on the ground and shrink a little. */
+.companion-btn:hover .companion-shadow { transform: translate(-50%, calc(-50% + 3px)) scale(0.9); opacity: 0.8; }
+.companion-btn:hover .companion-cast { transform: translateY(3px) skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1)); }
+/* The rooms' light. Today: low sun through the windows at the back left, long
+   shadows falling toward the front right over cream flagstones. The Library:
+   light from the windows on the left, shadows reaching right along terracotta
+   tiles. Home: lamplight; she stands in the corner, not in the room, so no cast. */
+body:has(.today-scene) {
+  --lumi-contact: 0.45;
+  --lumi-shade: 92 56 28;
+  --lumi-cast-a: 0.55;
+  --lumi-cast-lean: 42deg;
+  --lumi-cast-length: 0.5;
+  --lumi-light: rgb(255 218 170);
+  --lumi-light-a: 0.45;
+}
+body:has(.library-scene) {
+  --lumi-contact: 0.45;
+  --lumi-shade: 74 38 20;
+  --lumi-cast-a: 0.5;
+  --lumi-cast-lean: 55deg;
+  --lumi-cast-length: 0.4;
+  --lumi-light: rgb(255 206 160);
+  --lumi-light-a: 0.5;
+}
+body:has(.home-scene) {
+  --lumi-contact: 0.68;
+  --lumi-light: rgb(236 188 140);
+  --lumi-light-a: 0.4;
+}
+body:has(.today-scene, .library-scene) .companion-cast { display: block; }
+body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .companion-frame { animation: none; }
-  .companion-figure { transition: none; }
+  .companion-figure, .companion-shadow, .companion-cast { transition: none; }
   .companion-bubble, .companion-said { animation: none; }
 }
 /* Dev-only cue buttons, sitting just above her head; the handle at the right
@@ -480,11 +764,18 @@ body::after {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 14px 16px 14px 18px;
+  padding: 10px 14px 10px 16px;
   background: var(--card);
   border: 1px solid var(--rule-strong);
   border-radius: 999px;
   box-shadow: var(--shadow);
+}
+/* On a wide page the pill is set to a measure (~70% of the column, never
+   under 460px) and centred on the column, under the greeting, rather than
+   running edge to edge; the voice/tagline line keeps the same measure.
+   A phone keeps the full width — the input would be squeezed between its buttons. */
+@media (min-width: 768px) {
+  .composer, .composer-foot { width: clamp(min(100%, 460px), 70%, 100%); margin-inline: auto; }
 }
 .composer textarea {
   flex: 1;
@@ -510,8 +801,8 @@ body::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 54px;
+  height: 54px;
   border-radius: 999px;
   background: var(--forest);
   color: #f3efe7;
@@ -656,26 +947,61 @@ body::after {
 .ledger li { font-size: 14px; letter-spacing: 0.02em; color: var(--ink-mute); }
 .ledger-mark { color: var(--brass); margin-right: 8px; font-size: 11px; vertical-align: 1px; }
 
-/* ---------- Mobile: sidebar becomes a top strip ---------- */
+/* ---------- Mobile ---------- */
 @media (max-width: 767px) {
-  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
-    padding: 20px 22px 16px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+  /* The rail lies down along the bottom (Chanté's ask, 2026-09-13): the same
+     painted green, turned on its side, with every place's icon and its name
+     on it, so nothing has to be opened to read where a place is. No parchment,
+     no compass star or moon, no pin on a phone. The page takes the full width
+     and stops above the bar. */
+  .shell { --bar-h: 62px; --bar-gap: 6px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .nav { grid-row: 2; height: calc(var(--bar-h) + var(--bar-gap)); }
+  .main { grid-row: 1; }
+  .nav-rail {
+    top: 0;
+    left: var(--bar-gap);
+    right: var(--bar-gap);
+    width: auto;
+    height: var(--bar-h);
+    background: none;
   }
-  .sidebar::after, .sidebar::before { display: none; }
+  /* The rail's plain length, rotated a quarter turn so its brass rules run
+     along the top and bottom, with its corners chamfered like the rail's ends. */
+  .nav-rail::before {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: var(--bar-h);
+    height: calc(100vw - 2 * var(--bar-gap));
+    transform: translate(-50%, -50%) rotate(90deg);
+    clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px);
+  }
+  .nav-toggle, .nav-lock, .nav-panel::before, .nav-head, .nav-foot { display: none; }
+  .nav-panel { top: 0; left: var(--bar-gap); right: var(--bar-gap); width: auto; height: var(--bar-h); pointer-events: auto; }
+  .nav-list { flex-direction: row; gap: 0; height: 100%; margin: 0; padding: 0 6px; }
+  .nav-item { flex: 1; width: auto; height: 100%; flex-direction: column; justify-content: center; gap: 3px; }
+  .nav-icon { width: auto; height: 28px; padding: 0; }
+  .nav-icon::before { left: 50%; width: 36px; height: 34px; }
+  .nav-item .name {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: color 160ms ease;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: #d4ad6c; /* the painted brass, like the icons */
+    background: none;
+    pointer-events: auto;
+  }
+  .nav-item:hover .name { background: none; }
+  .nav-item[aria-current="page"] .name { background: none; color: #f3d292; }
+  /* You are here: the brass star on the bar's top rule, over the open place. */
+  .nav-mark { left: 50%; top: calc(var(--bar-h) * 9.5 / 118); margin: -5px 0 0 -5px; }
   .main { box-shadow: none; }
-  .sidebar .sidebar-foot, .sidebar .tagline, .sidebar .rule-short, .sidebar .divider { display: none; }
-  /* A row that wraps, right of the wordmark: overrides the nav's desktop `flex-col mt-8` (utilities lose to unlayered CSS). */
-  .sidebar nav { display: flex; flex-direction: row; margin-top: 0; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-  .nav-item { padding: 6px 10px; margin: 0; }
-  .nav-item .nav-mark { display: none; }
-  .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
   .companion, .companion-debug { display: none; } /* would sit on the docked composer's send button; the bubble goes with her */
@@ -709,7 +1035,7 @@ body::after {
   background: #362e29 url("/home-room.webp") center / cover no-repeat;
 }
 /* The room dims toward the spine and the floor so the text sits in the light:
-   darkest under the sidebar, lighter where the room shows, dark again behind
+   darkest along the left edge, lighter where the room shows, dark again behind
    the composer. */
 .home-scene::after {
   content: "";
@@ -754,48 +1080,29 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 /* Text set straight on the painting (kicker, clock, rules' labels) gets a
    breath of shadow so it holds against the brushwork. */
 .shell:has(.home-scene) .main { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.5); box-shadow: none; }
-.shell:has(.home-scene) .sidebar {
-  background: rgba(24, 16, 10, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right-color: rgba(241, 230, 207, 0.12);
-}
-.shell:has(.home-scene) .nav-item:hover { background: rgba(241, 230, 207, 0.06); }
-.shell:has(.home-scene) .nav-item[aria-current="page"] { background: rgba(241, 230, 207, 0.1); }
 .shell:has(.home-scene) .chip:hover,
 .shell:has(.home-scene) .icon-btn:hover { background: rgba(241, 230, 207, 0.16); }
 
 /* The greeting hangs on the wall as a parchment scroll — the one light thing
    in the room, the way the tagline hangs in the mockup. Ink on paper again
-   inside it; the rods are the two dark bars past its edges. */
+   inside it (its tokens are the parchment's, shared with the nav's panel); the
+   rods are the two dark bars past its edges. The parchment is lamp-warm and a
+   little thin, so the room reads faintly through it, and it is set tighter
+   than the bare-paper opening (2026-09-13: ~18% shorter). */
 .shell:has(.home-scene) .opening {
-  --paper: #f1e7d2;
-  --paper-deep: rgba(43, 34, 22, 0.07);
-  --ink: #2b2216;
-  --ink-soft: #4f4231;
-  --ink-mute: #7f6f57;
-  --brass: #8b6a38;
-  --brass-soft: #c9ad78;
-  --rule: rgba(43, 34, 22, 0.16);
-  --rule-strong: rgba(43, 34, 22, 0.38);
-  --color-paper: var(--paper);
-  --color-paper-deep: var(--paper-deep);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-mute: var(--ink-mute);
-  --color-brass: var(--brass);
-  --color-brass-soft: var(--brass-soft);
   position: relative;
-  color: var(--ink);
   text-shadow: none;
   margin-top: 8px;
-  padding: 30px 34px 32px;
-  background: linear-gradient(180deg, #f5edda 0%, #eee2c9 55%, #e7d9bc 100%);
-  border-radius: 3px;
-  box-shadow: var(--shadow), inset 0 0 40px rgba(122, 96, 54, 0.12);
+  padding: 20px 34px 22px;
+  background: linear-gradient(180deg, rgba(246, 234, 208, 0.74) 0%, rgba(240, 222, 188, 0.72) 55%, rgba(233, 211, 172, 0.74) 100%);
+  border-radius: 14px;
+  box-shadow: var(--shadow), 0 0 48px rgba(217, 172, 95, 0.12), inset 0 0 40px rgba(150, 104, 44, 0.16);
 }
+.shell:has(.home-scene) .opening-head { margin-bottom: 20px; }
+.shell:has(.home-scene) .opening-line { margin-top: 8px; }
+.shell:has(.home-scene) .opening .quick-starts { margin-top: 20px; }
 .shell:has(.home-scene) .opening::before,
-.shell:has(.home-scene) .opening::after {
+.shell:has(.home-scene) .opening-rod {
   content: "";
   position: absolute;
   left: -9px;
@@ -806,8 +1113,67 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 .shell:has(.home-scene) .opening::before { top: -6px; }
-.shell:has(.home-scene) .opening::after { bottom: -6px; }
-.shell:has(.home-scene) .opening.is-compact { padding: 22px 28px 24px; }
+.shell:has(.home-scene) .opening.is-compact { padding: 16px 28px 18px; }
+.shell:has(.home-scene) .opening.is-compact .opening-head { margin-bottom: 18px; }
+
+/* The bottom rod is the scroll's one control: tap it and the scroll rolls up
+   to its title line between the rods; tap again to unroll. For this page open
+   only — nothing is kept. The sheet folds away (rows 1fr → 0fr) as the title
+   band opens, over ~420ms; under reduced motion it simply changes. */
+.opening-rod, .opening-rolled { display: none; }
+.shell:has(.home-scene) .opening {
+  transition: padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shell:has(.home-scene) .opening-roll {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shell:has(.home-scene) .opening-sheet {
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px; /* room for the chips' focus ring inside the fold */
+  margin: -6px;
+  transition: opacity 260ms ease;
+}
+.shell:has(.home-scene) .opening.is-rolled { padding-top: 12px; padding-bottom: 14px; }
+.shell:has(.home-scene) .opening.is-rolled .opening-roll { grid-template-rows: 0fr; }
+.shell:has(.home-scene) .opening.is-rolled .opening-sheet { opacity: 0; }
+.shell:has(.home-scene) .opening-rolled {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: max-height 420ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease;
+}
+.shell:has(.home-scene) .opening.is-rolled .opening-rolled {
+  max-height: 2em;
+  opacity: 1;
+  transition: max-height 420ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease 160ms;
+}
+.shell:has(.home-scene) .opening-rod {
+  display: block;
+  bottom: -6px;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  cursor: pointer;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+/* A taller target than the 10px rod it looks like. */
+.shell:has(.home-scene) .opening-rod::after { content: ""; position: absolute; inset: -9px 0; }
+.shell:has(.home-scene) .opening-rod:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.shell:has(.home-scene) .opening-rod:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .shell:has(.home-scene) :is(.opening, .opening-roll, .opening-sheet, .opening-rolled, .opening-rod) { transition: none; }
+}
 .shell:has(.home-scene) .chip:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 .shell:has(.home-scene) .icon-btn:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 
@@ -818,40 +1184,40 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   border: 1px solid var(--rule);
   border-radius: 6px 6px 6px 2px;
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
 }
 .shell:has(.home-scene) .msg-lumi .msg-avatar { margin-top: 6px; }
 .shell:has(.home-scene) .msg-user p {
   background: rgba(241, 230, 207, 0.12);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .shell:has(.home-scene) .chat-now [aria-label="Lumi is thinking"] .msg-body { background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none; }
 
 /* The composer is the same pill on dark glass; the send button is the lamp. */
 .shell:has(.home-scene) .composer {
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
-.shell:has(.home-scene) .composer-dock { background: linear-gradient(to bottom, transparent, rgba(26, 18, 12, 0.55) 26px); }
+/* No fade behind the dock: on the painting it was a box with a hard right edge
+   at the companion lane. The pill's own glass holds the scrolling lines. */
+.shell:has(.home-scene) .composer-dock { background: none; }
 .shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
 .shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
 .shell:has(.home-scene) .session-checkin {
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 @media (max-width: 767px) {
-  .shell:has(.home-scene) .sidebar { border-bottom-color: rgba(241, 230, 207, 0.12); }
-  .shell:has(.home-scene) .opening { padding: 22px 20px 24px; }
+  .shell:has(.home-scene) .opening { padding: 16px 18px 18px; }
+  .shell:has(.home-scene) .opening-head { margin-bottom: 18px; }
+  .shell:has(.home-scene) .opening-line { margin-top: 6px; }
+  .shell:has(.home-scene) .opening .quick-starts { margin-top: 18px; }
 }
 
 /* ---------- Today: the garden ----------
    Today is set in a painted greenhouse (art/scenery/today/background.png →
    public/today-room.webp), laid out after the mockup (art/mockups/today-mockup.png):
-   the page is one paper panel on the right, the closing line a small green
-   slip beneath it, and the room is left open — Lumi stands in it rather than
-   in the corner. Home is lamplit and re-lights the palette; Today is daylight,
+   the page sits on the right (Lumi's words, the one card, a faint slip — see
+   below), and the room is left open — Lumi stands in it rather than in the
+   corner. Home is lamplit and re-lights the palette; Today is daylight,
    so the tokens stay ivory. Only Today. Nothing new for the user to keep. */
 .today-scene {
   position: fixed;
@@ -859,7 +1225,7 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   z-index: -1;
   background: #6b5236 url("/today-room.webp") center / cover no-repeat;
 }
-/* A warm veil, heaviest under the panel on the left and along the top (where
+/* A warm veil, heaviest along the left and the top (where
    the clock sits on the painting), clear over the room. */
 .today-scene::after {
   content: "";
@@ -873,15 +1239,6 @@ body:has(.today-scene, .library-scene)::before { opacity: 0.14; } /* the grain s
 body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on a painting */
 .shell:has(.today-scene, .library-scene) .main { box-shadow: none; }
 
-/* The sidebar is a plate of paper with the garden faintly through it (the
-   Library's room too). */
-.shell:has(.today-scene, .library-scene) .sidebar {
-  background: rgba(239, 234, 226, 0.84);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right-color: rgba(27, 26, 23, 0.1);
-}
-
 /* The top bar is set straight on the painting: parchment type with a breath
    of shadow, and a short rule under the clock instead of one across the room. */
 .shell:has(.today-scene, .library-scene) .main > header {
@@ -893,59 +1250,83 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 .shell:has(.today-scene, .library-scene) .main > header .rule-double { width: 240px; margin-left: auto; }
 
-/* The page fills .main so the slip can sit at the bottom of it. */
+/* Three things on the painting, each quieter than the last (2026-09-13):
+   Lumi's words set straight on it, the one Right now card, and a faint slip
+   with the rest of the path. Distance from now is less weight. */
 .today-page {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
   padding-bottom: 36px;
 }
-.today-panel {
+
+/* Lumi's voice: the running head, the greeting, her day line and (once a day)
+   the capacity question, in parchment type on the painting — the clock's
+   treatment — over a feathered shadow so it reads on any part of the room. */
+.today-voice {
+  --ink: #f7f1e5;
+  --ink-soft: #efe4cc;
+  --ink-mute: rgba(239, 228, 204, 0.8);
+  --rule: rgba(245, 239, 227, 0.3);
+  --rule-strong: rgba(245, 239, 227, 0.6);
+  position: relative;
+  isolation: isolate;
+  padding: 4px 6px 10px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.35);
+}
+.today-voice::before {
+  content: "";
+  position: absolute;
+  inset: -10px -22px -6px;
+  z-index: -1;
+  border-radius: 48px;
+  background: rgba(30, 20, 10, 0.5);
+  filter: blur(26px);
+}
+.today-dayline { font-size: 19px; line-height: 1.4; }
+.today-capacity { margin-top: 14px; font-size: 18px; line-height: 1.3; }
+.today-capacity .tool-link { font-size: 16px; gap: 0; }
+.today-capacity-answers .tool-link + .tool-link::before { content: "·"; margin: 0 0.7em; color: var(--ink-mute); }
+.today-capacity-answers .today-capacity-skip { color: var(--ink-mute); }
+
+/* The one card: the only full paper on the page. */
+.today-now {
   background: rgba(248, 245, 239, 0.97);
   border: 1px solid rgba(27, 26, 23, 0.1);
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(27, 26, 23, 0.08), 0 14px 36px rgba(27, 26, 23, 0.24);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 26px 30px 20px;
+  padding: 28px 30px 24px;
 }
-.today-dayline { font-size: 18px; line-height: 1.4; }
-/* The parts of the path, parted by hairlines inside the one panel. */
-.today-capacity,
-.today-now,
-.today-part { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--rule); }
-.today-now-title { font-size: 30px; line-height: 1.15; }
-.today-part .row { padding: 10px 2px; }
-.today-panel .chip { font-size: 15px; padding: 9px 18px; }
-.today-panel .btn-primary,
-.today-panel .btn-ghost { font-size: 19px; padding: 10px 20px; }
-/* "Everything else can wait." — a small green slip, the one dark plate on the page. */
-.today-aside {
-  align-self: flex-end;
-  margin-top: auto;
-  max-width: 360px;
-  padding: 22px 30px;
-  text-align: center;
-  font-size: 21px;
-  line-height: 1.35;
-  color: #efe6d2;
-  background: rgba(42, 52, 46, 0.86);
-  border: 1px solid rgba(241, 230, 207, 0.2);
-  border-radius: 10px;
-  box-shadow: 0 14px 36px rgba(20, 16, 10, 0.3);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
+.today-now-title { font-size: 34px; line-height: 1.12; }
+.today-now .chip { font-size: 15px; padding: 9px 18px; }
+.today-now .btn-primary { font-size: 19px; padding: 10px 22px; }
 
-/* Wide: the panel moves to the right edge and the room opens up to its left. */
+/* The rest of the path, further off: paper the garden shows through, smaller
+   type, no rules between rows, and the closing line as its last word. */
+.today-rest {
+  background: rgba(248, 245, 239, 0.8);
+  border: 1px solid rgba(27, 26, 23, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(27, 26, 23, 0.16);
+  backdrop-filter: blur(14px);
+  padding: 16px 26px 16px;
+}
+.today-rest .row { padding: 7px 2px; gap: 14px; border-bottom: 0; }
+.today-part + .today-part,
+.today-part + .today-closing { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.today-closing { font-size: 17px; line-height: 1.35; color: var(--ink-mute); }
+
+/* Wide: the column moves to the right edge and the room opens up to its left. */
 @media (min-width: 1100px) {
   .today-page { max-width: none; margin: 0; align-items: flex-end; }
-  .today-panel,
-  .today-aside { width: clamp(400px, 31vw, 470px); max-width: none; }
+  .today-voice,
+  .today-now,
+  .today-rest { width: clamp(400px, 31vw, 470px); max-width: none; }
 }
 
 /* Lumi stands in the room, on the flagstones behind the raised bed, between
@@ -954,7 +1335,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    screen than anything she covers). The spot is in
    the painting's own pixels (--lumi-x/y), mapped through the cover fit (one
    painting pixel is --px on screen), so she stays on the same flagstone as
-   the window resizes. Only where that spot is clear of the sidebar and the
+   the window resizes. Only where that spot is clear of the nav and the
    panel; elsewhere she keeps her corner. The bubble still opens above her. */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
@@ -963,23 +1344,22 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 700; --lumi-y: 900; } /* see Library: the reading room */
+  body:has(.library-scene) { --lumi-x: 1190; --lumi-y: 890; } /* see Library: the reading room */
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
 
 @media (max-width: 767px) {
-  .shell:has(.today-scene, .library-scene) .sidebar { border-bottom-color: rgba(27, 26, 23, 0.1); }
-  .today-panel { padding: 20px 20px 16px; }
-  .today-now-title { font-size: 26px; }
-  .today-aside { align-self: stretch; max-width: none; }
+  .today-now { padding: 22px 20px 20px; }
+  .today-now-title { font-size: 28px; }
+  .today-rest { padding: 14px 18px; }
 }
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background.png → public/library-room.webp). For
-   now the room is the whole page: nothing sits on the painting, and Lumi
-   stands on the rug in front of the reading table. The sidebar, the top bar,
+   room (art/scenery/library/background.png → public/library-room.webp).
+   For now the room is the whole page: nothing sits on the painting, and Lumi
+   stands on the open floor to the right of the reading circle. The top bar,
    the grain and the way her spot is mapped are shared with Today (the
    selectors above name both scenes). Nothing for the user to keep. */
 .library-scene {
@@ -988,7 +1368,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   z-index: -1;
   background: #5b4128 url("/library-room.webp") center / cover no-repeat;
 }
-/* The same warm veil as the garden: heaviest under the sidebar and along the
+/* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */
 .library-scene::after {
   content: "";
@@ -999,6 +1379,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     linear-gradient(to bottom, rgba(44, 30, 16, 0.46), rgba(44, 30, 16, 0.1) 16%, transparent 40%, transparent 78%, rgba(44, 30, 16, 0.2) 100%);
 }
 .library-page { flex: 1 0 auto; }
-/* Lumi's spot (--lumi-x/y above) is on the rug in front of the reading table,
-   between the floor cushion and the table's front leg: she covers the table's
-   apron and runner, both further back than her feet. */
+/* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
+   reading circle (the round table with its armchairs, stools and cushions),
+   below the stair bookcase: she covers only floor and the rug's corner, both
+   further back than her feet, and stays clear of the nav and the crop at
+   every desktop window. */

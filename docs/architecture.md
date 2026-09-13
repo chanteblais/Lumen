@@ -1,5 +1,7 @@
 # Coherence — Architecture
 
+*Product semantics are in [Shared terminology](product/shared-model.md). This file remains the implementation baseline. In particular, the deterministic abandoned-session strategy contradiction described below is an unresolved inference gap: timeout alone is not evidence of failed work or an ineffective strategy ([question 28](living/open-questions.md)). This reconciliation changes no runtime behaviour.*
+
 Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; after that, changes go through `decisions.md`.
 
 This is the **how**, as built. The **why**, what the AI layer must keep distinct as it grows and what V1 needs of it, is [AI & Information Architecture](product/ai-and-information-architecture.md) (canon). Where the build falls short of it: [open questions](living/open-questions.md) 10–12, 19, 22, 24 and 25.
@@ -190,11 +192,11 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── insights.ts           Insights copy (deterministic)
 │   │   └── time.ts               tz-aware today/gap helpers
 │   ├── db/                       schema.ts (the domain model as code) client.ts (lazy postgres-js + drizzle) migrations/ (drizzle-kit)
-│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
+│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · public-paths.ts (the pages a signed-out visitor may see: the proxy and the nav read it) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
-├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
-├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · cut-lumi-idle.py (art/ → public/) · preview-lumi-loop.py · check-route-auth.mjs · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
+├── public/                       lumi-heads.png · lumi-free.webp (the hands-free body) · lumi-idle.webp (the lantern body, kept for now beside the hands-free one) — cut sprite sheets, never edited by hand
+├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · draw-library-map.py (the Library's camera-view manifest → annotated maps) · cut-lumi-idle.py (art/ → the heads and the lantern body) · cut-lumi-free.py (art/ → the hands-free body, one spec per loop; helpers in lumi_cut.py) · cut-nav-art.py (Chanté's painted nav pieces, `art/ui/` → `public/nav-rail-*.webp`, `nav-parchment-*.webp`) · preview-lumi-loop.py (a loop as the page plays it, and its held parts) · check-route-auth.mjs · check-css-prefixes.mjs (checks compiled CSS for orphaned vendor prefixes) · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
 ├── drizzle.config.ts
 ├── .env.example
 └── package.json
@@ -227,7 +229,7 @@ Planned: `GET/DELETE /api/beliefs` (M6).
 - **Beliefs:** model proposes ops, `core/domain/memory.ts` applies with guardrails. `user_said` beliefs are never retired without the user.
 - **Cached prefix stays byte-stable:** persona + tool descriptions first, volatile context after. Verify with the `[chat] tokens` dev log line (`cacheRead` > 0 from the second turn). OpenAI caches a prefix of 1024 tokens or more on its own (the persona + tools clear it); Anthropic's minimum is model-dependent. A short persona may never cache, so grow it before assuming a bug.
 - **Message ids are UUIDs on both sides** (`generateId: () => crypto.randomUUID()` in `useChat`, `generateMessageId` in the route) because `messages.id` is a uuid column.
-- **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the two public prefixes by hand and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
+- **Proxy wall without `createRouteMatcher`** (deprecated in Clerk 7): `src/proxy.ts` matches the public prefixes by hand (`isPublicPath`, `src/lib/public-paths.ts`, the same list that keeps the nav off the sign-in and sign-up pages) and calls `auth.protect()` for everything else; every page and route still calls `requireUser()` itself (Clerk's resource-based recommendation).
 - **Clerk only in `src/lib/auth.ts`, `src/lib/auth-ui.tsx`, `src/lib/auth-mail.tsx` and the sign-in/sign-up pages.** Internal `users.id` everywhere else. The Google token for mail is fetched in `auth.ts` and handed on as an `EmailReader` (`lib/email.ts`), so `src/core` never sees Clerk or a token.
 - **Copy lives in `src/core`** (greeting, persona, canned quick-start messages), not in components — so the voice is reviewable in one place.
 - **No counts of undone things anywhere in the UI.** If a number would make someone feel behind, it doesn't ship.

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Cormorant_Garamond, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-ui";
 import { Sidebar } from "@/components/shell/Sidebar";
+import { NAV_MODE_COOKIE, navModeFrom } from "@/components/shell/nav-pin";
 import { TopBar } from "@/components/shell/TopBar";
 import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
 import { LumiCompanion } from "@/components/shell/LumiCompanion";
@@ -29,14 +31,15 @@ export const metadata: Metadata = {
   description: "A quieter way forward.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const navMode = navModeFrom((await cookies()).get(NAV_MODE_COOKIE)?.value);
   return (
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
       <body>
         <AuthProvider>
           <TimezoneCapture />
           <div className="shell">
-            <Sidebar />
+            <Sidebar modeAtLoad={navMode} />
             <main className="main">
               <TopBar />
               {children}

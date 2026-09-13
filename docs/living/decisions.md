@@ -6,16 +6,55 @@
 
 ---
 
-## 2026-09-13 · Lumi glances at the ground now and then
+## 2026-09-13 · On a phone, the nav is a bar along the bottom with its names showing
 
-**Decision.** While nothing else is happening, every 20–45 seconds Lumi's eyes lower to the ground for about two seconds and come back up, then she goes on breathing. It is her one idle variation: only her eyes move, and it stops under reduced motion like the rest of her idle life.
-**Rationale.** Chanté asked for movement that breaks up the idle pose without feeling repetitive, and kept the glance on review ("only glance really worked"). It stays within the wave entry's rule that motion on a timer stays below what pulls the eye: nothing but the eyes moves, slowly, and it asks nothing of the user. *(The fit with that rule is Claude's reading. The 20–45 s pace is what Chanté reviewed; whether it should be rarer is still open — `art-direction.md` §9, question 4.)*
+**Decision.** Below 768px the rail becomes a bar along the bottom of the screen: the five icons, each with its name under it, the place you're in marked with a star. Nothing opens, pins or locks there.
+**Rationale.** Chanté's ask, from her phone: move the nav to the bottom. *(Claude's reading: a phone has no hover, so the names were a tap on the compass star away; with the bar's width there is room for them, and showing them removes that tap. This sits beside her desktop preference for icons with expandable names rather than against it.)* Chanté approved the bar with the names on it on review.
 **Implications.**
-- The boot scuffs drawn with it were dropped. A future idle variation meets the same bar; a movement of the body is more likely a reaction to something than a timer.
-- Nothing is asked of the user or stored about them; it is animation state in the browser.
+- The rule stands: an icon's name is always reachable. On a phone it is simply always visible.
+- Pin and lock are desktop behaviours only; nothing on a phone depends on them.
+- The page and the composer stop above the bar; nothing is drawn under it.
 
-**Principle.** V§7, EP§11.
-**Replaces.** Breath and blink as the whole of her idle life ([engineering log](../decisions.md), same date).
+**Principle.** V§14, `spaces.md` §35 (mobile preserves the hierarchy, not the literal layout), §36.
+**Replaces.** The phone trial in *The nav is icons, with the names a hover away*, below.
+
+## 2026-09-13 · Lumi is hands-free most of the time
+
+**Decision.** Lumi's usual state is holding nothing. The lantern stops being part of her and becomes one of the things in her world she can pick up and set down, like a book or a cup.
+**Rationale.** Chanté: "Lumi will be hands free often." *(Claude's reading, from the direction that started the work: handling things in her surroundings makes her a resident of the places rather than an emblem carrying a fixed prop.)*
+**Implications.**
+- Her movements are drawn from the hands-free rest pose (`art-direction.md` §4a); objects she holds are what she picked up, and the Library's retrieval (carrying a Thread to the table) builds on it.
+- Her warmth rests on her glowing eyes when nothing lights her hands (`art-direction.md` §2).
+- The lantern body stays served beside the hands-free one for now; whether and when it is retired is an implementation choice (`docs/decisions.md`).
+**Principle.** Lumi inhabits her world (spaces §19, §29); presence, not performance.
+**Replaces.** The lantern carried at all times (the lantern character, 2026-09-12); the hands-free proposal of the same day.
+
+## 2026-09-13 · The nav is icons, with the names a hover away
+
+**Decision.** The places are icons on a narrow green rail that is always there; their names are on a parchment sheet that opens from the rail on hover, focus or tap, and can be pinned open. The rail marks where you are with a star.
+**Rationale.** Chanté's call, with `art/mockups/rail-nav.png`: she would rather have icons with expandable names than plain names always showing. *(Claude's reading: the rail gives the paintings back the width the sidebar took, and keeps the way around visible without holding a column of words in view.)*
+**Implications.**
+- Icons can carry meaning, but only where the name is always a hover, focus or tap away. An icon with no way to see its name is still out.
+- The names stay plain (`spaces.md` §3): *Home, Today, Library*, never place-names the user has to decode.
+- Pinning the sheet out (the rail's top half) and locking it in (the bottom half) are optional and undone the same way; nothing may depend on either.
+- Phones were a trial (the rail plus a tap on the compass star); superseded by the bottom bar (entry above).
+
+**Principle.** V§14, `spaces.md` §3 and §21.
+**Replaces.** The sidebar of plain names ([engineering log](../decisions.md), same date).
+
+## 2026-09-13 · Approved documentation reconciliation
+
+Chanté approved the conceptual comparison and consolidation structure. **Previous approach → why it changed → current approach:**
+
+- Earning/spending coherence → contradicted the foundations and complete space documents → environmental growth is continuity, not a reward economy; recognition survives without currency, unlocks or absence costs.
+- Library primarily described as history → active Threads, commitments and current context also need a home → Library exposes the breadth of the shared life model, with historical and intellectual exploration within it.
+- Later / Not today treated as interchangeable → temporary attention is not a durable priority change → Not today excludes today's foreground without scheduling tomorrow or changing importance; equivalent input methods match only when operation and scope match.
+- Correction treated as generally learned evidence → a local adjustment must not become a permanent rule, but an explicit instruction remains authoritative → learn cautiously and preserve intended scope.
+- Partial Spaces and Garden and scattered design prose → complete documents are available → dedicated product and design documents with shared terminology, preserved originals and a provenance record.
+
+**Requirements and limits.** [Shared model and terminology](../product/shared-model.md) states the approved distinctions. The [reconciliation record](reconciliation.md) maps sources and surviving implementation knowledge. No code, schema or V1 scope changes. Check-in defaults, concrete spatial interactions, adaptive-plan triggers and mobile presence remain open.
+
+**Historical disposition.** The older “Rewards: earning coherence” entry below is superseded, not contested anymore. Earlier Library questions are broadened as above. Old “Later” shorthand and absolute “derived, not maintained” wording are qualified by authority and temporal scope. The original entries remain as history, not competing current requirements. Numbered references to the old Spaces/Garden edition link to the archive. The earlier “all still in force” assertion is subject to these explicit dispositions.
 
 ## 2026-09-13 · Lists is called the Library, and for now it is only its room
 
@@ -128,7 +167,7 @@
 **Principle.** §11 (only what the current decision needs), §14.
 **Replaces.** The V1 nav *Home · Today · Lists · Insights · Settings* as the intended model ([`features.md`](../features.md) → Navigation).
 
-**Addendum, 2026-09-13.** [`docs/product/spaces.md`](../product/spaces.md), Chanté's, is the place document. It keeps everything above and adds:
+**Addendum, 2026-09-13.** [`docs/product/spaces.md`](../archive/2026-09-13-before-reconciliation/docs/product/spaces.md), Chanté's, is the place document. It keeps everything above and adds:
 - A feature is placed by the cognitive mode it belongs to, and never gets a space just for being a feature (§4). The same object appears differently in each space.
 - Navigation stays plain: *Home · Today · Lists · Focus*, with Garden, Library and Study as design vocabulary and the labels tested (§3; open question 15).
 - Spaces are views of one life context. Lumi carries the continuity, and context travels (§19–20).
@@ -137,7 +176,7 @@
 
 **Not reconciled:** it words two questions differently. The Library asks *What am I holding, and where does it belong?* (above: *Where have I been?*), and the Study *What are we doing now?* (above: *What am I doing now?*). The questions above stand until Chanté picks (open questions 2 and 3).
 
-**Addendum, 2026-09-13 (later).** [`docs/product/today-garden.md`](../product/today-garden.md), Chanté's, is the Garden's place document (the text as received is missing §78–119). It keeps *Today is a path, not a pile* and *Lumi proposes; the user decides* (below), and adds:
+**Addendum, 2026-09-13 (later).** [`docs/product/today-garden.md`](../archive/2026-09-13-before-reconciliation/docs/product/today-garden.md), Chanté's, is the Garden's place document (the text as received is missing §78–119). It keeps *Today is a path, not a pile* and *Lumi proposes; the user decides* (below), and adds:
 - Today is a temporary projection of the broader model, never a second source of truth (§2, §121).
 - Capacity changes scope. Low capacity makes the page smaller, never redder, and high capacity is not a reason to fill the day (§12–14).
 - Nothing unfinished becomes overdue debt; carryover comes from renewed relevance, and repeated deferral is a signal, not a score (§52–54).
@@ -146,9 +185,9 @@
 
 **Not reconciled either:** it words the Garden's question as *What deserves my attention today?* (Purpose), *What deserves tending today?* (§59) and *What needs tending today?* (§158), where the decided question is *What matters today?*. It also gives the Library *What am I carrying?* (§59) and the Study *How do we stay with it?* (§60). The questions above stand until Chanté picks (open questions 2, 3 and 5). Where the page as built falls short of it: open questions 5, 16, 20, 22, 26 and 27.
 
-## 2026-09-12 · Rewards: earning coherence ⚠ contested
+## 2026-09-12 · Rewards: earning coherence — superseded 2026-09-13
 
-> **Status: contested by the Product Vision.** Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. The Experience Principles go further: EP§14, *"Growth reflects history, not achievement"*, lists points, currencies, unlock requirements and completion-based decoration as things to watch for, and EP§20 warns against "rewards intended to bring users back without functional reason". Nothing below is a requirement until Chanté reconciles them ([open question 14](open-questions.md)).
+> **Historical status, superseded 2026-09-13 by the approved reconciliation above:** formerly contested by the Product Vision. Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. The Experience Principles go further: EP§14, *"Growth reflects history, not achievement"*, lists points, currencies, unlock requirements and completion-based decoration as things to watch for, and EP§20 warns against "rewards intended to bring users back without functional reason". Nothing below is a requirement until Chanté reconciles them ([open question 14](open-questions.md)).
 
 **As described.** Coherence gamifies. The user earns *coherence* for completing tasks and for just showing up, and spends it on plants or little things for Lumi that she engages with. Always positive, with no negative consequences.
 

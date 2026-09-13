@@ -10,18 +10,22 @@ const HEIGHT = 150;
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
   wave: 120, // a quick gesture: 24 frames ≈ 3 s, the pace Chanté checked the sheet at
-  glance: 160, // the pace Chanté chose the sheet at ("gif 2 feels smoother"): 13 frames ≈ 2 s
+  hands: 200, // a slow, quiet gesture: 16 frames ≈ 3 s
+  pickup: 140, // 69 frames ≈ 10 s: pick up, hold a moment, set down
 };
 /**
- * Loops mixed into the breathing now and then, one pass at a time, never the
- * same one twice running when there are several. Since 2026-09-13 the glance:
- * her eyes lower to the ground and come back up. (The scuffs cut from the same
- * sheet were dropped on review: the rest pose's boot stayed under the moving
- * one.)
+ * Loops mixed into the breathing now and then, one pass at a time: her hands
+ * coming together, holding nothing (the hands-free Lumi, `docs/art-direction.md` §4a).
  */
-const VARIATIONS: LumiLoop[] = ["glance"];
+const VARIATIONS: LumiLoop[] = ["hands"];
 /** Loops played in answer to something, never on the idle schedule. */
 const REACTIONS: LumiLoop[] = ["wave"];
+/**
+ * Things she does with what is around her. Nothing asks for one yet — in a
+ * room it would follow the room (a book in the Library) — so they play only
+ * from the dev cue strip, for review.
+ */
+const ACTIONS: LumiLoop[] = ["pickup"];
 /**
  * Away this long, then back, is an arrival, and she waves. Thirty minutes: the
  * gap that starts a new sitting for the greeting (`SITTING_GAP_MS` in
@@ -78,8 +82,8 @@ const DEBUG = process.env.NODE_ENV === "development";
  * - a wave when you arrive — the page opened, or its tab shown again, after
  *   thirty minutes or more with no tab of the app visible (and on a first
  *   visit in this browser) — once, at the next rest frame, then back to breathing
- * - every 20–45 s one pass of a variation: the glance, her eyes lowering to
- *   the ground and back (never the same one twice running, once there are several)
+ * - every so often one pass of a variation (her hands coming together; with
+ *   more than one, never the same one twice running)
  * - a blink every few seconds, composited onto whichever frame is showing so
  *   the cycles run together
  * Every loop is one drawing and hands over at the same rest cell.
@@ -130,19 +134,10 @@ export function LumiCompanion() {
       show(current, f);
       after(FRAME_MS[current], tick);
     };
-    // One variation timer at a time; a finished variation starts the next.
-    let nextVariation: ReturnType<typeof setTimeout> | undefined;
-    const scheduleVariation = () => {
-      if (!VARIATIONS.length) return;
-      clearTimeout(nextVariation);
-      nextVariation = setTimeout(() => {
-        // A cue or a reaction is already waiting: it plays, and the variation waits another turn. (Returning
-        // without rescheduling stopped the variations for good whenever the waiting loop was a reaction.)
-        if (pending) {
-          scheduleVariation();
-          return;
-        }
-        // Never the same one twice running, unless there is only one — the filter would leave nothing to play.
+    const scheduleVariation = () =>
+      VARIATIONS.length &&
+      after(between(20000, 45000), () => {
+        if (pending) return; // a cue or a reaction is already waiting; it plays instead
         const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
@@ -225,6 +220,11 @@ export function LumiCompanion() {
           aria-expanded={onHome ? undefined : open}
         >
           <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(pose.cur.loop, pose.prev.loop)}ms` } as CSSProperties} aria-hidden>
+            {/* Her shadow is drawn here, not in the sprite, so it takes the ground she stands on: a
+                cast shadow (her current frame's silhouette laid on the floor, away from the room's
+                light) and a contact shadow under her feet. */}
+            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, "open")} height={HEIGHT} mask className="companion-cast" />
+            <span className="companion-shadow" />
             {stack.map((p, i) => (
               <LumiSprite
                 key={key(p)}
@@ -233,6 +233,8 @@ export function LumiCompanion() {
                 className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
               />
             ))}
+            {/* The room's light on her: a colour multiplied over her silhouette (none on the paper). */}
+            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, eyes)} height={HEIGHT} mask className="companion-light" />
           </span>
         </button>
       </div>
@@ -270,7 +272,7 @@ const subscribeFolded = (fn: () => void) => {
 let toggled = false; // animate the fold only once a click has asked for it, not on load
 
 function DebugStrip() {
-  const cues: Cue[] = [...VARIATIONS, ...REACTIONS, "blink"];
+  const cues: Cue[] = [...VARIATIONS, ...REACTIONS, ...ACTIONS, "blink"];
   // Read through a store so the server renders it open and the client catches up without a state-in-effect.
   const folded = useSyncExternalStore(subscribeFolded, readFolded, () => false);
   const toggle = () => {

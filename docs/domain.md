@@ -1,5 +1,7 @@
 # Coherence — Domain Model (V1)
 
+*[Shared terminology](product/shared-model.md) describes the intended model. Existing `intention`, belief-source labels and session states below remain the actual schema; they are not equivalent to the full Thread / Intention / Action model or four epistemic categories. No migration or new field is implied.*
+
 Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
 
 ## Tables

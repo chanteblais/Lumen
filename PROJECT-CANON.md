@@ -37,7 +37,7 @@
 
 ## Lumi
 
-She/her. **The relational and interpretive intelligence through which the user experiences Coherence**: interpretive companionship in service of agency, and a presence that makes it easier to begin and keep going (V§7). Not a nagging coach, a reminder system, a sycophantic friend, a faux therapist or an optimiser. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes, brass medallions and a lantern. She is on every page and lives in Home.
+She/her. **The relational and interpretive intelligence through which the user experiences Coherence**: interpretive companionship in service of agency, and a presence that makes it easier to begin and keep going (V§7). Not a nagging coach, a reminder system, a sycophantic friend, a faux therapist or an optimiser. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes and brass medallions, hands-free most of the time; a lantern is among the things she picks up ([decision](docs/living/decisions.md), 2026-09-13). She is on every page and lives in Home.
 
 > **Coherence remembers. Lumi understands.** The system maintains the shape of the user's life; Lumi helps the user perceive and navigate that shape.
 
@@ -45,22 +45,22 @@ Her behaviour is a designed system in [`docs/philosophy/lumi.md`](docs/philosoph
 
 ## The spaces
 
-Each place expresses a relationship to activity (V§14, EP§15) and answers one question (Chanté, 2026-09-12). The place document is [`docs/product/spaces.md`](docs/product/spaces.md); this table is its summary. The Garden has its own, [`docs/product/today-garden.md`](docs/product/today-garden.md). A feature is placed by the cognitive mode it belongs to, not given a space of its own (spaces §4). The place documents word three of the questions differently: the Garden *What deserves my attention today?* or *What needs tending today?* (Garden, Purpose and §158); the Library *What am I holding, and where does it belong?* (spaces §2) or *What am I carrying?* (Garden §59); the Study *What are we doing now?* (spaces §2) or *How do we stay with it?* (Garden §60). The questions below stand until Chanté picks ([open questions](docs/living/open-questions.md) 2, 3 and 5).
+The [Spaces document](docs/product/spaces.md) defines cognitive modes over one evolving life model. **Life → evolving model → relevant context → today → now** describes attention narrowing, not mandatory navigation. [Shared terminology](docs/product/shared-model.md) defines ownership, authority and temporal scope.
 
-| Place | Question | Relationship (EP§15) | In the app now |
+| Place | Summary question | Role | In the app at this baseline |
 |---|---|---|---|
-| **Home** | *Here I am.* | Arrive and inhabit: arriving, talking, reflecting, returning. Asks nothing of you | `/`, the painted room, the conversation. Also hosts focus sessions |
-| **Garden** (Today) | *What matters today?* | Tend: *what needs tending now?*, not *what remains incomplete?* Plant, tend, let rest, prune (V§15) | `/today`: the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens |
-| **Library** (was Lists) | *Where have I been?* | Organise and retrieve what the system is holding; richer as history grows | `/library` (the nav says *Library* since 2026-09-13; `/lists` redirects): the painted reading room with Lumi standing in it, **no list view for now** — the lists are still kept, feed Today and reach Lumi; filing and ticking happen in conversation ([decision](docs/living/decisions.md)). Insights (mail) has no place yet |
-| **Study** (Focus) | *What am I doing now?* | Attend: give attention to one thing | Not a place yet; sessions run on Home |
+| [Home](docs/product/home.md) | What is happening; what do I need? | Arrive, talk, reflect and return without compulsory task creation | `/`, conversation and focus sessions in the painted room |
+| [Today / Garden](docs/product/today-garden.md) | What deserves attention today? | Trustworthy containment and negotiated attention | `/today`, the existing path; see [as-built spec](docs/today.md) |
+| [Library](docs/product/lists-library.md) | What am I carrying, and where does it belong? | Browse and retrieve active context, relationships and history | `/library`, painted room without a list view; lists still feed Lumi and Today |
+| [Focus / Study](docs/product/focus-study.md) | What are we doing now? | Narrow attention and offer accompaniment | Not a separate place yet; sessions run on Home |
 
-The metaphor must clarify what the user can do, never obscure it (EP§15). Places grow with relationship, continuity and accumulated life, **not points** (V§14, EP§14). Settings is a utility, not a place.
+These questions summarize roles, not mandated interface copy. “Where have I been?” remains a Library use, not its whole purpose. The current Library navigation label remains deliberate; other labels, Insights placement and concrete spatial interactions remain open. Settings is a utility.
 
-**Rewards: unresolved.** In conversation on 2026-09-12 Chanté described earning *coherence* for completing tasks and showing up, spent on plants and things for Lumi. Both foundation documents say otherwise: V§14 "inhabited, not gamified", and EP§14 lists "points, currencies, unlock requirements, completion-based decoration" as things to watch for. Until that is reconciled ([open question 14](docs/living/open-questions.md)), build neither.
+**Growth: continuity, not rewards.** Approved 2026-09-13: no earning/spending coherence, completion unlocks or productivity reward economy. Familiarity and accumulated context may shape the environment without absence costs or required care. Recognition of beginning and returning survives through proportionate behaviour. [Decision and history](docs/living/decisions.md).
 
 ## Design direction
 
-The direction is moving from *an antique book with no decorative imagery* to **inhabited, painted places**: isometric paintings behind the spaces, with Lumi animated within them. Pleasant enough to return to, never an attention trap (V§18). No decorative scenery without an experiential purpose (EP§15). The shipped interface still speaks the book's language (serif type, ivory paper, fine rules), laid over the paintings. How much of it survives is open question 13. So far the painting sits behind and the type leads.
+[Visual Language](docs/design/visual-language.md) and [Motion & Interaction](docs/design/motion-and-interaction.md) define inhabited places with a restrained, legible interface. The earlier book-only and avatar-only prohibitions are retired; editorial typography, material restraint and quiet survive. Exact spatial design is not fixed by this reconciliation. [Design System](docs/design-system.md) describes implemented tokens; [Art Direction](docs/art-direction.md) preserves production reasoning and experiments.
 
 ---
 
@@ -73,12 +73,14 @@ The direction is moving from *an antique book with no decorative imagery* to **i
 | [`docs/philosophy/lumi.md`](docs/philosophy/lumi.md) | Lumi — Relational Intelligence & Behaviour: her role, relationship, principles, reading state, context, continuity, when to speak, situations, evidence | **Living** (v0.1; sections marked *proposed* await Chanté) |
 | [`docs/product/lumi-model-strategy.md`](docs/product/lumi-model-strategy.md) | Build model vs Lumi model; *Coherence remembers, Lumi understands*; anti-patterns; how models are evaluated | **Canonical** |
 | [`docs/product/ai-and-information-architecture.md`](docs/product/ai-and-information-architecture.md) | How the AI understands and acts, and why: the life model (threads, intentions, actions), conversation vs state, explicit vs inferred, priority vs attention, context selection, memory kinds and decay, bounded and proportional autonomy, the seams to keep (§57), a minimal V1 (§58), review questions (§61). [`architecture.md`](docs/architecture.md) is the how as built | **Canonical** |
-| [`docs/product/spaces.md`](docs/product/spaces.md) | The places and what belongs in each: cognitive modes, not feature buckets; plain nav names; context travels; environmental richness vs interface quiet; growth without gamification or judgement | **Canonical** (the text as received ends partway through §29) |
-| [`docs/product/today-garden.md`](docs/product/today-garden.md) | The Garden: a temporary, capacity-aware projection of the life model into what deserves tending today, never a second source of truth; a path with one thing dominant; intelligent omission and trusted containment; *Not this* and capacity change the plan; no overdue debt and no planning ritual; the metaphor partly implicit; growth as continuity, not output; the core experience test (§157). [`today.md`](docs/today.md) is the page as built | **Canonical** (the text as received is missing §78–119) |
-| `docs/product/lists-library.md` | The Library | To come |
-| `docs/product/focus-study.md` | The Study | To come. Interim: [`features.md`](docs/features.md) → Focus Together |
-| `docs/design/visual-language.md` | The look of the places and the interface | To come. Interim: [`art-direction.md`](docs/art-direction.md), [`design-system.md`](docs/design-system.md); `design-philosophy.md` is partly superseded |
-| `docs/design/motion-and-interaction.md` | How Lumi and the interface move | To come. Interim: [`art-direction.md`](docs/art-direction.md) §4–5, [`animation-pipeline.md`](docs/animation-pipeline.md) |
+| [`docs/product/home.md`](docs/product/home.md) | Arrival, reflection, conversational correction and return | Canonical direction |
+| [`docs/product/shared-model.md`](docs/product/shared-model.md) | Shared vocabulary, authority, temporal scope and approved resolutions | Canonical |
+| [`docs/product/spaces.md`](docs/product/spaces.md) | The places and what belongs in each: cognitive modes, not feature buckets; plain nav names; context travels; environmental richness vs interface quiet; growth without gamification or judgement | **Canonical direction**, complete 51 sections |
+| [`docs/product/today-garden.md`](docs/product/today-garden.md) | The Garden: a temporary, capacity-aware projection of the life model into what deserves tending today, never a second source of truth; a path with one thing dominant; intelligent omission and trusted containment; *Not this* and capacity change the plan; no overdue debt and no planning ritual; the metaphor partly implicit; growth as continuity, not output; the core experience test (§157). [`today.md`](docs/today.md) is the page as built | **Canonical direction**, complete 158 sections |
+| [`docs/product/lists-library.md`](docs/product/lists-library.md) | Broad life context, ordering, retrieval, genealogy and conservative archival | Canonical direction; concrete spatial design open |
+| [`docs/product/focus-study.md`](docs/product/focus-study.md) | Accompaniment, containment, meaningful outcomes and leaving | Canonical direction; check-in defaults open |
+| [`docs/design/visual-language.md`](docs/design/visual-language.md) | The environment, interface, typography and accessibility | Canonical direction; replaces old design philosophy |
+| [`docs/design/motion-and-interaction.md`](docs/design/motion-and-interaction.md) | Semantic interaction, temporal scope, motion and continuity | Canonical direction; examples are not fixed choreography |
 | [`docs/living/decisions.md`](docs/living/decisions.md) | Product decisions, with rationale and what they replaced | Live |
 | [`docs/living/open-questions.md`](docs/living/open-questions.md) | What isn't decided | Live |
 | [`docs/living/ideas.md`](docs/living/ideas.md) | Possibilities, with statuses | Live |
@@ -97,19 +99,24 @@ How the code works, and how to work in the repo, is indexed in [`docs/README.md`
 | Lumi's behaviour, the persona prompt, AI, memory, proactivity, notifications | [`lumi.md`](docs/philosophy/lumi.md) → [model strategy](docs/product/lumi-model-strategy.md) → V§4–7, V§16–18, EP§5, EP§11, EP§17, EP§20 → decisions → open questions 9–12, 17, 21–23 |
 | Choosing or evaluating a model for Lumi | [model strategy](docs/product/lumi-model-strategy.md) → `lumi.md` §15, §17 → open question 21 → [`voice-eval-log.md`](docs/voice-eval-log.md) |
 | Prioritisation, planning, capacity, the Garden | V§3, V§10–11, V§15, EP§3, EP§7, EP§9 → [`today-garden.md`](docs/product/today-garden.md) (§157, the core experience test) → decisions → open questions 5, 16, 20, 26 → [`today.md`](docs/today.md) |
-| Focus sessions | V§7, EP§10–11, EP§18 → [`features.md`](docs/features.md) → Focus Together |
-| Rewards, gamification, engagement, growth of the places | V§14, V§18, EP§14, EP§20 → [`spaces.md`](docs/product/spaces.md) §25–28 → [`today-garden.md`](docs/product/today-garden.md) §33, §66 → open question 14 before anything else |
-| Re-entry, onboarding, overdue things, session state | V§8, V§17, EP§8, EP§19, EP§23 → [`today-garden.md`](docs/product/today-garden.md) §52–54 → decisions (*never a count*, *a session's end is a fact*) |
+| Focus sessions | [Study](docs/product/focus-study.md) → V§7, EP§10–11, EP§18 → open questions 18, 28 → [`features.md`](docs/features.md) |
+| Rewards, gamification, engagement, growth of the places | V§14, V§18, EP§14, EP§20 → [`spaces.md`](docs/product/spaces.md) §26–28 → [`today-garden.md`](docs/product/today-garden.md) §34, §67 → approved growth decision |
+| Re-entry, onboarding, overdue things, session state | V§8, V§17, EP§8, EP§19, EP§23 → [`today-garden.md`](docs/product/today-garden.md) §53–55 → decisions (*never a count*, *a session's end is a fact*) |
 | Visual design, paintings, animation | V§13–14, EP§11–12, EP§15 → visual language, motion → [`art-direction.md`](docs/art-direction.md) → [`animation-pipeline.md`](docs/animation-pipeline.md) |
 | Pure implementation with no change in behaviour | `CLAUDE.md`, [`architecture.md`](docs/architecture.md), [`domain.md`](docs/domain.md); the canon only if behaviour moves |
 
 ## How the canon works
 
 - **Code says what the product does; the canon says what it is trying to become.** Neither silently overrides the other. When they disagree, name it and settle it with Chanté: change the code, correct the doc, or record an open question. Don't pick whichever is easier to build.
-- **The foundation holds.** Don't rewrite the vision or the principles because one implementation or one conversation differs. Surface the contradiction first and let Chanté decide.
+- **Reconcile explicitly.** Neither source location, recency nor length establishes authority. Foundations and approved decisions guide interpretation; Chanté can revise them explicitly. Record the reason and supersession rather than silently selecting a winner.
 - **Status matters.** Only the foundation documents, the decisions and the settled parts of other canonical documents are requirements. The principles' *in practice* examples illustrate; they aren't specs (EP, Purpose). Ideas stay ideas until accepted, and open questions stay open until decided. A passing idea in conversation is not canon.
+- **Scope is separate.** Settled direction constrains future implementation; illustrative examples and future capabilities do not expand [V1](docs/v1-plan.md). Shared definitions live in [Shared terminology](docs/product/shared-model.md); the architecture carries detailed reasoning and space docs apply it.
 - **Keep the reasoning.** A decision records why, what it implies and what it replaced. When direction changes, write *previous approach → why it changed → current approach* instead of deleting the history.
 - **Plans for substantial product work carry a short *Canon alignment*:** the principles involved, how the design serves them, the tensions, and which docs change. Skip it for small tasks.
 - **When the product moves,** update the affected canonical doc, then the decision log, then the open questions. Update this file only when the high-level model changed.
 - **Watch for drift:** the Garden becoming a task dashboard; the Library needing grooming; Lumi turning into a generic chatbot or an authority; metrics added because apps have them; motivational copy; paintings becoming clutter; points standing in for growth; engagement over action. Each principle's *watch for* list is the detailed version. Flag drift. Don't refactor large areas without discussing first.
 - **Prune now and then.** When a doc or passage becomes clearly irrelevant, move it to `docs/archive/` with a line on what replaced it. Documents get reorganised as the canon grows, with care while other branches are editing them.
+
+## Reconciliation provenance
+
+The [2026-09-13 reconciliation record](docs/living/reconciliation.md) contains source hashes, dispositions, implementation gaps and the old-to-new section crosswalk. Historical originals remain archived; current references use the complete editions.

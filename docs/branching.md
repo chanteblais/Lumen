@@ -6,15 +6,27 @@ Deliberately chill (inherited from Glåüm, 2026-09-11). `main` always deploys c
 
 1. **`main` is the deployable truth.** Pushing `main` deploys production (Vercel). Never push `main` with something half-done in it.
 2. **Branch for anything non-trivial.** Short-lived, named `type/slug`: `feat/…` · `fix/…` · `ux/…` · `docs/…` · `chore/…`. Milestones from `docs/v1-plan.md` are `feat/m<N>-<slug>` (e.g. `feat/m0-shell`).
-3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit), you've clicked through the affected pages on a local dev server, and the **docs audit** (its own section below) is done — every doc the branch's changes touch reads true, fixed on the branch if not. CI (`.github/workflows/ci.yml`) runs the same checks on pushes and PRs; the docs audit is a human/Claude step, CI can't do it.
-4. **Merge with `--no-ff`, then delete the branch.** `git log --first-parent main` reads as a changelog.
-5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `COHERENCE_ALLOW_MAIN=1` on those. The docs audit still applies in miniature: does any doc describe the line you just changed?
+3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit, the CSS prefix audit), you've clicked through the affected pages on a local dev server, and the **docs audit** (its own section below) is done — every doc the branch's changes touch reads true, fixed on the branch if not. CI (`.github/workflows/ci.yml`) runs the same checks on pushes and PRs; the docs audit is a human/Claude step, CI can't do it.
+4. **Land with `npm run land -- <branch>`, then delete the branch.** It makes the same `--no-ff` merge commit without checking `main` out anywhere (*Landing on main*, below), so `git log --first-parent main` still reads as a changelog. Never `git checkout main && git merge`.
+5. **Tiny tweaks still get a branch** — copy edits, doc updates, one-line fixes: a `docs/…` or `chore/…` branch, one commit, `npm run land`. It's a minute, and it keeps `main` free for everyone. The docs audit still applies in miniature: does any doc describe the line you just changed? (`COHERENCE_ALLOW_MAIN=1` still gets a commit past the guard in a checkout that has `main` out — an emergency, not a habit.)
 6. **Migrations ride the branch that needs them.** Apply to prod at merge+deploy time; note the migration in the merge commit message.
-7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy. A pushed branch may also go up as a **pull request** (first one: #1, 2026-09-12): CI runs on it, and the desktop app can watch it and auto-fix CI failures. Merge a PR with **Create a merge commit** — never squash or rebase-merge — so `git log --first-parent main` stays the changelog; delete the branch after. Local `--no-ff` merge and PR merge are interchangeable; the merge commit is the invariant. (`gh` must be on the personal account for this repo — `gh auth switch --user chanteblais`; the work account can push over the `github-personal` SSH alias but can't open PRs here.)
+7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy. A pushed branch may also go up as a **pull request** (first one: #1, 2026-09-12): CI runs on it, and the desktop app can watch it and auto-fix CI failures. Merge a PR with **Create a merge commit** — never squash or rebase-merge — so `git log --first-parent main` stays the changelog; delete the branch after. `npm run land` and PR merge are interchangeable; the merge commit is the invariant. (`gh` must be on the personal account for this repo — `gh auth switch --user chanteblais`; the work account can push over the `github-personal` SSH alias but can't open PRs here.)
+
+## Landing on main — nobody parks on `main`
+
+Git lets a branch be checked out in only one worktree at a time. With many sessions merging a day (about 19 moves of `main` on 2026-09-13 alone), `git checkout main && git merge` left `main` held by whichever checkout merged last, and every other session's merge was blocked until someone released it. So nobody checks `main` out any more:
+
+- **`npm run land -- <branch> [-m "subject"] [-m "paragraph"]…`** (`scripts/land.mjs`), from any checkout. It builds the merge from refs alone — `git merge-tree --write-tree`, `git commit-tree` with parents `main` then the branch — and moves `main` with a compare-and-swap (`git update-ref <new> <old>`), so two sessions landing at once can't clobber each other. It touches no working tree. It refuses, saying why and what to run:
+  - if any worktree has `main` checked out (moving the ref would leave that checkout's files out of step) — it names the checkout;
+  - unless the branch already contains the latest `main` — merge `main` into the branch in its own checkout first, resolve, re-run `npm run check`, then land. That merge-in is where conflicts belong: on the branch, verified, never on `main`;
+  - if `main` moved while landing — nothing changed; merge `main` in again and re-run.
+- **The shared checkout parks detached at `main`'s commit** (`git switch --detach main`) — same files, no branch held. Its files trail `main` until the next session there runs `git switch --detach main` again (or starts a branch from `main`). The pre-commit guard blocks commits on that detached HEAD, so nothing lands on no branch.
+- **A worktree never checks out `main` either.** Start branches from the ref: `git worktree add <path> -b <type>/<slug> main`.
+- **Pushing needs no checkout:** `git push origin main` pushes the ref wherever you are.
 
 ## Docs audit — before every merge and push
 
-The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. This step keeps the **branch** honest: what a branch ends up changing is rarely what its first commit changed, and a doc updated on commit one is often stale by commit six. So the audit runs once more, whole-branch, as the last thing before a `--no-ff` merge, a PR merge or a push of `main` — after `npm run check` and the click-through, never before them (a fix during verification changes the answer).
+The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. This step keeps the **branch** honest: what a branch ends up changing is rarely what its first commit changed, and a doc updated on commit one is often stale by commit six. So the audit runs once more, whole-branch, as the last thing before a landing, a PR merge or a push of `main` — after `npm run check` and the click-through, never before them (a fix during verification changes the answer).
 
 1. **List what changed.** `git diff main...HEAD --stat` on a branch; `git log --first-parent origin/main..main` plus `git diff origin/main..main --stat` before a push (a push ships all of `main`, so the audit covers everything riding along, not just your own work).
 2. **Map every changed file to the doc that describes it,** then *read that passage* — not just check the file was touched:
@@ -30,27 +42,27 @@ The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. 
    | behaviour that now differs from the canon | surface it to Chanté: code changes, doc changes, or a new entry in `docs/living/open-questions.md`; never silently |
    | a working rule, port, script or session convention | `CLAUDE.md`, `docs/branching.md`, `docs/README.md` index |
    | `art/**`, `scripts/*lumi*`, `LumiSprite.tsx`, `LumiCompanion.tsx` loops | `docs/animation-pipeline.md` (ledger row, backlog, touch points, gates) and `art/README.md` (sheet table, what the cut corrects), on top of `docs/design-system.md` |
-3. **Fix what's stale on the branch,** before the merge — its own `docs: …` commit is fine, amending the last commit is fine, "I'll do it after the merge" is not. If the audit finds something on `main` that's already stale (someone else's), land that docs fix first, then push.
-4. **Say what you audited.** The final summary lists the docs checked and the ones changed, or says *docs audited, nothing stale*. A merge or push isn't offered as ready until this line can be written.
+3. **Fix what's stale on the branch,** before the landing — its own `docs: …` commit is fine, amending the last commit is fine, "I'll do it after the merge" is not. If the audit finds something on `main` that's already stale (someone else's), land that docs fix first (its own `docs/…` branch), then push.
+4. **Say what you audited.** The final summary lists the docs checked and the ones changed, or says *docs audited, nothing stale*. A landing or push isn't offered as ready until this line can be written.
 
 ## Parallel sessions — one checkout is ONE git context
 
 Branches belong to the *checkout*, not the session. Two sessions in one directory share one HEAD, one index, one working tree.
 
-1. **The main checkout belongs to one git-active session at a time.** Check `git branch --show-current` before your first git command — a branch you didn't create means someone else is here: stop and ask, or take a worktree.
+1. **The main checkout belongs to one git-active session at a time.** Check `git branch --show-current` before your first git command — a branch you didn't create means someone else is here: stop and ask, or take a worktree. Empty output there means it's parked detached: `git switch --detach main` to catch its files up, then branch.
 2. **A second concurrent session uses `git worktree`:**
    ```bash
-   git worktree add ../lumen-<branch> -b <type>/<slug>
-   # …work there; when merged:
+   git worktree add ../lumen-<branch> -b <type>/<slug> main
+   # …work there; when landed:
    git worktree remove ../lumen-<branch>
    ```
    (Claude sessions: the EnterWorktree tool does this.) `.env.local` is untracked, so a fresh worktree has none — symlink it before starting a dev server there: `ln -s <main-checkout>/.env.local .env.local`. Run `npm ci` in the worktree too (a real install, never a `node_modules` symlink). Forget either and the preflight that runs before `npm run check` / `npm run dev` says so — [`dev-hygiene.md`](dev-hygiene.md).
 3. **Never `git add -A` / `git add .` in the shared checkout.** Stage explicit paths; glance at `git status` first.
 3a. **In a worktree, keep every file path inside the worktree.** Read/Edit/Write take literal paths — an absolute path missing the worktree segment silently edits the shared checkout.
 4. Sessions that only *read* need no branch and no worktree.
-5. **Commit work-in-progress to the feature branch; never leave the shared checkout dirty between turns.** Sign-off triggers the merge, not the first commit.
+5. **Commit work-in-progress to the feature branch; never leave the shared checkout dirty between turns.** Sign-off triggers the landing, not the first commit.
 6. **Never `git stash` in the shared checkout.**
-7. **Release `main` the moment you're done with it.** A branch can only be checked out in one worktree at a time.
+7. **Nobody parks on `main`** — not the shared checkout, not a worktree, not for a minute (*Landing on main*, above). Done in the shared checkout? Leave it on your branch until it lands, then `git switch --detach main`.
 8. **Renaming or moving the project directory is a coordinated stop** (learned 2026-09-12, `rali` → `lumen`): every active session's cwd goes stale and any dev server keeps serving the old path. Message every session first (commit in flight, stop servers, no git for a few minutes), move, run `git worktree repair` from the new main checkout, then tell them the new path. A session that lands in a deleted cwd must restart in the new path before touching anything.
 
 ## Dev servers and ports
@@ -60,36 +72,41 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 - **One server per checkout.** Two `next dev` processes in one directory share `.next` and corrupt each other.
 - **A server serves the working tree, not a branch.** Switching branches in that checkout switches what the browser shows — say so in the review checklist, and stop your server before switching away from the branch under review.
 - **Worktrees have no `.env.local`** (untracked). Copy or symlink it from the main checkout before starting a server there.
-- **Review server lifecycle:** start it when the change is implemented, leave it running with a review checklist (pages, what to look for, preconditions, which port serves which branch), stop it once the change is merged. **Every URL in it is a clickable markdown link** — `[localhost:3005](http://localhost:3005)`, `[Today](http://localhost:3005/today)` — never a bare host or a URL in backticks. Servers started only for Claude's own verification are stopped as soon as verification is done.
+- **Review server lifecycle:** start it when the change is implemented, leave it running with a review checklist (pages, what to look for, preconditions, which port serves which branch), stop it once the change is landed. **Every URL in it is a clickable markdown link** — `[localhost:3005](http://localhost:3005)`, `[Today](http://localhost:3005/today)` — never a bare host or a URL in backticks. While it runs, **every reply from that session repeats the link** (and the branch it serves), even if it was given before — Chanté shouldn't have to scroll back for it. Servers started only for Claude's own verification are stopped as soon as verification is done.
 - **Preflight first.** `npm run dev` runs `scripts/preflight.mjs` before starting (installs, stale generated types, `.env.local` and its keys); a fail names the fix. Traps and guards: [`dev-hygiene.md`](dev-hygiene.md).
 
 ## Commit guards (pre-commit hook)
 
-A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). On this machine the path is set absolute, to the shared checkout's `.githooks`, so every worktree runs the shared checkout's copy — a hook changed on a branch isn't live until that checkout has it (`dev-hygiene.md` → Traps). It enforces:
+A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). On this machine the path is set absolute, to the shared checkout's `.githooks`, so every worktree runs the shared checkout's copy — a hook changed on a branch isn't live until that checkout has it, and a parked checkout has it only once it's caught up to `main` (`dev-hygiene.md` → Traps, Backlog). It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
-2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `COHERENCE_ALLOW_MAIN=1 git commit …`.
+2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here and stops loudly. Emergencies only: `COHERENCE_ALLOW_MAIN=1 git commit …`.
+3. **No commits on a detached HEAD in the shared checkout** — the parked state, where a commit would belong to no branch. Linked worktrees may detach freely. Deliberate (mid-rebase): `COHERENCE_ALLOW_DETACHED=1 git commit …`.
+
+`npm run land` makes its merge commit with `git commit-tree`, which runs no hooks — its own refusals are the guard.
 
 ## Claude sessions
 
-**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. Merge with `--no-ff` after verification, delete the branch, and **push `main`** — Chanté's approval to merge covers the deploy. Guardrails on the push:
+**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. After verification, merge `main` into the branch if it has moved, land with `npm run land`, delete the branch, and **push `main`** — Chanté's approval to merge covers the deploy. Guardrails on the push:
 
-- **Approval first.** Merge + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
+- **Approval first.** Landing + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
-- **Docs audit before the merge and again before the push.** The whole-branch audit above is the gate: every commit that would ride along has its docs folded in and reading true. Stale docs → land the docs fix first (on the branch before a merge; on `main` with `COHERENCE_ALLOW_MAIN=1` before a push), then merge or push. Never merge with a docs fix "to follow".
+- **Docs audit before the landing and again before the push.** The whole-branch audit above is the gate: every commit that would ride along has its docs folded in and reading true. Stale docs → land the docs fix first (on the branch before its landing; its own `docs/…` branch before a push), then land or push. Never land with a docs fix "to follow".
 - **Migrations deploy with their code.** Claude applies additive migrations itself (`npm run db:migrate`) on the branch, before review; destructive ones wait for Chanté's explicit go. If a migration can't be applied, hold the push and say why.
+- **`land` refuses because a checkout holds `main`?** Name it to Chanté. Release it only if it's your own checkout, or she says no session is working there.
 - **When in doubt, don't.** Leave the push to Chanté.
 
 ## Day-to-day cheat sheet
 
 ```bash
-git checkout -b fix/thing        # start
+git switch -c fix/thing main       # start (or: git worktree add <path> -b fix/thing main)
 # …work, verify (npm run check + local click-through)…
 git add <paths> && git commit -m "Fix thing"
+git merge main                     # if main moved: conflicts get resolved here, on the branch; npm run check again
 git diff main...HEAD --stat        # docs audit: does every doc these files touch still read true? fix on the branch first
-git checkout main
-git merge --no-ff fix/thing -m "Fix thing (fix/thing)"
+npm run land -- fix/thing -m "Merge branch 'fix/thing' — fix thing"
+git switch --detach main           # in the shared checkout: park; in a worktree: remove it instead
 git branch -d fix/thing
 git log --first-parent origin/main..main   # what rides along — audit its docs too
-git push                          # on approval — approval to merge = approval to deploy
+git push origin main               # on approval — approval to merge = approval to deploy
 ```
