@@ -455,8 +455,10 @@ body::after {
   align-items: flex-end;
   gap: 14px;
 }
-/* She is a button: tap her and the speech bubble opens (on Chat, she hands
-   you the composer). The only cue is a small lift on hover. */
+/* She is a button: tap her and the speech bubble opens (on Home, she hands
+   you the composer). The cue is the pointer, and the focus ring from the
+   keyboard; she never moves under the cursor — a 3px lift on hover made her
+   look like she was hovering off the ground (Chanté, 2026-09-13). */
 .companion-btn {
   display: block;
   appearance: none;
@@ -466,7 +468,6 @@ body::after {
   cursor: pointer;
   border-radius: 8px;
 }
-.companion-btn:hover .companion-figure { transform: scaleX(-1) translateY(-3px); }
 /* Idle life. Two frames are mounted: the current one fades in ON TOP of the
    previous (which stays opaque until covered), so she never turns translucent
    mid-step — across a hand-over between loops as much as within one. (Note for
@@ -474,7 +475,7 @@ body::after {
    hidden tab, and a capture of a frozen tab shows her mid-fade — she is fine
    on screen.) */
 /* Mirrored so she looks in toward the page, not off the edge. */
-.companion-figure { position: relative; display: block; transform: scaleX(-1); transition: transform 220ms ease; }
+.companion-figure { position: relative; display: block; transform: scaleX(-1); }
 .companion-frame {
   position: absolute;
   inset: 0;
@@ -541,9 +542,6 @@ body::after {
   mix-blend-mode: multiply;
   opacity: var(--lumi-light-a, 0);
 }
-/* On hover she lifts 3px; her shadows stay on the ground and shrink a little. */
-.companion-btn:hover .companion-shadow { transform: translate(-50%, calc(-50% + 3px)) scale(0.9); opacity: 0.8; }
-.companion-btn:hover .companion-cast { transform: translateY(3px) skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1)); }
 /* The rooms' light. Today: low sun through the windows at the back left, long
    shadows falling toward the front right over cream flagstones. The Library:
    light from the windows on the left, shadows reaching right along terracotta
