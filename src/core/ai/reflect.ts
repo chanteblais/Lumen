@@ -214,9 +214,10 @@ const live: Deps = { propose: proposeWithModel, now: () => new Date() };
 export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string, deps: Partial<Deps> = {}): Promise<{ applied: BeliefOp[] } | undefined> {
   const d = { ...live, ...deps };
   const now = d.now();
+  // The common case first, in one query: a session reflected on (or claimed) long ago, handed over again.
+  if (await reflectedOn(db, user.id, sessionId)) return undefined;
   const session = await getSession(db, user.id, sessionId);
   if (!session?.endedAt) return undefined;
-  if (await reflectedOn(db, user.id, session.id)) return undefined;
   if (!(await claimReflection(db, user.id, session.id, now))) return undefined;
   const until = new Date(session.endedAt.getTime() + REFLECTION_TAIL_MS);
 
@@ -273,12 +274,26 @@ export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone
   return { applied: ops };
 }
 
-/** Fire-and-forget for `after()`: never throws. */
-export async function reflectAfterSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string): Promise<void> {
+/**
+ * Sessions this process has already seen through reflection — run, found
+ * reflected or claimed, or not theirs. The abandoned session stays in the
+ * snapshot for a day and a half, so Home and every chat turn hand the same id
+ * over; after the first check it costs nothing. Per process, bounded; the claim
+ * in the database stays the guarantee.
+ */
+const settled = new Set<string>();
+const SETTLED_MAX = 500;
+
+/** Fire-and-forget for `after()`: never throws. Logs only a run that happened. */
+export async function reflectAfterSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string, deps: { reflect?: typeof reflectOnSession } = {}): Promise<void> {
+  if (settled.has(sessionId)) return;
   try {
-    const r = await reflectOnSession(db, user, sessionId);
-    if (process.env.NODE_ENV !== "production") console.log(`[reflect] session=${sessionId} ops=${r?.applied.length ?? 0}`);
+    const r = await (deps.reflect ?? reflectOnSession)(db, user, sessionId);
+    if (settled.size >= SETTLED_MAX) settled.clear();
+    settled.add(sessionId);
+    if (r && process.env.NODE_ENV !== "production") console.log(`[reflect] session=${sessionId} ops=${r.applied.length}`);
   } catch (e) {
+    // Not settled: the next hand-over tries again (the claim keeps it to once).
     console.error("[reflect] failed", e);
   }
 }

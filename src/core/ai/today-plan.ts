@@ -14,6 +14,7 @@ import { savePlan } from "@/core/domain/plans";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { visitBeforeSitting } from "@/core/domain/users";
 import { buildDayPlan, type PlanAsk, type PlanInputs } from "./plan";
+import { serially } from "./serial";
 
 export type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
 
@@ -43,11 +44,14 @@ export async function ensureTodaysPlan(db: Db, user: User, deps: Partial<Deps> =
   const key = `${user.id}:${snap.today}`;
   let pending = inFlight.get(key);
   if (!pending) {
-    pending = (async () => {
-      const plan = await d.build(planInputs(user, snap, now));
-      await d.save(db, user.id, snap.today, plan, snap.plan ? "first_items" : "new_day", snap.capacity?.level);
+    // In line with re-cuts (B8): if one saved a path while this waited, that path stands.
+    pending = serially(planKey(user), async () => {
+      const fresh = await d.load(db, user, now);
+      if (fresh.plan && !needsFirstItems(fresh, user.timezone)) return fresh.plan;
+      const plan = await d.build(planInputs(user, fresh, now));
+      await d.save(db, user.id, fresh.today, plan, fresh.plan ? "first_items" : "new_day", fresh.capacity?.level);
       return plan;
-    })().finally(() => inFlight.delete(key));
+    }).finally(() => inFlight.delete(key));
     inFlight.set(key, pending);
   }
   return { snap, plan: await pending };
@@ -62,15 +66,20 @@ export async function ensureTodaysPlan(db: Db, user: User, deps: Partial<Deps> =
 export async function recutTodaysPlan(db: Db, user: User, recut: RecutReason | Recut, deps: Partial<Deps> = {}): Promise<TodaysPlan> {
   const d = { ...live, ...deps };
   const { reason, ask } = typeof recut === "string" ? { reason: recut, ask: undefined } : recut;
-  const now = d.now();
-  const snap = await d.load(db, user, now);
-  if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
-    return { snap, plan: snap.plan };
-  }
-  const plan = await d.build(planInputs(user, snap, now, ask));
-  await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level, ask?.text);
-  return { snap, plan };
+  // One at a time per user, in order (code review B8): each reads the snapshot after the one before saved, so the path matches the last request.
+  return serially(planKey(user), async () => {
+    const now = d.now();
+    const snap = await d.load(db, user, now);
+    if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
+      return { snap, plan: snap.plan };
+    }
+    const plan = await d.build(planInputs(user, snap, now, ask));
+    await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level, ask?.text);
+    return { snap, plan };
+  });
 }
+
+const planKey = (user: Pick<User, "id">) => `plan:${user.id}`;
 
 /**
  * Fire-and-forget version for `after()`: by the time Today is opened the
