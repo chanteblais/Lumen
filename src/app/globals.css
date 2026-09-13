@@ -763,7 +763,6 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 .shell:has(.home-scene) .sidebar {
   background: rgba(24, 16, 10, 0.6);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-right-color: rgba(241, 230, 207, 0.12);
 }
 .shell:has(.home-scene) .nav-item:hover { background: rgba(241, 230, 207, 0.06); }
@@ -830,28 +829,24 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   border: 1px solid var(--rule);
   border-radius: 6px 6px 6px 2px;
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
 }
 .shell:has(.home-scene) .msg-lumi .msg-avatar { margin-top: 6px; }
 .shell:has(.home-scene) .msg-user p {
   background: rgba(241, 230, 207, 0.12);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .shell:has(.home-scene) .chat-now [aria-label="Lumi is thinking"] .msg-body { background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none; }
 
 /* The composer is the same pill on dark glass; the send button is the lamp. */
 .shell:has(.home-scene) .composer {
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 .shell:has(.home-scene) .composer-dock { background: linear-gradient(to bottom, transparent, rgba(26, 18, 12, 0.55) 26px); }
 .shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
 .shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
 .shell:has(.home-scene) .session-checkin {
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 @media (max-width: 767px) {
   .shell:has(.home-scene) .sidebar { border-bottom-color: rgba(241, 230, 207, 0.12); }
@@ -893,7 +888,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .shell:has(.today-scene, .library-scene) .sidebar {
   background: rgba(239, 234, 226, 0.84);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-right-color: rgba(27, 26, 23, 0.1);
 }
 
@@ -925,7 +919,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(27, 26, 23, 0.08), 0 14px 36px rgba(27, 26, 23, 0.24);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   padding: 26px 30px 20px;
 }
 .today-dayline { font-size: 18px; line-height: 1.4; }
@@ -953,7 +946,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   border-radius: 10px;
   box-shadow: 0 14px 36px rgba(20, 16, 10, 0.3);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 /* Wide: the panel moves to the right edge and the room opens up to its left. */
