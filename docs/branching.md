@@ -64,6 +64,8 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 6. **Never `git stash` in the shared checkout.**
 7. **Nobody parks on `main`** — not the shared checkout, not a worktree, not for a minute (*Landing on main*, above). Done in the shared checkout? Leave it on your branch until it lands, then `git switch --detach main`.
 8. **Renaming or moving the project directory is a coordinated stop** (learned 2026-09-12, `rali` → `lumen`): every active session's cwd goes stale and any dev server keeps serving the old path. Message every session first (commit in flight, stop servers, no git for a few minutes), move, run `git worktree repair` from the new main checkout, then tell them the new path. A session that lands in a deleted cwd must restart in the new path before touching anything.
+9. **Remove your worktree when its branch lands — or when you drop the work.** `git worktree remove <path>`, then `git branch -d <branch>`. A worktree left behind keeps a ~500 MB `node_modules`, a copy of `.env.local` and a branch or a detached HEAD nobody remembers; on 2026-09-13 fifteen had piled up. Can't remove the one you're standing in (a Claude session inside its own worktree)? Leave it clean and detached (`git switch --detach`) with its branch deleted — the census clears it.
+10. **The census is how worktrees get cleared.** `npm run worktrees` lists every worktree and why it stays; `npm run worktrees -- --prune` removes only those that are safe: under `.claude/worktrees`, not locked, nothing running inside (session, shell or dev server), idle for an hour, no uncommitted changes, HEAD already on `main`, and no ignored file worth keeping (sheet candidates, keys, an `.env.local` that differs from the shared checkout's). It never touches the shared checkout, the checkout you run it from, or another tool's worktree, and deletes a branch only when it's merged. Run it at session end (`dev-hygiene.md` → Session end). Anything it keeps for a reason only its owner can settle — uncommitted work, unmerged commits, a differing `.env.local` — goes to Chanté, not to `--force`.
 
 ## Dev servers and ports
 
@@ -87,7 +89,7 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 
 ## Claude sessions
 
-**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. After verification, merge `main` into the branch if it has moved, land with `npm run land`, delete the branch, and **push `main`** — Chanté's approval to merge covers the deploy. Guardrails on the push:
+**Every session branches before its first edit.** `type/slug` when the scope is clear, `session/YYYY-MM-DD-<topic>` when it isn't. Unrelated tasks in one session get separate branches. After verification, merge `main` into the branch if it has moved, land with `npm run land`, delete the branch, remove the worktree (Parallel sessions 9), and **push `main`** — Chanté's approval to merge covers the deploy. End every session with `npm run worktrees -- --prune`. Guardrails on the push:
 
 - **Approval first.** Landing + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
@@ -105,8 +107,10 @@ git add <paths> && git commit -m "Fix thing"
 git merge main                     # if main moved: conflicts get resolved here, on the branch; npm run check again
 git diff main...HEAD --stat        # docs audit: does every doc these files touch still read true? fix on the branch first
 npm run land -- fix/thing -m "Merge branch 'fix/thing' — fix thing"
-git switch --detach main           # in the shared checkout: park; in a worktree: remove it instead
+git switch --detach main           # in the shared checkout: park
+git worktree remove <path>         # in a worktree: remove it once landed (from outside it)
 git branch -d fix/thing
+npm run worktrees -- --prune       # session end: clears every worktree that's safe to remove
 git log --first-parent origin/main..main   # what rides along — audit its docs too
 git push origin main               # on approval — approval to merge = approval to deploy
 ```
