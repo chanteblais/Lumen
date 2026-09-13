@@ -4,8 +4,7 @@ import type { CSSProperties } from "react";
  * The single source of Lumi's drawings.
  *
  * Both are cut by `scripts/cut-lumi-idle.py`.
- * - `public/lumi-heads.webp` — lossless (the cut writes a PNG; converted
- *   pixel for pixel, alpha included) — one row of 176px square cells, the six head
+ * - `public/lumi-heads.webp` — lossless, alpha included — one row of 176px square cells, the six head
  *   expressions (neutral · blink · happy · curious · excited · sleepy), each
  *   from one of the cells of `art/lumi/lumi-lantern-idle.png` (the lantern
  *   character, 2026-09-12). Used inside the round avatar.
