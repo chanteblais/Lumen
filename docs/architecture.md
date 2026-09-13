@@ -216,7 +216,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── insights/             LeadsSection (looks, then asks), LeadActions (Still needs doing · Let it go)
 │   │   ├── focus/                SessionBar (the bar + the check-in card + the client timer)
 │   │   ├── library/              LibraryDebug (debug mode's parchment of categories and threads over the rooms; the cookie is shell/debug-mode.ts, toggled by five taps on the nav's wordmark) · LibraryRoom (names on the painted bookcases, debug mode only; room-slots.ts from the spatial-map manifest) · LibrarySheet · ShelfView · BookView · load.ts (reads that never throw)
-│   │   ├── lists/                ListsPanel (server: loads the rows) · ListsSheet (the sheet, its rows, ⋯ menu and Add line) · ListGlyphs · CompleteCircle
+│   │   ├── lists/                ListsPanel (server: loads the rows) · ListsSheet (the dialog: what it shows, via `core/domain/lists-view.ts`, focus, closing) · ListsNav (tabs and side column) · ListsRow (a row and its ⋯) · DateCell · AddLine · ListGlyphs · CompleteCircle; `components/ui/useDialogFocus` (a modal's focus: in, trapped, handed back)
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested
 │   │   ├── domain/               users.ts intentions.ts sessions.ts capacity.ts memory.ts memory-rules.ts (what may be kept: screens, their words, duplicates) library.ts (threads, notes, episodes, the consolidation watermark) events.ts activity.ts plans.ts snapshot.ts leads.ts lists-view.ts (the Lists sheet's rows: order, date labels, quick views — no counts)
