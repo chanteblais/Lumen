@@ -59,4 +59,4 @@ The app and docs say Coherence since 2026-09-12. These still say Lumen, and each
 - [ ] No conversation text in Vercel logs.
 
 ## General
-- [ ] Full loop on the deployed URL: sign in → talk → intention created → focus session with one check-in → return next day → greeting reflects it.
+- [ ] Full loop on the deployed URL: sign in → talk → intention created → Today: *Not this* and *Break it down* on the card → return next day → greeting reflects it.
