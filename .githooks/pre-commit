@@ -2,7 +2,9 @@
 # Guards against crossed-session commits (docs/branching.md → Commit guards).
 # Active because core.hooksPath = .githooks (set once per clone:
 #   git config core.hooksPath .githooks
-# ). Worktrees share the config and carry their own checkout of this file.
+# ). Worktrees share the config. On this machine the path is the shared
+# checkout's absolute .githooks, so worktrees run that checkout's copy of this
+# file, not their own (docs/dev-hygiene.md → Traps).
 
 # 1. Never commit .claude/ session/routine bookkeeping (launch.json excepted).
 staged_claude=$(git diff --cached --name-only --diff-filter=d | grep '^\.claude/' | grep -v '^\.claude/launch\.json$')
