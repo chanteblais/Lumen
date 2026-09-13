@@ -21,9 +21,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'art', 'lumi', 'avatar.png')
 OUT = os.path.join(ROOT, 'public', 'lumi-avatar.webp')
 SIZE = 256
-# Inset from the rim's outer edge, as a fraction of the radius: past the
-# antialiased pixels where the brass meets the white.
-INSET = 0.008
+# Crop this far inside the rim's outer edge, as a fraction of the radius: past
+# the antialiased pixels where the brass meets the white, so the circle is
+# solid painting right to its edge (no pale fringe, no transparent sliver).
+INSET = 0.005
 
 
 def disc_bounds(rgb: np.ndarray) -> tuple[int, int, int, int]:
