@@ -220,7 +220,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   └── ui/                   Rule, Label, Button (tiny primitives)
 │   ├── core/                     ← framework-agnostic, unit-tested
 │   │   ├── domain/               users.ts intentions.ts sessions.ts capacity.ts memory.ts memory-rules.ts (what may be kept: screens, their words, duplicates) library.ts (threads, notes, episodes, the consolidation watermark) events.ts activity.ts plans.ts snapshot.ts leads.ts lists-view.ts (the Lists sheet's rows: order, date labels, quick views — no counts)
-│   │   ├── ai/                   persona.ts context.ts tools.ts model.ts greeting.ts plan.ts today-plan.ts reflect.ts memory-select.ts (which beliefs a turn sees; recall ranking) consolidate.ts (a finished stretch → an episode and Library notes) library-select.ts (which threads a turn opens) ledger.ts (tool parts → ledger lines) leads.ts (mail → leads, model proposes / clampLeads guards)
+│   │   ├── ai/                   persona.ts quick-starts.ts (the four chips; the client imports these, never the prompt) context.ts tools.ts model.ts greeting.ts plan.ts today-plan.ts reflect.ts memory-select.ts (which beliefs a turn sees; recall ranking) consolidate.ts (a finished stretch → an episode and Library notes) library-select.ts (which threads a turn opens) ledger.ts (tool parts → ledger lines) leads.ts (mail → leads, model proposes / clampLeads guards)
 │   │   ├── email/                types.ts (EmailReader) gmail.ts (REST + MIME parse) scan.ts (one look: watermark → read → infer → leads)
 │   │   ├── focus.ts              Focus Together client-side rules: check-in copy + timing, session-from-transcript
 │   │   ├── declines.ts           the six *Not this* answers
