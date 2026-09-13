@@ -18,6 +18,20 @@
 **Principle.** V§8, V§12, EP§8; model strategy.
 **Replaces.** "Never … say how long it's been" (persona → *Coming back*) and "Don't mention how long it's been unless they do" (context block).
 
+## 2026-09-13 · Mail is switched off, for now
+
+**Decision.** Lumi doesn't read mail, and Insights leaves the nav, until mail comes back. The code stays, behind one switch (`MAIL_ON` in `src/core/email/types.ts`).
+**Rationale.** Chanté asked: "If I turn off the mail integration, will users still get a warning when they create an account?", then asked for the app side of it. *(Claude's reading:)* reading Gmail is a restricted Google scope. While the app asks for it, Google sign-in can't be published without Google's security review: anyone off the test list is blocked, and test users see the unverified-app screen. Without it, the consent screen can be published with no review, so signing up with Google stops being a warning before the product has begun.
+**Implications.**
+- Nothing new for the user to keep; the Connect Google chip, which came back about weekly in Testing, goes with it.
+- Leads already noticed stay stored, unanswered, and nothing shows them while mail is off. Turning it back on brings them back.
+- Mail returning means Google's verification for `gmail.readonly`. Where mail would live is still open question 4.
+
+**Principle.** The one question (does this reduce executive-function burden?): a blocked or alarming sign-up is burden before the product begins.
+**Replaces.** Suspends *Mail is a look, not an inbox* (below) while mail is off. That entry stays as the design for when it returns.
+
+---
+
 ## 2026-09-13 · Threads that become categories become sections of the Library
 
 **Decision.** A thread can sit under a broader thread. A thread that holds threads is a **section** of the Library; inside a section, a thread that holds threads of its own is a **shelf**; the threads are **books**, titled with their names. Three levels at most. Lumi does the arranging between visits, conservatively, and the user corrects it by saying where something belongs. The Library shows the sections on its bookcases, and a section opens to its shelves and books; a book opens to where the thread stands.
@@ -384,6 +398,8 @@ Distilled from the engineering log, [`product.md`](../product.md) and [`today.md
 **Principle.** §7, §12.
 
 ### Mail is a look, not an inbox · 2026-09-12
+
+**Suspended 2026-09-13:** mail is switched off for now ([Mail is switched off, for now](#2026-09-13--mail-is-switched-off-for-now)). This stays the design for when it returns.
 
 **Decision.** Lumi reads recent mail read-only and asks one question per thing she noticed, with two answers: *Still needs doing* or *Let it go*.
 **Rationale.** A second inbox would be a second system to manage.

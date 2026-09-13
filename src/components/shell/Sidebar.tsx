@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
+import { MAIL_ON } from "@/core/email/types";
 import { isPublicPath } from "@/lib/public-paths";
 import { DEBUG_COOKIE, DEBUG_TAP_WINDOW_MS, DEBUG_TAPS } from "./debug-mode";
 import { NAV_MODE_COOKIE, type NavMode } from "./nav-pin";
@@ -130,7 +131,7 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
         </div>
 
         <nav className="nav-list" aria-label="Primary">
-          {NAV.map((place) => {
+          {NAV.filter((place) => MAIL_ON || place.href !== "/insights").map((place) => {
             const { href, label, Icon } = place;
             const apart = "utility" in place ? " nav-utility" : "tools" in place ? " nav-tools" : "";
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

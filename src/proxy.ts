@@ -2,7 +2,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isPublicPath } from "@/lib/public-paths";
 
 // Protected-first: every surface is signed-in (docs/features.md). Only the
-// auth pages themselves are public. This wall is defence in depth — every
+// auth pages themselves and the privacy policy are public. This wall is defence in depth — every
 // page and route also calls requireUser() itself (Clerk's recommended
 // resource-based check; the route-auth audit enforces it for API routes).
 // The public pages are listed in src/lib/public-paths.ts.
