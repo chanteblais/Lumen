@@ -21,7 +21,8 @@ plus the ellipse's (one hull for a convex polygon, one per edge for a concave on
 import math
 
 HALF = 17          # half her cloak's width at her feet, 120px tall
-REACH = 37         # how far her drawing reaches either side of her feet (the stand-in's hem and sleeves: 36.5px)
+MARGIN = 4         # a ground point is in front of her only if lower on the page by more than this (a corner level with her feet doesn't cover her hem)
+REACH = 37        # how far her drawing reaches either side of her feet (the stand-in's hem and sleeves: 36.5px)
 CLEARANCE = 24     # her body's reach from her feet, page px across
 
 
@@ -72,7 +73,7 @@ def ground_y_near(poly, fx, half=HALF, reach=REACH):
 def draws_over(poly, fx, fy, half=HALF, reach=REACH):
     """Does an item with this ground polygon draw over Lumi standing at (fx, fy)?"""
     m = ground_y_near(poly, fx, half, reach)
-    return m is not None and m > fy
+    return m is not None and m > fy + MARGIN
 
 
 def in_front(p, q):

@@ -47,9 +47,12 @@ if '--page' in sys.argv:
 
 cw, ch = (int(v) for v in arg('--cell', '300x260').split('x'))
 cols, zoom, name = int(arg('--cols', 6)), float(arg('--zoom', 2.2)), arg('--name', 'grid')
-count = len(json.load(open(os.path.join(out_dir, 'tests.json')))['points'])
+tests = json.load(open(os.path.join(out_dir, 'tests.json')))
+piece = arg('--set', None)                     # a sweep from sweep.py instead of the test points
+count = len(tests['sweeps'][piece]) if piece else len(tests['points'])
 rows = (count + cols - 1) // cols
-query = f'grid=1&cell={cw}x{ch}&zoom={zoom}&cols={cols}&view={arg("--view", "composed")}' + ('&plan=1' if '--plan' in sys.argv else '')
+query = (f'grid=1&cell={cw}x{ch}&zoom={zoom}&cols={cols}&view={arg("--view", "composed")}' + ('&plan=1' if '--plan' in sys.argv else '')
+         + (f'&set={piece}' if piece else ''))
 shot = os.path.join(out_dir, f'{name}.png')
 subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
                 f'--window-size={cw * cols},{ch * rows}', '--virtual-time-budget=20000', f'--screenshot={shot}', PAGE + '?' + query],

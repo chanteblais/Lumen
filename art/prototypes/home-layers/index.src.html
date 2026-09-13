@@ -173,7 +173,7 @@
   }
   function drawsOver(L, fx, fy) {
     var m = groundYNear(L, fx);
-    return m !== null && m > fy;
+    return m !== null && m > fy + ROOM.depth.margin;
   }
   function inPoly(x, y, poly) {
     var inside = false;
@@ -197,7 +197,7 @@
     ROOM.layers.forEach(function (L) {
       var m = groundYNear(L, fx);
       if (m === null) return;
-      if (m > fy) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
+      if (m > fy + ROOM.depth.margin) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
     });
     names.forEach(function (n) { after[n].forEach(function (b) { indeg[b]++; }); });
     var ready = names.filter(function (n) { return !indeg[n]; }), out = [];
@@ -361,7 +361,8 @@
   function runGrid() {
     document.body.classList.add('chromeless');
     var cell = (params.get('cell') || '300x260').split('x').map(Number), zoom = parseFloat(params.get('zoom') || '2.2');
-    var cols = parseInt(params.get('cols') || '6', 10), pts = TESTS.points, rows = Math.ceil(pts.length / cols);
+    var set = params.get('set'), pts = set ? TESTS.sweeps[set] : TESTS.points;
+    var cols = parseInt(params.get('cols') || '6', 10), rows = Math.ceil(pts.length / cols);
     var big = document.createElement('canvas');
     big.id = 'grid'; big.width = cell[0] * cols; big.height = cell[1] * rows;
     document.querySelector('main').appendChild(big);
@@ -379,7 +380,7 @@
       g.fillText((i + 1) + '. ' + p.label, cx + 6, cy + cell[1] - 19);
       g.fillStyle = '#9fe7ff';
       var over = covering(d, p.x, p.y);
-      g.fillText('covering her: ' + (over.length ? over.join(', ') : 'nothing'), cx + 6, cy + cell[1] - 5);
+      g.fillText('covering her: ' + (over.length ? over.join(', ') : 'nothing') + (p.fringe !== undefined ? ' · fringe px ' + p.fringe : ''), cx + 6, cy + cell[1] - 5);
       g.strokeStyle = '#000'; g.strokeRect(cx + 0.5, cy + 0.5, cell[0] - 1, cell[1] - 1);
     });
     document.title = 'ready';

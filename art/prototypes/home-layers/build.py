@@ -76,7 +76,11 @@ for L in room['layers']:
 cases = [{'layer': L['id'], 'x': p['x'], 'y': p['y'], 'want': depth.draws_over(L['extent'] or L['footprint'], p['x'], p['y'])}
          for p in points for L in room['layers']]
 walk_cases = [{'x': x, 'y': y, 'want': walk(x, y)} for x in range(100, 1500, 37) for y in range(250, 1024, 41)]
-tests = {'points': points, 'cases': cases, 'walk': walk_cases}
+sweeps_path = os.path.join(HERE, 'out', 'sweeps.json')        # sweep.py's frames, for capture.py --set <piece>
+sweeps = json.load(open(sweeps_path)) if os.path.exists(sweeps_path) else {}
+cases += [{'layer': L['id'], 'x': p['x'], 'y': p['y'], 'want': depth.draws_over(L['extent'] or L['footprint'], p['x'], p['y'])}
+          for pts in sweeps.values() for p in pts for L in room['layers']]
+tests = {'points': points, 'cases': cases, 'walk': walk_cases, 'sweeps': sweeps}
 json.dump(tests, open(os.path.join(HERE, 'out', 'tests.json'), 'w'), indent=1)
 
 lumi = json.load(open(os.path.join(HERE, 'out', 'lumi-still.json')))

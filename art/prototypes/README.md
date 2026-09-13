@@ -49,33 +49,64 @@ Home's painting taken apart instead of mapped by hand. Chanté, asked whether to
 - `room.src.json` — the hand-traced source, in painting px: the **inventory** (every floor-standing thing on or beside the floor, kept or left in the plate, with the reason), and per layer its `body` polygons (hugging the silhouette ~2px outside; several for thin things like the chair and balustrade), `foliage` polygons (leaves, fringes), the `mask` sent to the API, `footprint` (where it meets the floor), `extent` (the widest part dropped to the floor), `height` and proposed `anchors`; the `blockers` left in the plate; the `floor`; the chosen inpaint candidate per cluster. Traced on grid zooms from `zoom.py`, checked on `masks.py`'s overlay (`out/masks.png`, `--zoom x0,y0,x1,y1,k`).
 - `inpaint.py <A|B|C|D>` — one cluster (the table and cushions; armchair and stool; desk and chair; balustrade) through OpenAI's `/v1/images/edits` with a mask, `gpt-image-2.5-sunburst`, 1536×1024, high; keeps the hole's neighbourhood of each result in `out/inpaint/` and logs tokens and cost. The rug needed a second prompt: the first invented a central medallion.
 - `plate.py` — writes `art/scenery/home/plate.png`, `layers/<id>.png` and `<id>-shadow.png`, and `layers.json`, and prints the recompose error. The inpaint is used only under what a layer covers, colour-corrected to its surroundings. The floor an item only shades keeps the painting's own pixels, relit (the shadow is the luminance ratio against the inpaint, smoothed); that darkening becomes the black `-shadow` layer. A layer is solid inside its polygons; its edge is a colour-line matte between the item's own colour and the floor just outside. Leaves are a difference matte against the inpaint. Colour is de-matted against the plate. The docstring has the details.
-- `depth.py` — the depth rule, clearance and the walkable floor, with self-tests. In one page column two ground points differ only in u + v, so **an item draws over Lumi when its ground polygon has a point in her feet columns (x ± 17) lower on the page than her feet**. An item with ground only within her drawing's reach (x ± 37) is tested at its column nearest her. Layers and Lumi are ordered by a topological sort. Walkable = `floor` minus every extent grown by her clearance as a ground circle (an ellipse 24 × 13.7 px).
+- `depth.py` — the depth rule, clearance and the walkable floor, with self-tests. In one page column two ground points differ only in u + v, so **an item draws over Lumi when its ground polygon has a point in her feet columns (x ± 17) lower on the page than her feet**. An item with ground only within her drawing's reach (x ± 37) is tested at its column nearest her. "Lower" means by more than a 4px margin. Layers and Lumi are ordered by a topological sort. Walkable = `floor` minus every extent grown by her clearance as a ground circle (an ellipse 24 × 13.7 px).
 - `cut_lumi.py` — a stand-in Lumi, `art/lumi/lumi-iso-s.png` matted with `scripts/lumi_cut.py`, at 2× her 120px.
 - `index.src.html` + `build.py` → `index.html` — the viewer, in the walk page's style. It shows the plate, shadows and layers with Lumi depth-sorted; click or drag to place her. Views: Composed · Plate only · Layers tinted · Original painting (a cut you slide between the painting and the rebuilt room), plus Footprints and anchors. `build.py` makes the test points: behind, in front of, left and right of each layer, a row close behind the low table, and behind the balustrade posts. It also prints any layer whose pixels reach past its ground polygon.
 - `capture.py` — headless Chrome: the default `?grid=` mode puts Lumi at every test point in one screenshot (`out/grid.png`; `--view tinted`), `--test` checks the JS rule against `depth.py`, `--page` screenshots the page.
 
-Rebuild, from the repo root, from the committed plate and layers: `python3 art/prototypes/home-layers/cut_lumi.py && python3 art/prototypes/home-layers/build.py`, then `python3 art/prototypes/home-layers/capture.py --test`, `capture.py`, `capture.py --view tinted --name grid-tinted`, `capture.py --page`. To rebuild the plate itself, first generate candidates with `inpaint.py <cluster> --n 2` (about $0.11 a run; `.env.local`'s key), name the chosen ones in `room.src.json` → `plate_candidates`, then run `plate.py` before the above. The candidates are gitignored.
+Rebuild, from the repo root, from the committed plate and layers: `python3 art/prototypes/home-layers/cut_lumi.py && python3 art/prototypes/home-layers/build.py`, then `python3 art/prototypes/home-layers/capture.py --test`, `capture.py`, `capture.py --view tinted --name grid-tinted`, `capture.py --page`. To rebuild the plate itself, first generate candidates with `inpaint.py <cluster> --n 2` (about $0.11 a run; `.env.local`'s key), name the chosen ones in `room.src.json` → `plate_candidates`, then run `plate.py` before the above. The candidates are gitignored. To check fringes: `sweep.py --tag after`, then `build.py` and `capture.py --set <piece> --cols 10 --cell 240x220 --zoom 1.8 --name sweep-<piece>`. `sweep.py --ref <commit> --margin 0` counts an older commit's layers under the old rule.
 
-**Status:** built, awaiting Chanté's eye. **Recompose** (plate × shadows, then layers, from the quantised files, against the painting; per channel, 0–255):
-- whole painting: mean 0.030, max 121;
-- inside the holes: mean 0.13, with 0.52% of pixels off by more than 8;
-- per mask (mean / max / share off by more than 8): table 0.10 / 109 / 0.30%, cream cushion 0.08 / 70 / 0.20%, green cushion 0.06 / 29 / 0.10%, armchair 0.05 / 36 / 0.06%, stool 0.08 / 20 / 0.07%, desk 0.08 / 78 / 0.20%, chair 0.12 / 53 / 0.74%, balustrade 0.19 / 121 / 0.95%.
+**Status:** built, awaiting Chanté's eye. **Recompose** (plate × shadows, then layers, from the quantised files, against the painting; per channel, 0–255), after the fringe cleanup:
+- whole painting: mean 0.031, max 117 (before the cleanup: 0.030, 121);
+- inside the holes: mean 0.13, with 0.51% of pixels off by more than 8 (before: 0.52%);
+- where the trim exposed the plate (32,979 px): mean 0.22, max 70, 56 px off by more than 8 — thin one-pixel lines on the chair's right post, the window sill and a balustrade rail, invisible composed at 3× (`out/exposed-spots.png`);
+- per mask (mean / max / share off by more than 8): table 0.10 / 109 / 0.31%, cream cushion 0.09 / 70 / 0.22%, green cushion 0.06 / 29 / 0.11%, armchair 0.05 / 36 / 0.06%, stool 0.08 / 20 / 0.06%, desk 0.09 / 78 / 0.22%, chair 0.15 / 70 / 0.80%, balustrade 0.19 / 117 / 0.92%.
 
-These numbers are small largely by construction (de-matting is exact wherever a layer has alpha); they catch overlaps, clipping and lost pixels, not ugly seams. The JS rule agrees with `depth.py` on 248 depth cases and 722 walkable points.
+These numbers are small largely by construction (de-matting is exact wherever a layer has alpha); they catch overlaps, clipping and lost pixels, not ugly seams. The JS rule agrees with `depth.py` on 2,728 depth cases and 722 walkable points.
 
 What the grids show:
 - **Order is right.** In front of every layer nothing covers her. Behind the table the top covers her lower half, including close behind its back edge where the hand-traced map failed. Behind the balustrade posts the post tops cross her feet. The desk no longer cuts her once its top's overhang has an extent.
 
+**Fringe cleanup (2026-09-13, after Chanté: "I can see the fringes in the plate only mode and I wonder if those areas would clip her").** Plate-only seams can't clip her (the plate is always under her); floor a *layer* carries can, because layers draw over her. Four new scripts:
+- `fringe.py` measures that floor. A layer pixel is floor-coloured when it matches a nearby floor pixel of the painting (within 16 RGB, and nearer than to the piece's own colours), or is a nearby floor colour in shade. `--show` draws it in cyan, and its attribution says which step of the matte kept each pixel.
+- `sweep.py` walks her in 8px steps behind and beside every piece and counts her pixels covered by floor-coloured layer pixels.
+- `look.py` cuts 4–5× close-ups of the painting, the room composed with her, and the layers alone.
+- `capture.py --set <piece>` renders a sweep as a grid.
+
+*The cause:* the matte kept floor where the inpaint disagreed with the painting near an edge (62–97% of the floor-coloured pixels differed from the inpaint by more than 40). The colour-line edge kept most of them on solid pieces (55–79%), and the leaf matte kept most on the desk's and balustrade's ivy (55–59%). The rest sat inside body polygons traced too generously (9–23%): the chair's right post took in floor, and the first rail polygon cut across floor.
+
+*The fix* (`plate.py` → the trim):
+- A layer loses its pixels beyond its own polygons, and anything below its ground outline except solid parts and leaves.
+- It loses floor-coloured pixels joined to empty space or within 4px of it, floor between leaves, and leftover bits under 10px.
+- The polygons were re-traced for the chair's right post and the balustrade's left rail and spindles.
+- Two trim passes run, then the edges are hardened (one-pixel holes filled and partial alpha raised inside the polygons, so her cloak doesn't speckle through), then a last trim.
+- Where the trim exposed the plate, the plate becomes the painting's own floor relit by the shadow beside it, so the room still matches the painting.
+- The depth rule gained a **margin**: a ground point counts as in front of her only when it is more than 4px lower than her feet, so a footprint corner level with her feet no longer covers her hem.
+
+*Fringe px over her across the sweeps* (committed layers with the old rule → now):
+
+| Piece | Before | Now |
+|---|---|---|
+| table (98 frames) | 11,806 | 0 |
+| desk (36) | 2,291 | 0 |
+| balustrade (80) | 1,719 | 0 |
+| green cushion (21) | 1,488 | 0 |
+| armchair (29) | 1,124 | 0 |
+| cream cushion (10) | 0 | 0 |
+| stool (19) | 0 | 0 |
+| chair (17) | 0 | 0 |
+
+The zeros are not independent evidence: the trim uses the same classifier the count does. The sweep grids (`out/sweep-<piece>.png`) were read by eye, and no rug or plank patch is left over her.
+
 **Known issues:**
-- (1) Close behind the table, a few one-pixel teeth of her cloak show through the tabletop's back-left edge.
-- (2) The table's plant and the desk's plant are difference-matted against an inpaint whose rug (or wall) doesn't match the painting's, so they carry rug flecks and a cream flower over her hood.
-- (3) The chair carries a strip of floor between its right post and the throw.
-- (4) Level with a footprint corner, the corner covers a few px of her hem.
-- (5) **Plate only** has seams hugging every silhouette: the rug's flowers break along the table's outline, and dark ghosts of its front legs remain. Plank lines and the window's light patches don't line up under the chair and by the armchair. Under the balustrade the plate is a patchwork of floor and stair. None of this shows with the layers on.
-- (6) The stair, the right-hand bookcase and the log basket stay in the plate as blockers.
-- (7) The floor's front edge by the balustrade is a guess (the rails run down a stair, so floor level there is ambiguous).
-- (8) Anchors are proposals.
-- (9) API: 10 images logged at about $0.54, plus two requests that hung and were killed (possibly billed, about $0.22 more).
+- (1) Where she stands behind the table's plant, the desk's plant or the ivy, a few single pixels of her white cloak show between leaf edges. That is her own figure through gaps in the leaves, not floor, but it reads as speckle at 4×. It is barely visible at room scale.
+- (2) The tabletop's back edge still lets one-pixel specks of her cloak through in some sweep frames (table 3–8, 29–31, 51–53).
+- (3) The chair sweep never puts the chair over her: the floor by the desk is narrow. The chair's cleanup was judged in the tinted layer and close-ups, not by the count.
+- (4) **Plate only** has seams hugging every silhouette: the rug's flowers break along the table's outline, and dark ghosts of its front legs remain. Plank lines and the window's light patches don't line up under the chair and by the armchair. Under the balustrade the plate is a patchwork of floor and stair. None of this shows with the layers on.
+- (5) The stair, the right-hand bookcase and the log basket stay in the plate as blockers.
+- (6) The floor's front edge by the balustrade is a guess (the rails run down a stair, so floor level there is ambiguous).
+- (7) Anchors are proposals.
+- (8) API: 10 images logged at about $0.54, plus two requests that hung and were killed (possibly billed, about $0.22 more). The cleanup used no API calls.
 
 ## `shadow-mock.py` — Lumi's shadows on the room paintings
 

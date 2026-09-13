@@ -18,7 +18,8 @@
   "note": "hood top to feet in painting px at every depth; halfWidth is her cloak at her feet, reach how far her drawing spreads either side of them (hem, hands), clearance her body's reach on the floor"
  },
  "depth": {
-  "rule": "An item draws over Lumi when some point of its ground polygon (extent if given, else footprint) lies in one of her page columns (feet x \u00b1 halfWidth) lower on the page than her feet. In one page column two ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider parts of her drawing: if its ground comes within her reach (feet x \u00b1 reach), test at its column nearest her feet; out of reach it cannot overlap her. Order the layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
+  "rule": "An item draws over Lumi when some point of its ground polygon (extent if given, else footprint) lies in one of her page columns (feet x \u00b1 halfWidth) lower on the page than her feet. In one page column two ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider parts of her drawing: if its ground comes within her reach (feet x \u00b1 reach), test at its column nearest her feet; out of reach it cannot overlap her. A ground point counts as lower only by more than `margin` px, so a footprint corner level with her feet doesn't cover her hem. Order the layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
+  "margin": 4,
   "order": [
    "armchair",
    "stool",
@@ -93,8 +94,8 @@
    "id": "armchair",
    "src": "layers/armchair.png",
    "offset": [
-    748,
-    221
+    750,
+    223
    ],
    "shadow": {
     "src": "layers/armchair-shadow.png",
@@ -161,8 +162,8 @@
    "id": "stool",
    "src": "layers/stool.png",
    "offset": [
-    946,
-    301
+    948,
+    303
    ],
    "shadow": {
     "src": "layers/stool-shadow.png",
@@ -238,8 +239,8 @@
    "id": "desk",
    "src": "layers/desk.png",
    "offset": [
-    68,
-    235
+    77,
+    238
    ],
    "shadow": {
     "src": "layers/desk-shadow.png",
@@ -306,14 +307,14 @@
    "id": "chair",
    "src": "layers/chair.png",
    "offset": [
-    310,
+    314,
     373
    ],
    "shadow": {
     "src": "layers/chair-shadow.png",
     "offset": [
      290,
-     387
+     378
     ]
    },
    "footprint": [
@@ -367,8 +368,8 @@
    "id": "table",
    "src": "layers/table.png",
    "offset": [
-    629,
-    512
+    633,
+    515
    ],
    "shadow": {
     "src": "layers/table-shadow.png",
@@ -435,13 +436,13 @@
    "id": "cushion-cream",
    "src": "layers/cushion-cream.png",
    "offset": [
-    640,
-    668
+    644,
+    670
    ],
    "shadow": {
     "src": "layers/cushion-cream-shadow.png",
     "offset": [
-     340,
+     339,
      668
     ]
    },
@@ -496,8 +497,8 @@
    "id": "cushion-green",
    "src": "layers/cushion-green.png",
    "offset": [
-    822,
-    682
+    825,
+    685
    ],
    "shadow": {
     "src": "layers/cushion-green-shadow.png",
@@ -557,8 +558,8 @@
    "id": "balustrade",
    "src": "layers/balustrade.png",
    "offset": [
-    203,
-    690
+    205,
+    692
    ],
    "shadow": null,
    "footprint": [
@@ -2535,8 +2536,8 @@
   }
  ],
  "recompose": {
-  "meanAbs": 0.03,
-  "maxAbs": 121,
+  "meanAbs": 0.031,
+  "maxAbs": 117,
   "perMask": {
    "armchair": {
     "meanAbs": 0.05,
@@ -2546,37 +2547,37 @@
    "stool": {
     "meanAbs": 0.08,
     "maxAbs": 20,
-    "over8": 0.0007
+    "over8": 0.0006
    },
    "desk": {
-    "meanAbs": 0.08,
+    "meanAbs": 0.09,
     "maxAbs": 78,
-    "over8": 0.002
+    "over8": 0.0022
    },
    "chair": {
-    "meanAbs": 0.12,
-    "maxAbs": 53,
-    "over8": 0.0074
+    "meanAbs": 0.15,
+    "maxAbs": 70,
+    "over8": 0.008
    },
    "table": {
     "meanAbs": 0.1,
     "maxAbs": 109,
-    "over8": 0.003
+    "over8": 0.0031
    },
    "cushion-cream": {
-    "meanAbs": 0.08,
+    "meanAbs": 0.09,
     "maxAbs": 70,
-    "over8": 0.002
+    "over8": 0.0022
    },
    "cushion-green": {
     "meanAbs": 0.06,
     "maxAbs": 29,
-    "over8": 0.001
+    "over8": 0.0011
    },
    "balustrade": {
     "meanAbs": 0.19,
-    "maxAbs": 121,
-    "over8": 0.0095
+    "maxAbs": 117,
+    "over8": 0.0092
    }
   }
  }

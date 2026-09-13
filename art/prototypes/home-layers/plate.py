@@ -38,6 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, HERE)
 import depth  # noqa: E402
+import fringe  # noqa: E402
 from inpaint import MARGIN, hole_for, poly_mask  # noqa: E402
 
 OUT = os.path.join(HERE, 'out')
@@ -131,10 +132,12 @@ grown_all = ndi.binary_dilation(anyitem, iterations=GROW)
 PB = np.zeros_like(orig)           # the floor colour next to a solid edge, and how much to trust it, for the plate under the edge
 PBw = np.zeros((H, W))
 alpha = {}
+DIAG = {}
 for n, i in enumerate(order):
     core = ndi.binary_erosion(solid[i], iterations=CORE) & own[i]
     region = (ndi.binary_dilation(solid[i], iterations=GROW) | ndi.binary_dilation(fol[i], iterations=GROW)) & IN & (near_item == n)
     a = np.where(region, matte, 0.0)
+    use = np.zeros((H, W), bool)
     if core.any():
         # the colour line: in a solid polygon's band, the pixel's place between the item's own colour nearby (from its
         # core) and the floor's (the painting just outside every polygon) — the difference from the inpaint is unreliable
@@ -160,6 +163,7 @@ for n, i in enumerate(order):
     A = np.where(core, 1.0, a)
     A[A < 0.02] = 0
     alpha[i] = A
+    DIAG[i] = dict(core=core, use=use, folreg=region & ndi.binary_dilation(fol[i], iterations=GROW), A_pre=A.copy(), gaps=gaps)
 
 cover = np.any([alpha[i] > 0 for i in order], axis=0)
 w = np.maximum(np.clip(ndi.gaussian_filter(cover.astype(float), 1.0) * 2, 0, 1) * IN, cover)
@@ -174,10 +178,71 @@ plate = np.clip(plate, 0, 255)
 need = np.where(orig > plate, (orig - plate) / np.maximum(255 - plate, 1), (plate - orig) / np.maximum(plate, 1)).max(axis=2)
 for i in order:
     alpha[i] = np.where(alpha[i] > 0, np.maximum(alpha[i], np.clip(need, 0, 1)), 0)
+# what each step of the matte kept, for fringe.py's attribution
+for i in order:
+    ys, xs = np.where((alpha[i] > 0) | DIAG[i]['use'] | DIAG[i]['folreg'])
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    np.savez_compressed(os.path.join(OUT, f'diag-{i}.npz'), origin=np.array([y0, x0]),
+                        dinp=d[y0:y1, x0:x1].astype(np.float32),
+                        **{k: (v[y0:y1, x0:x1].astype(np.float32) if k == 'A_pre' else v[y0:y1, x0:x1]) for k, v in DIAG[i].items()})
 lum_p = plate @ LUM
 # the feather, where the plate is part inpaint and nothing covers it: the darkening left over goes to the shadow
 feather = (w > 0) & ~cover & HOLE
 SH = np.where(feather, np.clip(1 - lum_o / np.maximum(lum_p, 1), 0, 0.85), SH)
+
+# ---- the trim: floor a layer carries is not the piece, and layers draw over her -----------------------------------
+# A layer loses (alpha 0): its pixels beyond its own (ungrown) polygons; below its ground outline, anything not inside a
+# solid polygon or foliage (only legs reach below it); floor-coloured pixels (fringe.py) joined to those or to where the
+# layer is already empty through other floor-coloured pixels; floor-coloured pixels in foliage (rug between leaves);
+# and then any bit under 10px left touching neither its solid core nor a leaf.
+TRIM = np.zeros((H, W), bool)
+HARD = []
+for i, rnd in [(i, r) for r in range(3) for i in order]:   # twice: the first trim exposes edges the second can reach;
+    A = alpha[i]                                            # then hardened, and trimmed once more
+    if rnd == 2:
+        # teeth: a partial or one-pixel-empty edge lets her cloak show through the piece in white specks. Inside its
+        # polygons (never where the trim took floor), fill one-pixel holes and raise partial alpha — only up, so the
+        # de-matted colour stays in range and the recompose exact; the third trim takes back anything that is floor.
+        inside = (solid[i] | fol[i]) & ~TRIM
+        solidish = A > 0.5
+        holes1 = ndi.binary_closing(solidish, structure=np.ones((3, 3)), iterations=1) & ~solidish & inside
+        raised = np.where(A > 0, np.maximum(A, smoothstep(0.1, 0.45, A)), 0)
+        A = np.where(holes1, np.maximum(raised, 1.0), np.where(inside, raised, A))
+        HARD.append((i, int(holes1.sum()), int(((A > alpha[i] + 0.05) & ~holes1).sum())))
+        alpha[i] = A
+    fl = fringe.floor_like(orig, A, solid[i], fol[i], anyitem)[0]
+    edge = (A > 0) & ndi.binary_dilation(A == 0, iterations=4)   # floor-coloured within 4px of where the layer is empty
+    outside = (A > 0) & ~solid[i] & ~fol[i]
+    below = np.zeros((H, W), bool)
+    g = ground[i]
+    for x in range(max(0, int(np.ceil(min(p[0] for p in g)))), min(W, int(max(p[0] for p in g)) + 1)):
+        m = depth.strip_max_y(g, x, x)
+        if m is not None:
+            below[int(m) + 2:, x] = True
+    below &= (A > 0) & ~solid[i] & ~fol[i]
+    seeds = fl & ndi.binary_dilation((A == 0) | outside | below, iterations=1)
+    trim = outside | below | ndi.binary_propagation(seeds, mask=fl) | (fl & ndi.binary_dilation(fol[i], iterations=GROW)) | (fl & edge)
+    keep = (A > 0) & ~trim
+    lab, cnt = ndi.label(keep, structure=np.ones((3, 3)))
+    if cnt:
+        anchor = ndi.binary_erosion(solid[i], iterations=CORE) | (fol[i] & (A > 0.5))
+        sizes = ndi.sum(np.ones_like(lab), lab, range(1, cnt + 1))
+        touch = ndi.maximum(anchor, lab, range(1, cnt + 1))
+        trim |= np.isin(lab, [k + 1 for k in range(cnt) if sizes[k] < 10 and not touch[k]])
+    trim &= A > 0
+    print(f'  trim pass {rnd + 1} {i:14s} {int(trim.sum()):5d} px (alpha-weighted {A[trim].sum():7.1f}) of {int((A > 0).sum())}')
+    alpha[i] = np.where(trim, 0, A)
+    TRIM |= trim
+for i, nh, nr in HARD:
+    print(f'  hardened {i:14s} {nh:5d} one-pixel holes filled, {nr:5d} partial edge px raised')
+# where the trim exposed the plate, the plate is the painting's own floor, relit by the shadow spread in from beside it
+cover = np.any([alpha[i] > 0 for i in order], axis=0)
+expose = TRIM & ~cover
+SHf = np.clip(spread(SH, HOLE & ~cover & ~TRIM, 1.5, 6), 0, 0.85)
+plate = np.where(expose[:, :, None], np.clip(orig / (1 - SHf)[:, :, None], 0, 255), plate)
+lum_p = plate @ LUM
+SH = np.where(expose, np.clip(1 - lum_o / np.maximum(lum_p, 1), 0, 0.85), SH)
+print(f'trim: {int(expose.sum())} px of plate exposed')
 
 lit = [n for n, i in enumerate(order) if byid[i]['shadow']]
 near_lit = np.array(lit)[np.argmin([ndi.distance_transform_edt(~items[order[n]]) for n in lit], axis=0)]
@@ -199,6 +264,11 @@ print(f"recompose |error| (0-255, per channel): whole painting mean {report['ove
 if report['holes']:
     print(f"  inside the holes: mean {report['holes'][0]:.2f} max {report['holes'][1]:.0f}, "
           f"{100 * (err.max(axis=2)[union] > 8).mean():.2f}% of their pixels off by more than 8")
+if expose.any():
+    ex = err.max(axis=2)[expose]
+    print(f'  where the trim exposed the plate ({int(expose.sum())} px): mean {err[expose].mean():.2f} max {err[expose].max():.0f}, '
+          f'{100 * (ex > 8).mean():.2f}% off by more than 8')
+    np.savez_compressed(os.path.join(OUT, 'exposed.npz'), expose=expose, err=err.max(axis=2).astype(np.float32))
 per = {}
 for i in order:
     m = poly_mask([byid[i]['mask']], (W, H))
@@ -261,9 +331,11 @@ doc = {
                 "ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical "
                 "extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider "
                 "parts of her drawing: if its ground comes within her reach (feet x ± reach), test at its column nearest "
-                "her feet; out of reach it cannot overlap her. Order the "
+                "her feet; out of reach it cannot overlap her. A ground point counts as lower only by more than `margin` "
+                "px, so a footprint corner level with her feet doesn't cover her hem. Order the "
                 "layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, "
                 "back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
+        'margin': depth.MARGIN,
         'order': order,
         'infront': pairs,
     },
