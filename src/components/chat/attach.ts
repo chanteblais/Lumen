@@ -12,7 +12,7 @@ import { SHARED_FILE_LIMITS, sharedFileKind, sharedMediaType } from "@/core/shar
 const PHOTO_EDGE = 1600;
 
 /** The files to share so far, and one line in Lumi's voice for any that couldn't come along. */
-export type Attached = { parts: FileUIPart[]; problem?: string };
+type Attached = { parts: FileUIPart[]; problem?: string };
 
 export async function attachFiles(files: readonly File[], already: readonly FileUIPart[]): Promise<Attached> {
   const parts = [...already];

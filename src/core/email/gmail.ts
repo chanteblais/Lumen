@@ -51,7 +51,7 @@ export function gmailReader(token: string, fetchImpl: typeof fetch = fetch): Ema
 
 /* ------------------------------------------------------------- parsing */
 
-export type GmailRaw = {
+type GmailRaw = {
   id: string;
   threadId: string;
   internalDate?: string;

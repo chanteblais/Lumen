@@ -8,7 +8,7 @@
  */
 import type { TextPart } from "ai";
 
-export type SharedFileKind = "image" | "pdf" | "text";
+type SharedFileKind = "image" | "pdf" | "text";
 
 /** What the transcript keeps in a file's place: the data of a `data-shared-file` part. */
 export type SharedFileNote = { name: string; kind: SharedFileKind };
@@ -79,7 +79,7 @@ function dataUrlBytes(url: unknown): Uint8Array | undefined {
   }
 }
 
-export type SharedFilesProblem = "too_many" | "unsupported" | "not_inline" | "too_large";
+type SharedFilesProblem = "too_many" | "unsupported" | "not_inline" | "too_large";
 
 /** Why a message's files can't go to Lumi, or undefined when they can: each one inline, a kind she reads, within the limits. */
 export function sharedFilesProblem(parts: readonly Part[]): SharedFilesProblem | undefined {

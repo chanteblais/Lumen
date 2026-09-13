@@ -11,9 +11,9 @@ import { appendEvent, type ActionSource } from "./events";
 import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
-export const STALE_AFTER_MS = 14 * 86_400_000;
+const STALE_AFTER_MS = 14 * 86_400_000;
 
-export type CreateIntentionInput = {
+type CreateIntentionInput = {
   title: string;
   nextAction?: string | null;
   note?: string | null;
@@ -24,7 +24,7 @@ export type CreateIntentionInput = {
   sourceMessageId?: string | null;
 };
 
-export type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
+type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
 
 export async function createIntention(db: Db, userId: string, input: CreateIntentionInput): Promise<Intention> {
   return atomic(db, async (tx) => {
@@ -152,7 +152,7 @@ export async function declineIntention(db: Db, userId: string, id: string, reaso
   });
 }
 
-export type Decline = { intentionId: string; reason: string | null; at: Date };
+type Decline = { intentionId: string; reason: string | null; at: Date };
 export const DECLINE_EVENT_TYPE = "intention.declined";
 
 /** Pure: today's declines from recent events (newest first). Feeds the plan (never Right now again today) and the context block. */

@@ -30,7 +30,7 @@ export function declineLabel(reason: string | null | undefined): string | undefi
  * Lumi's line on the card under the new Right now, once an answer is tapped.
  * Fixed per reason so the card can change at once, with no model call.
  */
-export const DECLINE_NOTES: Record<DeclineReason, string> = {
+const DECLINE_NOTES: Record<DeclineReason, string> = {
   too_big: "Something smaller, then.",
   too_tired: "An easier one instead.",
   unclear: "This one’s clearer to start.",

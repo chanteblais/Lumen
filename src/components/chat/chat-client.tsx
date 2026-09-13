@@ -15,14 +15,14 @@ import type { CoherenceUIMessage } from "@/core/domain/conversations";
 export const LUMI_LOST_THREAD = "I lost the thread for a second. Say that again?";
 
 /** The tallest a message box grows before it scrolls, in px (the Home composer's; the bubble's was 168). */
-export const MESSAGE_BOX_MAX_PX = 160;
+const MESSAGE_BOX_MAX_PX = 160;
 
 /**
  * Send only the new message; the server holds the transcript. With it, where
  * you are as you send it — the page and which way in (`core/places.ts`) — so
  * Lumi knows "this one" on Today is the card in front of you.
  */
-export function chatTransport(via?: HeldChatSlot) {
+function chatTransport(via?: HeldChatSlot) {
   return new DefaultChatTransport<CoherenceUIMessage>({
     api: "/api/chat",
     prepareSendMessagesRequest: ({ messages, id }) => ({
@@ -36,9 +36,9 @@ export function chatTransport(via?: HeldChatSlot) {
 }
 
 /** Message ids are UUIDs on both sides: `messages.id` is a uuid column. */
-export const newMessageId = () => crypto.randomUUID();
+const newMessageId = () => crypto.randomUUID();
 
-export const isBusy = (status: string) => status === "submitted" || status === "streaming";
+const isBusy = (status: string) => status === "submitted" || status === "streaming";
 
 /**
  * A message's words. One text part per block of speech — Lumi often says a
@@ -88,7 +88,7 @@ export function useAutoResize(max = MESSAGE_BOX_MAX_PX) {
  * you've gone. `@ai-sdk/react` leaves a chat passed in as `useChat({ chat })`
  * running when the component unmounts.
  */
-export type HeldChatSlot = "home" | "bubble" | "lists-add";
+type HeldChatSlot = "home" | "bubble" | "lists-add";
 type Held = { chat: Chat<CoherenceUIMessage>; seed: CoherenceUIMessage[] | undefined };
 const held = new Map<HeldChatSlot, Held>();
 

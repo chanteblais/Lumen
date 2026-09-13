@@ -19,7 +19,7 @@ import type { EmailMessage, EmailReader } from "./types";
 export const MAIL_PAGE = 30;
 export const MAIL_PAGES = 2;
 
-export type ScanOutcome =
+type ScanOutcome =
   | { status: "fresh"; scan: MailScan }
   | { status: "looked"; scan: MailScan; suggested: Lead[] }
   | { status: "disconnected" };

@@ -6,13 +6,13 @@
  */
 
 /** The places in the nav (`components/shell/Sidebar.tsx`). */
-export type Place = "home" | "today" | "library" | "lists" | "insights" | "settings";
+type Place = "home" | "today" | "library" | "lists" | "insights" | "settings";
 
 /** Which way in: Home's composer, the companion's speech bubble, or the Lists sheet's Add task line (`HeldChatSlot`). */
-export type Via = "home" | "bubble" | "lists-add";
+type Via = "home" | "bubble" | "lists-add";
 
 /** Inside the Library: a thread's shelves, a thread open as a book, or the loose threads on the table. */
-export type LibraryDetail = "thread" | "book" | "table";
+type LibraryDetail = "thread" | "book" | "table";
 
 export type Where = { place: Place; via: Via; detail?: LibraryDetail };
 

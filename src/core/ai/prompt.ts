@@ -17,7 +17,7 @@ import { MESSAGE_WINDOW } from "@/core/domain/conversations";
 import { cachedPrefixOptions } from "./model";
 
 /** The window's start moves this many messages at a time: 30 to 39 messages ride along, and the history prefix holds for about five turns. */
-export const WINDOW_STEP = 10;
+const WINDOW_STEP = 10;
 /** Enough to fill the largest window. */
 export const WINDOW_LOAD = MESSAGE_WINDOW + WINDOW_STEP - 1;
 
@@ -40,7 +40,7 @@ const MARKER = /<\s*(\/?)\s*context\s*>/gi;
 /** The line that heads the context part. Fixed wording: Lumi reads it every turn. */
 export const CONTEXT_LEAD = "Written by the app for this turn, not typed by them: the context your instructions refer to, as things stand right now.";
 
-export function contextPart(context: string) {
+function contextPart(context: string) {
   return { type: "text" as const, text: `${OPEN}\n${CONTEXT_LEAD}\n\n${context}\n${CLOSE}` };
 }
 

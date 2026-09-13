@@ -20,21 +20,21 @@ export const NOTE_MIN = 3;
 export const NOTE_MAX = 280;
 export const SUMMARY_MAX = 900;
 export const TITLE_MAX = 80;
-export const ALIAS_MAX = 40;
-export const MAX_ALIASES = 8;
-export const THREAD_LIMIT = 100;
-export const NOTE_LIMIT = 600;
+const ALIAS_MAX = 40;
+const MAX_ALIASES = 8;
+const THREAD_LIMIT = 100;
+const NOTE_LIMIT = 600;
 /** Episodes older than this don't ride along; they stay in the table. */
-export const EPISODE_RECENT_DAYS = 14;
+const EPISODE_RECENT_DAYS = 14;
 
-export type LibraryActor = "user" | "lumi" | "consolidation";
+type LibraryActor = "user" | "lumi" | "consolidation";
 
 export const NOTE_KINDS = ["idea", "decision", "question", "progress", "detail"] as const satisfies readonly ThreadNoteKind[];
 
 /* -------------------------------------------------------------- pure */
 
 /** A title or alias as it's compared: "The Book!" ≈ "the book". */
-export function nameKey(s: string): string {
+function nameKey(s: string): string {
   return normalizeText(s);
 }
 
@@ -66,7 +66,7 @@ export function findThreadByName<T extends Pick<Thread, "title" | "aliases">>(he
  * A section, then a shelf in it, then a book: a thread sits at most this many
  * levels deep. Deeper nesting would ask the user to navigate a filing tree.
  */
-export const MAX_SHELF_DEPTH = 3;
+const MAX_SHELF_DEPTH = 3;
 
 type Shelvable = { id: string; parentId?: string | null };
 
@@ -104,7 +104,7 @@ export function whyNotShelve(held: Shelvable[], threadId: string, parentId: stri
 }
 
 export type ShelfBooks<T> = { shelf: T | null; books: T[] };
-export type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
+type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
 export type LibraryShelves<T> = { sections: LibrarySection<T>[]; loose: T[] };
 
 const byAge = <T extends Pick<Thread, "createdAt">>(a: T, b: T) => a.createdAt.getTime() - b.createdAt.getTime();
@@ -171,7 +171,7 @@ export async function listNoteHistory(db: Db, userId: string, threadId: string, 
     .limit(limit);
 }
 
-export async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
+async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
   const since = new Date(now.getTime() - EPISODE_RECENT_DAYS * 86_400_000);
   return db
     .select()
@@ -181,7 +181,7 @@ export async function listRecentEpisodes(db: Db, userId: string, now: Date, limi
     .limit(limit);
 }
 
-export type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
+type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
 
 /** Everything a turn chooses from — or nothing, and say so: the Library failing never takes the conversation down. */
 export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = new Date()): Promise<LibraryState> {
@@ -196,7 +196,7 @@ export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = n
 
 /* ------------------------------------------------------------ writes */
 
-export type Skip = { skipped: string };
+type Skip = { skipped: string };
 
 export async function createThread(
   db: Db,
@@ -506,9 +506,9 @@ export async function releaseConsolidationLease(db: Db, conversationId: string, 
     .where(and(eq(conversations.id, conversationId), eq(conversations.consolidatingUntil, until)));
 }
 
-export const CONSOLIDATION_FAILED = "memory.consolidation_failed";
+const CONSOLIDATION_FAILED = "memory.consolidation_failed";
 /** After one failure of a stretch wait 10 minutes, after two an hour, after three or more six hours. */
-export const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
+const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
 const FAILURE_WINDOW_MS = 7 * 86_400_000;
 
 /** Pure: when a stretch that failed at these times (newest first) may be tried again, or null when it never failed. */

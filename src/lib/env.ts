@@ -24,7 +24,7 @@ const optional = <T extends z.ZodType>(schema: T) =>
 
 const key = z.string().trim().min(1);
 
-export const serverEnvSchema = z
+const serverEnvSchema = z
   .object({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: key,
     CLERK_SECRET_KEY: key,
@@ -42,7 +42,7 @@ export const serverEnvSchema = z
     if (!env[modelKey]) ctx.addIssue({ code: "custom", path: [modelKey], message: "missing" });
   });
 
-export type EnvProblems = { missing: string[]; invalid: string[] };
+type EnvProblems = { missing: string[]; invalid: string[] };
 
 /** Which keys are missing and which are set but malformed. Names only. */
 export function envProblems(env: Record<string, string | undefined>): EnvProblems {

@@ -9,7 +9,7 @@ import type { Intention } from "@/db/schema";
 import { localDayDiff } from "@/core/time";
 
 /** A date within this many local days, today included, is "Due soon". */
-export const SOON_DAYS = 7;
+const SOON_DAYS = 7;
 /** Where something with no list is shown. */
 export const UNSORTED = "Unsorted";
 

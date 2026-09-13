@@ -18,7 +18,7 @@ import { appendEvent, latestEvent } from "./events";
  */
 export type Sitting = { openedAt: Date; gapSeconds: number };
 
-export const REENTRY_GAP_SECONDS = 7 * 86_400;
+const REENTRY_GAP_SECONDS = 7 * 86_400;
 
 export async function currentSitting(db: Db, userId: string): Promise<Sitting | undefined> {
   const e = await latestEvent(db, userId, "app.opened");
@@ -37,7 +37,7 @@ export function visitBeforeSitting(s: Sitting): Date {
   return new Date(s.openedAt.getTime() - s.gapSeconds * 1000);
 }
 
-export type EnsureUserInput = {
+type EnsureUserInput = {
   clerkUserId: string;
   /**
    * What Lumi calls them. Only needed when creating the row, so a caller that

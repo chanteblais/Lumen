@@ -17,10 +17,10 @@ import { visitBeforeSitting } from "@/core/domain/users";
 import { buildDayPlan, type PlanAsk, type PlanInputs } from "./plan";
 import { serially } from "./serial";
 
-export type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
+type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
 
 /** Why an existing plan is cut again. The rest of `PlanReason` is code-derived (new_day, first_items, advanced). */
-export type RecutReason = "capacity" | "declined" | "reentry" | "asked" | "priority";
+type RecutReason = "capacity" | "declined" | "reentry" | "asked" | "priority";
 
 /** A re-cut with what shaped it: `asked` carries the ask from chat (and Lumi's pick, so Today matches her reply). */
 export type Recut = { reason: RecutReason; ask?: PlanAsk };
@@ -145,7 +145,7 @@ export async function recutAfterDecline(db: Db, user: User, reason: string | nul
 }
 
 /** The newest Not this today, with its title — what a `declined` re-cut answers on the card. */
-export function lastDecline(snap: Pick<Snapshot, "declinedToday" | "openIntentions">): PlanInputs["justDeclined"] {
+function lastDecline(snap: Pick<Snapshot, "declinedToday" | "openIntentions">): PlanInputs["justDeclined"] {
   const d = snap.declinedToday[0];
   const i = d ? snap.openIntentions.find((x) => x.id === d.intentionId) : undefined;
   return d && i ? { title: i.title, reason: d.reason } : undefined;

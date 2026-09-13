@@ -26,10 +26,10 @@ import type { CSSProperties } from "react";
  * A new state is a new cell in one of these lists, never a new component.
  */
 export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
-export const LUMI_EYES = ["open", "half", "closed"] as const;
-export const LUMI_LOOPS = ["breath", "wave", "hands", "pickup"] as const;
+const LUMI_EYES = ["open", "half", "closed"] as const;
+const LUMI_LOOPS = ["breath", "wave", "hands", "pickup"] as const;
 /** Columns in the body sheet — the most cells in a loop. */
-export const LUMI_IDLE_FRAMES = 27;
+const LUMI_IDLE_FRAMES = 27;
 
 export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
@@ -41,7 +41,7 @@ const run = (n: number) => Array.from({ length: n }, (_, i) => i);
  * once (the retired foot loop replayed its glance in reverse); shorter loops
  * leave the sheet's trailing columns empty.
  */
-export const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
+const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
   breath: run(9),
   wave: run(24), // rest 0–1 · the hand rises 2–7 · two waves 8–15 · it lowers 16–21 · rest 22–23
   hands: run(16), // rest 0 · the hands meet 1–6 · rest together 7–9 · part 10–14 · rest 15
@@ -52,7 +52,7 @@ export const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
 /** Frames in each loop. */
 export const LUMI_LOOP_FRAMES = Object.fromEntries(LUMI_LOOPS.map((loop) => [loop, LUMI_LOOP_CELLS[loop].length])) as Record<LumiLoop, number>;
 /** The eye rows each loop has on the body sheet, in order; an eye state a loop lacks shows its open cell. */
-export const LUMI_LOOP_EYES: Record<LumiLoop, readonly LumiEyes[]> = {
+const LUMI_LOOP_EYES: Record<LumiLoop, readonly LumiEyes[]> = {
   breath: LUMI_EYES,
   wave: ["open"],
   hands: ["open"],
@@ -65,7 +65,7 @@ const SHEETS = {
   body: { src: "/lumi-free.webp", cols: LUMI_IDLE_FRAMES, rows: eyeRows(LUMI_LOOPS), w: 176, h: 208 },
 } as const;
 
-export type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };
+type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };
 
 export const headCell = (expression: LumiExpression): LumiCell => ({ sheet: "head", col: LUMI_EXPRESSIONS.indexOf(expression), row: 0 });
 /** One frame of a loop (0 to `LUMI_LOOP_FRAMES[loop] - 1`) with the given eye state. */

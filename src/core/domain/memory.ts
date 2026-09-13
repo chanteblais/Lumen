@@ -31,12 +31,12 @@ export type BeliefOp =
   /** The user's forgetting: the belief and every earlier wording of it, gone. Only the user. */
   | { op: "delete"; id: string };
 
-export type Actor = "user" | "lumi" | "reflection";
+type Actor = "user" | "lumi" | "reflection";
 
 export const MAX_OPS_PER_RUN = 8;
-export const RETIRE_BELOW = 0.2;
+const RETIRE_BELOW = 0.2;
 /** What a turn or a page loads; which of it Lumi sees is `core/ai/memory-select.ts`'s call. */
-export const ACTIVE_LIMIT = 200;
+const ACTIVE_LIMIT = 200;
 
 /** Pure: confidence after an op. Tested. */
 export function nextConfidence(current: number, op: "confirm" | "contradict"): number {
@@ -50,7 +50,7 @@ export function defaultConfidence(source: BeliefSource, actor: Actor): number {
   return 0.5;
 }
 
-export type ApplyResult = {
+type ApplyResult = {
   applied: BeliefOp[];
   skipped: { op: BeliefOp; why: string }[];
   /** New rows: creates, and the new wording a revise or a their-word upgrade wrote. */

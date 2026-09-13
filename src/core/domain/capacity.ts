@@ -10,10 +10,10 @@ import { localDate } from "@/core/time";
 import { appendEvent } from "./events";
 
 export type CapacityLevel = "low" | "normal" | "high";
-export type CapacityFlag = "overwhelmed" | "scattered" | "tired" | "focused";
+type CapacityFlag = "overwhelmed" | "scattered" | "tired" | "focused";
 export type CapacityReport = { level: CapacityLevel; flags?: CapacityFlag[]; note?: string; at: Date };
 
-export const CAPACITY_LEVELS: readonly CapacityLevel[] = ["low", "normal", "high"];
+const CAPACITY_LEVELS: readonly CapacityLevel[] = ["low", "normal", "high"];
 export function isCapacityLevel(s: unknown): s is CapacityLevel {
   return typeof s === "string" && (CAPACITY_LEVELS as readonly string[]).includes(s);
 }
@@ -21,7 +21,7 @@ export function isCapacityLevel(s: unknown): s is CapacityLevel {
 /** The event types that decide whether Today asks. */
 export const CAPACITY_EVENT_TYPES = ["capacity.reported", "capacity.asked"];
 
-export type CapacityState = {
+type CapacityState = {
   /** Today's latest report, if any. */
   report?: CapacityReport;
   /** The user skipped the prompt today — don't ask again. */

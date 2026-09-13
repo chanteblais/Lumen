@@ -7,7 +7,7 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-export type GapBucket =
+type GapBucket =
   | "just_now"
   | "minutes"
   | "hours"
@@ -71,7 +71,7 @@ export function localDayDiff(a: Date, b: Date, timeZone: string): number {
 }
 
 /** Local hour (0–23) for an instant in a timezone. */
-export function localHour(at: Date, timeZone: string): number {
+function localHour(at: Date, timeZone: string): number {
   const h = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", hour12: false }).format(at);
   return Number(h) % 24;
 }

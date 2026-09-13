@@ -15,9 +15,9 @@ import type { VoiceEngine, VoiceState } from "./voice/types";
  * for testing.
  */
 
-export type VoiceEngineName = "speech" | "local";
+type VoiceEngineName = "speech" | "local";
 
-export type VoiceInput = {
+type VoiceInput = {
   supported: boolean;
   engine?: VoiceEngineName;
   state: VoiceState;

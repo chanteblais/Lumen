@@ -53,17 +53,17 @@ export const LONG_SITTING = 24;
 export const KEEP_TAIL = 8;
 export const MAX_BATCH = 80;
 /** Less than this said in a stretch: nothing to consolidate, the watermark just moves. */
-export const MIN_CHARS = 60;
-export const MAX_NEW_THREADS = 2;
+const MIN_CHARS = 60;
+const MAX_NEW_THREADS = 2;
 export const MAX_NOTES_PER_RUN = 14;
 /** A new thread needs its name in this many of their messages, or this many notes filed to it. */
-export const NEW_THREAD_MIN_MENTIONS = 2;
-export const NEW_THREAD_MIN_NOTES = 3;
-export const MAX_SHELVINGS = 4;
+const NEW_THREAD_MIN_MENTIONS = 2;
+const NEW_THREAD_MIN_NOTES = 3;
+const MAX_SHELVINGS = 4;
 /** A new thread proposed only to gather loose ones earns its place by gathering this many; one a run. */
-export const NEW_SECTION_MIN_THREADS = 2;
+const NEW_SECTION_MIN_THREADS = 2;
 export const EPISODE_MAX = 600;
-export const LEFT_OFF_MAX = 200;
+const LEFT_OFF_MAX = 200;
 const MESSAGE_CHARS = 1200;
 const PROMPT_THREADS = 40;
 const PROMPT_NOTE_THREADS = 6;
@@ -179,7 +179,7 @@ export type ConsolidationInputs = {
 };
 
 /** The inputs block the model sees. */
-export function describeBatch(i: ConsolidationInputs): string {
+function describeBatch(i: ConsolidationInputs): string {
   const when = localFormat(i.timezone, "stamp");
   const lines = ["## The conversation (oldest first)"];
   for (const m of i.batch) {
@@ -200,9 +200,9 @@ export function describeBatch(i: ConsolidationInputs): string {
 
 /* ------------------------------------------------------------- clamp */
 
-export type PlannedNote = { thread: string; kind: ThreadNoteKind; content: string; source: "user_said" | "lumi_inferred"; sourceMessageId?: string; supersedes?: string };
+type PlannedNote = { thread: string; kind: ThreadNoteKind; content: string; source: "user_said" | "lumi_inferred"; sourceMessageId?: string; supersedes?: string };
 
-export type ConsolidationPlan = {
+type ConsolidationPlan = {
   episode: { summary: string; leftOff: string | null } | null;
   newThreads: { key: string; title: string; aliases: string[]; summary: string | null }[];
   /** `thread` is an existing thread id or a new thread's key. */
@@ -353,7 +353,7 @@ async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposa
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };
 
-export type ConsolidationResult =
+type ConsolidationResult =
   | { status: "nothing" }
   /** The stretch failed recently; it's tried again from `until`. */
   | { status: "waiting"; until: Date }
@@ -501,7 +501,7 @@ async function applyPlan(
 const inflight = new Map<string, Promise<void>>();
 
 /** Stretches with nothing to keep that one run moves past before it stops, whatever `passes` says (each is a few queries, no model call). */
-export const MAX_EMPTY_PER_RUN = 20;
+const MAX_EMPTY_PER_RUN = 20;
 
 /**
  * Fire-and-forget for `after()`: up to `passes` stretches that need a model call

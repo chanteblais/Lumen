@@ -219,7 +219,7 @@ export function buildContextBlock(input: ContextInput): string {
 }
 
 /** Where they are as they speak, in Lumi's terms: the page, what's in front of them there, and which way in. */
-export function describeWhere(w: Where): string {
+function describeWhere(w: Where): string {
   const library = { thread: "the Library, looking at a thread's shelves", book: "the Library, reading a thread as a book", table: "the Library, at the loose threads on the table" };
   const page = {
     home: "Home",
@@ -239,7 +239,7 @@ export function describeWhere(w: Where): string {
 }
 
 /** One change in Lumi's terms: "they" did it on a page, "you" did it through a tool. */
-export function describeActivity(a: ActivityItem): string {
+function describeActivity(a: ActivityItem): string {
   const t = `"${a.title}"`;
   const onPage = a.via === "app";
   switch (a.type) {

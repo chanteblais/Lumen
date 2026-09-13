@@ -19,7 +19,7 @@ const STYLES = {
   stamp: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
-export type LocalStyle = keyof typeof STYLES;
+type LocalStyle = keyof typeof STYLES;
 
 const made = new Map<string, Intl.DateTimeFormat>();
 

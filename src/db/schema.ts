@@ -23,7 +23,7 @@ const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" 
 
 /* ---------------------------------------------------------------- users */
 
-export type UserPreferences = {
+type UserPreferences = {
   v: 1;
   session_minutes: number;
   check_in_minutes: number;
@@ -218,7 +218,7 @@ export const episodes = pgTable(
  * (`buildShelves`), never stored. Resting and archival are derived from
  * `last_discussed_at`, never stored.
  */
-export type ShelvedBy = "user" | "lumi";
+type ShelvedBy = "user" | "lumi";
 export const threads = pgTable(
   "threads",
   {
@@ -310,7 +310,7 @@ export const dayPlans = pgTable(
  * See docs/domain.md → priorities.
  */
 export type PriorityScope = "week" | "while";
-export type PriorityRetiredReason = "let_go" | "superseded";
+type PriorityRetiredReason = "let_go" | "superseded";
 
 export const priorities = pgTable(
   "priorities",
@@ -340,7 +340,7 @@ export const priorities = pgTable(
  * an intention) or let it go. Never a count anywhere; never an inbox to clear.
  * See docs/domain.md → leads.
  */
-export type LeadStatus = "suggested" | "kept" | "dismissed";
+type LeadStatus = "suggested" | "kept" | "dismissed";
 export type LeadSource = "email";
 
 export const leads = pgTable(

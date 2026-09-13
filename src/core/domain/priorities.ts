@@ -14,7 +14,7 @@ import { returnedRow } from "./rows";
 
 /** The scopes a stated priority can be held over, as Lumi passes them. */
 export const PRIORITY_WHEN = ["this_week", "next_week", "for_a_while"] as const;
-export type PriorityWhen = (typeof PRIORITY_WHEN)[number];
+type PriorityWhen = (typeof PRIORITY_WHEN)[number];
 
 const DAY = 86_400_000;
 
@@ -55,7 +55,7 @@ export function describeScope(p: Pick<Priority, "scope" | "weekOf" | "retiredAt"
   return isAhead(p, today) ? "next week" : "this week";
 }
 
-export type HoldPriorityInput = { content: string; when: PriorityWhen; intentionId?: string; replacesId?: string };
+type HoldPriorityInput = { content: string; when: PriorityWhen; intentionId?: string; replacesId?: string };
 
 /**
  * Hold what they said matters. A named intention must be theirs (otherwise the
