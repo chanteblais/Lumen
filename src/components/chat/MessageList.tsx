@@ -24,8 +24,11 @@ const SIX_HOURS = 6 * 3_600_000;
  * The transcript in two parts: everything from before this page open, then
  * the greeting card, then what is said now. The page opens on the card — the
  * chat feels fresh every time you come to it — and the earlier conversation
- * is one scroll up, untouched. From the first message onward it follows the
- * newest line, as any chat does.
+ * is one scroll up, untouched. From the first message onward the new lines
+ * start under the card where you're looking, and the view only moves once the
+ * newest line would fall out of it — then it follows, as any chat does. (It
+ * used to pin the newest line to the bottom straight away, which pulled the
+ * card and the earlier conversation down the view on the first message.)
  *
  * Below it, `.chat-scroll::after` leaves one view's height of nothing: it is
  * what lets the card sit at the top of the view when little follows it (and
@@ -38,9 +41,23 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
   const firstScroll = useRef(true);
   const fresh = messages.length <= cardAt && !thinking && !error;
   useEffect(() => {
-    if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
-    else endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
+    const behavior = firstScroll.current ? "auto" : "smooth";
     firstScroll.current = false;
+    if (fresh) {
+      cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      return;
+    }
+    const end = endRef.current;
+    const view = end?.closest(".chat-scroll");
+    if (!end || !view) {
+      end?.scrollIntoView({ block: "end", behavior });
+      return;
+    }
+    // Follow only when the newest line is out of view: below the fold, or
+    // above it after the conversation was scrolled out of sight.
+    const at = end.getBoundingClientRect().bottom;
+    const { top, bottom } = view.getBoundingClientRect();
+    if (at > bottom || at < top) end.scrollIntoView({ block: "end", behavior });
   }, [messages, fresh]);
 
   const earlier = render(messages.slice(0, cardAt));
