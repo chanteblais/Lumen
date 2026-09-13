@@ -13,7 +13,8 @@ export default function SignUpPage() {
         <p className="label leading-[1.9]">A quieter way forward starts here.</p>
       </div>
       <div className="flex flex-1 items-start justify-center">
-        <SignUp />
+        {/* The path is given, not inferred — see the sign-in page: the @sheet slot's catch-all hides it. */}
+        <SignUp routing="path" path="/sign-up" />
       </div>
       <p className="mt-10 pb-6 text-center">
         <Link href="/privacy" className="label label-mute underline-offset-4 hover:underline">

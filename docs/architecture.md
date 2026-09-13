@@ -199,7 +199,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── library/page.tsx      the Library's room with each section's name on a bookcase and loose threads on the table
 │   │   ├── library/[id]/page.tsx a thread over the room: its shelves of books if it holds threads, else its book · [id]/book/page.tsx always the book · table/page.tsx the loose threads
 │   │   ├── lists/page.tsx        Lists opened directly: the sheet over the Library's room
-│   │   ├── @sheet/               a parallel slot for sheets opened from the nav: (.)lists/page.tsx intercepts /lists so Lists opens over the page you were on; default.tsx and [...catchAll]/page.tsx keep it empty otherwise
+│   │   ├── @sheet/               a parallel slot for sheets opened from the nav: (.)lists/page.tsx intercepts /lists so Lists opens over the page you were on; default.tsx and [...catchAll]/page.tsx keep it empty otherwise. That catch-all puts a `catchAll` param on every URL, which is why Clerk's `<SignIn>`/`<SignUp>` are given `path` explicitly (Clerk infers the path by dropping every catch-all param, so it read `/` and looped)
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── settings/page.tsx     "What Lumi knows" — beliefs grouped, whose word, Correct / Forget inline (components/settings/MemoryItem.tsx; api/beliefs/[id])
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
