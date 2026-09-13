@@ -5,26 +5,21 @@ import { buildContextBlock } from "@/core/ai/context";
 import { consolidateAfter } from "@/core/ai/consolidate";
 import { selectLibrary } from "@/core/ai/library-select";
 import { selectBeliefs } from "@/core/ai/memory-select";
-import { loadLibraryOrNothing } from "@/core/domain/library";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { stableWindow, WINDOW_LOAD, withContext } from "@/core/ai/prompt";
 import { hasReply } from "@/core/ai/reply";
-import { primeTodaysPlan, type Recut } from "@/core/ai/today-plan";
+import { needsFirstItems, primeTodaysPlan } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
+import { contextInputFor, describeError, needsPrime, parseChatBody, turnSignalsFor, userMessageFrom, userWordsFrom, watchToolCalls, type TurnOutcome } from "@/core/ai/turn";
 import { listRecentActivity } from "@/core/domain/activity";
-import {
-  ensureMainConversation,
-  loadRecentMessages,
-  messageText,
-  saveMessage,
-  type CoherenceUIMessage,
-} from "@/core/domain/conversations";
+import { countMessages, ensureMainConversation, loadRecentMessages, saveMessage, type CoherenceUIMessage } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
+import { loadLibraryOrNothing } from "@/core/domain/library";
 import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
-import { parseWhere } from "@/core/places";
 import { noteSharedFiles, readSharedFiles, sharedFileNoteText, sharedFilesProblem } from "@/core/shared-files";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
@@ -35,50 +30,43 @@ export const maxDuration = 60;
 const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 
 /**
- * One streamed turn. The client sends only the new user message; history
- * comes from the database so the transcript can't drift between tabs.
- * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
+ * One streamed turn. The client sends only the new user message (and where it
+ * was sent from); history comes from the database so the transcript can't drift
+ * between tabs. Tools execute server-side and loop up to five steps so Lumi can
+ * act, then speak. The turn's logic lives in `core/ai/turn.ts`; this is auth,
+ * loading, streaming and saving.
  */
 export async function POST(req: Request) {
   // Dev timings for the log line: getting ready (auth, loads, selection), her first word, the whole turn.
   const startedAt = Date.now();
   let firstWordAt: number | undefined;
   const { user, previous } = await requireVisit();
-  // Once the turn has streamed (and any tool writes have landed), make sure
-  // today's path exists — or re-cut it if this turn changed what shapes it
-  // (a capacity report, letting things go on the way back, an ask for a
-  // different shape of day). An ask carries Lumi's pick and wins over the plain
-  // reasons; capacity reaches the planner from the snapshot regardless.
-  let recut: Recut | undefined;
-  after(() => primeTodaysPlan(db(), user, recut));
-  // Fold finished stretches of conversation into memory — an episode per visit, notes filed
-  // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
-  after(() => consolidateAfter(db(), user, { passes: 1 }));
-
-  const body = (await req.json()) as { message?: CoherenceUIMessage; where?: unknown };
-  const incoming = body.message;
-  // The page they spoke from and which way in (Home, the bubble, Lists' Add task); nowhere if it doesn't parse.
-  const where = parseWhere(body.where);
-  if (!incoming || incoming.role !== "user" || !Array.isArray(incoming.parts)) {
-    return Response.json({ error: "message required" }, { status: 400 });
-  }
-  const userMessage: CoherenceUIMessage = {
-    id: isUuid(incoming.id) ? incoming.id : randomUUID(),
-    role: "user",
-    parts: incoming.parts,
-    metadata: { createdAt: new Date().toISOString(), ...(incoming.metadata ?? {}) },
-  };
+  // The message, and the page they spoke from and which way in (Home, the bubble, Lists' Add task) — nowhere if it isn't a place.
+  const body = parseChatBody(await req.json().catch(() => undefined));
+  if (!body) return Response.json({ error: "message required" }, { status: 400 });
+  const { where } = body;
+  const userMessage = userMessageFrom(body.message, new Date(), randomUUID);
   // Files shared with the message (Home's composer): each inline, a kind Lumi reads, within the limits.
   // The composer holds to the same limits, so this only turns away what didn't come from it.
   const filesProblem = sharedFilesProblem(userMessage.parts);
   if (filesProblem) return Response.json({ error: `files ${filesProblem}` }, { status: filesProblem === "too_large" ? 413 : 400 });
 
+  // Off the response, once the reply has streamed, reading what the turn changed:
+  // today's path primed or re-cut (a capacity report, letting things go on the way
+  // back, an ask for a different shape of day — an ask carries Lumi's pick and wins
+  // over the plain reasons), skipped when the turn changed nothing it's cut from;
+  // finished stretches of conversation folded into memory (core/ai/consolidate.ts).
+  const turn: TurnOutcome = { called: new Set() };
+  after(() => (needsPrime(turn) ? primeTodaysPlan(db(), user, turn.recut) : undefined));
+  after(() => consolidateAfter(db(), user, { passes: 1 }));
+
   const conversation = await ensureMainConversation(db(), user.id);
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick in the Library a minute ago is in Lumi's context before she reads the message.
-  const [history, snap, recentActivity, leads, mailScan, library] = await Promise.all([
-    loadRecentMessages(db(), conversation.id),
+  const [history, total, snap, recentActivity, leads, mailScan, library] = await Promise.all([
+    loadRecentMessages(db(), conversation.id, WINDOW_LOAD),
+    countMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
     MAIL_ON ? listSuggestedLeads(db(), user.id, 8) : undefined,
@@ -89,37 +77,46 @@ export async function POST(req: Request) {
   // Kept with a note in each shared file's place; the files themselves reach Lumi on this turn only (below).
   const kept = noteSharedFiles(userMessage);
   await saveMessage(db(), conversation.id, kept);
-  const all = [...history.filter((m) => m.id !== userMessage.id), kept];
+  // A window whose start moves in steps, so the history's prefix stays cached for several turns (core/ai/prompt.ts).
+  const resent = history.some((m) => m.id === userMessage.id);
+  const all = stableWindow([...history.filter((m) => m.id !== userMessage.id), kept], total + (resent ? 0 : 1));
+  turn.hadPlan = Boolean(snap.plan);
+  turn.firstItemsDue = needsFirstItems(snap, user.timezone);
 
-  const tools = buildTools({
-    db: db(),
-    userId: user.id,
-    timezone: user.timezone,
-    reentry: isReentry(snap.sitting),
-    onPlanChange: (change) => {
-      if (!recut || change.reason === "asked") recut = change;
-    },
-    mail: MAIL_ON ? lazyMailReader(user) : undefined,
-    // What they've actually said lately: a belief rests on their word only when its their_words is in here.
-    userWords: all
-      .filter((m) => m.role === "user")
-      .slice(-8)
-      .map((m) => ({ messageId: m.id, text: messageText(m) }))
-      .filter((w) => w.text),
-  });
+  const tools = watchToolCalls(
+    buildTools({
+      db: db(),
+      userId: user.id,
+      timezone: user.timezone,
+      reentry: isReentry(snap.sitting),
+      onPlanChange: (change) => {
+        if (!turn.recut || change.reason === "asked") turn.recut = change;
+      },
+      mail: MAIL_ON ? lazyMailReader(user) : undefined,
+      userWords: userWordsFrom(all),
+    }),
+    (name) => turn.called.add(name),
+  );
 
-  // What this turn is about — for choosing beliefs and for opening Library threads.
-  const rightNow = snap.plan?.rightNow ? snap.openIntentions.find((i) => i.id === snap.plan!.rightNow!.intentionId) : undefined;
-  const turn = {
-    message: messageText(userMessage),
-    recent: all.slice(-7, -1).map(messageText),
-    focus: [rightNow?.title],
-  };
   // Not every belief rides along: what she always honours, what this turn is about, the freshest projects.
-  const memory = selectBeliefs(snap.beliefs, turn);
   // The Library: threads this turn touches, opened; an index of the rest; visits that ended before the oldest message in view.
+  const signals = turnSignalsFor(userMessage, all, snap);
+  const memory = selectBeliefs(snap.beliefs, signals);
   const oldestInView = all[0]?.metadata?.createdAt;
-  const libraryView = selectLibrary(library.threads, library.notes, library.episodes, turn, { now: new Date(), windowStartsAt: oldestInView ? new Date(oldestInView) : new Date() });
+  const libraryView = selectLibrary(library.threads, library.notes, library.episodes, signals, { now: new Date(), windowStartsAt: oldestInView ? new Date(oldestInView) : new Date() });
+  const context = buildContextBlock(
+    contextInputFor({
+      user,
+      previous,
+      snap,
+      recentActivity,
+      memory,
+      library: { view: libraryView, unavailable: library.unavailable },
+      // Mail off: undefined leaves Their mail out of the context altogether.
+      mail: MAIL_ON ? { scan: mailScan ?? null, leads } : undefined,
+      where,
+    }),
+  );
 
   const readyAt = Date.now();
   const result = streamText({
@@ -129,42 +126,18 @@ export async function POST(req: Request) {
     // Stop (the send button while she talks) aborts the request: she stops writing and
     // calls no further tools; onEnd keeps what she had said.
     abortSignal: req.signal,
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      {
-        role: "system",
-        content: buildContextBlock({
-          displayName: user.displayName,
-          timezone: user.timezone,
-          where,
-          // The row is created with last_seen_at = created_at, so equality means the first ever turn.
-          lastSeenAt: previous.getTime() === user.createdAt.getTime() ? undefined : previous,
-          sitting: snap.sitting,
-          lists: snap.lists,
-          openIntentions: snap.openIntentions,
-          recentlyDone: snap.recentlyDone,
-          recentActivity,
-          beliefs: memory.chosen,
-          memoryHeldBack: memory.heldBack,
-          memoryUnavailable: snap.memoryUnavailable,
-          library: libraryView,
-          libraryUnavailable: library.unavailable,
-          capacity: snap.capacity,
-          plan: snap.plan,
-          declinedToday: snap.declinedToday,
-          priorities: snap.priorities,
-          // Mail off: undefined leaves Their mail out of the context altogether.
-          mailScan: MAIL_ON ? (mailScan ? { at: mailScan.at } : null) : undefined,
-          leads,
-        }),
-      },
-    ],
+    // The persona (and the tools) are the cached prefix; the conversation follows, and the context block,
+    // which changes every turn, rides last on the newest user message so the history before it caches too.
+    instructions: [{ role: "system", content: PERSONA, providerOptions: cachedPrefixOptions }],
     // This turn's files as she reads them (a text file as its words); earlier ones are notes, read as shared and not kept.
-    messages: await convertToModelMessages([...all.slice(0, -1), readSharedFiles(userMessage)], {
-      tools,
-      ignoreIncompleteToolCalls: true,
-      convertDataPart: sharedFileNoteText,
-    }),
+    messages: withContext(
+      await convertToModelMessages([...all.slice(0, -1), readSharedFiles(userMessage)], {
+        tools,
+        ignoreIncompleteToolCalls: true,
+        convertDataPart: sharedFileNoteText,
+      }),
+      context,
+    ),
     providerOptions: chatProviderOptions,
     onChunk: ({ chunk }) => {
       if (chunk.type === "text-delta") firstWordAt ??= Date.now();
@@ -173,7 +146,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""} ready=${readyAt - startedAt}ms firstWord=${firstWordAt ? `${firstWordAt - startedAt}ms` : "-"} done=${Date.now() - startedAt}ms`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${turn.recut ? ` recut=${turn.recut.reason}` : ""} ready=${readyAt - startedAt}ms firstWord=${firstWordAt ? `${firstWordAt - startedAt}ms` : "-"} done=${Date.now() - startedAt}ms`);
       }
     },
   });
@@ -183,16 +156,20 @@ export async function POST(req: Request) {
     generateMessageId: () => randomUUID(),
     sendReasoning: false,
     messageMetadata: ({ part }) => (part.type === "start" ? { createdAt: new Date().toISOString() } : undefined),
-    onError: () => LUMI_ERROR,
+    onError: (error) => {
+      // Ids only: a provider error carries the prompt, which is their conversation.
+      console.error(`[chat] turn failed user=${user.id} conversation=${conversation.id} message=${userMessage.id}: ${describeError(error)}`);
+      return LUMI_ERROR;
+    },
     onEnd: async ({ responseMessage }) => {
       // She can say nothing (a plain "ok" can need no answer), and a turn stopped
       // before a word leaves nothing either: no words and no tools is not saved (core/ai/reply.ts).
       if (!hasReply(responseMessage)) return;
-      await saveMessage(db(), conversation.id, responseMessage);
+      try {
+        await saveMessage(db(), conversation.id, responseMessage);
+      } catch (e) {
+        console.error(`[chat] couldn't save Lumi's reply user=${user.id} conversation=${conversation.id} message=${responseMessage.id}: ${describeError(e)}`);
+      }
     },
   });
-}
-
-function isUuid(s: unknown): s is string {
-  return typeof s === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }

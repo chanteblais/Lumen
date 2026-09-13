@@ -6,7 +6,7 @@
  * (`memory-rules.ts`) and appends an event with no words in it. See
  * docs/architecture.md → The Library.
  */
-import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { conversations, episodes, events, messages, threadNotes, threads, type Episode, type NoteSource, type Thread, type ThreadNote, type ThreadNoteKind } from "@/db/schema";
 import { normalizeText } from "@/core/words";
@@ -200,7 +200,8 @@ export type Skip = { skipped: string };
 export async function createThread(
   db: Db,
   userId: string,
-  input: { title: string; aliases?: string[]; summary?: string | null },
+  /** `theirWord`: Lumi makes it because they asked, in words the code found in their messages — their ask brings back even what they once had her forget. */
+  input: { title: string; aliases?: string[]; summary?: string | null; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ thread: Thread; existed: boolean } | Skip> {
@@ -210,24 +211,26 @@ export async function createThread(
   return atomic(db, (tx) => insertThread(tx, userId, title, input, actor, now));
 }
 
-async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
+async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null; theirWord?: boolean }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
   const held = await listThreads(db, userId);
   const same = findThreadByName(held, title) ?? (input.aliases ?? []).map((a) => findThreadByName(held, a)).find(Boolean);
   if (same) return { thread: same, existed: true };
-  if (actor !== "user" && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
+  // Only their own (checked) word brings back a forgotten thread; an inference or a consolidation run never does.
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
   const summary = input.summary ? cleanSummary(input.summary) : null;
   const [row] = await db
     .insert(threads)
     .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
     .returning();
-  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor }, occurredAt: now });
+  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor, ...(input.theirWord ? { their_word: true } : {}) }, occurredAt: now });
   return { thread: row, existed: false };
 }
 
 export async function fileNote(
   db: Db,
   userId: string,
-  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  /** `theirWord`: filed because they asked, in words the code found in their messages — lifts the forgotten check, as for a thread. */
+  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -243,7 +246,7 @@ async function insertNote(
   db: Db,
   userId: string,
   content: string,
-  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date,
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -252,7 +255,7 @@ async function insertNote(
   const current = await listCurrentNotes(db, userId, [thread.id]);
   const same = current.find((n) => isNearDuplicate(n.content, content));
   if (same) return { skipped: "already_held", existing: same };
-  if (actor !== "user" && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
   const replaced = input.supersedes ? current.find((n) => n.id === input.supersedes) : undefined;
   if (input.supersedes && !replaced) return { skipped: "supersedes a note that isn't current on this thread" };
   const [note] = await db
@@ -266,7 +269,7 @@ async function insertNote(
     type: "library.noted",
     subjectType: "thread",
     subjectId: thread.id,
-    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor },
+    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor, ...(input.theirWord ? { their_word: true } : {}) },
     occurredAt: now,
   });
   return { note, replaced };
@@ -316,6 +319,8 @@ export async function insertEpisode(
  * Put a thread under another (or take it off its shelf, `parentId` null).
  * Checks ownership and depth; Lumi and consolidation never move a thread the
  * user placed. Appends `library.shelved` with where it was and who moved it.
+ * `theirWord`: Lumi moves it because they said where it goes, in words the code
+ * found in their messages — their placement, which she won't later undo.
  */
 export async function shelveThread(
   db: Db,
@@ -323,20 +328,22 @@ export async function shelveThread(
   threadId: string,
   parentId: string | null,
   actor: LibraryActor,
+  opts: { theirWord?: boolean } = {},
 ): Promise<{ thread: Thread } | Skip> {
+  const theirs = actor === "user" || opts.theirWord === true;
   return atomic(db, async (tx) => {
     const held = await tx.select().from(threads).where(eq(threads.userId, userId));
     const thread = held.find((t) => t.id === threadId);
     const why = whyNotShelve(held, threadId, parentId);
     if (!thread || why) return { skipped: why ?? "not found" };
     if (thread.parentId === parentId) return { thread };
-    if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
+    if (!theirs && thread.shelvedBy === "user") return { skipped: "placed by them" };
     const [row] = await tx
       .update(threads)
-      .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
+      .set({ parentId, shelvedBy: parentId ? (theirs ? "user" : "lumi") : theirs ? "user" : null })
       .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
       .returning();
-    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
+    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor, ...(opts.theirWord ? { their_word: true } : {}) } });
     return { thread: row };
   });
 }
@@ -424,27 +431,26 @@ export async function isForgotten(db: Db, userId: string, content: string): Prom
  * stands in for it, so a missing message never re-reads the whole conversation.
  */
 export async function unconsolidatedMessages(db: Db, conversationId: string, watermarkId: string | null, limit = 200) {
-  let after: Date | undefined;
-  if (watermarkId) {
-    const [w] = await db.select({ createdAt: messages.createdAt }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
-    after = w?.createdAt;
-    if (!after) {
-      const [e] = await db
-        .select({ endedAt: episodes.endedAt })
-        .from(episodes)
-        .where(eq(episodes.conversationId, conversationId))
-        .orderBy(desc(episodes.endedAt))
-        .limit(1);
-      after = e?.endedAt;
-      console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${after ? `the latest episode's end (${after.toISOString()})` : "the start (no episode either)"}`);
-    }
+  const inConversation = eq(messages.conversationId, conversationId);
+  const read = (after: SQL | undefined) => db.select().from(messages).where(and(inConversation, after)).orderBy(asc(messages.createdAt), asc(messages.id)).limit(limit);
+  if (!watermarkId) return read(undefined);
+  const [w] = await db.select({ id: messages.id }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
+  if (w) {
+    // Compared inside Postgres, at its precision: `created_at` keeps microseconds and a Date read back keeps
+    // milliseconds, so `> watermark.createdAt` from JS would read the watermark message itself again — and when it
+    // ends its sitting, that one message is the whole stretch, claimed onto itself forever (live, 2026-09-13).
+    // The id breaks a tie between messages stored in the same microsecond.
+    return read(sql`(${messages.createdAt}, ${messages.id}) > (select w.created_at, w.id from ${messages} as w where w.id = ${watermarkId})`);
   }
-  return db
-    .select()
-    .from(messages)
-    .where(and(eq(messages.conversationId, conversationId), after ? gt(messages.createdAt, after) : undefined))
-    .orderBy(asc(messages.createdAt))
-    .limit(limit);
+  const [e] = await db
+    .select({ endedAt: episodes.endedAt })
+    .from(episodes)
+    .where(eq(episodes.conversationId, conversationId))
+    .orderBy(desc(episodes.endedAt))
+    .limit(1);
+  console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${e ? `the latest episode's end (${e.endedAt.toISOString()})` : "the start (no episode either)"}`);
+  // An episode's end was a message's time read into a Date (milliseconds): compare at that precision.
+  return read(e ? sql`date_trunc('milliseconds', ${messages.createdAt}) > ${e.endedAt}` : undefined);
 }
 
 /** The conversation, with its watermark still where a run found it. */

@@ -4,7 +4,7 @@
  * carries, the chat tools, forgetting, isolation and failure.
  */
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { consolidate, consolidateAfter, type ConsolidationInputs, type RawProposal } from "@/core/ai/consolidate";
 import { buildContextBlock } from "@/core/ai/context";
@@ -251,6 +251,29 @@ describe("consolidation", () => {
     expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(2);
   });
 
+  it("moves past stretches with nothing to keep and makes one model call a run by default (B18)", async () => {
+    const u = await createTestUser(db, "Oda");
+    await say(u, "2026-09-11T08:00:00Z", "assistant", "Still with it?");
+    await say(u, "2026-09-11T09:00:00Z", "user", "ok");
+    await say(u, "2026-09-11T10:00:00Z", "user", "Planning the garden: raised beds first, then a plum tree in the autumn.");
+    await say(u, "2026-09-11T10:01:00Z", "assistant", "Raised beds first.");
+    await say(u, "2026-09-11T12:00:00Z", "user", "Back again: the tax forms need doing before Friday, all three of them.");
+    await say(u, "2026-09-11T12:01:00Z", "assistant", "Before Friday, then.");
+    const propose = vi.fn(async (): Promise<RawProposal> => ({ episode: { summary: "You planned part of the day together." }, threads: [], notes: [] }));
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-11T15:00:00Z"), propose } });
+    expect(propose).toHaveBeenCalledTimes(1);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+    const lines = logged.mock.calls.map((c) => String(c[0]));
+    expect(lines.filter((l) => l.startsWith('[consolidate] {"status":"done"'))).toHaveLength(1);
+    expect(lines).toContain("[consolidate] moved past 2 messages with nothing to keep");
+    // The next trigger takes the next visit.
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-11T15:00:00Z"), propose } });
+    logged.mockRestore();
+    expect(propose).toHaveBeenCalledTimes(2);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(2);
+  });
+
   it("waits while the visit is still going, and moves past a stretch with nothing in it", async () => {
     const u = await createTestUser(db, "Val");
     await say(u, "2026-09-12T10:00:00Z", "user", "hi");
@@ -300,6 +323,32 @@ describe("the Library in conversation", () => {
     });
     expect(refiled).toMatchObject({ status: "done", notesFiled: 0 });
     expect(await listCurrentNotes(db, u.id, [threadId])).toEqual([]);
+  });
+
+  it("their checked word brings back a forgotten thread and note; a fragment or an inference can't (B4)", async () => {
+    const u = await createTestUser(db, "Rey");
+    const start = "start a thread for the Lisbon trip, we fly out on the 3rd of April";
+    const made = await call(toolsFor(u, said(start)).add_to_library, { new_thread: "Lisbon trip", kind: "detail", content: "They fly out on the 3rd of April.", their_words: start });
+    const forget = said("forget the Lisbon trip thread entirely");
+    expect(await call(toolsFor(u, forget).forget_from_library, { thread_id: made.thread_id, their_words: forget.text })).toMatchObject({ ok: true });
+
+    // A fragment lifted from a longer message is not their word: the forgotten thread stays gone.
+    const again = "honestly I keep thinking about the Lisbon trip and whether we should still go";
+    const fragment = await call(toolsFor(u, said(again)).add_to_library, { new_thread: "Lisbon trip", kind: "idea", content: "They may still go to Lisbon.", their_words: "the Lisbon trip" });
+    expect(String(fragment.error)).toMatch(/their word/);
+
+    // Their checked word brings the thread back.
+    const ask = said("start a thread for the Lisbon trip again, we're going after all");
+    const back = await call(toolsFor(u, ask).add_to_library, { new_thread: "Lisbon trip", kind: "decision", content: "They are going to Lisbon after all.", their_words: ask.text });
+    expect(back).toMatchObject({ thread: "Lisbon trip", held_as: "their word" });
+
+    // A forgotten note, filed without their words or on a fragment, is refused; on their words it comes back.
+    const inferred = await call(toolsFor(u, said("ok")).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April." });
+    expect(String(inferred.error)).toMatch(/forget/);
+    const flight = "we fly out on the 3rd of April, keep that";
+    const lifted = await call(toolsFor(u, said(flight)).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April.", their_words: "the 3rd of" });
+    expect(String(lifted.error)).toMatch(/forget/);
+    expect(await call(toolsFor(u, said(flight)).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April.", their_words: flight })).toMatchObject({ held_as: "their word" });
   });
 
   it("forgets a whole thread on their word", async () => {
@@ -373,7 +422,7 @@ describe("each user's Library is their own", () => {
   it("another user can't open, add to, find or forget a thread, and consolidation never shows them another's", async () => {
     const a = await createTestUser(db, "Ava");
     const b = await createTestUser(db, "Bo");
-    const held = await call(toolsFor(a, said("start a thread for my garden plan, raised beds")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "raised beds" });
+    const held = await call(toolsFor(a, said("start a thread for my garden plan, raised beds")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "a thread for my garden plan, raised beds" });
     const id = held.thread_id;
 
     const other = toolsFor(b, said("add to the garden plan and forget the garden plan"));
@@ -401,6 +450,31 @@ describe("each user's Library is their own", () => {
 });
 
 describe("the watermark", () => {
+  it("moves past a watermark whose time has microseconds: the message it points at is never read again (live, 2026-09-13)", async () => {
+    const u = await createTestUser(db, "Micro");
+    const c = await ensureMainConversation(db, u.id);
+    await say(u, "2026-09-12T06:21:00Z", "user", "Planning the garden: raised beds first, then a plum tree in the autumn.");
+    const last = await say(u, "2026-09-12T06:22:02Z", "assistant", "Raised beds first.");
+    await say(u, "2026-09-12T07:47:15Z", "user", "Back again: the tax forms need doing before Friday, all three of them.");
+    const newest = await say(u, "2026-09-12T07:47:22Z", "assistant", "Before Friday, then.");
+    // Postgres stores microseconds (a row's now()); a Date read back keeps milliseconds. The real rows all look like this.
+    await db.execute(sql`update messages set created_at = created_at + interval '849636 microseconds' where conversation_id = ${c.id}`);
+    // The first visit is already consolidated: the watermark is its last message, which ends its sitting.
+    await db.update(conversations).set({ summaryThroughMessageId: last }).where(eq(conversations.id, c.id));
+
+    expect((await unconsolidatedMessages(db, c.id, last)).map((m) => m.id)).not.toContain(last);
+    const propose = vi.fn<(inputs: ConsolidationInputs) => Promise<RawProposal>>(async () => ({ episode: { summary: "You sorted out the tax forms." }, threads: [], notes: [] }));
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-12T12:00:00Z"), propose } });
+    const lines = logged.mock.calls.map((x) => String(x[0]));
+    logged.mockRestore();
+    expect(propose).toHaveBeenCalledTimes(1);
+    expect(propose.mock.calls[0][0].batch.map((m) => m.id)).not.toContain(last);
+    const [moved] = await db.select().from(conversations).where(eq(conversations.id, c.id));
+    expect(moved.summaryThroughMessageId).toBe(newest);
+    expect(lines.some((l) => l.includes("moved past"))).toBe(false);
+  });
+
   it("reads from the latest episode's end when the watermark message is gone, not from the start", async () => {
     const u = await createTestUser(db, "Wim");
     const c = await ensureMainConversation(db, u.id);

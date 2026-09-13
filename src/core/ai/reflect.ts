@@ -8,7 +8,6 @@
  * user never sees it and never rates anything. See docs/architecture.md → The
  * understanding layer.
  */
-import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db/client";
@@ -16,12 +15,12 @@ import { users, type BeliefKind, type FocusSession, type MemoryNote, type User }
 import { ensureMainConversation, loadRecentMessages } from "@/core/domain/conversations";
 import { appendEvent, claimReflection, listEventsSince, reflectedOn } from "@/core/domain/events";
 import { applyBeliefOps, listActiveBeliefs, MAX_OPS_PER_RUN, type BeliefOp } from "@/core/domain/memory";
+import { BELIEF_KINDS } from "@/core/domain/memory-rules";
 import { getSession } from "@/core/domain/sessions";
 import { describeGap, dayPart } from "@/core/time";
 import { contentWords, normalizeText } from "@/core/words";
-import { chatModel, effortOptions } from "./model";
+import { proposeStructured } from "./structured";
 
-const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
 const MAX_MODEL_CONFIDENCE = 0.6;
 const MIN_MODEL_CONFIDENCE = 0.05;
 const NOTE_MAX = 200;
@@ -36,7 +35,7 @@ export const REFLECTION_TAIL_MS = 5 * 60_000;
 const RawOpSchema = z.object({
   op: z.enum(["create", "confirm", "contradict", "revise"]),
   id: z.string().optional().describe("For confirm / contradict / revise: the belief id from the list"),
-  kind: z.enum(KINDS).optional().describe("For create"),
+  kind: z.enum(BELIEF_KINDS).optional().describe("For create"),
   content: z.string().optional().describe("For create / revise: one sentence, present tense, about what works — never about who they are"),
   confidence: z.number().optional().describe(`For create, ${MIN_MODEL_CONFIDENCE}–${MAX_MODEL_CONFIDENCE}. Modest: one session is thin evidence`),
   note: z.string().optional().describe("For contradict: what went against it, in a few words"),
@@ -188,17 +187,16 @@ type Deps = {
 };
 
 async function proposeWithModel(inputs: SessionReflectionInputs): Promise<RawOp[]> {
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: REFLECTION_RULES },
-      { role: "system", content: describeSession(inputs) },
-    ],
+  const r = await proposeStructured({
+    name: "reflection",
+    kind: "reflect",
+    rules: REFLECTION_RULES,
+    inputs: describeSession(inputs),
     prompt: "Propose the belief operations this session justifies. Return only the structured list.",
-    output: Output.object({ schema: ReflectionSchema, name: "reflection" }),
-    providerOptions: effortOptions("low"),
+    schema: ReflectionSchema,
+    effort: "low",
   });
-  return r.output?.ops ?? [];
+  return r?.ops ?? [];
 }
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };
@@ -216,9 +214,10 @@ const live: Deps = { propose: proposeWithModel, now: () => new Date() };
 export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string, deps: Partial<Deps> = {}): Promise<{ applied: BeliefOp[] } | undefined> {
   const d = { ...live, ...deps };
   const now = d.now();
+  // The common case first, in one query: a session reflected on (or claimed) long ago, handed over again.
+  if (await reflectedOn(db, user.id, sessionId)) return undefined;
   const session = await getSession(db, user.id, sessionId);
   if (!session?.endedAt) return undefined;
-  if (await reflectedOn(db, user.id, session.id)) return undefined;
   if (!(await claimReflection(db, user.id, session.id, now))) return undefined;
   const until = new Date(session.endedAt.getTime() + REFLECTION_TAIL_MS);
 
@@ -275,12 +274,26 @@ export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone
   return { applied: ops };
 }
 
-/** Fire-and-forget for `after()`: never throws. */
-export async function reflectAfterSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string): Promise<void> {
+/**
+ * Sessions this process has already seen through reflection — run, found
+ * reflected or claimed, or not theirs. The abandoned session stays in the
+ * snapshot for a day and a half, so Home and every chat turn hand the same id
+ * over; after the first check it costs nothing. Per process, bounded; the claim
+ * in the database stays the guarantee.
+ */
+const settled = new Set<string>();
+const SETTLED_MAX = 500;
+
+/** Fire-and-forget for `after()`: never throws. Logs only a run that happened. */
+export async function reflectAfterSession(db: Db, user: Pick<User, "id" | "timezone">, sessionId: string, deps: { reflect?: typeof reflectOnSession } = {}): Promise<void> {
+  if (settled.has(sessionId)) return;
   try {
-    const r = await reflectOnSession(db, user, sessionId);
-    if (process.env.NODE_ENV !== "production") console.log(`[reflect] session=${sessionId} ops=${r?.applied.length ?? 0}`);
+    const r = await (deps.reflect ?? reflectOnSession)(db, user, sessionId);
+    if (settled.size >= SETTLED_MAX) settled.clear();
+    settled.add(sessionId);
+    if (r && process.env.NODE_ENV !== "production") console.log(`[reflect] session=${sessionId} ops=${r.applied.length}`);
   } catch (e) {
+    // Not settled: the next hand-over tries again (the claim keeps it to once).
     console.error("[reflect] failed", e);
   }
 }

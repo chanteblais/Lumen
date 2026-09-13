@@ -5,11 +5,9 @@
  * is saved by `PATCH /api/intentions/[id]` → `first_step`.
  * See docs/today.md → Anatomy.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Intention, MemoryNote } from "@/db/schema";
-import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
-import { PERSONA } from "./persona";
+import { proposeStructured } from "./structured";
 
 export type BreakdownInputs = Pick<Intention, "title" | "note" | "nextAction" | "estimateMinutes"> & {
   /** The steps they found still too big: go smaller than these. */
@@ -32,18 +30,17 @@ You're turning one thing on today's path into a few small physical steps the per
 - Use what you know helps them start, when it fits.`;
 
 export async function breakDown(inputs: BreakdownInputs): Promise<string[]> {
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: BREAKDOWN_RULES },
-      { role: "system", content: describeBreakdown(inputs) },
-    ],
+  const raw = await proposeStructured({
+    name: "steps",
+    kind: "breakdown",
+    persona: true,
+    rules: BREAKDOWN_RULES,
+    inputs: describeBreakdown(inputs),
     prompt: "Break it down. Return only the structured steps.",
-    output: Output.object({ schema: StepsSchema, name: "steps" }),
-    providerOptions: effortOptions("low"),
+    schema: StepsSchema,
+    effort: "low",
   });
-  return clampSteps(r.output?.steps ?? []);
+  return clampSteps(raw?.steps ?? []);
 }
 
 /** Pure guardrails over the model's steps: tidy, unnumbered, short, no repeats, at most five. Tested. */

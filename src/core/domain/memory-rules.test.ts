@@ -42,7 +42,24 @@ describe("their words", () => {
   ];
   it("finds whole words in order, case and punctuation aside, newest message first", () => {
     expect(findTheirWords("my thesis is due october 30", heard)?.messageId).toBe("m1");
-    expect(findTheirWords("the thesis is due", heard)?.messageId).toBe("m2");
+    expect(findTheirWords("the thesis is due November 14", heard)?.messageId).toBe("m2");
+  });
+  it("needs three content words, or most of a short message — not a fragment lifted from a longer one (B4)", () => {
+    const said = [
+      { messageId: "long", text: "I rewrote the book's opening and the ending is at the lighthouse now" },
+      { messageId: "short", text: "keep that for the book" },
+      { messageId: "forget", text: "Forget that, please." },
+    ];
+    // Two content words out of a long message: not their word for anything.
+    expect(findTheirWords("the book s opening", said)).toBeUndefined();
+    expect(findTheirWords("the ending is at", said)).toBeUndefined();
+    // Three content words stand on their own.
+    expect(findTheirWords("ending is at the lighthouse now", said)?.messageId).toBe("long");
+    // A short message quoted whole, or most of it.
+    expect(findTheirWords("keep that for the book", said)?.messageId).toBe("short");
+    expect(findTheirWords("forget that please", said)?.messageId).toBe("forget");
+    // Stopwords alone never count.
+    expect(findTheirWords("that for the", said)).toBeUndefined();
   });
   it("rejects what they didn't say, a single word, and part of a word", () => {
     expect(findTheirWords("thesis is due December 1", heard)).toBeUndefined();

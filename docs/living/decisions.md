@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · Their word has to be theirs, and only their word brings back what was forgotten
+
+**Decision.** Lumi treats something as the person's own word only when what she quotes carries what they meant: a real phrase of theirs (three words that say something), or most of a short message ("forget that", "keep that for the book"). A couple of words lifted out of a longer message are her reading, not their word. Something they asked her to forget comes back only when they ask for it again in their own words; her inferences and the between-visits filing never bring it back.
+**Rationale.** From the code review (B4, 2026-09-13), not a new ask from Chanté. *(Claude's reading: "their word" is what lets a note outrank Lumi's guesses and lets a placement stand against later tidying. If two stray words can unlock it, explicit and inferred stop being distinguishable — the seam the AI & information architecture says to keep, §57 — and a forgotten thread could come back through a loose quote, which is worse for trust than asking once more.)*
+**Implications.**
+- More of what Lumi keeps from conversation is marked as her reading rather than their word; their corrections and forgetting still go through on a real quote.
+- A thread, note or belief they had forgotten can be recreated through Lumi when they ask again in words she can quote; a loose fragment, a guess of hers or consolidation can't. Their later word is the more recent decision, and it wins.
+- Where they tell her a thread belongs still counts as their placement, which she and consolidation won't move.
+
+**Principle.** AI & IA §57 (explicit information ≠ inference), §61 (can we understand where consequential information came from?).
+**Replaces.** The eight-character quote rule of Lumi's memory (engineering log, *Lumi's memory: their word checked in code*).
+
 ## 2026-09-13 · Plan with Lumi is scrapped; what they say matters this week is remembered
 
 **Decision.** There is no Plan with Lumi on Today. When someone tells Lumi what matters more than the rest — this week, next week, or for a while — she holds it as a **stated priority**, and Today's path weighs it until the week ends or they say otherwise. A real deadline today can still come first, and Lumi says so.

@@ -2,7 +2,6 @@
  * The day plan: Lumi proposes a path through today; code guards it.
  * See docs/today.md → How the plan is built.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
@@ -11,8 +10,8 @@ import { describeScope, holdsOn } from "@/core/domain/priorities";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
 import type { DayPlanJson, Intention, MemoryNote, Priority } from "@/db/schema";
-import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
-import { PERSONA } from "./persona";
+import { capacityPhrase, localFormat } from "./format";
+import { proposeStructured } from "./structured";
 
 export type PlanInputs = {
   displayName: string;
@@ -80,20 +79,19 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     return { dayLine: "Nothing left that you haven't set aside today. That's allowed.", rightNow: null, afterThat: [], later, restCanWait: false };
   }
 
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: PLANNER_RULES },
-      { role: "system", content: describeInputs(inputs, candidates, fixed) },
-    ],
+  const raw = await proposeStructured({
+    name: "day_plan",
+    kind: "plan",
+    persona: true,
+    rules: PLANNER_RULES,
+    inputs: describeInputs(inputs, candidates, fixed),
     prompt: "Choose today's path. Return only the structured plan.",
-    output: Output.object({ schema: PlanSchema, name: "day_plan" }),
-    providerOptions: effortOptions("medium"),
+    schema: PlanSchema,
+    effort: "medium",
   });
 
   const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : inputs.keep;
-  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
+  return clampPlan(raw ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
 /**
@@ -144,17 +142,17 @@ export function stripCounts(s: string): string {
 }
 
 function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Intention[]): string {
-  const local = new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, weekday: "long", hour: "numeric", minute: "2-digit", hour12: true }).format(inputs.now);
+  const local = localFormat(inputs.timezone, "weekdayTime").format(inputs.now);
   const away = inputs.lastSeenAt && ["week_plus", "long"].includes(gapBucket(inputs.lastSeenAt, inputs.now));
   const lines = [
     "## Inputs",
     `- Person: ${inputs.displayName}. Local time ${local} (${dayPart(inputs.now, inputs.timezone)}).`,
-    inputs.capacity ? `- Capacity today: ${inputs.capacity.level}${inputs.capacity.flags?.length ? ` (${inputs.capacity.flags.join(", ")})` : ""}.` : "- Capacity today: not stated; assume normal.",
+    inputs.capacity ? `- Capacity today: ${capacityPhrase(inputs.capacity)}.` : "- Capacity today: not stated; assume normal.",
     inputs.lastSeenAt ? `- Last here: ${describeGap(inputs.lastSeenAt, inputs.now)}.${away ? " Coming back after a while — keep it light." : ""}` : "",
   ].filter(Boolean);
   if (fixed.length) {
     lines.push("", "## Fixed today (already handled — do not include)");
-    for (const f of fixed) lines.push(`- "${f.title}" at ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, hour: "numeric", minute: "2-digit", hour12: true }).format(f.dueAt!)}`);
+    for (const f of fixed) lines.push(`- "${f.title}" at ${localFormat(inputs.timezone, "time").format(f.dueAt!)}`);
   }
   const declinedReason = new Map((inputs.declined ?? []).map((d) => [d.intentionId, declineLabel(d.reason) ?? d.reason ?? null] as const));
   lines.push("", "## Candidates (id · title · list · ~min · flags)");
@@ -167,7 +165,7 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     if (isStale(c, inputs.now)) flags.push("untouched for two weeks+");
     if (c.nextAction) flags.push(`next: ${c.nextAction}`);
     // A day-only date today stays a candidate (dueOn skips it) — say plainly that it's due today.
-    if (c.dueAt) flags.push(localDate(c.dueAt, inputs.timezone) === inputs.localDate ? "due today" : `due ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, month: "short", day: "numeric" }).format(c.dueAt)}`);
+    if (c.dueAt) flags.push(localDate(c.dueAt, inputs.timezone) === inputs.localDate ? "due today" : `due ${localFormat(inputs.timezone, "day").format(c.dueAt)}`);
     if (c.note) flags.push(`note: ${c.note.slice(0, 80)}`);
     lines.push(`- ${c.id} · "${c.title}" · ${c.list ?? "—"} · ${c.estimateMinutes ? `~${c.estimateMinutes}m` : "—"}${flags.length ? ` · ${flags.join("; ")}` : ""}`);
   }

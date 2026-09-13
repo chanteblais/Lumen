@@ -27,6 +27,11 @@ describe("clampLeads", () => {
     expect(out[1].list).toBeNull();
     expect(out[1].dueAt).toBeNull();
   });
+  it("reads a bare day as 00:00 that day in their timezone, not UTC midnight (B1)", () => {
+    const out = clampLeads([lead({ due_at: "2026-09-20" }), lead({ title: "Pay rent", due_at: "2026-09-20T15:30:00-07:00" })], msgs, [], [], "America/Vancouver");
+    expect(out[0].dueAt?.toISOString()).toBe("2026-09-20T07:00:00.000Z");
+    expect(out[1].dueAt?.toISOString()).toBe("2026-09-20T22:30:00.000Z");
+  });
   it("strips counts from what it keeps", () => {
     const out = clampLeads([lead({ why: "They want 3 things by Monday." })], msgs, []);
     expect(out[0].why).toBe("They want a few things by Monday.");
