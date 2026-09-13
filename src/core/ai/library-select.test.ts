@@ -23,6 +23,17 @@ const narrator = note("The younger sister narrates the second half.", { createdA
 const oldEnding = note("The ending happens on the ferry.", { createdAt: daysAgo(9), supersededById: ending.id });
 const notes = [ending, progress, narrator, oldEnding];
 
+describe("ties", () => {
+  it("orders threads discussed at the same moment the same way whatever order they arrive in", () => {
+    const same = daysAgo(1);
+    const a: SelectableThread = { id: "t-a", title: "Allotment", aliases: [], summary: null, lastDiscussedAt: same };
+    const b: SelectableThread = { id: "t-b", title: "Bike repair", aliases: [], summary: null, lastDiscussedAt: same };
+    const index = (ts: SelectableThread[]) => selectLibrary(ts, [], [], { message: "hello" }, { now }).index.map((x) => x.thread.id);
+    expect(index([a, b, practicum])).toEqual(index([practicum, b, a]));
+    expect(index([a, b, practicum])).toEqual(["t-b", "t-a", "t-prac"]);
+  });
+});
+
 describe("namedIn", () => {
   it("hears a name as whole words", () => {
     expect(namedIn("the book", "I rewrote the book's opening")).toBe(true);
