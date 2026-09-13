@@ -1,4 +1,5 @@
-import { recutTodaysPlan } from "@/core/ai/today-plan";
+import { after } from "next/server";
+import { recutAfterDecline } from "@/core/ai/today-plan";
 import { isDeclineReason } from "@/core/declines";
 import { parseDueDate, startOfLocalDay } from "@/core/due-date";
 import { completeIntention, declineIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
@@ -8,7 +9,7 @@ import { db } from "@/db/client";
 import { DEFAULT_LISTS } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
-// Not this re-cuts today's path, which is a model call.
+// Not this re-cuts the rest of today's path off the response — a model call — or, with nothing queued, before it.
 export const maxDuration = 60;
 
 /**
@@ -54,11 +55,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return Response.json({ id: r.row.id, due_at: r.row.dueAt });
   }
   if (body.action === "decline") {
-    // Not this, on Today's card: the reason is recorded (a learning signal, never a failure) and the path is re-cut around it now, so the card can show what fits instead.
+    // Not this, on Today's card: the reason is recorded (a learning signal, never a failure) and the card changes at once;
+    // Lumi re-cuts the rest of the day around it after the response, keeping what the card now shows.
     const reason = isDeclineReason(body.reason) ? body.reason : undefined;
     const row = await declineIntention(db(), user.id, id, reason);
     if (!row) return Response.json({ error: "not found" }, { status: 404 });
-    const { plan } = await recutTodaysPlan(db(), user, "declined");
+    const { plan, refine } = await recutAfterDecline(db(), user, reason);
+    if (refine) after(refine);
     return Response.json({ id: row.id, rightNow: plan.rightNow?.intentionId ?? null, note: plan.note ?? null });
   }
   if (body.action === "first_step") {

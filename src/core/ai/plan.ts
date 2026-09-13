@@ -8,6 +8,7 @@ import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
+import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
 import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
 import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
@@ -25,8 +26,10 @@ export type PlanInputs = {
   lastSeenAt?: Date;
   /** What they asked for in chat just now ("something easy"), and the thing Lumi already named for right now, if any. */
   ask?: PlanAsk;
-  /** They just tapped Not this on Today's card: the plan answers it with a note. */
+  /** They just tapped Not this on Today's card: the rest of the day is shaped around the reason. */
   justDeclined?: { title: string; reason?: string | null };
+  /** Right now is already chosen (the card changed at once after a Not this): keep it, and cut the rest around it. */
+  keep?: { intentionId: string; firstStep: string };
 };
 
 /** A shape asked for in conversation. `rightNowId` is Lumi's pick from her reply: Today must show the same thing. */
@@ -39,7 +42,6 @@ const PlanSchema = z.object({
     .nullable(),
   afterThat: z.array(z.object({ intentionId: z.string() })).max(3),
   closingLine: z.string().max(140).optional().describe("Optional. E.g. 'These three are enough for today.' Only if there is more than the path holds."),
-  note: z.string().max(140).optional().describe("Only when they just turned one down: one short line for the card on why the new right now fits instead."),
 });
 
 const PLANNER_RULES = `## Planning today
@@ -52,11 +54,7 @@ You are choosing a path through the day for the person, from their open intentio
 - Anything they declined today ("not this") is never rightNow again today. Read the reason: too big → something smaller now; the declined thing may sit in afterThat only if a tinier way in exists. Too tired → the easiest win, and a shorter path. Don't know how → something clearer now; the unclear one waits. Don't feel like it, or just nope → a different thing, no comment, and leave the declined one off the path. Something else is more important → the likely candidate, if one is obvious.
 - If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
-- Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.
-- If they just turned one down on Today, write note: one short line, under 90 characters, in your voice, on why the new right now fits instead — answering their reason ("Smaller one instead: just the email."). No apology, no comment on the one they turned down. Otherwise leave note out.`;
-
-/** When the model gives no usable first step: small, and true of any intention. */
-const FALLBACK_FIRST_STEP = "The smallest first piece of it, nothing more.";
+- Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
 
 export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
   const fixed = dueOn(inputs.openIntentions, inputs.localDate, inputs.timezone);
@@ -90,16 +88,8 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     providerOptions: effortOptions("medium"),
   });
 
-  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;
-  const plan = clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
-  const note = inputs.justDeclined && plan.rightNow ? cleanNote(r.output?.note) : undefined;
-  return note ? { ...plan, note } : plan;
-}
-
-/** Pure: Lumi's line for the card after a Not this — trimmed, short, no counts. Undefined when there's nothing to say. Tested. */
-export function cleanNote(s: string | undefined): string | undefined {
-  const t = stripCounts((s ?? "").replace(/\s+/g, " ").trim()).slice(0, 140).trim();
-  return t || undefined;
+  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : inputs.keep;
+  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
 /**
@@ -184,7 +174,11 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
   }
   if (inputs.justDeclined) {
     const why = declineLabel(inputs.justDeclined.reason) ?? inputs.justDeclined.reason;
-    lines.push("", "## They just turned one down (Not this, on Today)", `- "${inputs.justDeclined.title}"${why ? ` — ${why.toLowerCase()}` : ""}. Answer it with note.`);
+    lines.push("", "## They just turned one down (Not this, on Today)", `- "${inputs.justDeclined.title}"${why ? ` — ${why.toLowerCase()}` : ""}. Shape the rest of the day around the reason.`);
+  }
+  if (inputs.keep) {
+    const kept = candidates.find((c) => c.id === inputs.keep!.intentionId);
+    if (kept) lines.push("", "## Right now is already chosen", `- "${kept.title}" is on the card now. Keep it there; choose After that and the dayLine around it.`);
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");
   if (strategies.length) {
