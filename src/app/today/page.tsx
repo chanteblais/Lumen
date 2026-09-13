@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PlanSection } from "@/components/today/PlanSection";
-import { LumiAvatar } from "@/components/chat/LumiAvatar";
 import { Divider } from "@/components/ui/Ornament";
 import { dayPart } from "@/core/time";
 import { recordVisit, requireUser } from "@/lib/auth";
@@ -20,44 +19,38 @@ export default async function TodayPage() {
   return (
     <div className="today-page">
       {/* Today is set in the garden (globals.css → Today: the garden): the painting fills the
-          viewport behind the shell, the page is one paper panel on its right, and the room
-          stays open for Lumi to stand in. */}
+          viewport behind the shell, and three things sit on it, each quieter than the last —
+          Lumi's words set on the painting, the one Right now card, and a slip with the rest. */}
       <div className="today-scene" aria-hidden />
-      <div className="today-panel">
+      <header className="today-voice">
         <p className="label">Today</p>
         <div className="my-3">
           <Divider />
         </div>
-        <div className="flex items-start gap-4">
-          <LumiAvatar size={40} className="medallion mt-1" />
-          <div className="min-w-0">
-            <h1 className="font-display text-[30px] leading-[1.15] text-ink">
-              {hello}, {user.displayName}.
-            </h1>
-            <Suspense fallback={<p className="today-dayline mt-2 font-display text-ink-mute">Working out the shape of today…</p>}>
-              <PlanSection user={user} part="dayline" />
-            </Suspense>
-          </div>
-        </div>
-
-        <Suspense fallback={<PlanSkeleton />}>
-          <PlanSection user={user} part="path" />
+        <h1 className="font-display text-[30px] leading-[1.15] text-ink">
+          {hello}, {user.displayName}.
+        </h1>
+        <Suspense fallback={<p className="today-dayline mt-2 font-display text-ink-mute">Working out the shape of today…</p>}>
+          <PlanSection user={user} part="voice" />
         </Suspense>
-      </div>
+      </header>
+
+      <Suspense fallback={<PlanSkeleton />}>
+        <PlanSection user={user} part="now" />
+      </Suspense>
 
       <Suspense fallback={null}>
-        <PlanSection user={user} part="closing" />
+        <PlanSection user={user} part="rest" />
       </Suspense>
     </div>
   );
 }
 
-/** While the path is being cut: the Right now kicker and Lumi's three slow dots — the same pause as in the chat, not grey bars. */
+/** While the path is being cut: the card with Lumi's three slow dots — the same pause as in the chat, not grey bars. */
 function PlanSkeleton() {
   return (
     <section className="today-now" aria-label="Right now" aria-busy>
-      <p className="label">Right now</p>
-      <p className="thinking-dots mt-4"><span>·</span><span>·</span><span>·</span></p>
+      <p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p>
     </section>
   );
 }

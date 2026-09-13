@@ -8,9 +8,9 @@
 
 ## Rewards and growth
 
-All on hold until [open question 14](open-questions.md) reconciles earning *coherence* with V§14 and EP§14 ("growth reflects history, not achievement").
+Resolved 2026-09-13: continuity-based growth is approved ([decisions](decisions.md)). Reward currency, completion unlocks and bonuses are rejected. The original proposals below remain history; recognition of beginning and returning survives through behaviour without an economy.
 
-**Credit for what ADHD brains rarely get credit for.** On hold. *(Chanté's notes, 2026-09-12)*
+**Credit for what ADHD brains rarely get credit for.** Recognition accepted as principle; earning/spending rejected. *(Chanté's notes, 2026-09-12)*
 - **Showing up:** opening Coherence and meaningfully engaging.
 - **Beginning:** starting something, especially something repeatedly deferred.
 - **Doing:** completing tasks, focus sessions, milestones.
@@ -19,9 +19,9 @@ All on hold until [open question 14](open-questions.md) reconciles earning *cohe
 - **Caring:** tending Lumi's environment, checking in with yourself, intentionally resting.
 - **Returning:** coming back after an absence.
 
-The *recognition* survives any answer to question 14. Noticing beginning, choosing and returning is how warmth through behaviour works (EP§13). What's contested is turning it into points.
+The *recognition* survives the resolution of question 14. Noticing beginning, choosing and returning is how warmth through behaviour works (EP§13). Turning it into points was rejected in the reconciliation.
 
-**A welcome-back bonus.** On hold. Returning earns a little extra instead of costing anything. Its spirit is already V§8 and EP§8.
+**A welcome-back bonus.** Rejected as a bonus mechanic; retained here as the historical proposal. Returning earns a little extra instead of costing anything. Its spirit is already V§8 and EP§8.
 
 **Recognise consistency without a streak.** Promising. Acknowledge a rhythm without turning absence into loss (Chanté's notes; V§12). Under EP§14 this could be how a place becomes "established".
 
