@@ -9,7 +9,7 @@ Loaded automatically at the start of every Claude session in this repo (root `CL
 **The question that overrides everything:** does this reduce the user's executive-function burden, or accidentally create more of it? Ask it before adding any field, control, count, or setting.
 
 ## Stack
-Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) · `claude-opus-5` · Postgres on Supabase via Drizzle (`postgres` driver, pooler) · Clerk · Tailwind 4 · Zod 4 · Vitest · Vercel.
+Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) · `claude-opus-5` (Lumi's model is under evaluation — `docs/product/lumi-model-strategy.md`) · Postgres on Supabase via Drizzle (`postgres` driver, pooler) · Clerk · Tailwind 4 · Zod 4 · Vitest · Vercel.
 
 ## Docs — read on demand (index: `docs/README.md`)
 - `docs/architecture.md` — stack, how the AI layer touches state (context block + tools), sticky decisions, repo layout
@@ -28,7 +28,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 - Greeting and focus check-ins are deterministic (no LLM call). Lumi speaks unprompted only for check-ins.
 - Store facts and events; derive judgements (stale, avoided, gap) at read time. Never persist derived flags.
 - **Understanding layer is first-class:** beliefs (`memory_notes`) carry confidence + evidence; the model proposes belief ops, `core/domain/memory.ts` applies them with guardrails; outcomes (sessions, completions) are the feedback signal. The user never rates or tags anything.
-- Persona prompt (`src/core/ai/persona.ts`) + tool descriptions are the cached prefix — keep them byte-stable; volatile context goes after.
+- Persona prompt (`src/core/ai/persona.ts`) + tool descriptions are the cached prefix — keep them byte-stable; volatile context goes after. They *implement* Lumi's behaviour; its source is `docs/philosophy/lumi.md`. Don't rely on behaviour that only one model happens to produce: Lumi's model is under evaluation (`docs/product/lumi-model-strategy.md`).
 - Clerk is imported only in `src/lib/auth.ts` (server: `requireUser()`, `googleAccessToken()`), `src/lib/auth-ui.tsx` (provider + sign-in/up/account controls), `src/lib/auth-mail.tsx` (the Connect Google chip) and the sign-in/sign-up pages. Internal `users.id` everywhere else; mail reaches `src/core` only as an `EmailReader` (`src/lib/email.ts`).
 
 ## Working conventions — standing tasks (every session)

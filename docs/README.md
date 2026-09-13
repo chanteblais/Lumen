@@ -1,6 +1,6 @@
 # Coherence — Design Docs
 
-**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
+**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md) and the [Experience Principles](philosophy/experience-principles.md); Lumi's behaviour is [Lumi — Relational Intelligence & Behaviour](philosophy/lumi.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
 
 | Doc | What's in it |
 |---|---|

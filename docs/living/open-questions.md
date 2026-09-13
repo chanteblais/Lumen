@@ -81,8 +81,8 @@ EP§7 frames the chips as "possible lightweight responses", and its five match t
 *Leaning:* keep the chips few, widen the replies.
 *Meanwhile:* unchanged.
 
-**17. May Lumi count a pattern?** *(2026-09-12)*
-The persona says "never count their things back to them", but V§12's example is "You've moved this three times." A count of undone things is a bill; a count in a noticed pattern may not be. *Leaning:* allow pattern counts, keep the ban on counts of what's undone. This touches the cached persona prompt.
+**17. May Lumi name a number: a pattern, or a gap?** *(2026-09-12; widened 2026-09-13)*
+The persona says "never count their things back to them" and, when someone comes back, "never … say how long it's been". The canon's own examples do both: "You've moved this three times" (V§12) and "You disappeared for four days. We don't need to reconstruct the four days." ([model strategy](../product/lumi-model-strategy.md)). A count of undone things is a bill. A number that names a pattern, or names a gap only in order to set it down, may not be. *Leaning:* allow both, when the number serves the next sentence; keep the ban on counts of what's undone. This touches the cached persona prompt.
 
 **18. Should check-ins run on a timer?** *(2026-09-12)*
 EP§11: "Lumi intervenes when useful, not because an engagement timer says it is time to speak", and watch for "excessive check-ins". The focus check-in card appears every 15 minutes by default (`check_in_minutes`) and at the planned end. It is the interface asking, not Lumi. The user agreed to it when the session started, and *Yep* costs one tap with no reply (EF-burden log: accepted). It is still timer-driven. Keep it, lengthen it, make it the default only for some people (learned), or have the interface stay silent unless the session runs long?
@@ -100,6 +100,31 @@ The foundation wants correction by hand: reorder, recategorise, defer and abando
 - How a user drags on a phone.
 
 *Meanwhile:* the tick only; the rest through Lumi.
+
+**21. Which model is Lumi, and how do we decide?** *(2026-09-13; decisions → *chosen separately*)*
+OpenAI models are to be prototyped alongside the current Anthropic implementation, judged on Lumi's requirements ([model strategy](../product/lumi-model-strategy.md); [`lumi.md`](../philosophy/lumi.md) §17). Open:
+- **Method.** The same scenarios, the same context block and the same persona intent for every model. Transcripts graded **blind** by Chanté, without knowing which model wrote them. Claude builds the harness but shouldn't be the judge of a comparison with Claude in it.
+- **Scenarios.** The nine existing ones, plus what the strategy adds: a pattern across days, a four-day gap, reflection that should stay reflective, a spiral that shouldn't, a framing worth challenging, a context-rich turn where reciting is the failure. Some need structured context that doesn't exist yet (question 22).
+- **Beyond voice.** Tools are the only write path, so a candidate must call them reliably and never invent ids. The persona's byte-stable prefix is a caching convention, and each provider caches differently. Latency and cost matter too.
+- **Scope.** Does "Lumi's model" cover only the conversation, or also the planner, lead-finding and reflection calls, which are Lumi's judgement in structured form?
+- **Privacy.** A second provider would receive conversations, beliefs and mail gists. Its retention terms, and a privacy note that names whoever runs Lumi (`pre-prod.md` names Anthropic only).
+
+*Meanwhile:* `claude-opus-5` behind `src/core/ai/model.ts`.
+
+**22. What structured context does Lumi need that Coherence doesn't hold?** *(2026-09-13)*
+The model strategy lists what Coherence should remember: tasks, lists, priorities, projects, Library threads, decisions, patterns, preferences, capacity, commitments, history, re-entry state, Garden state, and the relationships between them. Held today: intentions, lists, capacity, sessions, day plans, beliefs (projects and patterns live here, flat on purpose, sticky decision 15), leads, and events. Missing or thin:
+- **Library threads.**
+- **Garden state.**
+- **Relationships between things.**
+- **A clear record of *moving something forward without choosing it*.** Due-date changes sit inside `intention.updated` diffs; there is no deferral event, and nothing derived reads them.
+- **Retrieval once the context caps bite.**
+
+Which of these become structure, and which become derived views over events?
+*Related:* question 3 (the Library), question 11 (priorities), `lumi.md` §6.
+
+**23. How much reflection, and when back to action?** *(2026-09-13)*
+The strategy wants Lumi to "move fluidly between practical and reflective conversation" and to tell useful reflection from rumination. The persona leans hard toward action: "A single concrete next step beats any amount of advice. When in doubt, say less." The action bias serves initiation (V§6). The risk is a Lumi who can't sit with a real question about direction or meaning (V§19). When does she stay in reflection, how does she notice it has become circling, and is reflective conversation something Home offers on purpose (EP§15: arriving, talking, *reflecting*)?
+*Meanwhile:* action-weighted. *Related:* `lumi.md` §5, §14.
 
 ## Design
 

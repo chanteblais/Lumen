@@ -38,7 +38,7 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
 ```
 
 ### System prompt = stable prefix + volatile context
-1. **Persona + behavioural rules + tool guidance** (`src/core/ai/persona.ts`). Byte-stable across turns; first cache breakpoint lives here. Keep it under ~2k tokens; the voice guide in `product.md` is its source.
+1. **Persona + behavioural rules + tool guidance** (`src/core/ai/persona.ts`). Byte-stable across turns; first cache breakpoint lives here. Keep it under ~2k tokens. It implements `docs/philosophy/lumi.md` (Lumi's behaviour, since 2026-09-13; before that, the voice guide in `product.md`).
 2. **Context block** (`src/core/ai/context.ts`), regenerated every turn, placed *after* the cached prefix:
    - now (user's local time + weekday), timezone
    - time since last visit (`users.last_seen_at`), phrased in buckets ("3 hours", "9 days")

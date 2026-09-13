@@ -37,7 +37,11 @@
 
 ## Lumi
 
-She/her. The companion: a presence that makes it easier to begin and to keep going (V§7). Not a generic chatbot, a motivational coach or an authority. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes, brass medallions and a lantern. She is on every page and lives in Home.
+She/her. **The relational and interpretive intelligence through which the user experiences Coherence**: interpretive companionship in service of agency, and a presence that makes it easier to begin and keep going (V§7). Not a nagging coach, a reminder system, a sycophantic friend, a faux therapist or an optimiser. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes, brass medallions and a lantern. She is on every page and lives in Home.
+
+> **Coherence remembers. Lumi understands.** The system maintains the shape of the user's life; Lumi helps the user perceive and navigate that shape.
+
+Her behaviour is a designed system in [`docs/philosophy/lumi.md`](docs/philosophy/lumi.md), not a model's personality. The model behind her is chosen on her requirements, separately from the tools that build Coherence ([model strategy](docs/product/lumi-model-strategy.md)). For every feature, ask: *what does this allow Lumi to understand, and how does it help her help?*
 
 ## The spaces
 
@@ -66,8 +70,9 @@ The direction is moving from *an antique book with no decorative imagery* to **i
 |---|---|---|
 | [`docs/philosophy/product-vision.md`](docs/philosophy/product-vision.md) | Why: the problem, the relationship with the user, the stable principles | **Foundational** |
 | [`docs/philosophy/experience-principles.md`](docs/philosophy/experience-principles.md) | How: 20 principles with *watch for* lists, and four tests | **Canonical** (the end of §24 is missing) |
-| `docs/philosophy/lumi.md` | Who Lumi is, her voice, her role | To come. Interim: [`product.md`](docs/product.md) → Lumi's voice; [`art-direction.md`](docs/art-direction.md) §2, §5 |
-| `docs/product/ai-and-information-architecture.md` | How the AI understands and acts, and why | To come. Interim: [`architecture.md`](docs/architecture.md) (the how) |
+| [`docs/philosophy/lumi.md`](docs/philosophy/lumi.md) | Lumi — Relational Intelligence & Behaviour: her role, relationship, principles, reading state, context, continuity, when to speak, situations, evidence | **Living** (v0.1; sections marked *proposed* await Chanté) |
+| [`docs/product/lumi-model-strategy.md`](docs/product/lumi-model-strategy.md) | Build model vs Lumi model; *Coherence remembers, Lumi understands*; anti-patterns; how models are evaluated | **Canonical** |
+| `docs/product/ai-and-information-architecture.md` | How the AI understands and acts, and why | To come. Interim: [`architecture.md`](docs/architecture.md) (the how), the model strategy (the why) |
 | `docs/product/spaces.md` | The places and what belongs in each | To come. Interim: the table above |
 | `docs/product/today-garden.md` | The Garden | To come. Interim: [`today.md`](docs/today.md) |
 | `docs/product/lists-library.md` | The Library | To come |
@@ -88,7 +93,8 @@ How the code works, and how to work in the repo, is indexed in [`docs/README.md`
 | Any screen or workflow | EP§21–23 (the tests), then the rows below |
 | A new feature, navigation, information architecture | V§14, EP§2–4, EP§15, EP§18 → the spaces above → the place's doc → decisions → open questions → [`ef-burden-log.md`](docs/ef-burden-log.md) |
 | Task interactions, lists, dragging, correcting | EP§1, EP§5–6, EP§16–17 → decisions (*direct manipulation*) |
-| Lumi's behaviour, AI, memory, proactivity, notifications | V§4–7, V§16–18, EP§5, EP§11, EP§17, EP§20 → Lumi → AI & information architecture → decisions |
+| Lumi's behaviour, the persona prompt, AI, memory, proactivity, notifications | [`lumi.md`](docs/philosophy/lumi.md) → [model strategy](docs/product/lumi-model-strategy.md) → V§4–7, V§16–18, EP§5, EP§11, EP§17, EP§20 → decisions → open questions 9–12, 17, 21–23 |
+| Choosing or evaluating a model for Lumi | [model strategy](docs/product/lumi-model-strategy.md) → `lumi.md` §15, §17 → open question 21 → [`voice-eval-log.md`](docs/voice-eval-log.md) |
 | Prioritisation, planning, capacity, the Garden | V§3, V§10–11, V§15, EP§3, EP§7, EP§9 → Garden doc → decisions |
 | Focus sessions | V§7, EP§10–11, EP§18 → [`features.md`](docs/features.md) → Focus Together |
 | Rewards, gamification, engagement, growth of the places | V§14, V§18, EP§14, EP§20 → open question 14 before anything else |

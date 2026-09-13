@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-09-13 · Coherence remembers; Lumi understands
+
+**Decision.** Coherence, not the language model, holds the user's life as durable structured context. Each turn assembles the subset Lumi needs, and Lumi's job is to interpret it and respond. ([model strategy](../product/lumi-model-strategy.md))
+**Rationale.** A model that "remembers" through long histories or huge context windows makes continuity depend on that model and its limits. Structured context survives a model change and can be retrieved on purpose.
+**Implications.**
+- Already the shape of the system: tables and events are the truth, a capped context block and the last 30 messages feed each turn, and a summary (M6) holds older conversation. When a cap bites, add retrieval or a read tool, never a bigger window.
+- New features ask: *what does this allow Lumi to understand, and how does it help her help?*
+- The structured context the strategy names but Coherence doesn't yet hold (Library threads, Garden state, relationships between things, a clear record of what was moved without being chosen) is open question 22.
+
+**Principle.** V§4, V§16–17, EP§18.
+
+## 2026-09-13 · Lumi is a designed behaviour system, not a model's personality
+
+**Decision.** Lumi's behaviour is documented in [`docs/philosophy/lumi.md`](../philosophy/lumi.md), implemented in `persona.ts` and the tool descriptions, and checked by evaluation. Her identity must not live only in one system prompt or in behaviour that happens to emerge from one model.
+**Rationale.** If Lumi exists only inside the model, changing models changes the character and the philosophy of the product. Documented, evaluated behaviour belongs to Coherence.
+**Implications.**
+- `lumi.md` is the source for her behaviour. `product.md`'s voice guide is folded into it.
+- Strong and weak interactions are design evidence: record them, name the behaviour behind them, and update the document (not just the prompt).
+- The persona prompt stays byte-stable as a cached prefix, but it is an implementation, and it is judged against `lumi.md`.
+
+**Replaces.** `product.md` → Lumi's voice as the source of truth for her behaviour. The comment in `persona.ts` still points there (follow-up).
+
+## 2026-09-13 · The model that builds Coherence and the model that is Lumi are chosen separately
+
+**Decision.** Development keeps using whatever is strongest for engineering and documentation (Claude, today). For Lumi in production, OpenAI models are prototyped **alongside** the current Anthropic implementation and evaluated against Lumi's own requirements, not generic benchmarks. **Status: exploring.** No switch has been decided.
+**Rationale.** Lumi's role is relational and interpretive, which is different from coding. The best model for one layer need not be the best for the other. This is not a judgement that one model is universally better.
+**Implications.**
+- The provider stays behind one module (`src/core/ai/model.ts`; sticky decision 10), though Anthropic-specific options also appear in the planner, lead and reflection calls.
+- The evaluation needs the model strategy's questions as scenarios, graded the same way for every model (`lumi.md` §17).
+- A second provider receiving conversations, beliefs and mail gists is a privacy change: the privacy note in `pre-prod.md` names Anthropic only.
+- Method, criteria and the other model calls (planner, leads, reflection) are open question 21.
+
+**Replaces.** The implicit assumption that Lumi runs on `claude-opus-5` because the project does (`CLAUDE.md` → Stack still describes the current implementation).
+
 ## 2026-09-12 · The Product Vision is foundational
 
 **Decision.** [`docs/philosophy/product-vision.md`](../philosophy/product-vision.md) is the foundation of the canon. When product, UX, AI or technical decisions are ambiguous, its principles take precedence over conventional productivity-software assumptions.
