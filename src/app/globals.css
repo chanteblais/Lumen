@@ -1544,8 +1544,10 @@ body:has(.library-scene) {
   background-size: calc(1536 * var(--library-px)) calc(1024 * var(--library-px));
   background-position: calc(50vw - var(--scene-cx) * var(--library-px)) calc(50vh - 512 * var(--library-px));
 }
-/* next/image's `fill` sets the painting's box inline, so the Library's fit overrides it */
+/* next/image's `fill` sets the painting's box inline, so the Library's fit overrides it;
+   and the base `img { max-width: 100% }` would hold it to the window's width */
 .library-scene .scene-painting {
+  max-width: none;
   inset: auto !important;
   left: calc(50vw - var(--scene-cx) * var(--library-px)) !important;
   top: calc(50vh - 512 * var(--library-px)) !important;
