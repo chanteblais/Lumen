@@ -10,7 +10,8 @@ import type { Db } from "@/db/client";
 import type { DayPlanJson, User } from "@/db/schema";
 import { capacityChangesPlan } from "@/core/domain/capacity";
 import { dueOn } from "@/core/domain/intentions";
-import { savePlan } from "@/core/domain/plans";
+import { declineNote } from "@/core/declines";
+import { getPlanForDate, planAfterDecline, savePlan } from "@/core/domain/plans";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { visitBeforeSitting } from "@/core/domain/users";
 import { buildDayPlan, type PlanAsk, type PlanInputs } from "./plan";
@@ -28,9 +29,10 @@ type Deps = {
   load: typeof loadSnapshot;
   build: typeof buildDayPlan;
   save: typeof savePlan;
+  latest: typeof getPlanForDate;
   now: () => Date;
 };
-const live: Deps = { load: loadSnapshot, build: buildDayPlan, save: savePlan, now: () => new Date() };
+const live: Deps = { load: loadSnapshot, build: buildDayPlan, save: savePlan, latest: getPlanForDate, now: () => new Date() };
 
 /** One generation per user per day per process: a page and a prime racing each other share the promise. */
 const inFlight = new Map<string, Promise<DayPlanJson>>();
@@ -73,7 +75,7 @@ export async function recutTodaysPlan(db: Db, user: User, recut: RecutReason | R
     if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
       return { snap, plan: snap.plan };
     }
-    const plan = await d.build(planInputs(user, snap, now, ask));
+    const plan = await d.build(planInputs(user, snap, now, ask, reason === "declined" ? lastDecline(snap) : undefined));
     await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level, ask?.text);
     return { snap, plan };
   });
@@ -95,10 +97,65 @@ export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason | 
   }
 }
 
+/**
+ * Not this, on Today's card. The card changes at once: the next thing comes
+ * from what's already queued (`planAfterDecline`, no model call), saved with
+ * Lumi's fixed line for the reason. `refine` then re-cuts the rest of the day
+ * with the model, keeping that Right now, and saves only if nothing moved the
+ * path meanwhile (a Done, another Not this, a step chosen) — the caller runs it
+ * off the response. With nothing queued, the model has to choose now (seconds).
+ * 2026-09-13: waiting on the full re-cut took 13s on the card.
+ */
+export async function recutAfterDecline(db: Db, user: User, reason: string | null | undefined, deps: Partial<Deps> = {}): Promise<{ plan: DayPlanJson; refine?: () => Promise<void> }> {
+  const d = { ...live, ...deps };
+  // In line with the other re-cuts (B8); `refine` runs later and checks nothing moved the path before it saves.
+  return serially(planKey(user), async () => {
+  const now = d.now();
+  const snap = await d.load(db, user, now);
+  const note = declineNote(reason);
+  const declinedIds = new Set(snap.declinedToday.map((x) => x.intentionId));
+  const quick = snap.plan ? planAfterDecline(snap.plan, snap.openIntentions, declinedIds, reason, note) : null;
+
+  if (!quick?.rightNow) {
+    const built = await d.build(planInputs(user, snap, now, undefined, lastDecline(snap)));
+    const plan = built.rightNow ? { ...built, note } : built;
+    await d.save(db, user.id, snap.today, plan, "declined", snap.capacity?.level);
+    return { plan };
+  }
+
+  const saved = await d.save(db, user.id, snap.today, quick, "declined", snap.capacity?.level);
+  const keep = quick.rightNow;
+  const refine = async () => {
+    try {
+      const later = d.now();
+      const fresh = await d.load(db, user, later);
+      if (fresh.planRow?.id !== saved.id) return;
+      const built = await d.build({ ...planInputs(user, fresh, later, undefined, lastDecline(fresh)), keep });
+      // Never overwrite what they did while the model was thinking.
+      const latest = await d.latest(db, user.id, fresh.today);
+      if (latest?.id !== saved.id) return;
+      const plan = built.rightNow?.intentionId === keep.intentionId ? { ...built, note } : built;
+      await d.save(db, user.id, fresh.today, plan, "declined", fresh.capacity?.level);
+    } catch (e) {
+      console.error("[plan] re-cut after a decline failed", e);
+    }
+  };
+  return { plan: quick, refine };
+  });
+}
+
+/** The newest Not this today, with its title — what a `declined` re-cut answers on the card. */
+export function lastDecline(snap: Pick<Snapshot, "declinedToday" | "openIntentions">): PlanInputs["justDeclined"] {
+  const d = snap.declinedToday[0];
+  const i = d ? snap.openIntentions.find((x) => x.id === d.intentionId) : undefined;
+  return i ? { title: i.title, reason: d.reason } : undefined;
+}
+
 /** Everything the planner sees, from one snapshot. */
-export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk): PlanInputs {
+export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk, justDeclined?: PlanInputs["justDeclined"]): PlanInputs {
   return {
     ask,
+    justDeclined,
     displayName: user.displayName,
     timezone: user.timezone,
     localDate: snap.today,

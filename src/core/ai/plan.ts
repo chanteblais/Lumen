@@ -7,6 +7,7 @@ import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
+import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
 import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
 import { capacityPhrase, localFormat } from "./format";
 import { proposeStructured } from "./structured";
@@ -24,6 +25,10 @@ export type PlanInputs = {
   lastSeenAt?: Date;
   /** What they asked for in chat just now ("something easy"), and the thing Lumi already named for right now, if any. */
   ask?: PlanAsk;
+  /** They just tapped Not this on Today's card: the rest of the day is shaped around the reason. */
+  justDeclined?: { title: string; reason?: string | null };
+  /** Right now is already chosen (the card changed at once after a Not this): keep it, and cut the rest around it. */
+  keep?: { intentionId: string; firstStep: string };
 };
 
 /** A shape asked for in conversation. `rightNowId` is Lumi's pick from her reply: Today must show the same thing. */
@@ -49,9 +54,6 @@ You are choosing a path through the day for the person, from their open intentio
 - If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
 - Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
-
-/** When the model gives no usable first step: small, and true of any intention. */
-const FALLBACK_FIRST_STEP = "The smallest first piece of it, nothing more.";
 
 export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
   const fixed = dueOn(inputs.openIntentions, inputs.localDate, inputs.timezone);
@@ -84,7 +86,7 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     effort: "medium",
   });
 
-  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;
+  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : inputs.keep;
   return clampPlan(raw ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
@@ -167,6 +169,14 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     const named = inputs.ask.rightNowId ? candidates.find((c) => c.id === inputs.ask!.rightNowId) : undefined;
     lines.push("", "## What they asked for just now (in chat)", `- "${inputs.ask.text.slice(0, 120)}" — shape the path around this.`);
     if (named) lines.push(`- Lumi already answered with "${named.title}" for right now. Keep it there; choose After that to match the ask.`);
+  }
+  if (inputs.justDeclined) {
+    const why = declineLabel(inputs.justDeclined.reason) ?? inputs.justDeclined.reason;
+    lines.push("", "## They just turned one down (Not this, on Today)", `- "${inputs.justDeclined.title}"${why ? ` — ${why.toLowerCase()}` : ""}. Shape the rest of the day around the reason.`);
+  }
+  if (inputs.keep) {
+    const kept = candidates.find((c) => c.id === inputs.keep!.intentionId);
+    if (kept) lines.push("", "## Right now is already chosen", `- "${kept.title}" is on the card now. Keep it there; choose After that and the dayLine around it.`);
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");
   if (strategies.length) {

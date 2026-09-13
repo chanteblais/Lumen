@@ -1,15 +1,14 @@
 /**
  * The chat route on a real Postgres (PGlite), with the model, the auth gate and
- * Next's `after()` stood in: a bad body is a 400 with nothing scheduled; a "Not
- * this" and a session tap are recorded before Lumi reads the turn; the path is
- * primed only when the turn could have changed it; the server stamps the time.
+ * Next's `after()` stood in: a bad body is a 400 with nothing scheduled; a
+ * structured handoff from before today-in-place is plain talk; the path is
+ * primed only when the turn could have changed it; the server stamps the time;
+ * errors are logged by ids.
  */
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { DECLINE_REASON_KEYS } from "@/core/declines";
 import { createIntention } from "@/core/domain/intentions";
 import { savePlan } from "@/core/domain/plans";
-import { getSession, startFocusSession } from "@/core/domain/sessions";
 import { localDate } from "@/core/time";
 import type { Db } from "@/db/client";
 import { events, type User } from "@/db/schema";
@@ -22,7 +21,6 @@ const afters: (() => unknown)[] = [];
 const streamCalls: Record<string, unknown>[] = [];
 let responseOptions: Record<string, (...args: never[]) => unknown> & { originalMessages?: { metadata?: { createdAt?: string } }[] };
 const prime = vi.fn();
-const reflect = vi.fn();
 const consolidate = vi.fn();
 
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => void afters.push(fn) }));
@@ -42,7 +40,6 @@ vi.mock("ai", async (importOriginal) => ({
   },
 }));
 vi.mock("@/core/ai/today-plan", async (importOriginal) => ({ ...(await importOriginal<object>()), primeTodaysPlan: (...a: unknown[]) => prime(...a) }));
-vi.mock("@/core/ai/reflect", async (importOriginal) => ({ ...(await importOriginal<object>()), reflectAfterSession: (...a: unknown[]) => reflect(...a) }));
 vi.mock("@/core/ai/consolidate", async (importOriginal) => ({ ...(await importOriginal<object>()), consolidateAfter: (...a: unknown[]) => consolidate(...a) }));
 
 const { POST } = await import("./route");
@@ -58,7 +55,6 @@ beforeEach(async () => {
   afters.length = 0;
   streamCalls.length = 0;
   prime.mockReset();
-  reflect.mockReset();
   consolidate.mockReset();
 });
 
@@ -80,32 +76,22 @@ describe("POST /api/chat", () => {
     expect(streamCalls).toHaveLength(0);
   });
 
-  it("records a Not this before Lumi reads the turn, and re-cuts the path after it", async () => {
+  it("treats an old structured handoff as plain talk: nothing is declined, and the context block rides last", async () => {
     const i = await createIntention(testDb, user.id, { title: "Call the bank" });
-    const reason = DECLINE_REASON_KEYS[0];
-    expect((await say("Not this", { kind: "declined", intentionId: i.id, reason })).status).toBe(200);
-    const declined = await testDb.select().from(events).where(and(eq(events.userId, user.id), eq(events.type, "intention.declined")));
-    expect(declined).toHaveLength(1);
-    expect(sentToModel()).toContain('They tapped Not this on \\"Call the bank\\"');
+    expect((await say("Not this", { kind: "declined", intentionId: i.id, reason: "too_big" })).status).toBe(200);
+    expect(await testDb.select().from(events).where(and(eq(events.userId, user.id), eq(events.type, "intention.declined")))).toHaveLength(0);
+    const call = streamCalls.at(-1) as { instructions: unknown[]; messages: { role: string; content: { text: string }[] }[] };
+    expect(call.instructions).toHaveLength(1);
+    expect(call.messages.at(-1)!.content.at(-1)!.text).toContain("## Right now");
     await runAfters();
-    expect(prime).toHaveBeenCalledWith(testDb, user, { reason: "declined" });
     expect(consolidate).toHaveBeenCalledWith(testDb, user, { passes: 1 });
-  });
-
-  it("closes a session on Done before Lumi answers, and reflects on it after", async () => {
-    const { session } = await startFocusSession(testDb, user.id, { goal: "Edit chapter 3", firstStep: "Open the doc", plannedMinutes: 45, checkInMinutes: 15 });
-    await say("Done", { kind: "session_event", sessionId: session.id, response: "done" });
-    const closed = await getSession(testDb, user.id, session.id);
-    expect(closed?.outcome).toBe("completed");
-    expect(sentToModel()).toContain("They tapped Done on the check-in");
-    await runAfters();
-    expect(reflect).toHaveBeenCalledWith(testDb, user, session.id);
   });
 
   it("skips priming after plain talk over a path that exists, and primes once Lumi saves something", async () => {
     const i = await createIntention(testDb, user.id, { title: "Water the fern" });
     await savePlan(testDb, user.id, localDate(new Date(), user.timezone), { dayLine: "One thing.", rightNow: { intentionId: i.id, firstStep: "Fill the can" }, afterThat: [], later: [], restCanWait: false }, "new_day");
     await say("how's it going");
+    expect(sentToModel()).toContain("Water the fern");
     await runAfters();
     expect(prime).not.toHaveBeenCalled();
 
@@ -131,8 +117,9 @@ describe("POST /api/chat", () => {
     expect(reply).toBe("I lost the thread for a second. Say that again?");
     expect(String(logged.mock.calls[0][0])).toContain(`user=${user.id}`);
     expect(String(logged.mock.calls[0][0])).not.toContain("secret plan");
-    // A reply whose conversation row is gone can't be saved: logged, not thrown.
+    // A reply that can't be saved (an id that isn't one): logged, not thrown.
     await expect((responseOptions.onEnd as (e: unknown) => Promise<void>)({ responseMessage: { id: "not-a-uuid", role: "assistant", parts: [{ type: "text", text: "ok" }] }, isAborted: false })).resolves.toBeUndefined();
+    expect(logged.mock.calls.some((c) => String(c[0]).startsWith("[chat] couldn't save"))).toBe(true);
     logged.mockRestore();
   });
 });

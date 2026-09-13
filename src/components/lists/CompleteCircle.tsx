@@ -5,11 +5,21 @@ import { useState } from "react";
 
 type Props = { id: string; done?: boolean; label: string; size?: number };
 
-/** The one control on a row: done / not done. Optimistic, then refresh. */
+/**
+ * The one control on a row: done / not done. Optimistic, then refresh; a tick
+ * that doesn't land springs back. When a refresh brings a different answer for
+ * the same row (ticked in the other view, or by Lumi), the circle follows it.
+ */
 export function CompleteCircle({ id, done = false, label, size = 26 }: Props) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "busy">("idle");
   const [isDone, setIsDone] = useState(done);
+  // What the page last said; a new answer from the server replaces the local one (adjusted during render, no effect).
+  const [given, setGiven] = useState(done);
+  if (given !== done) {
+    setGiven(done);
+    setIsDone(done);
+  }
 
   const toggle = async () => {
     if (state === "busy") return;

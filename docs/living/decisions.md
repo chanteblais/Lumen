@@ -18,6 +18,21 @@
 **Principle.** AI & IA §57 (explicit information ≠ inference), §61 (can we understand where consequential information came from?).
 **Replaces.** The eight-character quote rule of Lumi's memory (engineering log, *Lumi's memory: their word checked in code*).
 
+## 2026-09-13 · Today does its own organising, and focus sessions are set aside for now
+
+**Decision.** Nothing on Today sends you to Home. *Not this* re-cuts the path on the card and shows what fits instead, with Lumi's one line on why; *Break it down* shows a few small steps on the card to pick the first from. *Start with Lumi* and focus sessions — the session bar, check-ins, the abandoned-session greeting and the *Body double* quick start — are removed from the product for now. Plan with Lumi is not being built.
+**Rationale.** Chanté: "Right now all the options on the today page just direct you to the home page chat. I'd really like to find a way to keep all that organizing on the Today page." Asked, she chose to "get rid of the start with lumi and focus sessions for now", and for *Not this* and *Break it down* to happen on the card without a conversation. On Plan with Lumi: "It was small and easy to miss. I wasn't a huge fan of the options either." *(Claude's reading:)* the Garden "should stand on its own as an immediately understandable surface" (`today-garden.md` §143), and leaving the page to change the plan was the opposite.
+**Implications.**
+- **This departs from the canon, and knowingly.** The Study (`focus-study.md`: accompaniment, containment, meaningful outcomes and leaving), Lumi's body-doubling role (`lumi.md`, V§7) and M5's outcome loop have no surface in the app now. The canon is unchanged — it is still the intended direction — and open question 2 now includes what a session is when it returns. Session reflection, the only automatic link between a way in and its outcome, is dormant; completions, declines and re-entry remain.
+- Lumi initiates nothing: check-ins were the one unprompted thing she did (open question 9).
+- Correction stays cheap (EP§6): a decline is one tap and a first step one more, and neither needs explaining.
+- The table, its rows and the domain code are kept so sessions can come back without a migration.
+
+**Principle.** EP§1 (the system does the organising), EP§2–4 (one decision at a time, on the surface you're on), EP§18 (one understanding across spaces: the decline and the step still reach Lumi), §143 of the Garden.
+**Replaces.** *Today's handoffs into chat* (2026-09-12, `today.md`) and the product surface of M5 *Focus Together*.
+
+---
+
 ## 2026-09-13 · Lumi may name time away when it helps someone get their bearings
 
 **Decision.** In conversation, Lumi may say how long someone has been away when that helps them orient, as in the model strategy's *"You disappeared for four days. We don't need to reconstruct the four days."* She never does it in a way that makes the absence feel like a debt. Counts of what's undone stay out, and so does any tally of what piled up. Pages show neither.
@@ -397,12 +412,16 @@ Distilled from the engineering log, [`product.md`](../product.md) and [`today.md
 
 ### Quiet by default · 2026-09-11
 
+*Partly superseded 2026-09-13: check-ins went with focus sessions (Today does its own organising, above), so Lumi currently speaks unprompted not at all; the greeting stays deterministic.*
+
 **Decision.** Lumi speaks unprompted only at check-ins the user agreed to. The greeting and the check-ins are deterministic.
 **Rationale.** Effective presence is often quiet (§7). An unprompted message is a small demand.
 **Implications.** Any future notification must clear this bar (open question 9).
 **Principle.** §7, §18.
 
 ### A session's end is a fact, not a request · 2026-09-12
+
+*Suspended 2026-09-13: focus sessions are removed from the product for now (Today does its own organising, above). This stays the design for when they return.*
 
 **Decision.** Focus sessions start only through Lumi. *Done* and *End* close a session in code, with no "did you finish?". A session left open is offered back once and never treated as a failure.
 **Rationale.** Three asks up front, none during: the body double doesn't interrogate.

@@ -9,12 +9,11 @@ import { listEventsSince, TODAY_BOUND_MS } from "./events";
 import { DECLINE_EVENT_TYPE, declinesFromEvents, listOpenIntentions, listRecentlyDone } from "./intentions";
 import { loadBeliefsOrNothing } from "./memory";
 import { getPlanForDate, prunePlan } from "./plans";
-import { resolveSession } from "./sessions";
 import { currentSitting } from "./users";
 
 export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
   const today = localDate(now, user.timezone);
-  const [openIntentions, recentlyDone, memory, todayEvents, planRow, sitting, session] = await Promise.all([
+  const [openIntentions, recentlyDone, memory, todayEvents, planRow, sitting] = await Promise.all([
     listOpenIntentions(db, user.id),
     listRecentlyDone(db, user.id, 5),
     // Never throws: a turn or a page carries on without beliefs if they can't be read.
@@ -23,8 +22,6 @@ export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
     listEventsSince(db, user.id, [...CAPACITY_EVENT_TYPES, DECLINE_EVENT_TYPE], new Date(now.getTime() - TODAY_BOUND_MS), 40),
     getPlanForDate(db, user.id, today),
     currentSitting(db, user.id),
-    // The one write in here: a session left open past its threshold is closed as abandoned on this visit.
-    resolveSession(db, user.id, now),
   ]);
   const lists = user.preferences.lists?.length ? user.preferences.lists : [...DEFAULT_LISTS];
   const capacityState = capacityStateFromEvents(todayEvents, user.timezone, now);
@@ -44,8 +41,6 @@ export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
     declinedToday: declinesFromEvents(todayEvents, user.timezone, now),
     /** The visit this request belongs to, and the gap it began after. */
     sitting,
-    /** The running focus session (if any) and the last one that ended. */
-    session,
     planRow,
     plan: planRow ? prunePlan(planRow.plan, openIntentions) : undefined,
   };

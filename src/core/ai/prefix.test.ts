@@ -12,9 +12,10 @@ import { asSchema } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "@/db/client";
 
+// Moved with the merge of main (today-in-place: focus sessions and Start with Lumi out of the persona and tools; the brief's places line).
 const EXPECTED = {
-  persona: { mailOff: "2005c1b99a05153b051ec3686d8bc7b0a3dee5fc29701cfe8e59e46cd92da194", mailOn: "b70c5645f469e63b7730dddfa16fba6acc97aeefdf491c381af18995f754a1df" },
-  prefix: { mailOff: "397a1169610c14726e4e7bfa533628952001ea66bae5c725d40c47407c8100db", mailOn: "b7e33635954b5b246a48d67c28ac835459202ba5a90cde1229ff37e608de9d0d" },
+  persona: { mailOff: "f6e40ef5f956603c73c4e4a140b9592f19eef9c5880748473b8ef8292c221136", mailOn: "064e626473dcceb3ceb14b7c4daafb13daf0a82b5e5672b2a82bd61b1a341c71" },
+  prefix: { mailOff: "deac9fc3e7f06f033c21fdb5c654eec1567a403454e7554f6299f2b7cbada750", mailOn: "7ff1e0da6f6feeb4a591dc9a9815698db695e045711cfa1ee1663d6342086d5e" },
 };
 
 async function hashes(mailOn: boolean) {

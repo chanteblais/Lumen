@@ -92,12 +92,14 @@ if (!process.env.CI) {
 // 4. core.hooksPath must be relative (.githooks), so each checkout runs its own
 //    branch's hooks. An absolute path makes every worktree run whatever the
 //    checkout it names has out; it read absolute again on 2026-09-13 after the
-//    trap row called it fixed. The config is shared by every worktree, so one
-//    check covers them all. Skipped in CI (no hooks run there).
+//    trap row called it fixed. The value is shared by every worktree unless a
+//    worktree sets its own (config.worktree), which wins — so the fix names the
+//    scope the value came from. Skipped in CI (no hooks run there).
 if (!process.env.CI) {
-  const hooksPath = gitOut('config', '--get', 'core.hooksPath')
+  const [scope, hooksPath] = (gitOut('config', '--show-scope', '--get', 'core.hooksPath') ?? '').trim().split('\t')
   if (hooksPath && (isAbsolute(hooksPath) || hooksPath.startsWith('~'))) {
-    failures.push(`core.hooksPath is absolute (${hooksPath}), so every worktree runs that checkout's copy of the hooks, not its own branch's.\n  Fix: git config core.hooksPath .githooks`)
+    const fix = `git config${scope === 'worktree' ? ' --worktree' : ''} core.hooksPath .githooks`
+    failures.push(`core.hooksPath is absolute (${hooksPath}, from the ${scope} config), so every worktree runs that checkout's copy of the hooks, not its own branch's.\n  Fix: ${fix}`)
   } else if (!hooksPath) {
     notes.push("core.hooksPath isn't set, so the commit guards (.githooks/pre-commit) don't run — Fix: git config core.hooksPath .githooks")
   }

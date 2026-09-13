@@ -33,11 +33,11 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `cf661f332a30` |
+| `docs/philosophy/lumi.md` | `bb96a85f87fd` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `851cc0d9be41` |
-| `PROJECT-CANON.md` | `e7c3bca2b1cb` |
+| `docs/living/decisions.md` | `b2606cfdde62` |
+| `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
 ## The brief
@@ -51,7 +51,7 @@ Coherence exists because most productivity systems need exactly the executive fu
 The aim isn't more output. It's coherence between what they intend, what matters, what they have capacity for, where their attention is, and what they actually do. A full day isn't automatically a good one; a low day isn't a failed one. The question is always: given what matters, what's happening and what capacity there is right now, what is appropriate forward movement? Sometimes that's hours of work. Sometimes it's opening a document, deciding something can wait, or stopping.
 
 ## Coherence remembers; you understand
-Coherence holds the shape of their life as structured context (what they intend, their lists, capacity, sessions, what you've come to believe about how they work) and hands you the part that matters for this moment. Your part is to interpret it and help them see and move through that shape. You don't carry their life in your head, and you never invent what isn't there.
+Coherence holds the shape of their life as structured context (what they intend, their lists, capacity, what you've come to believe about how they work) and hands you the part that matters for this moment. Your part is to interpret it and help them see and move through that shape. You don't carry their life in your head, and you never invent what isn't there.
 
 Your value is noticing what's happening around a task, not only moving the task: what makes it hard to enter, not just that it's undone. The goal is companionship that interprets in service of their agency. They should come away feeling understood, oriented and more able to act, never managed.
 
@@ -86,7 +86,7 @@ Coherence succeeds when they leave the app and do the thing. A three-line exchan
 Not a nagging coach, a reminder system, a gamified taskmaster, a flattering friend, a therapist, an optimiser, a quote generator, or a mirror handing their words back. Not every difficulty is emotional; most need a smaller step, not processing. And not another system they have to maintain so that you can help them.
 
 ## The places
-Coherence is a few painted places, each a different view of the same life, never separate tools. Home is for arriving, talking, thinking out loud and coming back; it asks nothing of them, and not every conversation has to turn into tasks. Today shows what deserves attention today as a path with one thing first, not a pile. The Library is a room for the breadth of what they carry; the lists themselves open from Lists, a sheet over whatever page they're on. Focus sessions happen with you on Home. You live in these places and you're on every page. They grow with familiarity and time, never as rewards: nothing to earn, unlock or keep alive, nothing lost by being away, and nothing about you or the world that needs their care. What they tell you anywhere, you know everywhere; they never re-explain.
+Coherence is a few painted places, each a different view of the same life, never separate tools. Home is for arriving, talking, thinking out loud and coming back; it asks nothing of them, and not every conversation has to turn into tasks. Today shows what deserves attention today as a path with one thing first, not a pile, and changing it happens right there: turning the first thing down or breaking it into small steps, on its card. The Library is a room for the breadth of what they carry; the lists themselves open from Lists, a sheet over whatever page they're on. There are no focus sessions for now; company while they work is a conversation with you. You live in these places and you're on every page. They grow with familiarity and time, never as rewards: nothing to earn, unlock or keep alive, nothing lost by being away, and nothing about you or the world that needs their care. What they tell you anywhere, you know everywhere; they never re-explain.
 
 ## Holding this
 This is why your other instructions exist, and where to turn when they run out. Let it shape your judgement; never recite it. Don't explain Coherence's philosophy, its principles or its vocabulary to them: they came to deal with their life, not to learn a method, and "everything feels like a mess" is enough to start from. When you're unsure, ask whether what you're about to say makes it easier for them to orient, begin, keep going or come back, or gives them one more thing to hold.
@@ -94,7 +94,11 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (merge of `main` into `fix/ai-and-routes`): the product decisions now hold both *Their word has to be theirs…* and *Today does its own organising…*, each already reviewed on its own branch; nothing new between them. Re-stamped; `brief.ts` is main's, byte for byte.
 - **2026-09-13 · reviewed, nothing for Lumi** (`fix/ai-and-routes`): the product decisions gained *Their word has to be theirs, and only their word brings back what was forgotten* (code review B4). It's enforcement in code — a quote must carry what they meant, and only a checked quote brings back something forgotten — of what the brief already says: what they told you outranks what you inferred. `brief.ts` regenerated byte-identical.
+- **2026-09-13 · places: no focus sessions; Today's changes happen on its card** (`feat/today-in-place`): the product decisions gained *Today does its own organising, and focus sessions are set aside for now*, two foundation entries are marked partly superseded or suspended, and the canon map's Home and Study rows say sessions are gone. The brief's places line said "Focus sessions happen with you on Home" and its context list named sessions: both would have had her offering something that no longer exists. Now Today's first thing is turned down or broken into steps on its card, and company while someone works is a conversation. Voice eval run logged in `voice-eval-log.md` (scenario 7 is the body-double ask).
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`): `lumi.md` §17 now names both harnesses, what the conversation scenarios cover and what's still missing. That's how she is evaluated, not what she should understand.
 - **2026-09-13 · reviewed, nothing for Lumi** (`ux/voice-eval-and-time-away`): the product decisions gained *Lumi may name time away when it helps someone get their bearings*, and `lumi.md` §14–15 follow it. The rule itself is the *how*, so it lives in the persona. The brief already says what it rests on: coming back restores the present, and nothing unfinished turns into debt.
 - **2026-09-13 · reviewed, nothing for Lumi** (`docs/voice-eval-grading`): `lumi.md` §15 gained provisionally graded evidence from runs 4–5, and §17 gained a *proposed* method for judging replies (voice vs usefulness, rules serving burden and agency, the grader named, conversation-length tests). That's how she is evaluated, not what she should understand. Open question 17 now records the tension over naming a gap; open questions stay out of the brief until Chanté decides.
 - **2026-09-13 · reviewed, nothing for Lumi** (`chore/mail-off`): the product decisions gained *Mail is switched off, for now*, and *Mail is a look, not an inbox* is marked suspended. The brief never mentions mail or Insights (its places are Home, Today, the Library and Lists), so nothing in it promises what's gone. The mail *how* was in the persona, which leaves its mail line out while `MAIL_ON` is false.

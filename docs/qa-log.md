@@ -6,6 +6,72 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (7) — no way to sign in from an incognito window (`fix/sign-in-path`)
+
+Chanté: "The site doesn't give a log in option in incognito."
+
+### Fixed
+- **Signed out, `/sign-in` and `/sign-up` showed no form.** Production (www.burlyman.ca) was healthy from the outside: `/` redirected to `/sign-in`, Clerk's scripts and `/v1/environment` answered, every request was 200. In a fresh headless Chrome profile, though, the `SignIn` root box stayed empty and the URL kept gaining `?redirect_url=…/sign-in`. A trace of `Clerk.redirectToSignIn` showed the call coming from the sign-in UI's fallback route. The cause is the Lists sheet's `app/@sheet/[...catchAll]`, which adds `catchAll: ["sign-in"]` to `useParams()`. `@clerk/nextjs` infers the component's path by removing every catch-all param from the pathname, so it read `/` and treated `/sign-in` as an unknown step. Both pages now pass `routing="path"` and their own `path`. It has been broken signed out since `775002c` (the Lists sheet, this morning); a signed-in browser never sees the sign-in form, so nobody noticed.
+
+### Known and deliberate
+- `TimezoneCapture`'s first-visit refresh isn't involved (the loop was the same with the cookie already set).
+
+### Verified (live, port 3006, worktree on the branch)
+- Fresh profile, signed out: `/sign-in` and `/sign-up` each mount Clerk's card (2 inputs, Continue with Google) and the URL stays clean. `npm run check` passes; `client.db.test.ts` timed out once under the full run and passed on its own (5/5).
+- Production is only verifiable after deploy: re-run the fresh-profile probe against www.burlyman.ca/sign-in.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- An incognito window on the deployed site: the sign-in card appears, and Continue with Google signs in and lands on Home.
+
+---
+
+## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
+
+Chanté: "It's a big flash of white and things loading faster than others. It doesn't feel very smooth."
+
+### Fixed
+- **The white flash: Home streamed in behind the shell.** The server HTML put the sidebar, top bar and companion first, and the whole Home view (room, palette, chat) in a hidden `S:0` revealed by `$RC` at the very end of the document (byte 105,331 of 105,356), behind React's 300ms reveal throttle. The cause was a bare `<Suspense>` in `app/page.tsx` with the async `LibraryDebug` inside it. Until the reveal, the shell painted in the ivory palette (`.shell:has(.home-scene)` can't match while the scene sits outside the shell). Boundary removed: the HTML now has no `S:0` or `$RC`, and `.home-scene` comes before the companion. `next build` passes.
+- **The painting popped.** It faded in over a flat `#362e29`, while its average colour is `rgb(121 78 48)`. Each room's scene now carries a 24×16 copy of its painting (~220 bytes as a data URI in the stylesheet), so the first paint already has the room's colours and the fade brings it into focus. Today and the Library too.
+- **The clock slid 60px left when the account button arrived** (~1–2.7s, when Clerk loads). `.auth-slot` holds the 28px place; the button fades in. The clock fades in when set instead of popping.
+
+### Known and deliberate
+- The painting still fades (450ms) when it isn't cached, now from its blurred copy. Lumi's figure and the account avatar still wait for their images.
+- Dev is much slower than production here: hydration, Clerk's scripts and the account avatar land later on `localhost`. Judge smoothness on a preview or production deploy too.
+
+### Verified (live, port 3006, worktree on the branch)
+- The HTML shape: no `S:0` or `$RC`; room, chat and greeting inline. `npm run check` and `next build` pass.
+- Not verifiable from the automation tab: the paint sequence itself (hidden tab; dev-hygiene traps).
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- Hard-reload Home (Cmd-Shift-R) a few times: no ivory frame. The room is there from the start, soft, then sharp. The clock and account button don't move.
+- Same on Today and the Library: the painting comes into focus instead of popping.
+
+## Sweep 2026-09-13 (5) — the old chat flashed on opening Home (`fix/home-opens-on-greeting`)
+
+Chanté: "When I first land on the home page, sometimes my old chat is there for a second and then it disappears."
+
+### Fixed
+- **The page painted from the top, then scrolled to the greeting.** Home opens on the greeting card with the earlier conversation one scroll up, but the scroll to the card was MessageList's `useEffect`, which runs only after React hydrates — ~1s on Home in dev, less in prod. The server HTML (streamed into `S:0` and revealed by React's inline `$RC`) paints before that, at scroll 0: the old conversation, then the jump. Now `OPEN_ON_CARD_SCRIPT` (`components/chat/open-on-card.ts`), inlined in the layout beside the scene fade script, watches for `[data-opens-here]` (the card's wrapper) being added to the document and scrolls it into place in the same microtask checkpoint, so before any paint — on the first HTML and on client navigations alike. MessageList's effect still runs after it, and corrects for anything that shifts (fonts).
+
+### Known and deliberate
+- A handoff from Today (`?start=…`) still lands on the card for a moment and then follows the new message down — that's the chat following the newest line, as before.
+
+### Verified (live, port 3006, worktree on the branch)
+- In the page: scroll `.chat-scroll` to 0 (card 9,587px down, 28 earlier messages above it), take the transcript out and put it back the way `$RC` does. Synchronously after the insert the scroll is still 0; after the mutation microtask — before a paint could happen — it is 9,575 with the card 12px from the top (the scroll padding), identical to where the page settles on its own. `npm run check` passes.
+- Not verifiable from the automation tab: frame-by-frame first paint (the tab is hidden, so rAF doesn't run) and an iframe load of `/` (the frame headers from `chore/hygiene` refuse it — dev-hygiene traps).
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- Hard-reload Home a few times (and open it from Today in the nav): it should open on the greeting with no glimpse of the old conversation. Scroll up: the earlier chat is all there.
+
 ## Sweep 2026-09-13 (4) — the ledger said it twice; her shadow over the bubble (`fix/ledger-double-note`)
 
 Chanté, from Today's speech bubble: "I need to buy new headphones and also call Kendra" got *Noted · Buy new headphones · Personal*, *Noted · Call Kendra · Personal*, then *Updated · Buy new headphones*, *Updated · Call Kendra*. And Lumi's shadow was clipping the bubble.

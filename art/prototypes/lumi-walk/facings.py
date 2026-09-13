@@ -35,7 +35,7 @@ from scipy import ndimage as ndi
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-B = json.load(open(os.path.join(HERE, 'room-home.json')))['iso']['slope']
+B = json.load(open(os.path.join(ROOT, 'art', 'scenery', 'home', 'layers.json')))['iso']['slope']
 CHIN = 0.46
 GATE = 7.5
 # The drawn facings and the angle each one is turned on the ground, facing you (0°) round to facing away (180°).

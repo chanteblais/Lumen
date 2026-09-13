@@ -25,7 +25,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** a returning user sees their history and a state-aware greeting, and Lumi's replies pass the voice eval.
 - **EF check:** Lumi asks one thing at a time; the first reply to "I can't start" is a step, not a plan.
 
-> **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions.
+> **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions. *(2026-09-13: Start with Lumi and focus sessions removed from the product, and Today's Not this and Break it down moved onto the card — the M3–M5 lines below are the record of what was built.)*
 
 ## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days) — **done 2026-09-12 (`feat/m3-intentions`), merged; migration `0001` applied; QA'd 2026-09-13; latency pass PR #3**
 - Tools: `create_intention`, `update_intention`, `complete_intention`, `drop_intention`; every call writes an `events` row.
@@ -45,7 +45,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** returning after a simulated 14-day gap yields the re-entry greeting and a two-minute cleanup, ending with one suggested next step.
 - **EF check:** re-entry never shows a number of overdue things.
 
-## M5 — Focus Together + outcome loop (1–1½ days) — **built 2026-09-12 (`feat/m5-focus-together`, worktree)**; no migration
+## M5 — Focus Together + outcome loop (1–1½ days) — **built 2026-09-12 (`feat/m5-focus-together`, worktree)**; no migration — **removed from the product 2026-09-13** (Chanté's call; table and domain code kept, unused)
 - Tools `start_focus_session` (with `approach`) / `end_focus_session`; `SessionBar` (goal, first step, elapsed/planned, end) pinned above the composer while active.
 - **Reflection v1** (`core/ai/reflect.ts`): runs in `after()` when a session ends; structured-output ops applied with guardrails; `reflection.ran` event. A completed session whose `approach` matches a `strategy` belief confirms it; an abandoned one contradicts it.
 - Client timer fires check-ins at `check_in_minutes`: *Still with it?* → Yep (event only) / Stuck / Got distracted / Done (structured `session_event` user message; Lumi replies).

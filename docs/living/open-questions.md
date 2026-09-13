@@ -12,7 +12,7 @@ Related: [Home](../product/home.md).
 
 ## 2. How does Focus move into the Study?
 
-**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Sessions still run on Home. The summary question is “What are we doing now?”; this is not mandated UI copy.
+**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Focus sessions were removed from the product on 2026-09-13 (Chanté: "for now"); the Study direction stands, and what a session is when it returns is part of this question. The summary question is “What are we doing now?”; this is not mandated UI copy.
 
 Related: [Study](../product/focus-study.md).
 
@@ -54,7 +54,7 @@ Related: [Garden](../product/today-garden.md).
 
 ## 9. What may Lumi initiate?
 
-**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings/check-ins remain as built.
+**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings remain as built; check-ins were removed with focus sessions (2026-09-13), so Lumi currently initiates nothing.
 
 Related: [Lumi](../philosophy/lumi.md).
 
@@ -110,7 +110,7 @@ Related: [Lumi](../philosophy/lumi.md).
 
 ## 18. What should check-in defaults be?
 
-**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Current timed check-ins remain as built; Study’s presence should not become supervision or engagement pressure.
+**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Timed check-ins were removed with focus sessions on 2026-09-13; Study’s presence should not become supervision or engagement pressure.
 
 Related: [Study](../product/focus-study.md).
 
@@ -131,6 +131,8 @@ Related: [Motion & Interaction](../design/motion-and-interaction.md).
 **Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. Voice-eval runs 4 and 5 carry Claude's provisional grades, not blind ([log](../voice-eval-log.md)). Runtime choices do not establish product philosophy.
 
 **Method, from review feedback Chanté relayed (2026-09-13); proposed until she settles it:** a grader who is involved grades blind on consistent criteria rather than abstaining, and every run records its grader. Voice and usefulness are graded separately. Rules about numbers, time and explaining herself serve burden and agency; they aren't prohibitions. The largest gap is judgement across short conversations with tools: does Lumi use what she knows, respond well to correction, leave reflection alone when appropriate, and make the next move easier? The nine single-reply scenarios can't show this, and a paired same-clock run is needed before any conclusion about the brief.
+
+**Conversations (2026-09-13).** `scripts/conversation-eval.mjs` runs short conversations with the real tools against a throwaway database, checks the actions in code, and can pair each scenario with and without the brief at one clock, with a blind packet ([log](../voice-eval-log.md) → Conversations). Still missing: a spiral, a framing worth challenging, and a pattern across days, which needs structure question 22 hasn't settled. Still open: who grades the blind packets, and how many runs a conclusion needs.
 
 Related: [Model strategy](../product/lumi-model-strategy.md).
 

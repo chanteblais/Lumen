@@ -1,25 +1,18 @@
 /**
  * One chat turn's logic, out of the route (code review B11) so it can be tested:
- * what a client may send (B6), the structured client events a message may carry
- * — a "Not this" from Today, a tap on the session bar or a check-in — what the
- * context block is built from, and whether the turn changed anything today's
- * path is cut from (B10). The route keeps auth, loading, streaming and saving.
- * See docs/architecture.md → API routes → `/api/chat`.
+ * what a client may send (B6), what the context block is built from, and whether
+ * the turn changed anything today's path is cut from (B10). The route keeps auth,
+ * loading, streaming and saving. See docs/architecture.md → API routes → `/api/chat`.
  */
 import { z } from "zod";
-import type { Db } from "@/db/client";
 import type { Lead, MemoryNote, User } from "@/db/schema";
-import { isDeclineReason } from "@/core/declines";
 import type { ActivityItem } from "@/core/domain/activity";
-import { messageText, type CoherenceMessageMetadata, type CoherenceUIMessage } from "@/core/domain/conversations";
-import { declineIntention } from "@/core/domain/intentions";
+import { messageText, type CoherenceUIMessage } from "@/core/domain/conversations";
 import type { loadLibraryOrNothing } from "@/core/domain/library";
 import type { Heard } from "@/core/domain/memory-rules";
-import { elapsedMinutes, endFocusSession, getSession, recordCheckIn } from "@/core/domain/sessions";
 import type { Snapshot } from "@/core/domain/snapshot";
-import { isSessionEventResponse } from "@/core/focus";
 import { isUuid } from "@/core/ids";
-import type { ContextInput, SessionEventNow, StartNow } from "./context";
+import type { ContextInput } from "./context";
 import type { LibraryView } from "./library-select";
 import type { TurnSignals } from "./memory-select";
 import type { Recut } from "./today-plan";
@@ -30,14 +23,12 @@ import type { Recut } from "./today-plan";
 export const MAX_MESSAGE_CHARS = 20_000;
 export const MAX_PARTS = 8;
 
+// Structured handoffs (declined, session_event, start_intention) are no longer sent or read (2026-09-13,
+// today-in-place); a message that still carries those fields is plain talk. createdAt is not read: the server stamps it.
 const Metadata = z.object({
   kind: z.string().max(40).optional(),
   intentionId: z.string().max(64).optional(),
   reason: z.string().max(200).optional(),
-  sessionId: z.string().max(64).optional(),
-  response: z.string().max(40).optional(),
-  minute: z.number().int().min(0).max(24 * 60).optional(),
-  // createdAt is not read: the server's clock stamps the message.
 });
 
 const IncomingMessage = z
@@ -73,63 +64,6 @@ export function userMessageFrom(incoming: IncomingMessage, now: Date, newId: () 
   };
 }
 
-/* ---------------------------------------------------- client events */
-
-export type ClientEvent = {
-  /** This very message was a "Not this" from Today. */
-  declinedNow?: { title: string; reason?: string };
-  /** This very message was a tap on the session bar or a check-in (not Yep). */
-  sessionEventNow?: SessionEventNow;
-  /** Today's path is re-cut once the reply has streamed. */
-  recut?: Recut;
-  /** A session this event closed: reflected on after the reply. */
-  endedSessionId?: string;
-};
-
-type EventDeps = {
-  declineIntention: typeof declineIntention;
-  getSession: typeof getSession;
-  recordCheckIn: typeof recordCheckIn;
-  endFocusSession: typeof endFocusSession;
-  now: () => Date;
-};
-const liveEvents: EventDeps = { declineIntention, getSession, recordCheckIn, endFocusSession, now: () => new Date() };
-
-/**
- * Record what a structured client message says before the context is built, so
- * Lumi's reply is about a fact, not a request. "Not this" records the decline
- * (and asks for a re-cut); a check-in answer is recorded, and Done / End close
- * the session in code. Anything else, or ids that don't resolve, does nothing.
- */
-export async function applyClientEvent(db: Db, userId: string, meta: CoherenceMessageMetadata | undefined, deps: Partial<EventDeps> = {}): Promise<ClientEvent> {
-  const d = { ...liveEvents, ...deps };
-  if (meta?.kind === "declined" && isUuid(meta.intentionId)) {
-    const reason = isDeclineReason(meta.reason) ? meta.reason : undefined;
-    const row = await d.declineIntention(db, userId, meta.intentionId, reason);
-    return row ? { declinedNow: { title: row.title, reason }, recut: { reason: "declined" } } : {};
-  }
-  const response = meta?.response;
-  if (meta?.kind === "session_event" && isUuid(meta.sessionId) && isSessionEventResponse(response) && response !== "ok") {
-    const s = await d.getSession(db, userId, meta.sessionId);
-    if (!s || s.endedAt) return {};
-    const minute = elapsedMinutes(s, d.now());
-    if (response !== "end") await d.recordCheckIn(db, userId, s.id, response);
-    const ends = response === "done" || response === "end";
-    if (ends) await d.endFocusSession(db, userId, s.id, response === "done" ? "completed" : "stopped_early");
-    return { sessionEventNow: { response, goal: s.goal, minute, intentionId: s.intentionId }, ...(ends ? { endedSessionId: s.id } : {}) };
-  }
-  return {};
-}
-
-/** "Start with Lumi" from Today is a button, not a question: the intention and the first step Today's path already chose. */
-export function startNowFor(meta: CoherenceMessageMetadata | undefined, snap: Pick<Snapshot, "openIntentions" | "plan">): StartNow | undefined {
-  if (meta?.kind !== "start_intention" || !isUuid(meta.intentionId)) return undefined;
-  const i = snap.openIntentions.find((x) => x.id === meta.intentionId);
-  if (!i) return undefined;
-  const fromPlan = snap.plan?.rightNow?.intentionId === i.id ? snap.plan.rightNow.firstStep : undefined;
-  return { intentionId: i.id, title: i.title, firstStep: fromPlan ?? i.nextAction, estimateMinutes: i.estimateMinutes };
-}
-
 /* --------------------------------------------------- what Lumi reads */
 
 /** What they've actually said lately, newest last: a belief rests on their word only when its their_words is in here. */
@@ -141,12 +75,13 @@ export function userWordsFrom(all: CoherenceUIMessage[], last = 8): Heard[] {
     .filter((w) => w.text);
 }
 
-/** What this turn is about — for choosing beliefs and for opening Library threads. */
-export function turnSignalsFor(message: CoherenceUIMessage, all: CoherenceUIMessage[], snap: Pick<Snapshot, "session">, startNow?: StartNow): TurnSignals {
+/** What this turn is about — for choosing beliefs and for opening Library threads: the message, the last few turns, and today's one thing. */
+export function turnSignalsFor(message: CoherenceUIMessage, all: CoherenceUIMessage[], snap: Pick<Snapshot, "plan" | "openIntentions">): TurnSignals {
+  const rightNow = snap.plan?.rightNow ? snap.openIntentions.find((i) => i.id === snap.plan!.rightNow!.intentionId) : undefined;
   return {
     message: messageText(message),
     recent: all.slice(-7, -1).map(messageText),
-    focus: [snap.session.active?.goal, snap.session.active?.firstStep, startNow?.title],
+    focus: [rightNow?.title],
   };
 }
 
@@ -161,8 +96,6 @@ export function contextInputFor(t: {
   recentActivity: ActivityItem[];
   memory: { chosen: MemoryNote[]; heldBack: boolean };
   library: { view: LibraryView<Library["threads"][number], Library["notes"][number], Library["episodes"][number]>; unavailable: boolean };
-  event: ClientEvent;
-  startNow?: StartNow;
   mail?: { scan?: { at: Date } | null; leads?: Lead[] };
 }): ContextInput {
   const { user, snap } = t;
@@ -183,12 +116,7 @@ export function contextInputFor(t: {
     libraryUnavailable: t.library.unavailable,
     capacity: snap.capacity,
     plan: snap.plan,
-    declinedNow: t.event.declinedNow,
     declinedToday: snap.declinedToday,
-    session: snap.session.active,
-    lastSession: snap.session.last,
-    sessionEventNow: t.event.sessionEventNow,
-    startNow: t.startNow,
     mailScan: t.mail ? (t.mail.scan ? { at: t.mail.scan.at } : null) : undefined,
     leads: t.mail?.leads,
   };
@@ -196,7 +124,7 @@ export function contextInputFor(t: {
 
 /* ------------------------------------------------ after the reply */
 
-/** What a turn changed, filled in as it runs; the route's `after()` hooks read it once the reply has streamed. */
+/** What a turn changed, filled in as it runs; the route's `after()` hook reads it once the reply has streamed. */
 export type TurnOutcome = {
   /** Tools Lumi called this turn, by name. */
   called: Set<string>;
@@ -205,8 +133,6 @@ export type TurnOutcome = {
   hadPlan?: boolean;
   /** That path was cut with nothing to choose from, and there is something now (`needsFirstItems`). */
   firstItemsDue?: boolean;
-  endedSessionId?: string;
-  abandonedSessionId?: string;
 };
 
 /** Tool writes that can change which intentions today's path chooses from. */

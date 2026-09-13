@@ -24,7 +24,7 @@ export function chatModel() {
 export type Effort = "low" | "medium";
 
 /** Every kind of model call. Each has its own prompt cache key: their prefixes differ, so sharing one key only crowds the cache. */
-export type CallKind = "chat" | "plan" | "leads" | "consolidate" | "reflect";
+export type CallKind = "chat" | "plan" | "breakdown" | "leads" | "consolidate" | "reflect";
 
 /** `lumi-chat`, `lumi-plan`, … — OpenAI routes requests with the same key to the same cache. */
 export function promptCacheKey(kind: CallKind): string {

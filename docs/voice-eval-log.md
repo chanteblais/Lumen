@@ -15,7 +15,7 @@ Note why beside every ~ and ✗.
 
 **Who graded.** Every graded run names its grader. Claude's grades are a provisional assessment, never Chanté's approval, and say where Claude has a stake: its own prompt change, or a comparison with Claude in it. Having a stake is a reason to grade blind on these criteria, not to abstain. A comparison worth deciding on shuffles the conditions and holds identifying details equal, such as the time of day.
 
-**What this harness can't show:** actions (it has no tools), and judgement across a conversation. Nine replies of one or two turns show whether she sounds right. They don't show whether she uses what she knows, takes a correction, leaves reflection alone or makes the next move easier over several turns (`lumi.md` §17).
+**Two harnesses.** `scripts/voice-eval.mjs` sends the nine scenarios below, one or two turns each, with no tools and no data. It shows whether she *sounds* right. `scripts/conversation-eval.mjs` (*Conversations*, below) runs short conversations with her real tools against a throwaway database seeded for each scenario. It shows what she *does* over several turns: whether she uses what Coherence holds, takes a correction, leaves reflection alone, and acts. A conversation's action checks are code; its Voice and Use are still graded by hand.
 
 ---
 
@@ -35,9 +35,84 @@ Note why beside every ~ and ✗.
 
 ---
 
+## Conversations
+
+`node --env-file=.env.local --import tsx scripts/conversation-eval.mjs [id…] [--both] [--no-brief] [--at=ISO] [--dry] [--list]` runs the real model and her real tools against a throwaway database per scenario (nothing touches production), with each turn assembled as `/api/chat` does it.
+- `--both` runs each scenario with and without the brief at one clock. It writes `blind.md`, with the two as A and B, and `key.json`: grade the packet before opening the key.
+- `--dry` seeds each scenario and prints its first context block, with no model calls.
+- Transcripts go to the OS temp dir. Paste highlights and grades below, newest first.
+
+**Checks:** a `must` is an action the right conversation needs, checked in code (✓ held · ✗ missed). A sign is something for the grader to look at, never a verdict on its own: ⚑ when it showed, *not seen* when it didn't. Voice and Use are graded as above.
+
+| Scenario | Seeded | What it tests |
+|---|---|---|
+| `brain-dump` | nothing | capture without asking; the pile held without a count; one thing chosen |
+| `coming-back` | 16 days away; three stale things, two fresh | re-entry: time away only to orient; the pass over stale things; letting go on their word; one step after |
+| `undo-a-tick` | a tick on a page, just now | uses Recent changes instead of asking |
+| `correction` | "thesis due October 30", their word | takes a correction to what they said |
+| `stays-reflective` | nothing | a real question left alone, not turned into tasks |
+| `not-the-call` | an insurance call put off for days; her guess that it keeps being put off | picks one and reshapes Today; takes a refusal without persuasion; names the obstacle once |
+| `body-double` | "Edit chapter 3" with its first step and 45 minutes | takes what's known; starts the session |
+| `low-day` | a three-hour rewrite, a five-minute reply, a small chore | capacity reported; the day made smaller |
+
+### Conversation runs
+
+#### Conversation run 1 — 2026-09-13 · all eight, brief on and off at one clock (`gpt-6-astra`, reasoning effort low, clock 1:54pm Vancouver, a Sunday)
+Every `must` held in all 16 conversations.
+
+**Graded blind by Claude, provisionally.** A separate subagent read only `blind.md`, not the key or the transcripts, and graded all 16 conversations; I unblinded afterwards. This is an assessment, not Chanté's approval. It is blind to the condition but not free of a stake: the grader is the same model family that wrote the brief, the scenarios and the checks. **One run of eight scenarios can't settle whether the brief helps.**
+
+| Scenario | Brief on · Voice / Use | Brief off · Voice / Use | Better, unblinded |
+|---|---|---|---|
+| `brain-dump` | ✓ / ✓ | ✓ / ✓ | off: its reason tied the pick to the rewrite ("the extension could change the timeline for the intro") |
+| `coming-back` | ✓ / ✓ | ✓ / ✓ | about equal: on also asked what was already handled; off nudged the bike rack toward going |
+| `undo-a-tick` | ✓ / ✓ ("Put it back.") | ✓ / ✓ ("Back on your list.") | about equal |
+| `correction` | ✓ / ~ | ✓ / ✓ | off: re-asked what makes the thesis hard; on asked "What's the thesis looking like at the moment?", an open status report |
+| `stays-reflective` | ✓ / ✓ | ~ / ~ | on: off filed a memory right after "it's not a to-do", and "That seems worth staying with" leans therapeutic |
+| `not-the-call` | ✓ / ✓ | ✓ / ✓ | on, narrowly: "We don't have to make it a call if there's another way", and it recorded the obstacle as a revised belief |
+| `body-double` | ✓ / ✓ | ✓ / ~ | on: started the session on the first turn from what it held; off asked "Shall we use the 45 minutes set aside for it?" |
+| `low-day` | ✓ / ✓ | ✓ / ~ | on: took the rewrite off the table itself; off asked the user to check what's time-sensitive |
+
+**Unblinded tally:** brief on was better in 4, off in 2, equal in 2. Marks below ✓: 1 with the brief, 4 without. On one sample, that leans toward the brief.
+
+**Patterns across both conditions (the grader's):**
+- **The failure left is confirming what Coherence holds, not asking outright:** "Shall we use the 45 minutes…", "Is anything genuinely time-sensitive", "What's the thesis looking like".
+- **Direct asks were acted on cleanly in all 16:** the tick reopened without asking, the dump filed silently, exactly what was released dropped, the correction kept in their words.
+- **She often waits a turn before picking.** In the brain dump and the low day she asked "Anything else… before we pick", which run 4 already marked ~.
+- **Memory writes need judgement about the moment.** A revised belief after "I just hate phone calls" is the understanding layer working. `remember` mid-reflection is what `lumi.md` §12 says to leave alone.
+- **In two weeks away, neither condition named the time away or tallied what piled up.**
+
+**Harness changes from this grading:**
+- The body-double sign now also catches a confirmation of what's held, or a session not started on the first turn.
+- The reflective scenario has a sign for any memory write.
+- A reply with no text is a sign. "Yep" during a session got an empty reply, with the brief in this run and without it in the re-run that tested the sign, so it isn't about the brief. How the app shows an empty reply is being checked separately.
+- Signs that held read *not seen*.
+- `not-the-call` re-sent `reshape_today` with the same pick on the refusal turn. That's harmless, but it adds noise to the events log.
+
+---
+
 ## Runs
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
+
+### Run 7 — 2026-09-13 · all nine on OpenAI after focus sessions were removed (`feat/today-in-place`; `gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:40pm Vancouver, last seen 3h ago)
+The persona lost *Focus Together*, *Not this* and the *Body double* quick start, *Company* now reads "be there: one short line, then quiet until they speak", and the brief's places line says there are no focus sessions and that Today's changes happen on its card. Prefix ~3,480 tokens, cached from the second call (run 6: 4,140 uncached, before this change and before `main`'s later persona edits). The script runs without tools, so nothing is saved in scenario 9.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file. No writing yet—just get it on the screen." |
+| 2 | ✓ | ✓ | "Tell me what's competing for your attention — messy is fine." → reflects the shape (the big three against the everyday two), then one question: "Is anything here due soon, or holding someone else up?" |
+| 3 | ✓ | ✓ | "What's on your mind that might need attention? Say it in whatever order it comes—no need to make a list first." |
+| 4 | ✓ | ✓ | "What's the task?" → "Pull up their phone number. No need to dial yet." |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" — right tone; with no running session in context there is nothing to point back to, so the question is the only move |
+| 6 | ✓ | ✓ | "We can start with what matters now, rather than reconstructing the last two weeks. / What's on your mind? You don't need to sort it first." |
+| 7 | ✓ | ✓ | "I'm here. I'll stay quiet while you work." → "I'm here while you edit. No need to check in until you want to." |
+| 8 | ✓ | ✓ | "Let's keep today small. One small thing can be enough. / Is there anything that can't wait until tomorrow?" |
+| 9 | ✓ | ✓ | the dump reflected in three short lines, then one pick with its reason: "I'd start with Priya's email, so the extension question can move while you do something else. Open a draft addressed to her." |
+
+**Why:** the change this run checks is scenario 7, the ask focus sessions used to answer. She gives company in words and goes quiet, and offers no session, timer or check-in schedule that no longer exists; "no need to check in until you want to" puts the check-in in their hands. Nothing elsewhere regressed against run 5: steps before plans (1, 4), one question at a time (2, 3, 8), no counts (9). Scenario 5 is weaker without a session to return to, which is the cost of the removal, not a voice failure.
 
 ### Run 6 — 2026-09-13 · scenario 6 on OpenAI after *Lumi may name time away* (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~1:40pm Vancouver, last seen 3h ago)
 The persona and the re-entry context line now allow naming time away when it helps orient, never as debt (`decisions.md` → *Lumi may name time away*). Prefix 4,140 tokens, uncached on this single call. The persona on `main` has grown since run 5 (the Library section), so the difference isn't all this change.

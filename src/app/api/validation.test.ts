@@ -9,11 +9,9 @@ const reached = vi.fn();
 vi.mock("@/db/client", () => ({ db: () => ({}) }));
 vi.mock("@/lib/auth", () => ({ requireUser: async () => ({ id: "u1", timezone: "UTC", preferences: {} }) }));
 vi.mock("@/core/domain/leads", () => ({ keepLead: (...a: unknown[]) => reached("keep", ...a), dismissLead: (...a: unknown[]) => reached("dismiss", ...a) }));
-vi.mock("@/core/domain/sessions", () => ({ recordCheckIn: (...a: unknown[]) => reached("checkIn", ...a) }));
 vi.mock("@/core/domain/memory", () => ({ applyBeliefOps: (...a: unknown[]) => reached("beliefs", ...a) }));
 
 const leads = await import("./leads/[id]/route");
-const session = await import("./session/route");
 const beliefs = await import("./beliefs/[id]/route");
 
 const ID = "0b8c4f7e-2d1a-4c3b-9e8f-7a6b5c4d3e2f";
@@ -27,13 +25,6 @@ describe("bad input never reaches the domain", () => {
     expect((await leads.PATCH(req({ action: "keep" }), params("nope"))).status).toBe(400);
     expect((await leads.PATCH(req("{"), params(ID))).status).toBe(400);
     expect((await leads.PATCH(req({ action: "archive" }), params(ID))).status).toBe(400);
-    expect(reached).not.toHaveBeenCalled();
-  });
-
-  it("session: the id must be an id and the response ok", async () => {
-    expect((await session.POST(req({ id: "nope", response: "ok" }))).status).toBe(400);
-    expect((await session.POST(req({ id: ID, response: "stuck" }))).status).toBe(400);
-    expect((await session.POST(req("not json"))).status).toBe(400);
     expect(reached).not.toHaveBeenCalled();
   });
 

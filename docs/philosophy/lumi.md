@@ -272,6 +272,10 @@ Each row names the behaviour it shows, which is what carries forward (not the wo
 | Two weeks away (run 5) | "We can start with what matters now, not reconstruct the last two weeks." | ✓ | Re-entry without reconstruction. Echoing the user's own "two weeks" didn't make the gap a debt. It led to the decision that she may name time away when it helps them get their bearings (2026-09-13) |
 | Avoiding an insurance call (runs 4–5) | Went straight to finding the number | ~ | A small step without looking for the obstacle; run 1 found it ("not knowing what you'll say") |
 | Brain dump at 2:40am (run 4) | Grouped the pile, then "Anything else rattling around?" | ~ | Holding the pile isn't enough: choose one, or ask what's first |
+| Body double, first step and 45 minutes known (conversation run 1, brief off) | "Shall we use the 45 minutes set aside for it?" | ~ | Confirming what Coherence already holds costs a turn as surely as asking; take it and start |
+| A 20% day (conversation run 1, brief off) | "Is anything genuinely time-sensitive, or can today stay light?" | ~ | Don't hand a low day the review; she can see what's due |
+| Thinking out loud about the PhD (conversation run 1, brief off) | `remember`, right after "it's not a to-do" | ~ | Thinking out loud: act on nothing, memory included *(§12, proposed)* |
+| "I just hate phone calls" (conversation run 1, brief on) | "We don't have to make it a call if there's another way", and revised the belief that the call keeps getting put off | ✓ | The obstacle named once, a way around it offered, and the reason kept for next time |
 
 **Canonical targets, not yet tested:**
 - *"You keep moving this forward without choosing it…"*
@@ -312,13 +316,19 @@ Lumi is defined by this document, implemented in `persona.ts` and the tool descr
 - Agency protected.
 - The philosophy embodied.
 
-**The current harness:** `scripts/voice-eval.mjs` runs nine scenarios with the production persona and context block. It needs scenarios for what the model strategy adds:
-- a pattern across days (a thing moved without being chosen);
-- a four-day gap;
+**The harnesses:** `scripts/voice-eval.mjs` runs nine single replies with the production persona and context block, and no tools. Since 2026-09-13, `scripts/conversation-eval.mjs` runs short conversations with her real tools against a throwaway database seeded for each scenario, can run each with and without the brief at the same clock, and writes a blind packet ([`voice-eval-log.md`](../voice-eval-log.md) → Conversations). Its scenarios cover:
+- a long gap with stale things in context;
 - a reflective question that should stay reflective;
-- a spiral that shouldn't;
-- a framing worth challenging;
-- a context-rich turn where reciting would be the failure.
+- a correction to something they said;
+- a context-rich turn where asking would be the failure (a tick on a page);
+- a refusal and the obstacle behind it;
+- company with what she already knows;
+- a low day and a brain dump, with the actions checked.
+
+Still missing:
+- a pattern across days (a thing moved without being chosen), which needs structure Coherence doesn't hold yet (question 22);
+- a spiral that shouldn't stay reflective;
+- a framing worth challenging.
 
 **How replies are judged** *(proposed, from review feedback Chanté relayed on 2026-09-13; the grading rules themselves are in [`voice-eval-log.md`](../voice-eval-log.md))*:
 - **Voice and usefulness separately.** A reply can sound like her while asking for what Coherence already holds, missing the obstacle, or failing to act.

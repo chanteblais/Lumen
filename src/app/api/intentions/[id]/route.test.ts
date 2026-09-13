@@ -37,8 +37,18 @@ describe("PATCH /api/intentions/[id]", () => {
     expect((await patch(i.id, "{not json")).status).toBe(400);
     const unknown = await patch(i.id, { action: "explode" });
     expect(unknown.status).toBe(400);
-    expect(await unknown.json()).toEqual({ error: "action must be complete, reopen, move, date or drop" });
+    expect(await unknown.json()).toEqual({ error: "action must be complete, reopen, move, date, decline, first_step or drop" });
     expect((await patch(i.id, { action: "move", list: 7 })).status).toBe(400);
+    expect((await patch(i.id, { action: "first_step", text: "   " })).status).toBe(400);
+    expect((await patch(i.id, { action: "decline", reason: 42 })).status).toBe(400);
+  });
+
+  it("sets a first step from Break it down, and declines only their own", async () => {
+    const i = await createIntention(testDb, user.id, { title: "Tax forms" });
+    expect(await (await patch(i.id, { action: "first_step", text: "Find the login" })).json()).toEqual({ id: i.id, next_action: "Find the login" });
+    const other = await createTestUser(testDb, "Else");
+    const theirs = await createIntention(testDb, other.id, { title: "Not yours" });
+    expect((await patch(theirs.id, { action: "decline", reason: "too_big" })).status).toBe(404);
   });
 
   it("completes, reopens, moves and lets go — and says not found for someone else's", async () => {

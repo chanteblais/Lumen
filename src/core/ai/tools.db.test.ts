@@ -1,13 +1,12 @@
 /**
- * The intention, session, capacity and reshape tools on a real Postgres (PGlite):
- * what each writes, what it tells the route (a re-cut, a closed session), and the
+ * The intention, capacity and reshape tools on a real Postgres (PGlite):
+ * what each writes, what it tells the route (a re-cut), and the
  * shape of a refusal — `{ error }`, never a throw, so the turn survives.
  * Belief and Library tools are covered in memory.db.test.ts and library.db.test.ts.
  */
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { getIntention } from "@/core/domain/intentions";
-import { getSession } from "@/core/domain/sessions";
 import type { Db } from "@/db/client";
 import { events, memoryNotes, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
@@ -95,31 +94,6 @@ describe("capacity and reshape", () => {
     expect(await call(toolsFor(u, { onPlanChange }).reshape_today, { ask: "something easy", right_now: pick, first_step: "Open the doc" })).toEqual({ ok: true, ask: "something easy" });
     expect(onPlanChange).toHaveBeenCalledWith({ reason: "asked", ask: { text: "something easy", rightNowId: pick, firstStep: "Open the doc" } });
     expect(await db.select().from(events).where(eq(events.userId, u.id))).toHaveLength(0);
-  });
-});
-
-describe("session tools", () => {
-  it("start_focus_session uses their usual length, and reports the session it replaced", async () => {
-    const u = await createTestUser(db, "Sess");
-    const onSessionEnd = vi.fn();
-    const tools = toolsFor(u, { onSessionEnd, preferences: { session_minutes: 25, check_in_minutes: 10 } });
-    const first = await call(tools.start_focus_session, { goal: "Edit chapter 3", first_step: "Open the doc" });
-    expect(first).toMatchObject({ plannedMinutes: 25, checkInMinutes: 10 });
-    expect(onSessionEnd).not.toHaveBeenCalled();
-
-    await call(tools.start_focus_session, { goal: "Reply to Priya", first_step: "Open the thread", minutes: 15 });
-    expect(onSessionEnd).toHaveBeenCalledWith(first.id);
-    expect((await getSession(db, u.id, String(first.id)))?.outcome).toBe("stopped_early");
-  });
-
-  it("end_focus_session closes theirs and reports it; with none running it says so", async () => {
-    const u = await createTestUser(db, "End");
-    const onSessionEnd = vi.fn();
-    const tools = toolsFor(u, { onSessionEnd });
-    const s = await call(tools.start_focus_session, { goal: "Tax forms", first_step: "Find the login" });
-    expect(await call(tools.end_focus_session, { id: s.id, outcome: "completed" })).toEqual({ id: s.id, goal: "Tax forms", outcome: "completed" });
-    expect(onSessionEnd).toHaveBeenCalledWith(s.id);
-    expect(await call(tools.end_focus_session, { id: s.id, outcome: "completed" })).toEqual({ error: "no session running" });
   });
 });
 
