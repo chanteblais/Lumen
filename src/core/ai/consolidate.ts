@@ -85,14 +85,17 @@ export function pickBatch(msgs: BatchMessage[], now: Date): BatchMessage[] {
   if (!msgs.length) return [];
   let end = msgs.length;
   for (let i = 1; i < msgs.length; i++) {
-    if (msgs[i].createdAt.getTime() - msgs[i - 1].createdAt.getTime() >= SITTING_GAP_MS) {
+    const prev = msgs[i - 1];
+    const cur = msgs[i];
+    if (prev && cur && cur.createdAt.getTime() - prev.createdAt.getTime() >= SITTING_GAP_MS) {
       end = i;
       break;
     }
   }
   const sitting = msgs.slice(0, end);
   if (sitting.length > MAX_BATCH) return sitting.slice(0, MAX_BATCH);
-  const over = end < msgs.length || now.getTime() - sitting[sitting.length - 1].createdAt.getTime() >= SITTING_GAP_MS;
+  const lastInSitting = sitting.at(-1); // never undefined: msgs isn't empty and end >= 1
+  const over = end < msgs.length || (lastInSitting !== undefined && now.getTime() - lastInSitting.createdAt.getTime() >= SITTING_GAP_MS);
   if (over) return sitting;
   return sitting.length >= LONG_SITTING ? sitting.slice(0, sitting.length - KEEP_TAIL) : [];
 }
@@ -376,8 +379,8 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
     rows.map((r) => ({ id: r.id, role: r.role, text: messageText({ parts: r.parts as CoherenceUIMessage["parts"] }), createdAt: r.createdAt })),
     now,
   );
-  if (!batch.length) return { status: "nothing" };
-  const through = batch[batch.length - 1];
+  const through = batch.at(-1);
+  if (!through) return { status: "nothing" };
   // Never claim the watermark onto itself: that "moves" nothing and succeeds, so a run would repeat it forever.
   if (through.id === from) {
     console.error(`[consolidate] the stretch after the watermark ends on the watermark itself (conversation ${conversation.id}); not claiming it`);
@@ -437,11 +440,13 @@ async function applyPlan(
   user: Pick<User, "id">,
   { plan, batch, conversationId, from, now }: { plan: ConsolidationPlan; batch: BatchMessage[]; conversationId: string; from: string | null; now: Date },
 ): Promise<ConsolidationResult> {
-  const through = batch[batch.length - 1];
+  const [first] = batch;
+  const through = batch.at(-1);
+  if (!first || !through) throw new Error("applyPlan: an empty batch");
   return db.transaction(async (txRaw) => {
     const tx = txRaw as unknown as Db;
     const episode = plan.episode
-      ? await insertEpisode(tx, { userId: user.id, conversationId, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: batch[0].createdAt, endedAt: through.createdAt, throughMessageId: through.id })
+      ? await insertEpisode(tx, { userId: user.id, conversationId, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: first.createdAt, endedAt: through.createdAt, throughMessageId: through.id })
       : undefined;
 
     const created = new Map<string, string>();

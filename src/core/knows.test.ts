@@ -11,7 +11,7 @@ describe("What Lumi knows", () => {
     const pref = b({ kind: "preference", content: "Short replies" });
     const groups = groupBeliefs([pref, older, newer]);
     expect(groups.map((g) => g.heading)).toEqual(["What you're working on", "How you like her to be"]);
-    expect(groups[0].beliefs).toEqual([newer, older]);
+    expect(groups[0]!.beliefs).toEqual([newer, older]);
   });
 
   it("says whose word it is, in words not numbers", () => {

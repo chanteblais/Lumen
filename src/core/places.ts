@@ -20,7 +20,7 @@ const VIAS: readonly Via[] = ["home", "bubble", "lists-add"];
 
 /** The place a path belongs to, or undefined for a path that isn't one of them. */
 export function placeFromPath(path: string): Pick<Where, "place" | "detail"> | undefined {
-  const parts = path.split(/[?#]/)[0].split("/").filter(Boolean);
+  const parts = (path.split(/[?#]/)[0] ?? "").split("/").filter(Boolean);
   if (parts.length === 0) return { place: "home" };
   const [head, ...rest] = parts;
   switch (head) {

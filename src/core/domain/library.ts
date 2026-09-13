@@ -13,6 +13,7 @@ import { normalizeText } from "@/core/words";
 import { chainIds } from "./chains";
 import { appendEvent } from "./events";
 import { cleanContent, contentKey, isNearDuplicate, screenMemory } from "./memory-rules";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
 export const NOTE_MIN = 3;
@@ -218,10 +219,13 @@ async function insertThread(db: Db, userId: string, title: string, input: { alia
   // Only their own (checked) word brings back a forgotten thread; an inference or a consolidation run never does.
   if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
   const summary = input.summary ? cleanSummary(input.summary) : null;
-  const [row] = await db
-    .insert(threads)
-    .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
-    .returning();
+  const row = returnedRow(
+    await db
+      .insert(threads)
+      .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
+      .returning(),
+    "createThread",
+  );
   await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor, ...(input.theirWord ? { their_word: true } : {}) }, occurredAt: now });
   return { thread: row, existed: false };
 }
@@ -258,10 +262,13 @@ async function insertNote(
   if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
   const replaced = input.supersedes ? current.find((n) => n.id === input.supersedes) : undefined;
   if (input.supersedes && !replaced) return { skipped: "supersedes a note that isn't current on this thread" };
-  const [note] = await db
-    .insert(threadNotes)
-    .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
-    .returning();
+  const note = returnedRow(
+    await db
+      .insert(threadNotes)
+      .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
+      .returning(),
+    "fileNote",
+  );
   if (replaced) await db.update(threadNotes).set({ supersededById: note.id }).where(eq(threadNotes.id, replaced.id));
   await db.update(threads).set({ lastDiscussedAt: now }).where(eq(threads.id, thread.id));
   await appendEvent(db, {
@@ -308,11 +315,13 @@ export async function insertEpisode(
   db: Db,
   input: { userId: string; conversationId: string; summary: string; leftOff: string | null; startedAt: Date; endedAt: Date; throughMessageId: string; threadIds?: string[] },
 ): Promise<Episode> {
-  const [row] = await db
-    .insert(episodes)
-    .values({ ...input, threadIds: input.threadIds ?? [] })
-    .returning();
-  return row;
+  return returnedRow(
+    await db
+      .insert(episodes)
+      .values({ ...input, threadIds: input.threadIds ?? [] })
+      .returning(),
+    "insertEpisode",
+  );
 }
 
 /**
@@ -343,6 +352,8 @@ export async function shelveThread(
       .set({ parentId, shelvedBy: parentId ? (theirs ? "user" : "lumi") : theirs ? "user" : null })
       .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
       .returning();
+    // Read without a lock, so it can be forgotten in between: then it's gone, not shelved.
+    if (!row) return { skipped: "not found" };
     await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor, ...(opts.theirWord ? { their_word: true } : {}) } });
     return { thread: row };
   });
@@ -502,9 +513,11 @@ const FAILURE_WINDOW_MS = 7 * 86_400_000;
 
 /** Pure: when a stretch that failed at these times (newest first) may be tried again, or null when it never failed. */
 export function retryAfterFailures(failedAt: Date[]): Date | null {
-  if (!failedAt.length) return null;
-  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1];
-  return new Date(failedAt[0].getTime() + wait);
+  const [first] = failedAt;
+  if (!first) return null;
+  // In range: failedAt has at least one entry, so the index is 0 up to the last step.
+  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1]!;
+  return new Date(first.getTime() + wait);
 }
 
 /** A run over the stretch starting after `from` failed: a fact, so the next runs back off (`consolidationRetryAt`). */

@@ -11,6 +11,7 @@ import { chainIds } from "./chains";
 import { appendEvent } from "./events";
 import { isForgotten } from "./library";
 import { boundConfidence, CONTENT_MAX, CONTENT_MIN, cleanContent, contentKey, isNearDuplicate, isSimilar, screenMemory } from "./memory-rules";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
 export type BeliefOp =
@@ -106,10 +107,13 @@ async function applyOne(db: Db, userId: string, op: BeliefOp, actor: Actor, resu
       }
       if (op.source !== "user_said" && (await isForgotten(db, userId, content))) return "forgotten";
       const confidence = boundConfidence(op.source, op.confidence ?? defaultConfidence(op.source, actor));
-      const [row] = await db
-        .insert(memoryNotes)
-        .values({ userId, kind: op.kind, content, source: op.source, confidence, sourceMessageId: op.sourceMessageId ?? null })
-        .returning();
+      const row = returnedRow(
+        await db
+          .insert(memoryNotes)
+          .values({ userId, kind: op.kind, content, source: op.source, confidence, sourceMessageId: op.sourceMessageId ?? null })
+          .returning(),
+        "applyBeliefOps create",
+      );
       result.created.push(row);
       result.similar.push(...active.filter((b) => isSimilar(b.content, content)));
       await appendEvent(db, { userId, type: "memory.noted", subjectType: "note", subjectId: row.id, payload: { kind: op.kind, source: op.source, confidence, by: actor } });
@@ -203,7 +207,7 @@ async function supersede(
   actor: Actor,
   now: Date,
 ): Promise<MemoryNote> {
-  const [nu] = await db
+  const inserted = await db
     .insert(memoryNotes)
     .values({
       userId,
@@ -217,6 +221,7 @@ async function supersede(
       sourceMessageId: next.sourceMessageId ?? null,
     })
     .returning();
+  const nu = returnedRow(inserted, "supersede");
   await db.update(memoryNotes).set({ retiredAt: now, retiredReason: "superseded" }).where(eq(memoryNotes.id, old.id));
   await appendEvent(db, { userId, type: "memory.revised", subjectType: "note", subjectId: nu.id, payload: { kind: old.kind, supersedes: old.id, source: next.source, by: actor } });
   return nu;

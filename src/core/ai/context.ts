@@ -205,7 +205,12 @@ export function buildContextBlock(input: ContextInput): string {
       for (const n of o.notes) lines.push(`- ${n.id} · ${n.kind} · "${asQuoted(n.content)}" · ${noteHeldAs(n.source)} · ${day.format(n.createdAt)}`);
     }
     if (library?.index.length) {
-      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.shelf.length ? `, in ${asQuoted(x.shelf[x.shelf.length - 1])}` : ""}${x.resting ? ", resting" : ""})`).join(" · ");
+      const held = library.index
+        .map((x) => {
+          const shelf = x.shelf.at(-1);
+          return `${asQuoted(x.thread.title)} (${x.thread.id}${shelf !== undefined ? `, in ${asQuoted(shelf)}` : ""}${x.resting ? ", resting" : ""})`;
+        })
+        .join(" · ");
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }

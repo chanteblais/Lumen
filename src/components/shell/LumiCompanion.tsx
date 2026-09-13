@@ -219,8 +219,10 @@ function LumiFigure({ ref, outOfSight }: { ref: Ref<LumiFigureHandle>; outOfSigh
       after(between(20000, 45000), () => {
         if (pending) return; // a cue or a reaction is already waiting; it plays instead
         const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
-        last = choices[Math.floor(Math.random() * choices.length)];
-        pending = last;
+        const next = choices[Math.floor(Math.random() * choices.length)];
+        if (!next) return;
+        last = next;
+        pending = next;
       });
 
     // Arriving: away long enough, and she waves.

@@ -8,6 +8,7 @@ import { type Db } from "@/db/client";
 import { leads, type Intention, type Lead, type LeadSource } from "@/db/schema";
 import { appendEvent, appendEvents, latestEvent, type ActionSource } from "./events";
 import { createIntention, getIntention } from "./intentions";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
 export const EMAIL_SCAN_EVENT = "email.scanned";
@@ -118,7 +119,7 @@ export async function keepLead(db: Db, userId: string, id: string, via: ActionSo
       list: claimed.list,
       dueAt: claimed.dueAt,
     });
-    const [lead] = await tx.update(leads).set({ intentionId: intention.id }).where(eq(leads.id, id)).returning();
+    const lead = returnedRow(await tx.update(leads).set({ intentionId: intention.id }).where(eq(leads.id, id)).returning(), "keepLead");
     await appendEvent(tx, { userId, type: "lead.kept", subjectType: "lead", subjectId: id, payload: { via, intention_id: intention.id } });
     return { lead, intention };
   });

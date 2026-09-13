@@ -36,7 +36,7 @@ const TEXT_BY_EXTENSION: Record<string, string> = { txt: "text/plain", text: "te
 /** What the file picker offers. */
 export const SHARED_FILE_ACCEPT = [...Object.values(MEDIA_TYPES).flat(), ".txt", ".md", ".markdown", ".csv"].join(",");
 
-const bareType = (mediaType: string) => mediaType.split(";")[0].trim().toLowerCase();
+const bareType = (mediaType: string) => (mediaType.split(";")[0] ?? "").trim().toLowerCase();
 
 /** The kind of file a media type is, or undefined when Lumi can't take it. */
 export function sharedFileKind(mediaType: string): SharedFileKind | undefined {
@@ -70,9 +70,10 @@ function dataUrlBytes(url: unknown): Uint8Array | undefined {
   if (typeof url !== "string") return undefined;
   const match = /^data:[^,]*?(;base64)?,([\s\S]*)$/.exec(url);
   if (!match) return undefined;
+  const [, base64, data = ""] = match;
   try {
-    if (!match[1]) return new TextEncoder().encode(decodeURIComponent(match[2]));
-    return Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
+    if (!base64) return new TextEncoder().encode(decodeURIComponent(data));
+    return Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
   } catch {
     return undefined;
   }

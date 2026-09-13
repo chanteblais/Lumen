@@ -16,6 +16,6 @@ describe("clampSteps", () => {
     expect(out.length).toBe(MAX_STEPS);
   });
   it("keeps a long step short", () => {
-    expect(clampSteps(["x".repeat(300)])[0].length).toBeLessThanOrEqual(100);
+    expect(clampSteps(["x".repeat(300)])[0]!.length).toBeLessThanOrEqual(100);
   });
 });

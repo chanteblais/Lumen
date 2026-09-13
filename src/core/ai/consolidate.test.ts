@@ -102,7 +102,7 @@ describe("clampConsolidation", () => {
       { threads: held, notes, heard },
     );
     expect(plan.newThreads).toEqual([]);
-    expect(plan.notes[0].thread).toBe("t1");
+    expect(plan.notes[0]!.thread).toBe("t1");
     expect(plan.aliases).toEqual([{ threadId: "t1", aliases: ["the novel"] }]);
   });
 

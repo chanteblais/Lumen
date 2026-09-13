@@ -71,7 +71,7 @@ export const headCell = (expression: LumiExpression): LumiCell => ({ sheet: "hea
 /** One frame of a loop (0 to `LUMI_LOOP_FRAMES[loop] - 1`) with the given eye state. */
 export const idleCell = (loop: LumiLoop, frame: number, eyes: LumiEyes): LumiCell => ({
   sheet: "body",
-  col: LUMI_LOOP_CELLS[loop][frame],
+  col: LUMI_LOOP_CELLS[loop][frame] ?? 0, // callers wrap `frame` by the loop's own length; 0 is the rest cell
   row: eyeRows(LUMI_LOOPS.slice(0, LUMI_LOOPS.indexOf(loop))) + Math.max(0, LUMI_LOOP_EYES[loop].indexOf(eyes)),
 });
 

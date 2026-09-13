@@ -9,7 +9,7 @@ import type { Crumb } from "./shelves";
  * A page, not a dialog: the browser's Back and the links do the closing.
  */
 export function LibrarySheet({ crumbs, current, children }: { crumbs: Crumb[]; current: string; children: React.ReactNode }) {
-  const back = crumbs[crumbs.length - 1];
+  const back = crumbs.at(-1) ?? { href: "/library", label: "Library" };
   return (
     <div className="library-veil">
       <article className="library-sheet" aria-labelledby="library-title">

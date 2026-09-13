@@ -136,9 +136,11 @@ export function findTheirWords(quote: string | undefined, heard: Heard[]): Heard
   const quoted = meaningfulWords(q);
   if (quoted === 0) return undefined;
   for (let i = heard.length - 1; i >= 0; i--) {
-    const said = normalizeText(heard[i].text);
+    const h = heard[i];
+    if (!h) continue;
+    const said = normalizeText(h.text);
     if (!` ${said} `.includes(` ${q} `)) continue;
-    if (quoted >= QUOTE_MIN_CONTENT_WORDS || quoted / Math.max(1, meaningfulWords(said)) >= QUOTE_MIN_SHARE) return heard[i];
+    if (quoted >= QUOTE_MIN_CONTENT_WORDS || quoted / Math.max(1, meaningfulWords(said)) >= QUOTE_MIN_SHARE) return h;
   }
   return undefined;
 }

@@ -21,7 +21,7 @@ type Props = {
 
 /** Where the turn in flight began: its user message (the last one). */
 function lastUserIndex(messages: CoherenceUIMessage[]) {
-  for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i]?.role === "user") return i;
   return messages.length;
 }
 

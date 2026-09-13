@@ -42,24 +42,24 @@ describe("keeping and letting go", () => {
   it("keeps a lead once, however many times it's kept — the same intention comes back", async () => {
     const u = await createTestUser(db, "Oli");
     const [lead] = await createLeads(db, u.id, [{ sourceRef: "m1", title: "Send the signed lease", why: "The agent asked for it by Friday.", list: "Personal" }]);
-    const [a, b] = await Promise.all([keepLead(db, u.id, lead.id, "app"), keepLead(db, u.id, lead.id, "chat")]);
+    const [a, b] = await Promise.all([keepLead(db, u.id, lead!.id, "app"), keepLead(db, u.id, lead!.id, "chat")]);
     expect(a?.intention.id).toBeDefined();
     expect(b?.intention.id).toBe(a?.intention.id);
-    expect((await keepLead(db, u.id, lead.id))?.intention.id).toBe(a?.intention.id);
+    expect((await keepLead(db, u.id, lead!.id))?.intention.id).toBe(a?.intention.id);
     expect(await db.select().from(intentions).where(eq(intentions.userId, u.id))).toHaveLength(1);
     expect(await eventsOf(u.id, "lead.kept")).toHaveLength(1);
     expect(a?.lead).toMatchObject({ status: "kept", intentionId: a?.intention.id });
     expect(a?.intention).toMatchObject({ title: "Send the signed lease", list: "Personal" });
-    expect(await dismissLead(db, u.id, lead.id)).toBeUndefined();
+    expect(await dismissLead(db, u.id, lead!.id)).toBeUndefined();
   });
 
   it("lets a lead go once, and a lead let go isn't kept after", async () => {
     const u = await createTestUser(db, "Pia");
     const [lead] = await createLeads(db, u.id, [{ sourceRef: "m9", title: "RSVP to the conference dinner" }]);
-    expect(await dismissLead(db, u.id, lead.id)).toMatchObject({ status: "dismissed" });
-    expect(await dismissLead(db, u.id, lead.id, "chat")).toMatchObject({ status: "dismissed" });
+    expect(await dismissLead(db, u.id, lead!.id)).toMatchObject({ status: "dismissed" });
+    expect(await dismissLead(db, u.id, lead!.id, "chat")).toMatchObject({ status: "dismissed" });
     expect(await eventsOf(u.id, "lead.dismissed")).toHaveLength(1);
-    expect(await keepLead(db, u.id, lead.id)).toBeUndefined();
+    expect(await keepLead(db, u.id, lead!.id)).toBeUndefined();
     expect(await db.select().from(intentions).where(eq(intentions.userId, u.id))).toEqual([]);
   });
 
@@ -67,7 +67,7 @@ describe("keeping and letting go", () => {
     const a = await createTestUser(db, "Quy");
     const b = await createTestUser(db, "Ros");
     const [lead] = await createLeads(db, a.id, [{ sourceRef: "m1", title: "Renew the passport" }]);
-    expect(await keepLead(db, b.id, lead.id)).toBeUndefined();
-    expect(await dismissLead(db, b.id, lead.id)).toBeUndefined();
+    expect(await keepLead(db, b.id, lead!.id)).toBeUndefined();
+    expect(await dismissLead(db, b.id, lead!.id)).toBeUndefined();
   });
 });

@@ -225,7 +225,10 @@ export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone
   // Evidence Lumi already recorded during the session (confirm_belief in the
   // reply to "Done", say) is not recorded twice: those beliefs are off limits here.
   const touchedDuring = await listEventsSince(db, user.id, Object.keys(OP_OF_EVENT), session.startedAt, 30, until);
-  const already: RecordedOp[] = touchedDuring.filter((e) => e.subjectId).map((e) => ({ op: OP_OF_EVENT[e.type], id: e.subjectId! }));
+  const already: RecordedOp[] = touchedDuring.flatMap((e) => {
+    const op = OP_OF_EVENT[e.type];
+    return op && e.subjectId ? [{ op, id: e.subjectId }] : [];
+  });
   const touchedIds = new Set(already.map((o) => o.id));
   const code = deterministicSessionOps(session, beliefs).filter((o) => !("id" in o) || !touchedIds.has(o.id));
   const first = await applyBeliefOps(db, user.id, code, "reflection");

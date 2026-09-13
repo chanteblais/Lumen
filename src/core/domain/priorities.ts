@@ -10,6 +10,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { intentions, priorities, type Priority, type PriorityScope } from "@/db/schema";
 import { appendEvent } from "./events";
+import { returnedRow } from "./rows";
 
 /** The scopes a stated priority can be held over, as Lumi passes them. */
 export const PRIORITY_WHEN = ["this_week", "next_week", "for_a_while"] as const;
@@ -19,13 +20,13 @@ const DAY = 86_400_000;
 
 /** A local date (YYYY-MM-DD) moved by whole days. Pure. */
 export function addDays(localDate: string, days: number): string {
-  const [y, m, d] = localDate.split("-").map(Number);
+  const [y = NaN, m = NaN, d = NaN] = localDate.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d) + days * DAY).toISOString().slice(0, 10);
 }
 
 /** The Monday (YYYY-MM-DD) of the week a local date falls in. Pure. */
 export function weekOf(localDate: string): string {
-  const [y, m, d] = localDate.split("-").map(Number);
+  const [y = NaN, m = NaN, d = NaN] = localDate.split("-").map(Number);
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sunday
   return addDays(localDate, -((weekday + 6) % 7));
 }
@@ -79,7 +80,7 @@ export async function holdPriority(db: Db, userId: string, input: HoldPriorityIn
     }
   }
   const { scope, weekOf: week } = scopeFor(input.when, today);
-  const [row] = await db.insert(priorities).values({ userId, content, intentionId, scope, weekOf: week, supersedesId }).returning();
+  const row = returnedRow(await db.insert(priorities).values({ userId, content, intentionId, scope, weekOf: week, supersedesId }).returning(), "holdPriority");
   await appendEvent(db, {
     userId,
     type: "priority.held",

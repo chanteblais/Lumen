@@ -24,6 +24,7 @@ export function LibraryRoom({ shelves }: { shelves: LibraryShelves<Thread> }) {
       <div className="library-stage">
         {onCases.map(({ thread }, i) => {
           const slot = BOOKCASES[i];
+          if (!slot) return null; // onCases is cut to BOOKCASES.length
           return (
             <Link key={thread.id} href={`/library/${thread.id}`} className="library-case" style={faceStyle(slot)} aria-label={thread.title} data-slot={slot.id}>
               <span aria-hidden className="library-case-glow" style={rectStyle(slot.panel)} />

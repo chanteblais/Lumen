@@ -64,11 +64,11 @@ describe("consolidation", () => {
 
     const [book] = await listThreads(db, u.id);
     expect(book).toMatchObject({ title: "The book", aliases: ["my book"], summary: "A novel about two sisters. The ending is set on the ferry." });
-    expect((await listCurrentNotes(db, u.id, [book.id])).find((x) => x.content === "The ending happens on the ferry.")).toMatchObject({ source: "user_said", sourceMessageId: ferryMsg });
+    expect((await listCurrentNotes(db, u.id, [book!.id])).find((x) => x.content === "The ending happens on the ferry.")).toMatchObject({ source: "user_said", sourceMessageId: ferryMsg });
     const [conversation] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
-    expect(conversation.summaryThroughMessageId).toBe(lastOfFirst);
+    expect(conversation!.summaryThroughMessageId).toBe(lastOfFirst);
     const [episode] = await db.select().from(episodes).where(eq(episodes.userId, u.id));
-    expect(episode).toMatchObject({ threadIds: [book.id], leftOff: "Whether the ferry scene opens or closes the last chapter." });
+    expect(episode).toMatchObject({ threadIds: [book!.id], leftOff: "Whether the ferry scene opens or closes the last chapter." });
 
     // Two days later they come back to it, and the ending changes.
     await say(u, "2026-09-12T10:00:00Z", "user", "Back on the book. Actually the ending moves to the lighthouse, not the ferry.");
@@ -81,22 +81,22 @@ describe("consolidation", () => {
         const ferry = inputs.notes.find((x) => x.content.includes("ferry"))!;
         return {
           episode: { summary: "You moved the book's ending from the ferry to the lighthouse." },
-          threads: [{ ref: book.id, aliases: ["the novel"], summary: "A novel about two sisters. The ending is set at the lighthouse now; the ferry carries them there." }],
-          notes: [{ thread: book.id, kind: "decision", content: "The ending happens at the lighthouse.", source: "user_said", their_words: "the ending moves to the lighthouse", supersedes: ferry.id }],
+          threads: [{ ref: book!.id, aliases: ["the novel"], summary: "A novel about two sisters. The ending is set at the lighthouse now; the ferry carries them there." }],
+          notes: [{ thread: book!.id, kind: "decision", content: "The ending happens at the lighthouse.", source: "user_said", their_words: "the ending moves to the lighthouse", supersedes: ferry.id }],
         };
       },
     });
-    expect(seen?.threads.map((t) => t.id)).toEqual([book.id]);
+    expect(seen?.threads.map((t) => t.id)).toEqual([book!.id]);
     expect(second).toMatchObject({ status: "done", threadsCreated: 0, notesFiled: 1, summaries: 1 });
-    expect((await listCurrentNotes(db, u.id, [book.id])).map((x) => x.content).sort()).toEqual(["The book is about two sisters.", "The ending happens at the lighthouse."]);
-    expect((await listNoteHistory(db, u.id, book.id)).map((x) => x.content)).toEqual(["The ending happens on the ferry."]);
+    expect((await listCurrentNotes(db, u.id, [book!.id])).map((x) => x.content).sort()).toEqual(["The book is about two sisters.", "The ending happens at the lighthouse."]);
+    expect((await listNoteHistory(db, u.id, book!.id)).map((x) => x.content)).toEqual(["The ending happens on the ferry."]);
 
     // That evening it comes up again: the turn carries the refined summary, the notes that bear on it, and both visits.
     const evening = new Date("2026-09-12T20:00:00Z");
     const state = await loadLibraryOrNothing(db, u.id, evening);
     const view = selectLibrary(state.threads, state.notes, state.episodes, { message: "I want to write the lighthouse scene for the novel tonight" }, { now: evening, windowStartsAt: new Date("2026-09-12T19:59:00Z") });
-    expect(view.open.map((o) => o.thread.id)).toEqual([book.id]);
-    expect(view.open[0].notes[0].content).toBe("The ending happens at the lighthouse.");
+    expect(view.open.map((o) => o.thread.id)).toEqual([book!.id]);
+    expect(view.open[0]!.notes[0]!.content).toBe("The ending happens at the lighthouse.");
     expect(view.episodes).toHaveLength(2);
     const block = buildContextBlock({ displayName: "Rae", timezone: "UTC", now: evening, library: view });
     expect(block).toContain("You moved the book's ending from the ferry to the lighthouse.");
@@ -131,7 +131,7 @@ describe("consolidation", () => {
     quiet.mockRestore();
     expect(failed).toEqual({ status: "failed" });
     const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
-    expect(c.summaryThroughMessageId).toBeNull();
+    expect(c!.summaryThroughMessageId).toBeNull();
     const retried = await consolidate(db, u, { now: clock("2026-09-11T13:00:00Z"), propose: async () => ({ episode: { summary: "You planned the week around the grant report." }, threads: [], notes: [] }) });
     expect(retried).toMatchObject({ status: "done" });
   });
@@ -146,7 +146,7 @@ describe("consolidation", () => {
     expect(propose).toHaveBeenCalledOnce();
     expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
     const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
-    expect(c.consolidatingUntil).toBeNull();
+    expect(c!.consolidatingUntil).toBeNull();
   });
 
   it("rolls back everything a run wrote when another claimed the stretch during its model call", async () => {
@@ -215,7 +215,7 @@ describe("consolidation", () => {
     quiet.mockRestore();
 
     const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
-    expect(c.summaryThroughMessageId).toBeNull();
+    expect(c!.summaryThroughMessageId).toBeNull();
     const failures = await db.select().from(events).where(and(eq(events.userId, u.id), eq(events.type, "memory.consolidation_failed")));
     expect(failures.map((e) => e.payload)).toEqual([{ from: null, through: last }, { from: null, through: last }]);
 
@@ -233,7 +233,7 @@ describe("consolidation", () => {
     expect(propose).not.toHaveBeenCalled();
     expect(await consolidate(db, u, { now: clock("2026-09-11T12:03:00Z"), propose })).toMatchObject({ status: "done" });
     const [after] = await db.select().from(conversations).where(eq(conversations.id, c.id));
-    expect(after.consolidatingUntil).toBeNull();
+    expect(after!.consolidatingUntil).toBeNull();
   });
 
   it("runs as many passes as it's given — one for a chat turn", async () => {
@@ -389,7 +389,7 @@ describe("sections of the Library", () => {
     const app = held.find((t) => t.title === "Coherence")!;
     const { sections, loose } = buildShelves(held);
     expect(sections.map((s) => s.thread.title)).toEqual(["Coherence"]);
-    expect(sections[0].shelves[0].books.map((b) => b.title).sort()).toEqual(["Memory design", "Onboarding"]);
+    expect(sections[0]!.shelves[0]!.books.map((b) => b.title).sort()).toEqual(["Memory design", "Onboarding"]);
     expect(loose).toEqual([]);
     expect(held.find((t) => t.id === memory.thread_id)).toMatchObject({ parentId: app.id, shelvedBy: "lumi" });
 
@@ -469,9 +469,9 @@ describe("the watermark", () => {
     const lines = logged.mock.calls.map((x) => String(x[0]));
     logged.mockRestore();
     expect(propose).toHaveBeenCalledTimes(1);
-    expect(propose.mock.calls[0][0].batch.map((m) => m.id)).not.toContain(last);
+    expect(propose.mock.calls[0]![0].batch.map((m) => m.id)).not.toContain(last);
     const [moved] = await db.select().from(conversations).where(eq(conversations.id, c.id));
-    expect(moved.summaryThroughMessageId).toBe(newest);
+    expect(moved!.summaryThroughMessageId).toBe(newest);
     expect(lines.some((l) => l.includes("moved past"))).toBe(false);
   });
 

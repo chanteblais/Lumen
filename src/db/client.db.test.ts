@@ -41,7 +41,7 @@ describe("transactions on the app's pool", () => {
     await close();
   });
 
-  const nameOf = async (u: User) => (await db.select().from(users).where(eq(users.id, u.id)))[0].displayName;
+  const nameOf = async (u: User) => (await db.select().from(users).where(eq(users.id, u.id)))[0]!.displayName;
 
   it("commits", async () => {
     const u = await createTestUser(db, "Commit");
@@ -99,8 +99,8 @@ describe("transactions on the app's pool", () => {
 
     expect(result).toMatchObject({ status: "done", messages: 2 });
     const [conversation] = await db.select().from(conversations).where(eq(conversations.id, c.id));
-    expect(conversation.summaryThroughMessageId).toBe(last);
+    expect(conversation!.summaryThroughMessageId).toBe(last);
     const [episode] = await db.select().from(episodes).where(eq(episodes.userId, u.id));
-    expect(episode.summary).toBe("You planned the move to Halifax and booked the movers.");
+    expect(episode!.summary).toBe("You planned the move to Halifax and booked the movers.");
   });
 });

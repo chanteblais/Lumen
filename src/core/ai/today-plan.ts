@@ -148,7 +148,7 @@ export async function recutAfterDecline(db: Db, user: User, reason: string | nul
 export function lastDecline(snap: Pick<Snapshot, "declinedToday" | "openIntentions">): PlanInputs["justDeclined"] {
   const d = snap.declinedToday[0];
   const i = d ? snap.openIntentions.find((x) => x.id === d.intentionId) : undefined;
-  return i ? { title: i.title, reason: d.reason } : undefined;
+  return d && i ? { title: i.title, reason: d.reason } : undefined;
 }
 
 /** Everything the planner sees, from one snapshot. */
