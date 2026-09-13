@@ -109,7 +109,7 @@ Domain, database, migrations, reflection and consolidation.
 | D10 | **`CLAUDE.md` never references `AGENTS.md`**, so Next's "read the bundled docs" rule never reaches Claude. | `CLAUDE.md` | open |
 | D11 | **The Clerk boundary list omits `src/proxy.ts`** (a required import). | `CLAUDE.md`, `src/lib/auth.ts` header | open |
 | D12 | **Node isn't pinned** (dev-hygiene backlog #3; CI pins 22, `@types/node` is 22). | `package.json`, `.nvmrc` | open |
-| D13 | **`zod` patch 4.6.2 → 4.6.4** within range. | `package.json` | open |
+| D13 | **`zod` patch 4.6.2 → 4.6.4** within range. | `package.json` | fixed — `^4.6.4`, lockfile zod-only; other checkouts `npm ci` after merging (preflight says so) |
 
 ## E — Strictness and sweep (`chore/strictness`)
 
