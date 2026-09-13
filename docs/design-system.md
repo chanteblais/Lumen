@@ -58,14 +58,12 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 
 Not carried over from the mockup: the filter tabs, the plant per category, the *In Season* panel with step counts (its corner is left open), the *Plant something new* button and the quote's copy — `decisions.md` 2026-09-12 · Today, set in the garden.
 
-**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library-background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed) and takes **Today's shape**: one layer (`.library-scene`) behind the shell, the lists on **one paper panel on the right**, the room left open, Lumi standing in it. The painting is lamplit, but the page is paper, so **the tokens stay ivory**. Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and the panel's card.
+**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library-background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed). **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
 
 | Piece | In the reading room |
 |---|---|
-| `.library-page` | Below 1100px a centred 720px column; from 1100px it aligns the panel right at `clamp(440px, 36vw, 540px)` |
-| `.library-panel` | Today's plate (card at .97, 20px blur, 10px radius, hairline .10, shadow .08 / .24), padding 24 / 30. Top to bottom: the *Library* kicker with the *Add something* chip (15px) on the same line, a divider, *Everything, kept.* (display 22px), then each list |
-| `.library-list` | One list: its name (display 24px) with a rule running beside it, rows at 10px padding; 26px between lists |
-| Lumi | From 1100px (landscape) she stands on the rug at the front-left of the reading table — `--lumi-x: 520; --lumi-y: 870` in the painting's pixels, mapped through the same cover fit as Today. She covers the near chair and the table's end, both further back than her feet |
+| `.library-page` | Fills `.main` (`flex: 1 0 auto`); holds the scene and the hidden heading, nothing else |
+| Lumi | From 1100px (landscape) she stands on the rug at the front-left of the reading table — `--lumi-x: 520; --lumi-y: 870` in the painting's pixels, mapped through the same cover fit as Today. She covers the near chair and the table's end, both further back than her feet. Below that, her corner |
 
 The painting carries words — signs over its bays (*Personal*, *Coherence*, *School*, *Glåüm*, *Lumi's Notes*, *Archive*, *Ideas*, *Psychology*) and a banner (*More Thoughtful Humans*). They are part of the painting, not the interface: nothing reads them, and they don't match the user's lists (`art-direction.md` §1).
 

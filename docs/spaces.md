@@ -672,7 +672,7 @@ Currently, Lumi may simply occupy a corner or fixed location. Long-term, she can
 |---|---|---|
 | **Home** | `/` — the conversation, the greeting, re-entry, the companion bubble | yes — a lamplit room (`public/home-room.webp`) |
 | **Garden** | `/today` — the path (Right now · After that · Later), capacity, *Not this* | yes — a daylit greenhouse (`public/today-room.webp`); Lumi stands in it from 1100px |
-| **Library** | `/library` (was `/lists`, which redirects) — the minimum: open intentions grouped by list, tick, one *Add something* → Chat; moving and renaming happen in conversation | yes — a lamplit reading room (`public/library-room.webp`); Lumi stands by the reading table from 1100px |
+| **Library** | `/library` (was `/lists`, which redirects) — for now only the room: the list view (open intentions by list, tick, *Add something*) came off the page 2026-09-13. The lists are still kept and still feed Today; filing, ticking and correcting happen in conversation | yes — a lamplit reading room (`public/library-room.webp`); Lumi stands by the reading table from 1100px |
 | **Study** | no page. Focus Together is a session bar inside Home (`features.md` → Home) | no |
 
 **The nav today** reads **Home · Today · Library · Insights · Settings** — not the four of §3. *Library* is the first of §3's design names to reach the nav (Chanté, 2026-09-13, as §3's "labels can evolve" allows): it replaced *Lists* when its painting arrived. Today is still *Today*, not *Garden*. **Insights** (what Lumi noticed in the mail) and **Settings** have no space. By §4's test, Insights' single question (*do any of these still need doing?*) is Library work, stewardship of what you're carrying; whether it folds into the Library or stays its own item is open.

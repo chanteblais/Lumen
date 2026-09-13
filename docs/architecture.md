@@ -164,7 +164,7 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── page.tsx              the conversation (soft landing)
 │   │   ├── today/page.tsx        quiet list of open intentions
 │   │   ├── insights/page.tsx     what Lumi noticed in the mail — "do any of these still need doing?"
-│   │   ├── library/page.tsx      the pile, in the Library (`/lists` redirects here, next.config.ts)
+│   │   ├── library/page.tsx      the Library's room, nothing on it yet (`/lists` redirects here, next.config.ts)
 │   │   ├── settings/page.tsx     name, timezone, session defaults
 │   │   ├── knows/page.tsx        "What Lumi knows" — beliefs, grouped, correct/delete inline
 │   │   ├── sign-in/[[...sign-in]]/page.tsx
