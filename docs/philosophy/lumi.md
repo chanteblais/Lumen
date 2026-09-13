@@ -250,7 +250,7 @@ Deferring and asking whether it needs doing at all are canon options not yet in 
 
 ## 15. Evidence: interactions that worked and didn't
 
-Each row names the behaviour it shows, which is what carries forward (not the wording). Sources: [`voice-eval-log.md`](../voice-eval-log.md) (runs on `claude-opus-5`) and real use recorded in the engineering log.
+Each row names the behaviour it shows, which is what carries forward (not the wording). Sources: [`voice-eval-log.md`](../voice-eval-log.md) (runs 1–3 on `claude-opus-5`; from run 4, 2026-09-13, on `gpt-6-astra`, ungraded) and real use recorded in the engineering log.
 
 | Moment | What Lumi said or did | Result | Behaviour it shows |
 |---|---|---|---|

@@ -56,7 +56,7 @@
 
 ## 2026-09-13 · The model that builds Coherence and the model that is Lumi are chosen separately
 
-**Decision.** Development keeps using whatever is strongest for engineering and documentation (Claude, today). For Lumi in production, OpenAI models are prototyped **alongside** the current Anthropic implementation and evaluated against Lumi's own requirements, not generic benchmarks. **Status: exploring.** No switch has been decided.
+**Decision.** Development keeps using whatever is strongest for engineering and documentation (Claude, today). For Lumi in production, OpenAI models are prototyped **alongside** the current Anthropic implementation and evaluated against Lumi's own requirements, not generic benchmarks. **Status: exploring.** No switch has been decided. *(Lumi was switched to OpenAI the same day; see the update below.)*
 **Rationale.** Lumi's role is relational and interpretive, which is different from coding. The best model for one layer need not be the best for the other. This is not a judgement that one model is universally better.
 **Implications.**
 - The provider stays behind one module (`src/core/ai/model.ts`; sticky decision 10), though Anthropic-specific options also appear in the planner, lead and reflection calls.
@@ -65,6 +65,8 @@
 - Method, criteria and the other model calls (planner, leads, reflection) are open question 21.
 
 **Replaces.** The implicit assumption that Lumi runs on `claude-opus-5` because the project does (`CLAUDE.md` → Stack still describes the current implementation).
+
+**Update 2026-09-13 · Lumi runs on OpenAI.** At Chanté's ask, every model call Lumi makes (the conversation, the day plan, mail leads and reflection) now goes to OpenAI's `gpt-6-astra`. The Anthropic implementation stays alongside, one setting away (`LUMI_MODEL=anthropic:claude-opus-5`), so the two can still be compared. The provider-specific options now live only in `model.ts`, which settles the second half of the first implication. OpenAI replaces Anthropic as the provider that receives conversations, beliefs and mail gists, and requests are sent with `store: false`. The comparison itself, and its blind grading, are still open question 21.
 
 ## 2026-09-12 · The Product Vision is foundational
 

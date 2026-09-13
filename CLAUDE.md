@@ -9,7 +9,7 @@ Loaded automatically at the start of every Claude session in this repo (root `CL
 **The question that overrides everything:** does this reduce the user's executive-function burden, or accidentally create more of it? Ask it before adding any field, control, count, or setting.
 
 ## Stack
-Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`) · `claude-opus-5` (Lumi's model is under evaluation — `docs/product/lumi-model-strategy.md`) · Postgres on Supabase via Drizzle (`postgres` driver, pooler) · Clerk · Tailwind 4 · Zod 4 · Vitest · Vercel.
+Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-sdk/react`, `@ai-sdk/openai`, `@ai-sdk/anthropic`) · Lumi runs on `gpt-6-astra` (OpenAI); `LUMI_MODEL=anthropic:claude-opus-5` runs the Anthropic implementation alongside (the model is under evaluation — `docs/product/lumi-model-strategy.md`) · Postgres on Supabase via Drizzle (`postgres` driver, pooler) · Clerk · Tailwind 4 · Zod 4 · Vitest · Vercel.
 
 ## Docs — read on demand (index: `docs/README.md`)
 - `docs/architecture.md` — stack, how the AI layer touches state (context block + tools), sticky decisions, repo layout
