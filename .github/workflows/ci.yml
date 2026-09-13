@@ -1,4 +1,4 @@
-# typegen+tsc, eslint (incl. the src/core import guard), vitest, route-auth audit
+# typegen+tsc, eslint (incl. the src/core import guard), vitest, route-auth audit, CSS prefix audit
 # on every push to main and every PR. Deploys are Vercel-on-push-to-main, so a
 # main failure is after the fact — but branch pushes get checked before merge.
 name: CI

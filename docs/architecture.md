@@ -194,7 +194,7 @@ lumen/                            the repo folder, still named for the product's
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
-├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · cut-lumi-idle.py (art/ → public/) · preview-lumi-loop.py · check-route-auth.mjs · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
+├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · cut-lumi-idle.py (art/ → public/) · preview-lumi-loop.py · check-route-auth.mjs · check-css-prefixes.mjs (compiles `globals.css` through Tailwind + lightningcss and fails when a rule kept `-webkit-<prop>` but lost `<prop>`) · preflight.mjs (before `check` and `dev`: installs, stale generated types, `.env.local` keys — `docs/dev-hygiene.md`) · voice-eval.mjs
 ├── drizzle.config.ts
 ├── .env.example
 └── package.json
