@@ -192,7 +192,7 @@ lumen/                            the repo folder, still named for the product's
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── public/                       lumi-heads.png · lumi-idle.webp (cut sprite sheets; never edited by hand)
-├── scripts/                      cut-lumi-idle.py (art/ → public/) · check-route-auth.mjs · voice-eval.mjs
+├── scripts/                      gen-lumi-sheet.py (art/prompts/ → a generated sheet) · measure-lumi-sheet.py · cut-lumi-idle.py (art/ → public/) · preview-lumi-loop.py · check-route-auth.mjs · voice-eval.mjs
 ├── drizzle.config.ts
 ├── .env.example
 └── package.json

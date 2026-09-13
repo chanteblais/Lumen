@@ -118,7 +118,7 @@ Motion is part of Lumi's voice, so it follows the voice guide in `product.md`: c
 The generator redraws Lumi every time. Between the cut source and the reference sheet the medallions became a scarf; between Rali and the lantern everything but the silhouette changed. Every sheet pays for a consistency check, and every drawn loop inherits the drift.
 
 - **One model sheet as canon.** The costume is decided (the medallions, §2); the sheet itself is still to draw: front, three-quarter both ways, side and back, the four isometric facings seen from above at the rooms' angle, and the eye shapes. It is committed to `art/lumi/` with the costume counted beside it: the hood's ornaments, how many medallions, the boots, the lantern.
-- **Every prompt attaches it and lists the costume,** and the prompt is saved as a file (`animation-pipeline.md` backlog #4).
+- **Every prompt attaches it and lists the costume,** and the prompt is saved as a file (`art/prompts/<sheet>.md`, since 2026-09-13; `animation-pipeline.md` → Prompt lab).
 - **Measure against it.** The measure script compares heads frame to frame; comparing a new sheet's silhouette and palette to the model sheet is the natural next gate.
 - **Draw the character once.** The strongest consistency move is tier 2: the generator supplies one drawing and code does the rest.
 
