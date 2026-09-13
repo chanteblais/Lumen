@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-09-13 · Today does its own organising, and focus sessions are set aside for now
+
+**Decision.** Nothing on Today sends you to Home. *Not this* re-cuts the path on the card and shows what fits instead, with Lumi's one line on why; *Break it down* shows a few small steps on the card to pick the first from. *Start with Lumi* and focus sessions — the session bar, check-ins, the abandoned-session greeting and the *Body double* quick start — are removed from the product for now. Plan with Lumi is not being built.
+**Rationale.** Chanté: "Right now all the options on the today page just direct you to the home page chat. I'd really like to find a way to keep all that organizing on the Today page." Asked, she chose to "get rid of the start with lumi and focus sessions for now", and for *Not this* and *Break it down* to happen on the card without a conversation. On Plan with Lumi: "It was small and easy to miss. I wasn't a huge fan of the options either." *(Claude's reading:)* the Garden "should stand on its own as an immediately understandable surface" (`today-garden.md` §143), and leaving the page to change the plan was the opposite.
+**Implications.**
+- **This departs from the canon, and knowingly.** The Study (`focus-study.md`: accompaniment, containment, meaningful outcomes and leaving), Lumi's body-doubling role (`lumi.md`, V§7) and M5's outcome loop have no surface in the app now. The canon is unchanged — it is still the intended direction — and open question 2 now includes what a session is when it returns. Session reflection, the only automatic link between a way in and its outcome, is dormant; completions, declines and re-entry remain.
+- Lumi initiates nothing: check-ins were the one unprompted thing she did (open question 9).
+- Correction stays cheap (EP§6): a decline is one tap and a first step one more, and neither needs explaining.
+- The table, its rows and the domain code are kept so sessions can come back without a migration.
+
+**Principle.** EP§1 (the system does the organising), EP§2–4 (one decision at a time, on the surface you're on), EP§18 (one understanding across spaces: the decline and the step still reach Lumi), §143 of the Garden.
+**Replaces.** *Today's handoffs into chat* (2026-09-12, `today.md`) and the product surface of M5 *Focus Together*.
+
+---
+
 ## 2026-09-13 · A date is typed the way it's said, and a day is not an appointment
 
 **Decision.** A task gets a date on the Lists sheet by tapping its date column and typing it as you'd say it — *fri*, *sep 30*, *in two weeks* — with no calendar to operate; it shows as *Today*, *Tomorrow* or *Sep 30* once saved. Only days for now, no times. A task with a day but no time stays an ordinary task on that day: it can be Right now, and Today treats being due as a reason to put it first. Only a task with a time is a fixed commitment under Later.

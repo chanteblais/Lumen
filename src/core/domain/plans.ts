@@ -22,7 +22,7 @@ export async function savePlan(db: Db, userId: string, localDate: string, plan: 
   const [row] = await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning();
   await appendEvent(db, {
     userId,
-    type: reason === "advanced" ? "plan.advanced" : "plan.generated",
+    type: reason === "advanced" ? "plan.advanced" : reason === "first_step" ? "plan.first_step" : "plan.generated",
     subjectType: "user",
     subjectId: userId,
     payload: { reason, localDate, rightNow: plan.rightNow?.intentionId ?? null, ...(ask ? { ask } : {}) },
@@ -39,12 +39,21 @@ export function advancePlan(plan: DayPlanJson, goneId: string, fallbackFirstStep
   const later = plan.later.filter((l) => l.intentionId !== goneId);
   if (plan.rightNow?.intentionId !== goneId) return { ...plan, afterThat, later };
   const next = afterThat.shift();
+  // Lumi's note answered the Right now that just left; it doesn't carry to the next one.
+  const { note: _gone, ...rest } = plan;
+  void _gone;
   return {
-    ...plan,
+    ...rest,
     rightNow: next ? { intentionId: next.intentionId, firstStep: fallbackFirstStep } : null,
     afterThat,
     later,
   };
+}
+
+/** Pure: the path with the first step they chose for Right now (from Break it down). Anything else is unchanged. Tested. */
+export function withFirstStep(plan: DayPlanJson, intentionId: string, firstStep: string): DayPlanJson {
+  if (plan.rightNow?.intentionId !== intentionId) return plan;
+  return { ...plan, rightNow: { intentionId, firstStep } };
 }
 
 /** Pure: drop ids that are no longer open (completed elsewhere, dropped) so the page never shows a ghost. */

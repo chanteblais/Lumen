@@ -52,7 +52,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | last_touched_at | timestamptz | any mention, edit, or session |
 | created_at, completed_at, dropped_at | | |
 
-### `focus_sessions`
+### `focus_sessions` — unused since 2026-09-13 (sessions removed from the product; the table and its rows are kept)
 | column | type | notes |
 |---|---|---|
 | id | uuid pk | |
@@ -147,11 +147,11 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `app.opened` | `{ gap_seconds }` — written by `visit` (`requireVisit`; `touchLastSeen` on the very first request) on any page open or turn that follows a gap ≥ 30 min; the newest one is the start of the current *sitting* (see Derived) |
 | `capacity.reported` | `{ level: 'low'|'normal'|'high', flags?: ('overwhelmed'|'scattered'|'tired'|'focused')[], note? }` — from the chat tool or Today's prompt |
 | `capacity.asked` | `{ skipped: true }` — the user tapped Skip on Today's prompt (M4); it is not asked again that local day. Rendering the prompt writes nothing |
-| `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used |
+| `intention.declined` | `{ reason }` — *Not this* on Today (M4). `reason` is one of `too_big · too_tired · unclear · not_feeling_it · something_else · nope` (`core/declines.ts`), or null when the older handoff without a reason is used. Since 2026-09-13 written from Today's card (`PATCH /api/intentions/[id]` `decline`), never from a chat message |
 | `intention.created` / `.updated` / `.completed` / `.reopened` / `.dropped` / `.touched` | `{ diff? }`; `.completed`, `.reopened`, `.updated {fields}` and `.dropped {reason}` carry `{ via: 'app' | 'chat' }` — the circle on Today or in Lists, or the Lists sheet's ⋯ menu (move, let go), vs a chat tool (`.updated` and `.dropped` since 2026-09-13; older rows have no `via` and read as chat). The chat context's *Recent changes* (`core/domain/activity.ts`) is derived from these, joined to the intention's title and current status |
 | `session.started` | `{ goal, first_step, planned_minutes, approach, intention_id }` (M5) |
-| `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below |
-| `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped) |
+| `session.check_in` | `{ response: 'ok'|'stuck'|'distracted'|'done', minute }` — `ok` from `/api/session` (Yep), the rest recorded by `/api/chat` when the `session_event` message arrives. End on the bar writes no check-in, only the `session.ended` below. *Not written since 2026-09-13 (sessions removed)* |
+| `session.ended` | `{ outcome: 'completed'|'stopped_early'|'abandoned', actual_minutes, approach, intention_id }` — `actual_minutes` is null for `abandoned` (nobody said when it stopped). *Not written since 2026-09-13* |
 | `memory.noted` / `.confirmed` / `.contradicted` / `.revised` / `.retired` | `{ kind, confidence, by: 'user'|'lumi'|'reflection' }`; `.noted` and `.revised` also carry `source`; `.contradicted` / `.retired` may carry a free-text `note`. No belief content in any of them |
 | `memory.deleted` | `{ kind, versions, keys, by: 'user' }` (2026-09-13) — the user made Lumi forget a belief: the row and every version in its `supersedes_id` chain are gone, and `note` is stripped from their other `memory.*` events (the one sanctioned rewrite of events). `keys` are one-way hashes of each version's content words, so an inference of the same thing is refused (`wasForgotten`); no words are kept |
 | `memory.consolidated` | `{ messages, threads_created, notes, summaries }` (2026-09-13) — one stretch of conversation folded into memory; `subject_id` is its episode, when one was written |
@@ -171,8 +171,8 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
 | `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |
 | `recentActivity` | `intention.*` events in the last 36h, newest first (≤ 15), joined to the intention for title + current status; who did it from `payload.via`. Read only by the chat route for the context block |
-| `activeSession` | the newest `focus_sessions` row with `ended_at IS NULL` that has not reached the abandonment threshold (`core/domain/sessions.ts`). Read into every snapshot and by the Chat page; the client then follows Lumi's start/end tool parts and its own Done/End taps within the page open (`core/focus.ts → sessionFromMessages`) |
-| `abandonedSession` | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` by `resolveSession` on the next visit — any page or turn, since it runs inside `loadSnapshot` and on the Chat page. Offered back by the greeting while nothing has been said since it closed |
+| `activeSession` *(not read since 2026-09-13)* | the newest `focus_sessions` row with `ended_at IS NULL` that has not reached the abandonment threshold (`core/domain/sessions.ts`). Read into every snapshot and by the Chat page; the client then follows Lumi's start/end tool parts and its own Done/End taps within the page open (`core/focus.ts → sessionFromMessages`) |
+| `abandonedSession` *(no longer swept since 2026-09-13)* | `focus_sessions` with `ended_at IS NULL` and `started_at < now − (planned_minutes × 2)`; closed as `abandoned` by `resolveSession` on the next visit — any page or turn, since it runs inside `loadSnapshot` and on the Chat page. Offered back by the greeting while nothing has been said since it closed |
 | `lastSession` | the most recently ended session if it ended in the last 36h — continuity for the context block ("pick it back up") and the abandoned greeting |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
@@ -190,7 +190,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`.
 | local_date | text | `YYYY-MM-DD` in the user's timezone |
 | capacity | text null | level the plan was cut for |
 | plan | jsonb | `DayPlanJson`: `dayLine`, `rightNow {intentionId, firstStep}`, `afterThat[]`, `later[]`, `restCanWait`, `closingLine?` |
-| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced` — `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
+| reason | text | `new_day | first_items | capacity | declined | reentry | asked | advanced | first_step` — `first_step` (2026-09-13): a step chosen from *Break it down* on Today's card set as Right now's first step, no re-cut (event `plan.first_step`); a `declined` re-cut now comes from the card and its plan may carry `note` (Lumi's line on why the new Right now fits, dropped when the path advances); `first_items`: the day's plan was cut with nothing to choose from and intentions have since arrived; `capacity` / `declined` / `reentry` (M4): re-cut because capacity was reported, *Not this* was answered, or the coming-back pass let things go. `asked`: re-cut because the user asked in chat for a different shape of day ("something easy", "what should I do now") via the `reshape_today` tool; the ask text rides on the `plan.generated` event, not the row |
 | generated_at | timestamptz | newest row for a date is the current plan |
 
 Events added: `plan.generated {reason, ask?}` (`ask`: the user's words when the reason is `asked` — a learning signal, e.g. "easy" three days running), `plan.advanced`, `intention.declined {reason}`, `intention.reopened`, `intention.updated {fields}`, `memory.*` per belief op.

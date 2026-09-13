@@ -1,11 +1,12 @@
 /**
  * Keep today's persisted path honest when an intention leaves it, wherever
- * that happened (chat tool, Today, Lists). Code, not the model.
+ * that happened (chat tool, Today, Lists) — or when its first step is chosen
+ * on Today's card. Code, not the model.
  */
 import { type Db } from "@/db/client";
 import type { User } from "@/db/schema";
 import { localDate } from "@/core/time";
-import { advancePlan, getPlanForDate, savePlan } from "./plans";
+import { advancePlan, getPlanForDate, savePlan, withFirstStep } from "./plans";
 
 export async function reflectClosedInPlan(db: Db, user: Pick<User, "id" | "timezone">, intentionId: string, now: Date = new Date()): Promise<void> {
   const today = localDate(now, user.timezone);
@@ -15,4 +16,12 @@ export async function reflectClosedInPlan(db: Db, user: Pick<User, "id" | "timez
   const inPath = p.rightNow?.intentionId === intentionId || p.afterThat.some((a) => a.intentionId === intentionId) || p.later.some((l) => l.intentionId === intentionId);
   if (!inPath) return;
   await savePlan(db, user.id, today, advancePlan(p, intentionId), "advanced", row.capacity ?? undefined);
+}
+
+/** A step picked from Break it down: if the intention is Right now, the card shows it as the first step at once — no re-cut. */
+export async function setFirstStepInPlan(db: Db, user: Pick<User, "id" | "timezone">, intentionId: string, firstStep: string, now: Date = new Date()): Promise<void> {
+  const today = localDate(now, user.timezone);
+  const row = await getPlanForDate(db, user.id, today);
+  if (!row || row.plan.rightNow?.intentionId !== intentionId) return;
+  await savePlan(db, user.id, today, withFirstStep(row.plan, intentionId, firstStep), "first_step", row.capacity ?? undefined);
 }

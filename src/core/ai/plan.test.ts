@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { clampPlan, stripCounts } from "./plan";
+import { clampPlan, cleanNote, stripCounts } from "./plan";
 
 const c = (id: string, nextAction: string | null = null) => ({ id, nextAction });
+
+describe("cleanNote", () => {
+  it("trims Lumi's line for the card, strips counts, and says nothing when there's nothing", () => {
+    expect(cleanNote("  Smaller one   instead:  just the email. ")).toBe("Smaller one instead: just the email.");
+    expect(cleanNote("You still have 4 things, so this one.")).toBe("You still have a few things, so this one.");
+    expect(cleanNote("   ")).toBeUndefined();
+    expect(cleanNote(undefined)).toBeUndefined();
+    expect(cleanNote("x".repeat(300))!.length).toBeLessThanOrEqual(140);
+  });
+});
 
 describe("clampPlan", () => {
   it("rejects unknown ids and falls back to a real candidate", () => {

@@ -67,7 +67,7 @@ export async function recutTodaysPlan(db: Db, user: User, recut: RecutReason | R
   if (reason === "capacity" && snap.plan && !capacityChangesPlan(snap.capacity?.level ?? "normal", snap.planRow?.capacity)) {
     return { snap, plan: snap.plan };
   }
-  const plan = await d.build(planInputs(user, snap, now, ask));
+  const plan = await d.build(planInputs(user, snap, now, ask, reason === "declined" ? lastDecline(snap) : undefined));
   await d.save(db, user.id, snap.today, plan, reason, snap.capacity?.level, ask?.text);
   return { snap, plan };
 }
@@ -86,10 +86,18 @@ export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason | 
   }
 }
 
+/** The newest Not this today, with its title — what a `declined` re-cut answers on the card. */
+export function lastDecline(snap: Pick<Snapshot, "declinedToday" | "openIntentions">): PlanInputs["justDeclined"] {
+  const d = snap.declinedToday[0];
+  const i = d ? snap.openIntentions.find((x) => x.id === d.intentionId) : undefined;
+  return i ? { title: i.title, reason: d.reason } : undefined;
+}
+
 /** Everything the planner sees, from one snapshot. */
-export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk): PlanInputs {
+export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk, justDeclined?: PlanInputs["justDeclined"]): PlanInputs {
   return {
     ask,
+    justDeclined,
     displayName: user.displayName,
     timezone: user.timezone,
     localDate: snap.today,

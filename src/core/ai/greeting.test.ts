@@ -40,8 +40,4 @@ describe("greeting", () => {
       expect(second).not.toMatch(/\d/);
     }
   });
-  it("mentions an abandoned session before anything else", () => {
-    const [, second] = greeting({ displayName: "Chanté", lastSeenAt: daysAgo(20), lastSaidAt: daysAgo(20), abandonedSessionGoal: "thesis intro", now });
-    expect(second).toMatch(/thesis intro/);
-  });
 });
