@@ -91,7 +91,7 @@ Domain, database, migrations, reflection and consolidation.
 | C13 | **Reduced-motion gaps:** thinking dots and the listening mic animate forever; `LumiCompanion` reads the preference once. | `globals.css` (~889, ~941), `LumiCompanion.tsx:107` | open |
 | C14 | **`QuickStarts` imports from `persona.ts`**, which holds the whole prompt → move `QUICK_STARTS` to its own file (the persona string must stay byte-identical). | `today/QuickStarts.tsx:3`, `core/ai/persona.ts:79` | fixed — `core/ai/quick-starts.ts`; `persona.ts` re-exports; PERSONA sha256 unchanged (96adb7bd…) |
 | C15 | **`TimezoneCapture` compares the encoded cookie with the raw timezone**, so it rewrites the cookie on every load. | `TimezoneCapture.tsx:27` | fixed — compares the decoded value |
-| C16 | **`lumi-heads.png` is 226 KB** for 36–64 px avatars. | `public/` | open |
+| C16 | **`lumi-heads.png` is 226 KB** for 36–64 px avatars. | `public/` | fixed — lossless `lumi-heads.webp`, 227 → 167 KB, pixels and alpha identical |
 
 ## D — Tooling, config and docs (`chore/hygiene`)
 
