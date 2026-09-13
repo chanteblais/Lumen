@@ -30,3 +30,13 @@ export interface EmailReader {
 
 /** The Gmail scope Lumi needs. Read-only, and only ever read-only. */
 export const GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+
+/**
+ * Mail is switched off (Chanté, 2026-09-13), so Google sign-in asks for
+ * nothing restricted and the consent screen can be published without Google's
+ * review. Off: no Insights in the nav (`/insights` goes Home), no Connect
+ * Google chip, no mail tools and no *Their mail* in Lumi's context. Leads
+ * already noticed stay in the database. Turning it back on also needs
+ * `gmail.readonly` back on the consent screen (docs/pre-prod.md).
+ */
+export const MAIL_ON: boolean = false;

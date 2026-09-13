@@ -1,7 +1,7 @@
-// The server-side auth boundary. This file, src/lib/auth-ui.tsx and
-// src/lib/auth-mail.tsx are the only places outside the sign-in/sign-up pages
-// that import Clerk. Everything else works with the internal `User` row from
-// src/db/schema.
+// The server-side auth boundary. This file, src/lib/auth-ui.tsx,
+// src/lib/auth-mail.tsx and src/proxy.ts (the middleware, clerkMiddleware) are
+// the only places outside the sign-in/sign-up pages that import Clerk.
+// Everything else works with the internal `User` row from src/db/schema.
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";

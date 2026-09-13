@@ -93,6 +93,17 @@ type HoldOptions = {
 const LANDED_REFRESH_MS = 700;
 
 /**
+ * Drops every held chat, stopping a turn still in flight. The chats live in the
+ * tab's memory, not with the account, and signing out doesn't reload the page;
+ * every change of account in one tab passes through sign-in or sign-up, which
+ * call this on mount (`ReleaseHeldChats`), so one person's turn never shows to the next.
+ */
+export function releaseHeldChats() {
+  for (const { chat } of held.values()) if (isBusy(chat.status)) void chat.stop();
+  held.clear();
+}
+
+/**
  * The slot's chat for a component that has just mounted.
  * - A turn still in flight: that chat, `resumed` — you left mid-turn and are
  *   back, so you see it finish (and nothing from the server doubles it: the
@@ -104,7 +115,11 @@ const LANDED_REFRESH_MS = 700;
  */
 function holdChat(slot: HeldChatSlot, options: HoldOptions, refresh: () => void): { chat: Chat<CoherenceUIMessage>; resumed: boolean } {
   const current = held.get(slot);
-  if (current && isBusy(current.chat.status)) return { chat: current.chat, resumed: true };
+  if (current && isBusy(current.chat.status)) {
+    // Home names its conversation: a turn in flight for another one (another account in this tab) is stopped, never shown.
+    if (!options.seed || current.chat.id === options.seed.id) return { chat: current.chat, resumed: true };
+    void current.chat.stop();
+  }
   const seed = options.seed?.messages;
   if (current && current.seed === seed && current.chat.messages.length === (seed?.length ?? 0)) return { chat: current.chat, resumed: false };
   const chat = new Chat<CoherenceUIMessage>({
