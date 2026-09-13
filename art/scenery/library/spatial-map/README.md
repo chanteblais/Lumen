@@ -2,7 +2,7 @@
 
 *2026-09-13 · Claude, from `../background.png` (canonical), `../shelf-zoom.png` (reading scale) and `../library-spatial-information-architecture.md` (governing). Nothing here is approved, and no close-up has been generated.*
 
-**Since drawn:** the Library now serves `../background-small.png`, the same room with furniture at Lumi's scale. The architecture appears unchanged, so the slots, rows and close-up frames should hold. The long table is gone, though, so `central_table`, its occluders, and concerns 1–3 about reaching the centre bookcase and routes around the table need redrawing against the new painting before approval.
+**Since drawn:** the Library now serves `../background-smaller2.png`, the same room with a small reading circle in place of the long table. The architecture appears unchanged, so the slots, rows and close-up frames should hold. The long table is gone, though, so `central_table`, its occluders, and concerns 1–3 about reaching the centre bookcase and routes around the table need redrawing against the new painting before approval.
 
 The images in this folder are annotations drawn by `scripts/draw-library-map.py` from the manifest, `../library-views.json`. The numbers live in the manifest, so edit them there and redraw. The production painting is never touched.
 

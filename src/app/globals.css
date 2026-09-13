@@ -976,7 +976,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background-small.png → public/library-room.webp).
+   room (art/scenery/library/background-smaller2.png → public/library-room.webp).
    For now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the open floor to the right of the reading circle. The sidebar, the top bar,
    the grain and the way her spot is mapped are shared with Today (the
@@ -1000,6 +1000,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .library-page { flex: 1 0 auto; }
 /* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
    reading circle (the round table with its armchairs, stools and cushions),
-   below the stair bookcase: she covers only floor, the rug's edge and the foot
-   of a plant pot, all further back than her feet, and stays clear of the
-   sidebar and the crop at every desktop window. */
+   below the stair bookcase: she covers only floor and the rug's corner, both
+   further back than her feet, and stays clear of the sidebar and the crop at
+   every desktop window. */
