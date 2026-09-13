@@ -869,7 +869,10 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   padding: 10px 14px 10px 30px;
   background: var(--card);
   border: 1px solid var(--rule-strong);
-  border-radius: 999px;
+  /* Half the ~76px pill at rest, so one line is still a full pill; once the
+     textarea grows, the ends stay 38px round rather than 999px, which curved
+     in over the first and last lines of a long message (2026-09-13). */
+  border-radius: 38px;
   box-shadow: var(--shadow);
 }
 /* On a wide page the pill is set to a measure (~70% of the column, never
@@ -892,6 +895,9 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   padding: 8px 0;
   min-height: 40px;
   max-height: 160px;
+  /* A line scrolled part-way out fades over the 8px padding instead of being
+     sliced at the textarea's edge; unscrolled text never reaches the padding. */
+  mask-image: linear-gradient(to bottom, transparent, #000 8px, #000 calc(100% - 8px), transparent);
 }
 .composer textarea::placeholder { color: var(--ink-mute); }
 .composer.is-listening { border-color: var(--brass); box-shadow: var(--shadow), 0 0 0 4px rgba(156, 126, 78, 0.12); }
