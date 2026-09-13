@@ -3,7 +3,7 @@
 /* ---------- Tokens: antique book × modern editorial ---------- */
 :root {
   --paper: #efeae2;        /* page ground */
-  --paper-deep: #e6e0d5;   /* sidebar, chips */
+  --paper-deep: #e6e0d5;   /* chips, icon buttons */
   --card: #f8f5ef;         /* composer, Today's cards, the companion bubble */
   --ink: #1b1a17;
   --ink-soft: #3f3c36;
@@ -69,9 +69,9 @@ body {
 .composer textarea:focus-visible { outline: 0; } /* the pill carries the ring */
 
 /* Scrollbars in the paper's own colours, never the browser's grey. */
-.main, .chat-scroll, .sidebar { scrollbar-width: thin; scrollbar-color: rgba(156, 126, 78, 0.28) transparent; }
+.main, .chat-scroll { scrollbar-width: thin; scrollbar-color: rgba(156, 126, 78, 0.28) transparent; }
 
-/* Very subtle paper grain over everything, so cards and sidebar are paper too.
+/* Very subtle paper grain over everything, so cards and the nav's parchment are paper too.
    Fixed, never interactive. */
 body::before {
   content: "";
@@ -125,76 +125,230 @@ body::after {
 
 /* ---------- Shell ---------- */
 .shell {
+  --rail-w: 64px;   /* the green rail, always there */
+  --panel-w: 216px; /* the parchment the names are on */
   position: relative;
   z-index: 0;
   height: 100dvh;
   display: grid;
-  grid-template-columns: 272px minmax(0, 1fr);
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* Pinned, the page makes room for the parchment instead of sitting under it. */
+@media (min-width: 768px) {
+  .shell:has(> .nav[data-pinned]) { grid-template-columns: calc(var(--rail-w) + var(--panel-w)) minmax(0, 1fr); }
+}
 
-.sidebar {
+/* ---------- The rail and its parchment (components/shell/Sidebar.tsx) ----------
+   The rail is always there, the same deep green on every page. The parchment
+   with the names is folded away until it is shown: hovered, reached by
+   keyboard, opened (a tap on a phone) or pinned. Folded, it lets the pointer
+   through and each row is only as wide as the rail. The shown state is a set
+   of custom properties, so the three ways in share one list of values. */
+.nav {
   position: relative;
-  background: var(--paper-deep);
-  border-right: 1px solid var(--rule);
-  padding: 44px 36px 40px;
+  z-index: 30;
+  min-height: 0;
+  --nav-o: 0;
+  --nav-v: hidden;
+  --nav-x: -8px;
+  --nav-pe: none;
+  --nav-reach: var(--rail-w);
+  --nav-delay: 180ms;     /* a moment's grace before it folds, so a pointer passing out and back doesn't flicker it */
+  --nav-vis-delay: 380ms; /* hidden once the fade is done */
+}
+.nav[data-open],
+.nav:has(:focus-visible) {
+  --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s;
+}
+@media (min-width: 768px) {
+  .nav[data-pinned] { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
+}
+@media (hover: hover) {
+  .nav:hover { --nav-o: 1; --nav-v: visible; --nav-x: 0px; --nav-pe: auto; --nav-reach: calc(var(--rail-w) + var(--panel-w)); --nav-delay: 40ms; --nav-vis-delay: 0s; }
+}
+
+.nav-rail {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 2;
+  width: var(--rail-w);
+  background: linear-gradient(180deg, #223029 0%, #1b251f 55%, #18211c 100%);
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.25), 4px 0 18px rgba(20, 16, 10, 0.18);
+}
+/* The brass rule inset along the rail, like the plate frame it replaces. */
+.nav-rail::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(214, 180, 114, 0.5);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.nav-spark { position: absolute; left: 50%; margin-left: -3.5px; color: #d6b472; opacity: 0.75; }
+.nav-spark-head { top: 72px; }
+.nav-spark-foot { bottom: 64px; }
+.nav-moon { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); color: #d6b472; }
+
+/* The compass star at the head of the rail pins the parchment (opens it, on a phone). */
+.nav-toggle {
+  position: absolute;
+  z-index: 4;
+  top: 18px;
+  left: 0;
+  width: var(--rail-w);
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #d9ba7c;
+  cursor: pointer;
+  transition: color 160ms ease, filter 200ms ease;
+}
+.nav-toggle:hover { color: #f0d9a6; }
+.nav-toggle[aria-expanded="true"] { color: #f0d9a6; filter: drop-shadow(0 0 6px rgba(240, 217, 166, 0.45)); }
+
+/* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
+   every page, and the greeting's scroll on Home's dark room. */
+.nav-panel,
+.shell:has(.home-scene) .opening {
+  --paper: #f1e7d2;
+  --paper-deep: rgba(43, 34, 22, 0.07);
+  --ink: #2b2216;
+  --ink-soft: #4f4231;
+  --ink-mute: #7f6f57;
+  --brass: #8b6a38;
+  --brass-soft: #c9ad78;
+  --rule: rgba(43, 34, 22, 0.16);
+  --rule-strong: rgba(43, 34, 22, 0.38);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  color: var(--ink);
+}
+
+/* No z-index and no transform, so its sheet sits under the rail while its
+   words sit over it. */
+.nav-panel {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: calc(var(--rail-w) + var(--panel-w));
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  pointer-events: var(--nav-pe);
 }
-/* Inner frame line: the ruled border of a book plate... */
-.sidebar::after {
+.nav-panel::before {
   content: "";
   position: absolute;
-  inset: 10px;
-  border: 1px solid var(--rule);
-  pointer-events: none;
+  z-index: 1;
+  inset: 0 0 0 calc(var(--rail-w) - 10px); /* tucked under the rail's edge */
+  background: linear-gradient(180deg, #f6eedc 0%, #efe4cc 60%, #e9dcc0 100%);
+  border: 1px solid rgba(139, 106, 56, 0.28);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(27, 26, 23, 0.12), 0 16px 40px rgba(27, 26, 23, 0.28), inset 0 0 36px rgba(122, 96, 54, 0.12);
 }
-/* ...with crossed corners, the way a ruled border is drawn by hand. */
-.sidebar::before {
-  --c: var(--rule-strong);
-  content: "";
-  position: absolute;
-  inset: 4px;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c));
-  background-repeat: no-repeat;
-  background-size: 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px, 13px 1px, 1px 13px;
-  background-position:
-    left 0 top 6px, left 6px top 0,
-    right 0 top 6px, right 6px top 0,
-    left 0 bottom 6px, left 6px bottom 0,
-    right 0 bottom 6px, right 6px bottom 0;
+.nav-panel::before,
+.nav-head,
+.nav-foot,
+.nav-item .name {
+  opacity: var(--nav-o);
+  visibility: var(--nav-v);
+  transform: translateX(var(--nav-x));
+  transition: opacity 160ms ease var(--nav-delay), transform 200ms ease var(--nav-delay), visibility 0s linear var(--nav-vis-delay);
 }
+.nav-head, .nav-list, .nav-foot { position: relative; z-index: 3; }
 
-.nav-item {
+.nav-head {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 196px;
+  padding: 22px 18px 0 calc(var(--rail-w) + 8px);
+  text-align: center;
+}
+.nav-wordmark { margin-top: 10px; font-size: 34px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+.nav-tagline { margin-top: 12px; font-size: 17px; font-style: italic; line-height: 1.25; color: var(--ink-soft); }
+.nav-divider { margin-top: 22px; }
+.nav-divider .hair { width: 52px; }
+
+.nav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.nav-item {
   position: relative;
-  align-items: baseline;
-  padding: 12px 16px 12px 32px; /* room for the mark, then the name */
-  margin: 0 -16px;
-  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  width: var(--nav-reach);
+  height: 50px;
   color: var(--ink);
   text-decoration: none;
-  transition: background-color 160ms ease;
+  pointer-events: auto;
 }
-.nav-item:hover { background: rgba(27, 26, 23, 0.04); }
-.nav-item[aria-current="page"] { background: rgba(27, 26, 23, 0.07); }
-/* The brass diamond points at the open chapter. */
-.nav-item .nav-mark {
+.nav-icon {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--rail-w);
+  height: 100%;
+  color: #d3bf96;
+  transition: color 160ms ease;
+}
+.nav-icon::before {
+  content: "";
   position: absolute;
-  left: 11px;
+  left: 50%;
   top: 50%;
-  transform: translate(-3px, -50%);
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%, -50%);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.nav-icon svg { position: relative; }
+.nav-item:hover .nav-icon,
+.nav-item[aria-current="page"] .nav-icon { color: #f0d9a6; }
+.nav-item:hover .nav-icon::before { background: rgba(240, 217, 166, 0.07); }
+.nav-item[aria-current="page"] .nav-icon::before { background: rgba(240, 217, 166, 0.12); border-color: rgba(240, 217, 166, 0.22); }
+/* You are here: a brass star on the rail's rule, beside the open place. */
+.nav-mark {
+  position: absolute;
+  left: calc(var(--rail-w) - 12px);
+  top: 50%;
+  margin-top: -5px;
+  color: #e8c987;
   opacity: 0;
+  transform: scale(0.6);
   transition: opacity 200ms ease, transform 200ms ease;
 }
-.nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: translate(0, -50%); }
-.nav-item .name { font-size: 19px; }
+.nav-item[aria-current="page"] .nav-mark { opacity: 1; transform: none; }
+.nav-item .name {
+  flex: 1;
+  margin: 0 14px 0 12px;
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.nav-item:hover .name { background: rgba(43, 34, 22, 0.06); }
+.nav-item[aria-current="page"] .name { background: rgba(139, 106, 56, 0.16); }
+
+.nav-foot {
+  margin: 40px 18px 0 calc(var(--rail-w) + 26px);
+  padding-bottom: 24px;
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+.nav-foot .ornament { margin-left: 8px; vertical-align: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel::before, .nav-head, .nav-foot, .nav-item .name, .nav-mark { transition: none; transform: none; }
+}
 
 .auth-link {
   color: var(--ink-soft);
@@ -655,26 +809,14 @@ body::after {
 .ledger li { font-size: 14px; letter-spacing: 0.02em; color: var(--ink-mute); }
 .ledger-mark { color: var(--brass); margin-right: 8px; font-size: 11px; vertical-align: 1px; }
 
-/* ---------- Mobile: sidebar becomes a top strip ---------- */
+/* ---------- Mobile ---------- */
 @media (max-width: 767px) {
-  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
-    padding: 20px 22px 16px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .sidebar::after, .sidebar::before { display: none; }
+  /* The rail stays, narrower; the parchment only floats (the compass star opens it). Trial, 2026-09-13. */
+  .shell { --rail-w: 52px; }
+  .nav-toggle, .nav-panel { top: 10px; }
+  .nav-spark-head { top: 60px; }
+  .nav-icon::before { width: 38px; height: 38px; }
   .main { box-shadow: none; }
-  .sidebar .sidebar-foot, .sidebar .tagline, .sidebar .rule-short, .sidebar .divider { display: none; }
-  /* A row that wraps, right of the wordmark: overrides the nav's desktop `flex-col mt-8` (utilities lose to unlayered CSS). */
-  .sidebar nav { display: flex; flex-direction: row; margin-top: 0; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-  .nav-item { padding: 6px 10px; margin: 0; }
-  .nav-item .nav-mark { display: none; }
-  .nav-item .name { font-size: 15px; }
   .main { padding: 22px 20px 0; }
   .composer-dock { padding-bottom: 18px; }
   .companion, .companion-debug { display: none; } /* would sit on the docked composer's send button; the bubble goes with her */
@@ -708,7 +850,7 @@ body::after {
   background: #362e29 url("/home-room.webp") center / cover no-repeat;
 }
 /* The room dims toward the spine and the floor so the text sits in the light:
-   darkest under the sidebar, lighter where the room shows, dark again behind
+   darkest along the left edge, lighter where the room shows, dark again behind
    the composer. */
 .home-scene::after {
   content: "";
@@ -753,39 +895,15 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 /* Text set straight on the painting (kicker, clock, rules' labels) gets a
    breath of shadow so it holds against the brushwork. */
 .shell:has(.home-scene) .main { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.5); box-shadow: none; }
-.shell:has(.home-scene) .sidebar {
-  background: rgba(24, 16, 10, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right-color: rgba(241, 230, 207, 0.12);
-}
-.shell:has(.home-scene) .nav-item:hover { background: rgba(241, 230, 207, 0.06); }
-.shell:has(.home-scene) .nav-item[aria-current="page"] { background: rgba(241, 230, 207, 0.1); }
 .shell:has(.home-scene) .chip:hover,
 .shell:has(.home-scene) .icon-btn:hover { background: rgba(241, 230, 207, 0.16); }
 
 /* The greeting hangs on the wall as a parchment scroll — the one light thing
    in the room, the way the tagline hangs in the mockup. Ink on paper again
-   inside it; the rods are the two dark bars past its edges. */
+   inside it (its tokens are the parchment's, with the nav's panel); the rods
+   are the two dark bars past its edges. */
 .shell:has(.home-scene) .opening {
-  --paper: #f1e7d2;
-  --paper-deep: rgba(43, 34, 22, 0.07);
-  --ink: #2b2216;
-  --ink-soft: #4f4231;
-  --ink-mute: #7f6f57;
-  --brass: #8b6a38;
-  --brass-soft: #c9ad78;
-  --rule: rgba(43, 34, 22, 0.16);
-  --rule-strong: rgba(43, 34, 22, 0.38);
-  --color-paper: var(--paper);
-  --color-paper-deep: var(--paper-deep);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-mute: var(--ink-mute);
-  --color-brass: var(--brass);
-  --color-brass-soft: var(--brass-soft);
   position: relative;
-  color: var(--ink);
   text-shadow: none;
   margin-top: 8px;
   padding: 30px 34px 32px;
@@ -841,7 +959,6 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   -webkit-backdrop-filter: blur(12px);
 }
 @media (max-width: 767px) {
-  .shell:has(.home-scene) .sidebar { border-bottom-color: rgba(241, 230, 207, 0.12); }
   .shell:has(.home-scene) .opening { padding: 22px 20px 24px; }
 }
 
@@ -858,7 +975,7 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   z-index: -1;
   background: #6b5236 url("/today-room.webp") center / cover no-repeat;
 }
-/* A warm veil, heaviest under the panel on the left and along the top (where
+/* A warm veil, heaviest along the left and the top (where
    the clock sits on the painting), clear over the room. */
 .today-scene::after {
   content: "";
@@ -871,15 +988,6 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 body:has(.today-scene, .library-scene)::before { opacity: 0.14; } /* the grain stays, lightly */
 body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on a painting */
 .shell:has(.today-scene, .library-scene) .main { box-shadow: none; }
-
-/* The sidebar is a plate of paper with the garden faintly through it (the
-   Library's room too). */
-.shell:has(.today-scene, .library-scene) .sidebar {
-  background: rgba(239, 234, 226, 0.84);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right-color: rgba(27, 26, 23, 0.1);
-}
 
 /* The top bar is set straight on the painting: parchment type with a breath
    of shadow, and a short rule under the clock instead of one across the room. */
@@ -953,7 +1061,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    screen than anything she covers). The spot is in
    the painting's own pixels (--lumi-x/y), mapped through the cover fit (one
    painting pixel is --px on screen), so she stays on the same flagstone as
-   the window resizes. Only where that spot is clear of the sidebar and the
+   the window resizes. Only where that spot is clear of the nav and the
    panel; elsewhere she keeps her corner. The bubble still opens above her. */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
@@ -968,7 +1076,6 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 
 @media (max-width: 767px) {
-  .shell:has(.today-scene, .library-scene) .sidebar { border-bottom-color: rgba(27, 26, 23, 0.1); }
   .today-panel { padding: 20px 20px 16px; }
   .today-now-title { font-size: 26px; }
   .today-aside { align-self: stretch; max-width: none; }
@@ -978,7 +1085,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    The Library (the Lists page until 2026-09-13) is set in a painted reading
    room (art/scenery/library/background.png → public/library-room.webp).
    For now the room is the whole page: nothing sits on the painting, and Lumi
-   stands on the open floor to the right of the reading circle. The sidebar, the top bar,
+   stands on the open floor to the right of the reading circle. The top bar,
    the grain and the way her spot is mapped are shared with Today (the
    selectors above name both scenes). Nothing for the user to keep. */
 .library-scene {
@@ -987,7 +1094,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   z-index: -1;
   background: #5b4128 url("/library-room.webp") center / cover no-repeat;
 }
-/* The same warm veil as the garden: heaviest under the sidebar and along the
+/* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */
 .library-scene::after {
   content: "";
@@ -1001,5 +1108,5 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 /* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
    reading circle (the round table with its armchairs, stools and cushions),
    below the stair bookcase: she covers only floor and the rug's corner, both
-   further back than her feet, and stays clear of the sidebar and the crop at
+   further back than her feet, and stays clear of the nav and the crop at
    every desktop window. */

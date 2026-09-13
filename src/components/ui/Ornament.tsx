@@ -1,5 +1,6 @@
 /**
- * Printer's ornaments — the engraved marks an old book uses instead of icons.
+ * Printer's ornaments — the engraved marks an old book decorates with. They are
+ * not icons and never stand in for one (the nav's places have line icons).
  * All inline SVG in brass, hairline weight, `aria-hidden`: they decorate, they
  * never carry meaning. One flourish per surface.
  */

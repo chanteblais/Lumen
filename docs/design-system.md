@@ -9,7 +9,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Name | Hex | Tailwind class | Usage |
 |---|---|---|---|
 | Paper | `#efeae2` | `bg-paper` | Page ground |
-| Paper deep | `#e6e0d5` | `bg-paper-deep` | Sidebar, chips, icon buttons |
+| Paper deep | `#e6e0d5` | `bg-paper-deep` | Chips, icon buttons |
 | Card | `#f8f5ef` | `bg-card` | Composer, Today's cards, the companion bubble (the greeting sits on bare paper) |
 | Ink | `#1b1a17` | `text-ink` | Primary text |
 | Ink soft | `#3f3c36` | `text-ink-soft` | Secondary text, labels |
@@ -22,7 +22,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Rule | `rgba(27,26,23,.16)` | — | Fine rules, borders |
 | Rule strong | `rgba(27,26,23,.34)` | — | Short rules, composer border |
 
-**Paper grain:** `body::before` — a fixed, non-interactive SVG `feTurbulence` layer at 28% opacity, multiply blend, laid *over* the shell so cards and sidebar are paper too. Keep it barely perceptible; if you notice it, it's too strong.
+**Paper grain:** `body::before` — a fixed, non-interactive SVG `feTurbulence` layer at 28% opacity, multiply blend, laid *over* the shell so cards and the nav's parchment are paper too. Keep it barely perceptible; if you notice it, it's too strong.
 
 **Foxing:** `body::after` — a fixed radial vignette in `--foxing`, multiply blend: the page browns very slightly toward its edges. Same rule: if you notice it, it's too strong.
 
@@ -30,7 +30,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 **Dark mode:** none in V1. The book is ivory — with two exceptions, below.
 
-**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home/background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest under the sidebar) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
+**Home: the room** (2026-09-12). Home is not set on ivory: it is set *in* a painted room (`art/scenery/home/background.png` → `public/home-room.webp`, 1536×1024, cover-fit, fixed) — an evening study by lamplight, the same book read by lantern light. The page renders one layer, `.home-scene`, behind the shell; its `::after` dims the painting toward the spine (darkest along the left edge) and the floor (behind the composer) so the type sits in the light. Everything else is the same tokens re-mapped under `.shell:has(.home-scene)` (both `--x` and Tailwind's `--color-x`, which resolve on `:root` and would otherwise keep the ivory values):
 
 | Token | By lantern light | Usage on Home |
 |---|---|---|
@@ -42,9 +42,9 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 | Rule / strong | parchment at .16 / .40 | Every hairline |
 | Shadow | two black layers (.25 / .35) | Plates and the scroll |
 
-The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the ivory tokens back (ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today and the Library have paintings of their own (below); Insights and Settings stay ivory. The room is not a theme, it is where Home is.
+The nav is the same on every page — the green rail and its parchment (Components → Nav) — so the dark room does not re-light it; the grain stays at half strength (it reads as the paper of the painting); the foxing and the gutter shadow are off. Text set straight on the painting (the kicker, the clock, date rules) carries a small dark text-shadow. **The greeting is the exception inside the exception:** it hangs on the wall as a parchment scroll — `.opening` on Home takes the parchment tokens (shared with the nav's panel: ink `#2b2216` on `#f1e7d2`-ish parchment, brass `#8b6a38`), a warm inset glow, and two dark wooden rods (`::before` / `::after`) past its edges; the quick-start chips inside it are ink on paper again. Today and the Library have paintings of their own (below); Insights and Settings stay ivory. The room is not a theme, it is where Home is.
 
-**Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today/background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) and laid out after the mockup (`art/mockups/today-mockup.png`): the page is **one paper panel on the right**, the closing line a small green slip beneath it at the foot of the page, and the room left open — Lumi stands in it. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped to it) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory**. The veil (`::after`, `rgba(44,30,16,…)`) is heaviest under the sidebar and along the top, clear over the room.
+**Today: the garden** (2026-09-12). Today is set in a painted greenhouse (`art/scenery/today/background.png` → `public/today-room.webp`, 1536×1024, cover-fit, fixed) and laid out after the mockup (`art/mockups/today-mockup.png`): the page is **one paper panel on the right**, the closing line a small green slip beneath it at the foot of the page, and the room left open — Lumi stands in it. It follows Home's shape (one layer, `.today-scene`, behind the shell; everything scoped to it) but not its light: Home is lamplit and re-maps the palette; Today is daylight, so **the tokens stay ivory**. The veil (`::after`, `rgba(44,30,16,…)`) is heaviest along the left and the top, clear over the room.
 
 | Piece | In the garden |
 |---|---|
@@ -52,18 +52,17 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 | `.today-panel` | The one plate: card at .97 over a 20px blur, 10px radius, a hairline at .10, shadow .08 / .24. Top to bottom: the running head, the 40px medallion beside the greeting (30px) and the day line (`.today-dayline`, 18px), then the capacity line (`.today-capacity`), Right now (`.today-now`, title 30px) and After that / Later (`.today-part`), each parted by a hairline. Buttons 19px and chips 15px inside it; After that rows carry the list · estimate note under the title |
 | `.today-aside` | *Everything else can wait.* — a small forest slip (`rgba(42,52,46,.86)`, parchment italic 21px, centred), the one dark plate on the page |
 | Lumi | From 1100px (landscape) she leaves the corner and stands on the flagstones behind the raised bed. The spot is in the painting's own pixels (`--lumi-x: 630; --lumi-y: 346`) mapped through the cover fit (`--px: max(100vw/1536, 100vh/1024)`), so she keeps her stone at any window size. Choosing a spot: she is always drawn on top, so her feet must sit lower on screen than anything she overlaps. The bubble opens above her as anywhere |
-| Sidebar | A plate of paper at .84 over a 16px blur, the garden faintly through it |
 | Top bar | On the painting: parchment type with a small dark text-shadow; the double rule shortens to 240px under the clock |
 | Grain / foxing / gutter | Grain at .14; foxing and the gutter shadow off |
 
 Not carried over from the mockup: the filter tabs, the plant per category, the *In Season* panel with step counts (its corner is left open), the *Plant something new* button and the quote's copy — `decisions.md` 2026-09-12 · Today, set in the garden.
 
-**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library/background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed). **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the paper sidebar at .84, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
+**Library: the reading room** (2026-09-13). The Library (the Lists page until then) is set in a painted reading room (`art/scenery/library/background.png` → `public/library-room.webp`, 1536×1024 at quality 84, cover-fit, fixed). **For now the room is the whole page:** one layer (`.library-scene`) behind the shell, a visually hidden *Library* heading, and nothing on the painting. A list panel on the right was tried first and taken off the same day (Chanté's ask). Everything that isn't the page itself is shared with the garden — the CSS names both scenes (`:has(.today-scene, .library-scene)`): the veil, the parchment top bar with its 240px rule, grain at .14, and Lumi's spot mapping.
 
 | Piece | In the reading room |
 |---|---|
 | `.library-page` | Fills `.main` (`flex: 1 0 auto`); holds the scene and the hidden heading, nothing else |
-| Lumi | From 1100px (landscape) she stands on the open floor to the right of the reading circle, below the stair bookcase — `--lumi-x: 1190; --lumi-y: 890` in the painting's pixels, mapped through the same cover fit as Today. She covers only floor and the rug's corner, both further back than her feet, and stays clear of the sidebar and the crop at every desktop window. Below that, her corner |
+| Lumi | From 1100px (landscape) she stands on the open floor to the right of the reading circle, below the stair bookcase — `--lumi-x: 1190; --lumi-y: 890` in the painting's pixels, mapped through the same cover fit as Today. She covers only floor and the rug's corner, both further back than her feet, and stays clear of the nav and the crop at every desktop window. Below that, her corner |
 
 The painting's signs and banners are **blank** (repainted 2026-09-13; the first painting, with words on them, is `art/mockups/library-background.png`). The boards are the Library's architectural collection slots in Chanté's IA (`art/scenery/library/library-spatial-information-architecture.md`): fixed places whose names would come from the user's life. Nothing writes on them yet.
 
@@ -76,8 +75,8 @@ The painting's signs and banners are **blank** (repainted 2026-09-13; the first 
 | Cormorant Garamond | 400 / 500 / 600 + italics | Google Fonts via `next/font` | `--font-cormorant` → `.font-display` |
 | EB Garamond | 400 / 500 + italics | Google Fonts via `next/font` | `--font-garamond` → `.font-body` (default on `body`) |
 
-- **Display** (Cormorant): the wordmark (48px — sized so *Coherence* fits the sidebar's ~200px column with air; 32px in the mobile top strip, so the nav keeps its room), the greeting's title line (38px) and second line (26px, `--ink-soft`), the composer input (24px), italic asides ("Progress lives here.").
-- **Body** (EB Garamond, 17px/1.45): everything else, including nav names (19px) and chips (16px).
+- **Display** (Cormorant): the wordmark (34px, centred at the head of the nav's parchment), the greeting's title line (38px) and second line (26px, `--ink-soft`), the composer input (24px), italic asides ("Progress lives here.").
+- **Body** (EB Garamond, 17px/1.45): everything else, including nav names (18px) and chips (16px).
 - **Labels** (`.label`): EB Garamond 11px, uppercase, `letter-spacing: 0.24em`, `--ink-soft`, lining tabular figures. `.label-mute` for the quieter variant. Every kicker, date, and tagline in the interface is a `.label`.
 - **Marginal notes** (`.pill`): the list and the estimate beside a title (*Personal · ~5 min*), set as tracked small caps in the mute ink like a source noted in the margin — no box, no fill (the boxed grey pill read as a SaaS tag, 2026-09-12). Two in a row are parted by a middle dot (`.pill + .pill::before`).
 - **Figures:** `body` asks for old-style proportional figures (`font-variant-numeric`). The display face honours it, so a number in any display-set line sits on the baseline the way a book sets it; the Google-served EB Garamond has no such feature and shows lining figures regardless (`decisions.md`, 2026-09-12). Labels and marginal notes ask for lining figures explicitly, so caps and numerals stand at one height.
@@ -91,9 +90,9 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 
 ## Spacing & Layout
 
-- **Shell:** CSS grid `272px minmax(0,1fr)`, **viewport-height** (`.shell { height: 100dvh }`); sidebar `.sidebar` scrolls internally, with an inner 10px inset frame line (`::after`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
+- **Shell:** CSS grid `var(--rail-w) minmax(0,1fr)` — the rail is 64px (52px on phones) — widening to `rail + panel` (64 + 216px) while the nav is pinned, **viewport-height** (`.shell { height: 100dvh }`); main `.main` is a scrolling column (`overflow-y: auto`, padded `36px 48px 0`). The chat page overrides this with its own scroll region so the composer stays fixed.
 - **Content width:** `max-w-[1080px]`, left-aligned within main.
-- **Mobile breakpoint:** `767px` (CSS). Sidebar becomes a top strip: wordmark left, nav names right in a row that wraps (right-aligned) when it runs out of room; the footer aside and dividers are hidden. The nav's desktop `flex-col mt-8` is overridden in the mobile block (`flex-direction: row; margin-top: 0`).
+- **Mobile breakpoint:** `767px` (CSS). The rail stays, at 52px; the parchment never docks, it floats over the page when the compass star is tapped (a trial, 2026-09-13 — to revisit).
 - **Radii:** cards `6px` (a plate, not a bubble); user notes `8px` with a `2px` tail corner; chips, icon buttons, composer, send `999px`.
 - **Shadow:** one token, `--shadow` (two soft layers). Nothing else casts.
 
@@ -118,7 +117,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on |
 | `.send` | 64px forest circle; disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
-| `.nav-item` | Sidebar link; `[aria-current="page"]` gets the soft highlight; `.name` child |
+| `.nav-item` | One row of the nav, one link per place: `.nav-icon` on the rail, `.nav-mark` (the star on the rail's rule) and `.name` on the parchment; `[aria-current="page"]` lights the icon's tile, shows the star and tints the name |
 | `.pill` | Marginal note beside a title (see Typography): tracked small caps, mute ink, no box; `·` between two |
 | `.row` / `.row-quiet` | A list row: hairline beneath, 12px (8px quiet) of air; last row has no rule |
 | `.circle` | The complete/reopen circle: hairline ring, brass on hover, forest fill when `.is-done` — and the tick draws itself in one stroke (220ms, the path carries `pathLength="1"`) |
@@ -146,7 +145,7 @@ Lumi, full figure, standing a little in from the bottom-right corner of every pa
 Insights opens the way Today does — the running head (kicker + divider), then Lumi's 48px portrait medallion beside a display-serif line (30/36px) — and then a column of `.card`s (gap 20px), one per thing she noticed: the title in display serif (26/28px), her *why* line in body 17px `--ink-soft`, a `.label.label-mute` meta line (sender · subject · when · date), and the two answers — a `.chip` (*Still needs doing*) and a `.tool-link` (*Let it go*), the same weights as *Not this*'s chips and *Keep it*. Answered, the row's controls become one ledger-style line (`.ledger-mark` ✦ + *On your list.* / *Let go.*). The page's one flourish is the divider under the kicker; the tailpiece appears only when there is nothing. No counts, no badges, no unread dot on the nav item.
 
 ### Ornaments (`components/ui/Ornament.tsx`)
-Printer's marks, the engraved vocabulary an old book uses instead of icons. Inline SVG in brass (`.ornament`), hairline weight, `aria-hidden`; they decorate, never carry meaning. Three glyphs: **Diamond** ✦ (the smallest mark: dividers, visit rules), **Fleuron** ❦ (the hedera, an ivy leaf with a curled stem: tailpieces, the sidebar foot), **Asterism** ⁂ (a pause in the text: the greeting's headpiece, where this visit begins after whatever was there). Two layouts: `Divider` (replaces the short rule under every kicker) and `Tailpiece` (closes an empty page). **One flourish per surface** — the greeting has its headpiece, a page has its tailpiece, a sitting break has its diamonds. If a surface already has one, it does not get another.
+Printer's marks, the engraved vocabulary an old book decorates with. They are not icons and never stand in for one (the nav's places have line icons — Icons, below). Inline SVG in brass (`.ornament`), hairline weight, `aria-hidden`; they decorate, never carry meaning. Three glyphs: **Diamond** ✦ (the smallest mark: dividers, visit rules), **Fleuron** ❦ (the hedera, an ivy leaf with a curled stem: tailpieces), **Asterism** ⁂ (a pause in the text: the greeting's headpiece, where this visit begins after whatever was there). Two layouts: `Divider` (replaces the short rule under every kicker) and `Tailpiece` (closes an empty page). **One flourish per surface** — the greeting has its headpiece, a page has its tailpiece, a sitting break has its diamonds. If a surface already has one, it does not get another.
 
 ### Quick starts (`components/chat/QuickStarts.tsx`)
 Four chips + a round "another way in" button. They are starting points, not modes; from M2 they send a canned first message.
@@ -157,14 +156,19 @@ Focus Together on screen, Chat only, pinned between the transcript and the compo
 ### Composer (`components/chat/Composer.tsx`)
 `+` icon button · auto-growing textarea · send. Below it, the Voice toggle (only where supported; `.tool-link.is-listening` breathes in brass) and the closing label ("You don't have to do it alone."). Enter sends, Shift+Enter newlines. Voice is `useVoiceInput` (`components/chat/useVoiceInput.ts`): Web Speech API, continuous + interim results, transcript appended to the typed text.
 
-### Sidebar (`components/shell/Sidebar.tsx`)
-Wordmark, tagline label, divider ornament, nav of plain names (no numerals) with a brass diamond marking the open chapter, italic footer aside between a divider and a fleuron. The plate frame (`::after`) has **crossed corners** (`::before`): each rule runs 6px past the corner, the way a ruled border is drawn by hand. Active route from `usePathname`. The first item is **Home** (was *Chat* until 2026-09-12). On Home the plate is a translucent wood panel over the painting (dark glass, 16px blur) with parchment type; the frame and crossed corners keep their rules in parchment.
+### Nav: the rail and its parchment (`components/shell/Sidebar.tsx`)
+After `art/mockups/rail-nav.png` (2026-09-13). Two pieces, the same on every page, painted or ivory:
+
+- **The rail** (`.nav-rail`, 64px, full height): deep green (`#223029` → `#18211c`) with a brass hairline inset 6px (`rgba(214,180,114,.5)`), the plate frame the old sidebar had. At its head the **compass star** (`.nav-toggle`, an eight-pointed brass star, a button) with a small spark below it; at its foot a spark and a **crescent moon**. Between them, one line icon per place (`NavIcons.tsx`: house, sun, open book, sprig, gear; `#d3bf96`, parchment-gold `#f0d9a6` on hover and for the open place). The open place's icon sits on a lit tile (42px, 8px radius) and **a brass star sits on the rail's rule beside it** (`.nav-mark`) — the diamond that marked the open chapter, moved onto the rail.
+- **The parchment** (`.nav-panel`, 216px beyond the rail, from 18px down): a sheet tucked under the rail's edge, gradient `#f6eedc` → `#e9dcc0`, a brass hairline at .28, 10px radius, a warm inset glow and one soft shadow, on the parchment tokens it shares with Home's greeting scroll. Top to bottom: a diamond, the wordmark (34px display), *A quieter way forward.* (italic display 17px), a divider with 52px hairlines, the names (18px body, each beside its rail icon — one row, one link), and *Progress lives here.* with a diamond. The open place's name has a brass tint (`rgba(139,106,56,.16)`), a hovered one a faint ink tint.
+
+**How it opens.** Folded, the parchment and names are hidden and let the pointer through, and each row is only as wide as the rail. It is **shown** while the pointer is over the nav (`@media (hover: hover)`), while keyboard focus is in it (`:has(:focus-visible)`), when opened (`data-open`, phones) or when pinned (`data-pinned`, from 768px): the three ways in set the same custom properties (`--nav-o`, `--nav-v`, `--nav-x`, `--nav-pe`, `--nav-reach`). It fades and slides 8px in over 160–200ms; folding waits 180ms first, so a pointer that slips off and back doesn't flicker it. **A click on the parchment (not on a link) or on the compass star pins it**: the shell's first column widens to rail + panel so the page moves over and nothing sits under the sheet; the painting behind doesn't move (it is fixed). Clicking again folds it. The pin is a cookie (`coherence_nav=pinned|folded`, a year) the layout reads, so a pinned nav is there from the first paint. The compass star glows while pinned. **Phones** (<768px, a trial): the rail is 52px, there is no hover and no docking — the compass star opens the parchment over the page, and a tap on a place, outside the nav or Escape folds it. Transitions are off under reduced motion.
 
 ### Clock (`components/ui/Clock.tsx`)
 Viewer-local date + time as a `.label`, top right. Renders empty on the server and fills on mount (no hydration mismatch).
 
 ### Icons
-Inline SVG, `stroke="currentColor"`, 1.4–1.6 stroke, round caps. No icon font, no icon library.
+Inline SVG, `stroke="currentColor"`, 1.4–1.6 stroke, round caps. No icon font, no icon library. **An icon may carry meaning when its name is always a hover, a focus or a tap away** — the nav's places are icons on the rail with their names on the parchment (2026-09-13, Chanté's call; it replaces "plain names, no icons" in the nav). An icon with no way to see its name is still out, and every icon-only control has an `aria-label`.
 
 ### Favicon (`app/icon.svg`)
 Lumi's hooded head in the forest circle with a brass hairline ring, drawn as flat SVG shapes (the raster sprite does not survive 16px). Replaces the default Next favicon.
@@ -175,7 +179,7 @@ Lumi's hooded head in the forest circle with a brass hairline ring, drawn as fla
 
 - Every icon-only button has an `aria-label`.
 - Every animation stops under `prefers-reduced-motion` — the companion, the check-in plate, messages landing, the tick drawing.
-- Nav uses `aria-current="page"`.
+- Nav uses `aria-current="page"`; its rows carry `aria-label` (the names are hidden while the parchment is folded), keyboard focus in the nav opens the parchment, and the compass star is a button with `aria-expanded`.
 - Focus: one ring for the whole book — `:focus-visible` is a 1px brass outline offset 3px. The composer textarea suppresses it (the pill's `.is-listening`/border carries state).
 - Selection is brass-soft on ink. Scrollbars are thin and translucent brass, never the browser grey.
 - Contrast: ink on paper ≈ 14:1; ink-mute on paper ≈ 3.4:1 — mute is for non-essential text only.

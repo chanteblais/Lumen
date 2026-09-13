@@ -2,52 +2,125 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Diamond, Divider, Fleuron } from "@/components/ui/Ornament";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { Diamond, Divider } from "@/components/ui/Ornament";
+import { NAV_PIN_COOKIE } from "./nav-pin";
+import { BookIcon, CompassStar, GearIcon, HomeIcon, MoonIcon, SprigIcon, SunIcon } from "./NavIcons";
 
 const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/today", label: "Today" },
-  { href: "/library", label: "Library" },
-  { href: "/insights", label: "Insights" },
-  { href: "/settings", label: "Settings" },
+  { href: "/", label: "Home", Icon: HomeIcon },
+  { href: "/today", label: "Today", Icon: SunIcon },
+  { href: "/library", label: "Library", Icon: BookIcon },
+  { href: "/insights", label: "Insights", Icon: SprigIcon },
+  { href: "/settings", label: "Settings", Icon: GearIcon },
 ] as const;
 
-export function Sidebar() {
+/** Where a pinned parchment docks beside the page (the CSS breakpoint); below it, it only ever floats. */
+const DOCKS = "(min-width: 768px)";
+
+/**
+ * The rail and its parchment. The green rail is always there: an icon per
+ * place, and a brass star on its rule beside the one you're in. The names
+ * are on the parchment, which slides out while the pointer is over the rail
+ * (or keyboard focus is in it) and floats over the page. A click on the
+ * parchment, or on the compass star, pins it open and the page makes room.
+ * On a phone there is no hover: the compass star opens it over the page,
+ * and a tap on a place, outside it or Escape folds it away.
+ */
+export function Sidebar({ pinnedAtLoad }: { pinnedAtLoad: boolean }) {
   const pathname = usePathname();
+  const [pinned, setPinned] = useState(pinnedAtLoad);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  function toggle() {
+    if (!window.matchMedia(DOCKS).matches) return setOpen((o) => !o);
+    const next = !pinned;
+    setPinned(next);
+    document.cookie = `${NAV_PIN_COOKIE}=${next ? "pinned" : "folded"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+
+  function onParchmentClick(e: MouseEvent) {
+    if ((e.target as Element).closest("a, button")) return;
+    toggle();
+  }
+
+  const shown = open || pinned;
   return (
-    <aside className="sidebar">
-      <div>
-        <Link href="/" className="font-display block text-[32px] md:text-[48px] leading-none tracking-tight text-ink">
-          Coherence
-        </Link>
-        <p className="label tagline mt-5 leading-[1.7]">
-          A quieter
-          <br />
-          way forward
-        </p>
-        <Divider className="mt-9" />
+    <aside ref={ref} className="nav" data-pinned={pinned || undefined} data-open={open || undefined}>
+      <div className="nav-rail" aria-hidden>
+        <Diamond size={7} className="nav-spark nav-spark-head" />
+        <Diamond size={7} className="nav-spark nav-spark-foot" />
+        <MoonIcon className="nav-moon" />
       </div>
+      <button
+        type="button"
+        className="nav-toggle"
+        onClick={toggle}
+        aria-expanded={shown}
+        aria-label={shown ? "Fold the names away" : "Keep the names open"}
+      >
+        <CompassStar />
+      </button>
 
-      <nav className="mt-8 flex flex-col gap-1" aria-label="Primary">
-        {NAV.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          return (
-            <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? "page" : undefined}>
-              <Diamond size={12} className="nav-mark" />
-              <span className="name">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="nav-panel" onClick={onParchmentClick}>
+        <div className="nav-head">
+          <Diamond size={10} />
+          <Link href="/" className="font-display nav-wordmark">
+            Coherence
+          </Link>
+          <p className="font-display nav-tagline">
+            A quieter
+            <br />
+            way forward.
+          </p>
+          <Divider className="nav-divider" />
+        </div>
 
-      <div className="sidebar-foot mt-auto">
-        <Divider />
-        <p className="font-display mt-7 text-[22px] italic leading-[1.35] text-ink-soft">
+        <nav className="nav-list" aria-label="Primary">
+          {NAV.map(({ href, label, Icon }) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="nav-item"
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                onClick={() => setOpen(false)}
+              >
+                <span className="nav-icon">
+                  <Icon />
+                </span>
+                <Diamond size={10} className="nav-mark" />
+                <span className="name">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <p className="font-display nav-foot">
           Progress
           <br />
           lives here.
+          <Diamond size={8} />
         </p>
-        <Fleuron className="mt-6" />
       </div>
     </aside>
   );
