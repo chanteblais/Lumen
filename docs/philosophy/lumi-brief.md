@@ -36,8 +36,8 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 | `docs/philosophy/lumi.md` | `7076a030ff3d` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `eab22e3b0099` |
-| `PROJECT-CANON.md` | `df118671f850` |
+| `docs/living/decisions.md` | `672d123e4891` |
+| `PROJECT-CANON.md` | `e7c3bca2b1cb` |
 <!-- sources:end -->
 
 ## The brief
@@ -94,4 +94,5 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/library-sections`): the product decisions gained *Threads that become categories become sections of the Library*, and the canon map's Library row now says the categories show only in a hidden debug mode. The brief's Library line still reads true. How threads fall under categories is in the persona, which is the *how*. The sections aren't something users can see yet, so the brief doesn't mention them; otherwise she might promise them.
 - **2026-09-13 · v1:** first synthesis, from the vision, the principles, `lumi.md`'s canon sections, the model strategy, shared terminology, the canon map and the product decisions. Placed after the persona's opening paragraph for every call that uses the persona.
