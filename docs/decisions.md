@@ -4,6 +4,8 @@ Append-only. One entry per decision that changes `architecture.md`, `domain.md` 
 
 **Product decisions** (what the product is and why, and the constraints they put on future work) live in [`living/decisions.md`](living/decisions.md), the canon's log. An entry here that changes how the product behaves gets a short entry there too.
 
+- **2026-09-13 · The favicon is Chanté's compass star, not Lumi's head.** Chanté's ask: her `art/scenery/library/icon.png` as the favicon. PNG and ICO from `scripts/make-favicon.py`, not an SVG: the source is a painting, and its hairlines need thickening by hand at 16px. Replaces the Lumi SVG favicon from *Graphics pass: the book gets its engraving* (2026-09-12). No migration; nothing for the user to keep.
+
 - **2026-09-13 · A conversation harness: Lumi's real tools against a throwaway database (`scripts/conversation-eval.mjs`).** Chanté's go-ahead, after review feedback that nine single replies can't show judgement over a conversation or whether she acts.
   - **How it runs:** each scenario gets a fresh PGlite (`openTestDb`, every migration applied), a test user, and seeded intentions, beliefs and a sitting. Each turn is assembled the way `/api/chat` assembles one (`loadSnapshot`, `listRecentActivity`, `selectBeliefs`, `selectLibrary`, `buildContextBlock`, `buildTools`) and runs `generateText` with `stopWhen: stepCountIs(5)`. Seed events are moved out of *Recent changes*, so she doesn't read the setup as her own doing.
   - **Checks:** code over tool calls and database state (`must`), plus signs for the grader (`flag`). Voice and Use stay manual.
