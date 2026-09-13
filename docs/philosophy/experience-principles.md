@@ -1,5 +1,7 @@
 # Coherence — Product Experience Principles
 
+*Shared definitions and the approved 2026-09-13 reconciliation: [Shared model and terminology](../product/shared-model.md). Examples illustrate principles; implementation and delivery scope remain separately documented.*
+
 *Canonical. Written by Chanté, added 2026-09-12. Formatted as Markdown, substance unchanged. The source trailed off at the end of §24 ("It may simply not belong in"); Chanté confirmed on 2026-09-13 that it means simply "It may simply not belong." Companion to [`product-vision.md`](product-vision.md).*
 
 ## Purpose
@@ -645,7 +647,7 @@ In Lists:
 
 - vertical dragging can communicate relative priority.
 - horizontal dragging can communicate category.
-- Moving something to Later communicates that Lumi should stop foregrounding it.
+- Choosing “Not today” communicates that Lumi should stop foregrounding it today. A list move called Later is not automatically the same operation; other rest decisions retain their intended timescale.
 - Dropping something onto Lumi might communicate:
 
 > Let's work on this together.

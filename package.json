@@ -12,8 +12,9 @@
     "test": "vitest run",
     "preflight": "node scripts/preflight.mjs",
     "precheck": "node scripts/preflight.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes && npm run check:css",
     "check:routes": "node scripts/check-route-auth.mjs",
+    "check:css": "node scripts/check-css-prefixes.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
     "db:studio": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs studio"
@@ -40,6 +41,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "postcss": "^8.5.28",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.0"

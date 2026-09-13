@@ -1,5 +1,7 @@
 # Coherence — AI & Information Architecture
 
+*Shared definitions and the approved 2026-09-13 reconciliation: [Shared model and terminology](shared-model.md). Examples illustrate principles; implementation and delivery scope remain separately documented.*
+
 *Canonical. Written by Chanté, added 2026-09-13. Formatted as Markdown, substance unchanged. It arrived in three pastes, the first of them twice; the duplicate is dropped and the parts are joined where they broke (in §23 and §50). This is the **why** of the AI layer. [`architecture.md`](../architecture.md) and [`domain.md`](../domain.md) are the **how** as built. Where the two differ: [decisions](../living/decisions.md) → *Coherence remembers; Lumi understands*, and [open questions](../living/open-questions.md) 10, 11, 12, 19, 22, 24 and 25. The places it projects into are [Spaces of Coherence](spaces.md).*
 
 ---

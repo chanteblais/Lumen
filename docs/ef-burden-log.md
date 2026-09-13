@@ -1,5 +1,7 @@
 # EF-Burden Log
 
+*2026-09-13 reconciliation: historical rows remain evidence. Approved optional correction and continuity-based growth supersede incompatible earlier proposals; see [current decisions](living/decisions.md). This documentation change introduces no user control or maintenance burden.*
+
 A **running ledger of every place Lumi asks the user to maintain, decide, categorise, rate, or tidy something** — the raw material for the one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* Mirrors Glåüm's generalizability log: captured from reality as we build, not guessed.
 
 > **Why this exists:** productivity systems accrete maintenance. The only defence is to notice each increment as it appears. Some burden is fine (typing a message). The point is that every increment is *seen* and *chosen*.
