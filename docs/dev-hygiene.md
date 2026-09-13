@@ -25,7 +25,8 @@
 | Guard | Catches | Runs | Where |
 |---|---|---|---|
 | Preflight | `node_modules` missing, a symlink, or behind `package-lock.json` (names each package) · generated route types pointing at routes that no longer exist (removes them; Next writes them again) · `.env.local` missing, or missing a key `.env.example` requires (key names only, never values) | before `npm run check` and `npm run dev` (npm's `precheck` / `predev`); by hand as `npm run preflight`. Env problems fail `dev` and are a note on `check`; skipped in CI | `scripts/preflight.mjs` |
-| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit | before every merge; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
+| `npm run check` | types, lint incl. the `src/core` import guard, tests, the route-auth audit, the CSS prefix audit | before every merge; CI on every push to `main` and every PR | `package.json`, `.github/workflows/ci.yml` |
+| CSS prefix audit | a rule in the compiled stylesheet that kept `-webkit-<prop>` but lost `<prop>` (lightningcss drops the unprefixed one when the prefixed line follows it) | inside `npm run check`; by hand as `npm run check:css` | `scripts/check-css-prefixes.mjs` |
 | pre-commit hook | `.claude/` bookkeeping staged; direct commits to `main` | every commit | `.githooks/pre-commit` |
 | Port etiquette | killing or reusing someone else's server; two servers in one checkout | before starting any server (by hand) | `CLAUDE.md`, `branching.md` → Dev servers |
 
@@ -34,6 +35,7 @@ Newest first. *By hand* in the catch column marks a backlog candidate.
 
 | First seen | Symptom | Cause | Caught by | Fix |
 |---|---|---|---|---|
+| 2026-09-13 | No glass surface blurs on Home, Today or the Library; in Chrome `getComputedStyle(sidebar).backdropFilter` is `none`, and the served CSS has only `-webkit-backdrop-filter` in those rules | the source wrote `backdrop-filter` then `-webkit-backdrop-filter` in each rule; lightningcss (Turbopack's CSS pass in dev, Tailwind's optimize in a build) folds the pair into one property and the later prefixed line wins, so the unprefixed one is dropped. Order-dependent, not value-dependent (prefixed-first keeps both). Chrome ignores the prefix, so nothing errors | CSS prefix audit (`npm run check:css`) | write the unprefixed property only; the pipeline adds `-webkit-` for Safari from its targets |
 | 2026-09-13 | Lumi fails in a worktree's dev server after the OpenAI switch | `.env.local` was copied into the worktree before `main` started needing `OPENAI_API_KEY` | preflight (keys against `.env.example`) | copy the key from the main checkout's `.env.local` |
 | 2026-09-13 | `tsc`: *Cannot find module '@ai-sdk/openai'* right after merging `main` | the merge added a package; the worktree's `node_modules` predates it | preflight (installed versions against the lockfile) | `npm ci` |
 | 2026-09-13 | `tsc`: *Cannot find module '../../../src/app/lists/page.js'* in `.next/dev/types/validator.ts` | Lists was renamed the Library; `next typegen` rewrites `.next/types` but not `.next/dev/types`, and `tsconfig.json` includes both | preflight (removes the stale types) | automatic; by hand, `rm -rf .next/dev/types` once no server of this checkout is running |
@@ -65,3 +67,4 @@ Only these; everything else Claude decides, does and records here.
 
 ## Change log
 - 2026-09-13 — Started, from the stale `.next/dev/types` and the missing `@ai-sdk/openai` hit while merging `docs/today-spec-as-built`. Preflight landed; review links are always clickable (`CLAUDE.md` → Review server).
+- 2026-09-13 — Trap and guard: lightningcss dropped `backdrop-filter` from every rule that also wrote `-webkit-backdrop-filter` after it, so no glass blurred in Chrome. The source now writes the unprefixed property alone, and `scripts/check-css-prefixes.mjs` (in `npm run check`) fails on any compiled rule that kept a prefix without its twin.
