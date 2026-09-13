@@ -37,7 +37,15 @@ function line(p: LedgerToolPart): string | null {
     case "tool-reshape_today":
       return `Reshaped Today · ${String(out.ask ?? inp.ask ?? "").slice(0, 60)}`;
     case "tool-remember":
-      return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+      if (out.already_held) return null;
+      return `${out.held_as === "your guess" ? "Noticed" : "Remembered"} · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+    case "tool-correct_belief":
+      return `Corrected · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+    case "tool-add_to_library":
+      if (out.already_held) return null;
+      return `Kept for ${String(out.thread ?? "the Library")} · ${String(out.content ?? inp.content ?? "").slice(0, 80)}`;
+    case "tool-forget_from_library":
+      return "Forgotten";
     case "tool-confirm_belief":
       return "Noted · that held up";
     case "tool-contradict_belief":

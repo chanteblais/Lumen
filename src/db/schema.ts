@@ -153,12 +153,97 @@ export const memoryNotes = pgTable(
     lastConfirmedAt: ts("last_confirmed_at"),
     lastContradictedAt: ts("last_contradicted_at"),
     supersedesId: uuid("supersedes_id"),
+    /** The user message it came from: where they said it, or the turn Lumi noticed it. Null from Settings and reflection. */
+    sourceMessageId: uuid("source_message_id"),
     retiredAt: ts("retired_at"),
     retiredReason: text("retired_reason").$type<RetiredReason>(),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("memory_notes_user_active_idx").on(t.userId, t.retiredAt)],
 );
+
+/* ------------------------------------ the Library: episodes, threads, notes */
+
+/**
+ * Recent memory: one per stretch of conversation (a sitting, or the start of a
+ * long one), written by consolidation (`core/ai/consolidate.ts`) once it's
+ * over — what they talked about, and where it was left. Recent ones ride along
+ * after their messages have left the transcript window. The conversation's
+ * `summary_through_message_id` is the watermark: messages up to it are folded in.
+ */
+export const episodes = pgTable(
+  "episodes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+    /** A few sentences, in Lumi's words. */
+    summary: text("summary").notNull(),
+    /** Where it was left, when something was left open. */
+    leftOff: text("left_off"),
+    startedAt: ts("started_at").notNull(),
+    endedAt: ts("ended_at").notNull(),
+    /** The last message it covers. */
+    throughMessageId: uuid("through_message_id").notNull(),
+    /** Threads it touched. */
+    threadIds: jsonb("thread_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("episodes_user_ended_idx").on(t.userId, t.endedAt)],
+);
+
+/**
+ * A persistent subject of the user's life that Lumi keeps an archive for — a
+ * book they're writing, practicum, a theory. Not a project table and not a
+ * list: intentions stay flat, and how the Library room shows threads
+ * (Collections, Thread Groups, shelves) isn't modelled yet. Resting and
+ * archival are derived from `last_discussed_at`, never stored.
+ */
+export const threads = pgTable(
+  "threads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    /** The words they use for it ("the book", "my novel"): how a mention is recognised. */
+    aliases: jsonb("aliases").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Lumi's quick orientation — what it is, where it stands, what's open — rewritten as notes arrive. */
+    summary: text("summary"),
+    summaryRevisedAt: ts("summary_revised_at"),
+    /** The last time it came up: a note filed, a summary rewritten. */
+    lastDiscussedAt: ts("last_discussed_at").notNull().defaultNow(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt)],
+);
+
+export type ThreadNoteKind = "idea" | "decision" | "question" | "progress" | "detail";
+export type NoteSource = "user_said" | "lumi_inferred";
+
+/** One thing worth keeping about a thread. Current unless a later note superseded it (history, not deleted). */
+export const threadNotes = pgTable(
+  "thread_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    threadId: uuid("thread_id").notNull().references(() => threads.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<ThreadNoteKind>().notNull(),
+    content: text("content").notNull(),
+    source: text("source").$type<NoteSource>().notNull(),
+    /** The user message it came from, when their words matched one. */
+    sourceMessageId: uuid("source_message_id"),
+    /** The episode it was filed in, when consolidation filed it. */
+    episodeId: uuid("episode_id").references(() => episodes.id, { onDelete: "set null" }),
+    /** The note that replaced this one. */
+    supersededById: uuid("superseded_by_id"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("thread_notes_thread_idx").on(t.threadId, t.createdAt), index("thread_notes_user_idx").on(t.userId)],
+);
+
+export type Episode = typeof episodes.$inferSelect;
+export type Thread = typeof threads.$inferSelect;
+export type ThreadNote = typeof threadNotes.$inferSelect;
 
 /* ------------------------------------------------------------ day_plans */
 

@@ -101,9 +101,9 @@ Also from canon: not a motivational speaker (`product.md`), not a replacement fo
 **Coherence holds it; Lumi reads it** *(canon)*. The model is not the memory. Coherence keeps durable structured context and assembles the subset each turn needs.
 
 **Today** *(current)*:
-- **Structured state:** intentions, lists, capacity, focus sessions, day plans, beliefs, leads and events.
-- **A capped context block:** up to 25 intentions, 12 recent changes, 40 beliefs and 8 leads.
-- **Conversation:** the last 30 messages, with older history folded into a summary once that is built (M6).
+- **Structured state:** intentions, lists, capacity, focus sessions, day plans, beliefs, leads, events, and the Library's threads, notes and episodes.
+- **A capped context block:** up to 25 intentions, 12 recent changes, 12 beliefs chosen for the turn (how they like her to be, what helps them start, what the conversation is about, the freshest projects; `recall_memory` finds the rest) and 8 leads; the Library threads the turn touches (≤ 2, each with its summary and ≤ 6 notes), an index of up to 12 others, and up to 3 recent visits that have left the transcript.
+- **Conversation:** the last 30 messages. What came before lives on as recent memory: after each visit, consolidation writes a short episode and files what mattered under Library threads (2026-09-13).
 
 When a cap bites, the answer is a read tool or retrieval, not a bigger block. Lumi reads through the block and writes only through tools.
 

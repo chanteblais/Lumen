@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock, type SessionEventNow, type StartNow } from "@/core/ai/context";
+import { consolidateAfter } from "@/core/ai/consolidate";
+import { selectLibrary } from "@/core/ai/library-select";
+import { selectBeliefs } from "@/core/ai/memory-select";
+import { loadLibraryOrNothing } from "@/core/domain/library";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
 import { reflectAfterSession } from "@/core/ai/reflect";
@@ -12,6 +16,7 @@ import { listRecentActivity } from "@/core/domain/activity";
 import {
   ensureMainConversation,
   loadRecentMessages,
+  messageText,
   saveMessage,
   type CoherenceUIMessage,
 } from "@/core/domain/conversations";
@@ -54,6 +59,9 @@ export async function POST(req: Request) {
     const id = endedSessionId ?? abandonedSessionId;
     if (id) await reflectAfterSession(db(), user, id);
   });
+  // Fold finished stretches of conversation into memory — an episode per visit, notes filed
+  // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
+  after(() => consolidateAfter(db(), user));
 
   const body = (await req.json()) as { message?: CoherenceUIMessage };
   const incoming = body.message;
@@ -101,12 +109,14 @@ export async function POST(req: Request) {
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick in the Library a minute ago is in Lumi's context before she reads the message.
-  const [history, snap, recentActivity, leads, mailScan] = await Promise.all([
+  const [history, snap, recentActivity, leads, mailScan, library] = await Promise.all([
     loadRecentMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
     listSuggestedLeads(db(), user.id, 8),
     latestMailScan(db(), user.id),
+    // Never throws: the turn carries on without the Library if it can't be read.
+    loadLibraryOrNothing(db(), user.id),
   ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
@@ -136,7 +146,25 @@ export async function POST(req: Request) {
       endedSessionId ??= id;
     },
     mail: lazyMailReader(user),
+    // What they've actually said lately: a belief rests on their word only when its their_words is in here.
+    userWords: all
+      .filter((m) => m.role === "user")
+      .slice(-8)
+      .map((m) => ({ messageId: m.id, text: messageText(m) }))
+      .filter((w) => w.text),
   });
+
+  // What this turn is about — for choosing beliefs and for opening Library threads.
+  const turn = {
+    message: messageText(userMessage),
+    recent: all.slice(-7, -1).map(messageText),
+    focus: [snap.session.active?.goal, snap.session.active?.firstStep, startNow?.title],
+  };
+  // Not every belief rides along: what she always honours, what this turn is about, the freshest projects.
+  const memory = selectBeliefs(snap.beliefs, turn);
+  // The Library: threads this turn touches, opened; an index of the rest; visits that ended before the oldest message in view.
+  const oldestInView = all[0]?.metadata?.createdAt;
+  const libraryView = selectLibrary(library.threads, library.notes, library.episodes, turn, { now: new Date(), windowStartsAt: oldestInView ? new Date(oldestInView) : new Date() });
 
   const result = streamText({
     model: chatModel(),
@@ -159,7 +187,11 @@ export async function POST(req: Request) {
           openIntentions: snap.openIntentions,
           recentlyDone: snap.recentlyDone,
           recentActivity,
-          beliefs: snap.beliefs,
+          beliefs: memory.chosen,
+          memoryHeldBack: memory.heldBack,
+          memoryUnavailable: snap.memoryUnavailable,
+          library: libraryView,
+          libraryUnavailable: library.unavailable,
           capacity: snap.capacity,
           plan: snap.plan,
           declinedNow,

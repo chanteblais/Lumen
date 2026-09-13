@@ -22,6 +22,20 @@
       "when": 1789211354561,
       "tag": "0002_leads",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789313987211,
+      "tag": "0003_memory_source_message",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789316717091,
+      "tag": "0004_library",
+      "breakpoints": true
     }
   ]
 }
