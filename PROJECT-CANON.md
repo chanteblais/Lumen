@@ -69,7 +69,7 @@ The direction is moving from *an antique book with no decorative imagery* to **i
 | Document | Holds | Status |
 |---|---|---|
 | [`docs/philosophy/product-vision.md`](docs/philosophy/product-vision.md) | Why: the problem, the relationship with the user, the stable principles | **Foundational** |
-| [`docs/philosophy/experience-principles.md`](docs/philosophy/experience-principles.md) | How: 20 principles with *watch for* lists, and four tests | **Canonical** (the end of §24 is missing) |
+| [`docs/philosophy/experience-principles.md`](docs/philosophy/experience-principles.md) | How: 20 principles with *watch for* lists, and four tests | **Canonical** |
 | [`docs/philosophy/lumi.md`](docs/philosophy/lumi.md) | Lumi — Relational Intelligence & Behaviour: her role, relationship, principles, reading state, context, continuity, when to speak, situations, evidence | **Living** (v0.1; sections marked *proposed* await Chanté) |
 | [`docs/product/lumi-model-strategy.md`](docs/product/lumi-model-strategy.md) | Build model vs Lumi model; *Coherence remembers, Lumi understands*; anti-patterns; how models are evaluated | **Canonical** |
 | `docs/product/ai-and-information-architecture.md` | How the AI understands and acts, and why | To come. Interim: [`architecture.md`](docs/architecture.md) (the how), the model strategy (the why) |

@@ -1,6 +1,6 @@
 # Coherence — Product Experience Principles
 
-*Canonical. Written by Chanté, added 2026-09-12. Formatted as Markdown, substance unchanged. The text as received ends mid-sentence in §24; the break is marked there and is waiting for the missing words. Companion to [`product-vision.md`](product-vision.md).*
+*Canonical. Written by Chanté, added 2026-09-12. Formatted as Markdown, substance unchanged. The source trailed off at the end of §24 ("It may simply not belong in"); Chanté confirmed on 2026-09-13 that it means simply "It may simply not belong." Companion to [`product-vision.md`](product-vision.md).*
 
 ## Purpose
 
@@ -872,6 +872,4 @@ For meaningful product decisions, ask:
 
 If not, the feature may be useful software.
 
-It may simply not belong in
-
-*[The text as received ends here, mid-sentence. Waiting for the rest from Chanté.]*
+It may simply not belong.
