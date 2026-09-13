@@ -183,7 +183,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 ```
 lumen/                            the repo folder, still named for the product's old name (Coherence since 2026-09-12)
 ├── CLAUDE.md                     session brief (short; points here)
-├── art/                          Lumi's source drawings (animation sheets); public/ sprites are cut from these · prototypes/ holds throwaway art tests (the pieces rig, the shadow mock), never served
+├── art/                          Lumi's source drawings (animation sheets); public/ sprites are cut from these · prototypes/ holds throwaway art tests (the pieces rig, the shadow mock, the walk test — a rig walking Home's painting), never served
 ├── docs/
 │   ├── product.md                brief, voice guide, visual direction
 │   ├── architecture.md           this file

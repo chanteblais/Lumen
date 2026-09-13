@@ -1449,7 +1449,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
     --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
   }
   body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 1190; --lumi-y: 890; } /* see Library: the reading room */
+  body:has(.library-scene) { --lumi-x: 1060; --lumi-y: 745; } /* see Library: the reading room */
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
   body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
 }
@@ -1462,7 +1462,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background.png → public/library-room.webp).
+   room (art/scenery/library/background-iso.png → public/library-room.webp):
+   an isometric cutaway on a dark ground, like Home's and Today's rooms.
    For now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the open floor to the right of the reading circle. The top bar,
    the grain and the way her spot is mapped are shared with Today (the
@@ -1471,7 +1472,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #5b4128; /* the painting is an image inside (RoomScene; see .scene-painting) */
+  background: #231912; /* the painting's own ground, so the fade-in has no seam (RoomScene; see .scene-painting) */
 }
 /* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */
