@@ -311,11 +311,11 @@ body::after {
 .nav-divider { align-self: stretch; margin-top: 22px; }
 
 .nav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-/* Settings is a utility, not a space: set 24px further down, apart from the
+/* Settings is a utility, not a space: set 64px further down, apart from the
    places. On a short window the rail's foot (and the moon's button) is already
    close under the last row, so the gap gives way first — none at a rail of
-   584px or less, the full 24px from 608px. */
-.nav-utility { margin-top: clamp(0px, calc(var(--rail-h) - 584px), 24px); }
+   584px or less, the full 64px from 648px. */
+.nav-utility { margin-top: clamp(0px, calc(var(--rail-h) - 584px), 64px); }
 .nav-item {
   position: relative;
   display: flex;
