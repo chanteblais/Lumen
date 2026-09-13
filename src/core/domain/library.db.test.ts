@@ -196,7 +196,8 @@ describe("consolidation", () => {
     } finally {
       await logged.close();
     }
-  });
+    // It opens its own database with every migration applied, like a beforeAll: under a full parallel run that alone can pass 5 s.
+  }, 60_000);
 
   it("backs off a stretch that keeps failing, and a null proposal is a failure, not an empty stretch", async () => {
     const u = await createTestUser(db, "Fen");
