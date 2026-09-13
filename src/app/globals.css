@@ -482,9 +482,94 @@ body::after {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* Her shadow and the room's light on her (2026-09-13), drawn here rather than
+   baked into the sprite, so they take the ground she stands on — a shadow
+   painted into the sheet was cream, made for the paper, and on a painted floor
+   read as a pale smudge that made her look pasted on. The companion is its own
+   layer, so a blend mode can't reach the painting behind her; instead:
+   - the contact shadow darkens whatever is behind it (a backdrop filter under
+     a soft oval mask), so it is the floor's own colour, only darker;
+   - the cast shadow is her current frame's silhouette, filled with the room's
+     shade, laid on the floor away from the room's light (off on the paper);
+   - the light is a colour multiplied over her silhouette (off on the paper).
+   Positions are in the cell, which is mirrored: her feet are at 45% across and
+   200/208 down. Each room sets the variables (Today, the Library, Home). */
+.companion-shadow {
+  position: absolute;
+  left: 45%;
+  top: 96.2%;
+  width: 52%;
+  height: 9%;
+  z-index: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  /* unprefixed and alone: the CSS pipeline adds -webkit- for Safari (design-system.md → Home: the room) */
+  backdrop-filter: brightness(var(--lumi-contact, 0.8)) saturate(1.15);
+  mask-image: radial-gradient(closest-side, #000 25%, rgba(0, 0, 0, 0.55) 62%, transparent);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+@supports not (backdrop-filter: brightness(1)) {
+  .companion-shadow { background: rgba(60, 40, 22, 0.28); }
+}
+.companion-cast {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: rgb(var(--lumi-shade, 60 40 22));
+  opacity: var(--lumi-cast-a, 0.35);
+  filter: blur(1.5px);
+  transform-origin: 45% 96.2%;
+  /* flipped below her feet and leaned; the lean is negated because the cell is mirrored */
+  transform: skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1));
+  transition: transform 220ms ease;
+}
+.companion-light {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-color: var(--lumi-light, #fff);
+  mix-blend-mode: multiply;
+  opacity: var(--lumi-light-a, 0);
+}
+/* On hover she lifts 3px; her shadows stay on the ground and shrink a little. */
+.companion-btn:hover .companion-shadow { transform: translate(-50%, calc(-50% + 3px)) scale(0.9); opacity: 0.8; }
+.companion-btn:hover .companion-cast { transform: translateY(3px) skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1)); }
+/* The rooms' light. Today: low sun through the windows at the back left, long
+   shadows falling toward the front right over cream flagstones. The Library:
+   light from the windows on the left, shadows reaching right along terracotta
+   tiles. Home: lamplight; she stands in the corner, not in the room, so no cast. */
+body:has(.today-scene) {
+  --lumi-contact: 0.45;
+  --lumi-shade: 92 56 28;
+  --lumi-cast-a: 0.55;
+  --lumi-cast-lean: 42deg;
+  --lumi-cast-length: 0.5;
+  --lumi-light: rgb(255 218 170);
+  --lumi-light-a: 0.45;
+}
+body:has(.library-scene) {
+  --lumi-contact: 0.45;
+  --lumi-shade: 74 38 20;
+  --lumi-cast-a: 0.5;
+  --lumi-cast-lean: 55deg;
+  --lumi-cast-length: 0.4;
+  --lumi-light: rgb(255 206 160);
+  --lumi-light-a: 0.5;
+}
+body:has(.home-scene) {
+  --lumi-contact: 0.68;
+  --lumi-light: rgb(236 188 140);
+  --lumi-light-a: 0.4;
+}
+body:has(.today-scene, .library-scene) .companion-cast { display: block; }
+body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .companion-frame { animation: none; }
-  .companion-figure { transition: none; }
+  .companion-figure, .companion-shadow, .companion-cast { transition: none; }
   .companion-bubble, .companion-said { animation: none; }
 }
 /* Dev-only cue buttons, sitting just above her head; the handle at the right
