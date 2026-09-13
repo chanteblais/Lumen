@@ -40,6 +40,7 @@ The app and docs say Coherence since 2026-09-12. These still say Lumen, and each
 - [ ] **The folder** `~/Projects/lumen`: a coordinated stop (`branching.md` rule 8): every session stops, the folder moves, `git worktree repair` runs, and every session restarts in the new path. Claude's project memory is keyed to the folder path (`~/.claude/projects/-Users-chante-Projects-lumen/`), so move that directory to the new path's slug or the memories stop loading. The least valuable rename. Fine to leave.
 
 ## Privacy
+- [x] **Privacy policy page** at `/privacy` (public; linked under the sign-in and sign-up cards), 2026-09-13, for the Google consent screen's *Privacy policy link*: `https://www.burlyman.ca/privacy`, with `burlyman.ca` under Authorized domains. Written from the code, reviewed by Chanté; not legal advice. **Keep it true:** a new service, a new table of personal data, what goes to the model, the model provider (`LUMI_MODEL=anthropic:…` in production would mean naming Anthropic), mail coming back, or an in-app delete each change the page in the same commit.
 - [ ] Privacy note in Settings: conversations, what Lumi has learned and short gists of recent mail are sent to OpenAI's API (not used for training; requests sent with `store: false`, though OpenAI may keep them up to 30 days for abuse monitoring; check the current terms before writing the note), stored in our database keyed to your account, and deletable in full.
 - [ ] Export + delete-everything path exists and is tested (single cascade by `user_id`).
 - [ ] No conversation text in Vercel logs.

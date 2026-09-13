@@ -1,5 +1,6 @@
 import { Divider } from "@/components/ui/Ornament";
 import { SignIn } from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function SignInPage() {
   return (
@@ -12,6 +13,11 @@ export default function SignInPage() {
       <div className="flex flex-1 items-start justify-center">
         <SignIn />
       </div>
+      <p className="mt-10 pb-6 text-center">
+        <Link href="/privacy" className="label label-mute underline-offset-4 hover:underline">
+          Privacy
+        </Link>
+      </p>
     </div>
   );
 }
