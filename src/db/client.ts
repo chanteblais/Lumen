@@ -8,6 +8,13 @@
  * Opening a connection costs ~0.5s (TLS + pooler handshake); a query on a
  * warm one ~70ms. Idle connections are kept for a few minutes so a pause
  * between page views doesn't reopen the whole pool.
+ *
+ * max_pipeline: 0 — never send a query down a connection that is still busy.
+ * The driver pipelines by default once every connection is busy, and through
+ * the transaction pooler a pipelined query is never answered: it hung for 75s+
+ * when a warm pool of 5 took 6 at once (the snapshot sends 7). With 0 the extra
+ * queries wait for a free connection instead (~0.1–0.2s). The pool is 10 so a
+ * page's usual fan-out doesn't wait at all.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -20,7 +27,10 @@ let instance: Db | undefined;
 function create() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set (see .env.example)");
-  const client = postgres(url, { prepare: false, max: 5, idle_timeout: 300 });
+  // A named object, not a literal: the driver reads max_pipeline (src/index.js
+  // → parseOptions) but its types leave it out.
+  const options = { prepare: false, max: 10, max_pipeline: 0, idle_timeout: 300 };
+  const client = postgres(url, options);
   return drizzle(client, { schema });
 }
 
