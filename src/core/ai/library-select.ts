@@ -9,6 +9,7 @@
  * layer. Pure. See docs/architecture.md → The Library.
  */
 import type { Episode, Thread, ThreadNote } from "@/db/schema";
+import { shelfPath } from "@/core/domain/library";
 import { contentWords, normalizeText } from "@/core/words";
 import { termWeights, type TurnSignals } from "./memory-select";
 
@@ -24,7 +25,7 @@ const PHRASE = { message: 10, focus: 6, recent: 3 } as const;
 const BODY_WEIGHT = 0.5;
 const BODY_CAP = 4;
 
-export type SelectableThread = Pick<Thread, "id" | "title" | "aliases" | "summary" | "lastDiscussedAt">;
+export type SelectableThread = Pick<Thread, "id" | "title" | "aliases" | "summary" | "lastDiscussedAt"> & { parentId?: string | null };
 export type SelectableNote = Pick<ThreadNote, "id" | "threadId" | "content" | "createdAt" | "supersededById">;
 export type SelectableEpisode = Pick<Episode, "endedAt">;
 
@@ -58,8 +59,9 @@ export function rankNotes<N extends SelectableNote>(notes: N[], signals: TurnSig
 }
 
 export type LibraryView<T, N, E> = {
-  open: { thread: T; notes: N[] }[];
-  index: { thread: T; resting: boolean }[];
+  /** `shelf`: the titles of the threads it sits under, section first — where it is in their Library. */
+  open: { thread: T; notes: N[]; shelf: string[] }[];
+  index: { thread: T; resting: boolean; shelf: string[] }[];
   /** More threads are held than the index shows. */
   moreThreads: boolean;
   episodes: E[];
@@ -85,9 +87,10 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
 
   const since = opts.now.getTime() - EPISODE_DAYS * 86_400_000;
   const window = opts.windowStartsAt?.getTime();
+  const shelf = (t: T) => shelfPath(threads, t.id).map((p) => p.title);
   return {
-    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals).slice(0, NOTES_PER_THREAD) })),
-    index: rest.slice(0, INDEX_SIZE).map((t) => ({ thread: t, resting: opts.now.getTime() - t.lastDiscussedAt.getTime() > RESTING_AFTER_DAYS * 86_400_000 })),
+    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals).slice(0, NOTES_PER_THREAD), shelf: shelf(x.t) })),
+    index: rest.slice(0, INDEX_SIZE).map((t) => ({ thread: t, resting: opts.now.getTime() - t.lastDiscussedAt.getTime() > RESTING_AFTER_DAYS * 86_400_000, shelf: shelf(t) })),
     moreThreads: rest.length > INDEX_SIZE,
     episodes:
       window === undefined

@@ -15,6 +15,7 @@ import {
   text,
   timestamp,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -195,10 +196,13 @@ export const episodes = pgTable(
 /**
  * A persistent subject of the user's life that Lumi keeps an archive for — a
  * book they're writing, practicum, a theory. Not a project table and not a
- * list: intentions stay flat, and how the Library room shows threads
- * (Collections, Thread Groups, shelves) isn't modelled yet. Resting and
- * archival are derived from `last_discussed_at`, never stored.
+ * list: intentions stay flat. A thread can sit under a broader one
+ * (`parent_id`); a thread with threads under it is a section of the Library,
+ * and one of those inside a section is a shelf — derived at read time
+ * (`buildShelves`), never stored. Resting and archival are derived from
+ * `last_discussed_at`, never stored.
  */
+export type ShelvedBy = "user" | "lumi";
 export const threads = pgTable(
   "threads",
   {
@@ -210,11 +214,15 @@ export const threads = pgTable(
     /** Lumi's quick orientation — what it is, where it stands, what's open — rewritten as notes arrive. */
     summary: text("summary"),
     summaryRevisedAt: ts("summary_revised_at"),
+    /** The broader thread it belongs under ("the ferry chapter" under "the book"). Null: not shelved. Forgetting the parent leaves it loose. */
+    parentId: uuid("parent_id").references((): AnyPgColumn => threads.id, { onDelete: "set null" }),
+    /** Who put it there. Lumi never moves a thread they placed. */
+    shelvedBy: text("shelved_by").$type<ShelvedBy>(),
     /** The last time it came up: a note filed, a summary rewritten. */
     lastDiscussedAt: ts("last_discussed_at").notNull().defaultNow(),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
-  (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt)],
+  (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt), index("threads_parent_idx").on(t.parentId)],
 );
 
 export type ThreadNoteKind = "idea" | "decision" | "question" | "progress" | "detail";

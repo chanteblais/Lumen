@@ -57,6 +57,84 @@ export function findThreadByName<T extends Pick<Thread, "title" | "aliases">>(he
   return held.find((t) => nameKey(t.title) === k || t.aliases.some((a) => nameKey(a) === k));
 }
 
+/* ------------------------------------------------------------ shelves */
+
+/**
+ * A section, then a shelf in it, then a book: a thread sits at most this many
+ * levels deep. Deeper nesting would ask the user to navigate a filing tree.
+ */
+export const MAX_SHELF_DEPTH = 3;
+
+type Shelvable = { id: string; parentId?: string | null };
+
+/** Its ancestors, nearest last: [section, shelf] for a book on a shelf. Stops at a cycle. */
+export function shelfPath<T extends Shelvable>(held: T[], id: string): T[] {
+  const byId = new Map(held.map((t) => [t.id, t] as const));
+  const path: T[] = [];
+  const seen = new Set([id]);
+  let parent = byId.get(id)?.parentId;
+  while (parent && byId.has(parent) && !seen.has(parent)) {
+    seen.add(parent);
+    path.unshift(byId.get(parent)!);
+    parent = byId.get(parent)!.parentId;
+  }
+  return path;
+}
+
+/** How many levels a thread and everything under it take: 1 for a thread with nothing under it. */
+function subtreeHeight(held: Shelvable[], id: string, seen = new Set<string>()): number {
+  if (seen.has(id)) return 0;
+  seen.add(id);
+  const children = held.filter((t) => t.parentId === id);
+  return 1 + Math.max(0, ...children.map((c) => subtreeHeight(held, c.id, seen)));
+}
+
+/** Why this thread can't go under that one, or null when it can. Null parent (taking it off its shelf) always can. Pure. */
+export function whyNotShelve(held: Shelvable[], threadId: string, parentId: string | null): string | null {
+  if (!held.some((t) => t.id === threadId)) return "not found";
+  if (parentId === null) return null;
+  if (parentId === threadId) return "a thread can't go under itself";
+  if (!held.some((t) => t.id === parentId)) return "not found";
+  if (shelfPath(held, parentId).some((t) => t.id === threadId)) return "that thread is already under this one";
+  const depth = shelfPath(held, parentId).length + 1 + subtreeHeight(held, threadId);
+  return depth > MAX_SHELF_DEPTH ? "too deep — the Library goes section, shelf, book" : null;
+}
+
+export type ShelfBooks<T> = { shelf: T | null; books: T[] };
+export type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
+export type LibraryShelves<T> = { sections: LibrarySection<T>[]; loose: T[] };
+
+const byAge = <T extends Pick<Thread, "createdAt">>(a: T, b: T) => a.createdAt.getTime() - b.createdAt.getTime();
+
+/**
+ * The Library as the room shows it. A section is a thread with threads under
+ * it; inside a section, a thread with threads under it is a shelf, and the
+ * rest are books on the section's own shelf (listed first, with no plaque).
+ * A thread under nothing and holding nothing is loose — it hasn't found a
+ * section yet. Everything is in the order it arrived, so a section keeps its
+ * bookcase and a book its place as more is added. Pure.
+ */
+export function buildShelves<T extends Pick<Thread, "id" | "parentId" | "createdAt">>(held: T[]): LibraryShelves<T> {
+  const ids = new Set(held.map((t) => t.id));
+  // A parent that isn't among these threads (it's past the read limit) leaves its children at the top.
+  const parentOf = (t: T) => (t.parentId && ids.has(t.parentId) ? t.parentId : null);
+  const childrenOf = (id: string) => held.filter((t) => parentOf(t) === id).sort(byAge);
+  const top = held.filter((t) => parentOf(t) === null).sort(byAge);
+  const sections: LibrarySection<T>[] = [];
+  const loose: T[] = [];
+  for (const t of top) {
+    const children = childrenOf(t.id);
+    if (!children.length) {
+      loose.push(t);
+      continue;
+    }
+    const own = children.filter((c) => !childrenOf(c.id).length);
+    const shelves = children.filter((c) => childrenOf(c.id).length).map((c) => ({ shelf: c, books: childrenOf(c.id) }));
+    sections.push({ thread: t, shelves: [...(own.length ? [{ shelf: null, books: own }] : []), ...shelves] });
+  }
+  return { sections, loose };
+}
+
 /* ------------------------------------------------------------- reads */
 
 export async function listThreads(db: Db, userId: string, limit = THREAD_LIMIT): Promise<Thread[]> {
@@ -207,6 +285,43 @@ export async function insertEpisode(
     .values({ ...input, threadIds: input.threadIds ?? [] })
     .returning();
   return row;
+}
+
+/**
+ * Put a thread under another (or take it off its shelf, `parentId` null).
+ * Checks ownership and depth; Lumi and consolidation never move a thread the
+ * user placed. Appends `library.shelved` with where it was and who moved it.
+ */
+export async function shelveThread(
+  db: Db,
+  userId: string,
+  threadId: string,
+  parentId: string | null,
+  actor: LibraryActor,
+): Promise<{ thread: Thread } | Skip> {
+  const held = await db.select().from(threads).where(eq(threads.userId, userId));
+  const thread = held.find((t) => t.id === threadId);
+  const why = whyNotShelve(held, threadId, parentId);
+  if (!thread || why) return { skipped: why ?? "not found" };
+  if (thread.parentId === parentId) return { thread };
+  if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
+  const [row] = await db
+    .update(threads)
+    .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
+    .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
+    .returning();
+  await appendEvent(db, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
+  return { thread: row };
+}
+
+/** Visits that touched this thread, newest first. */
+export async function listThreadEpisodes(db: Db, userId: string, threadId: string, limit = 12): Promise<Episode[]> {
+  return db
+    .select()
+    .from(episodes)
+    .where(and(eq(episodes.userId, userId), sql`${episodes.threadIds} @> ${JSON.stringify([threadId])}::jsonb`))
+    .orderBy(desc(episodes.endedAt))
+    .limit(limit);
 }
 
 export async function setEpisodeThreads(db: Db, episodeId: string, threadIds: string[]): Promise<void> {

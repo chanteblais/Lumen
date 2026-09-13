@@ -232,7 +232,10 @@ body::after {
    every page, the greeting's scroll on Home's dark room, and the Lists sheet. */
 .nav-panel,
 .shell:has(.home-scene) .opening,
-.lists-sheet {
+.lists-sheet,
+.library-sheet,
+.library-plain,
+.debug-library {
   --paper: #f1e7d2;
   --paper-deep: rgba(43, 34, 22, 0.07);
   --ink: #2b2216;
@@ -1491,6 +1494,374 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    further back than her feet, and stays clear of the nav and the crop at
    every desktop window. */
 
+/* ---------- Library: sections on the bookcases (components/library/LibraryRoom.tsx) ----------
+   What the Library holds, drawn in code on the painting (2026-09-13). A thread
+   with threads under it is a section: its name is set on a bookcase's blank
+   plaque, in the order sections arrived — the centre bay, the ladder bay, the
+   stair bay (components/library/room-slots.ts, copied from
+   art/scenery/library/library-views.json). The stage is the painting's own
+   rectangle under the cover fit, so a plaque stays on its bookcase at any
+   window, and type is in the stage's units (100cqh is the painting's 1024px).
+   A bookcase face is one link: invisible at rest, its plaque warming on hover
+   or focus. Threads under nothing and holding nothing wait on the table, on a
+   slip. Below 768px there is no room: a plain list, which is also there,
+   visually hidden, for screen readers on a desktop. Nothing to arrange. */
+.library-stage {
+  --library-px: max(calc(100vw / 1536), calc(100vh / 1024));
+  position: fixed;
+  z-index: 1;
+  left: calc(50vw - 768 * var(--library-px));
+  top: calc(50vh - 512 * var(--library-px));
+  width: calc(1536 * var(--library-px));
+  height: calc(1024 * var(--library-px));
+  container-type: size;
+  pointer-events: none;
+}
+.library-case {
+  position: absolute;
+  display: block;
+  transform-origin: 0 0;
+  pointer-events: auto;
+  color: #dcb46f; /* gilt, after the plaques' painted filigree */
+  text-decoration: none;
+}
+/* The warmth: lamplight over the plaque, no chip. */
+.library-case-glow {
+  position: absolute;
+  border-radius: 45% 45% 8% 8% / 70% 70% 12% 12%;
+  background: radial-gradient(ellipse 62% 75% at 50% 55%, rgba(255, 206, 132, 0.26), rgba(255, 206, 132, 0) 78%);
+  box-shadow: 0 0 calc(16 * 100cqh / 1024) calc(3 * 100cqh / 1024) rgba(255, 190, 104, 0.24);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+.library-case:is(:hover, :focus-visible) .library-case-glow { opacity: 1; }
+/* The name as lettering on the plaque: display serif, gilt on the dark green panel. */
+.library-case-name {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: max(12px, calc(var(--size) * 100cqh / 1024));
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.3);
+  transition: color 180ms ease, text-shadow 180ms ease;
+}
+.library-case:is(:hover, :focus-visible) .library-case-name {
+  color: #f6d89b;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 10px rgba(255, 196, 110, 0.5);
+}
+/* On the table: a slip of paper lying on the round table's top. */
+.library-slip {
+  position: absolute;
+  pointer-events: auto;
+  padding: 0.3em 0.9em 0.36em;
+  transform: translate(-50%, -50%) rotate(-7deg);
+  font-family: var(--font-display);
+  font-size: max(13px, calc(15 * 100cqh / 1024));
+  font-style: italic;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: #3b2c19;
+  text-decoration: none;
+  background: radial-gradient(ellipse at 50% 42%, #f5e8cb, #dfc899);
+  border: 1px solid rgba(139, 106, 56, 0.45);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(20, 12, 4, 0.45);
+  transition: box-shadow 180ms ease;
+}
+.library-slip:is(:hover, :focus-visible) { box-shadow: 0 3px 8px rgba(20, 12, 4, 0.5), 0 0 14px 2px rgba(255, 200, 120, 0.45); }
+
+.library-plain ul { display: flex; flex-direction: column; }
+.library-plain a { display: block; padding: 9px 2px; border-bottom: 1px solid var(--rule); font-family: var(--font-display); font-size: 21px; line-height: 1.2; color: var(--ink); text-decoration: none; }
+.library-plain-head { margin-top: 20px; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-mute); }
+.library-plain-head:first-child { margin-top: 0; }
+@media (min-width: 768px) {
+  .library-plain { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+@media (max-width: 767px) {
+  .library-stage { display: none; }
+  .library-plain {
+    margin: 4px 0 28px;
+    padding: 20px 22px 14px;
+    background: radial-gradient(ellipse 90% 80% at 50% 40%, #f1e3c4, #e2cc9f);
+    border: 1px solid #b8945c;
+    border-radius: 6px;
+    box-shadow: 0 14px 34px rgba(20, 14, 8, 0.45);
+  }
+}
+
+/* ---------- Library: the sheet, its shelves and its books (components/library/) ----------
+   A section, shelf or thread opens over the room on the Lists sheet's
+   parchment (the frame is shared: see Lists: the sheet), with the way back
+   along its top. A page, not a dialog: × is a link one step back. A section
+   or shelf is its books as spines, each shelf under a plaque like the
+   bookcases' (after art/scenery/library/shelf-zoom.png); a thread is an open
+   two-page book after Chanté's mockup, one page below 900px. Each note says
+   whose words it rests on. No counts, no dates that press, no controls. */
+.library-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 28px 28px calc(var(--rail-x) + var(--rail-w) + 28px);
+  background: rgba(24, 16, 8, 0.38);
+  animation: lists-fade 180ms ease-out both;
+}
+body:has(.library-sheet) :is(.companion, .companion-debug) { display: none; } /* she'd stand on the page, as with Lists */
+.library-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.library-close:hover { background: var(--paper-deep); color: var(--ink); }
+.library-corner { position: absolute; bottom: 14px; color: var(--brass); opacity: 0.75; pointer-events: none; }
+.library-corner-bl { left: 14px; }
+.library-corner-br { right: 14px; }
+
+.library-crumbs {
+  padding: 4px 48px 14px 0;
+  font-size: 16px;
+  line-height: 1.3;
+  color: var(--ink-mute);
+  background: linear-gradient(to right, transparent, var(--rule-strong) 6%, var(--rule-strong) 94%, transparent) bottom / 100% 1px no-repeat;
+}
+.library-crumbs ol { display: flex; flex-wrap: wrap; align-items: center; row-gap: 4px; }
+.library-crumbs li + li::before { content: "›"; margin: 0 0.6em; color: var(--brass); }
+.library-crumbs a { color: var(--ink-soft); text-decoration: none; }
+.library-crumbs a:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--brass-soft); text-underline-offset: 3px; }
+.library-crumbs [aria-current] { color: var(--ink); }
+.library-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 6px 18px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 106, 56, 0.35) transparent;
+}
+
+.library-head { max-width: 780px; margin-bottom: 28px; }
+.library-kicker { font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; font-variant-numeric: lining-nums; color: var(--brass); }
+.library-title { margin-top: 4px; font-size: 46px; line-height: 1.05; letter-spacing: -0.01em; color: var(--ink); }
+.library-line { margin-top: 8px; font-family: var(--font-display); font-size: 21px; font-style: italic; line-height: 1.3; color: var(--ink-soft); }
+.library-aside { margin-top: 32px; font-size: 17px; color: var(--ink-soft); }
+.library-aside a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--brass-soft); text-underline-offset: 3px; }
+.library-aside a:hover { text-decoration-color: var(--brass); }
+
+/* A shelf: its plaque, dark with a gilt hairline and a star each side, then its spines on a wooden board. */
+.library-shelf + .library-shelf { margin-top: 34px; }
+.library-shelf-plaque { margin: 0 0 14px 12px; }
+.library-shelf-plaque a {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 18px 8px;
+  font-size: 21px;
+  line-height: 1.15;
+  color: #e4c285;
+  text-decoration: none;
+  background: linear-gradient(180deg, #38331f, #28241a);
+  border: 1px solid #a8844e;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #28241a, inset 0 0 0 3px rgba(212, 173, 108, 0.5), 0 2px 5px rgba(40, 26, 10, 0.35);
+  transition: color 160ms ease, box-shadow 160ms ease;
+}
+.library-shelf-plaque a:hover { color: #f6d89b; box-shadow: inset 0 0 0 2px #28241a, inset 0 0 0 3px rgba(212, 173, 108, 0.7), 0 2px 5px rgba(40, 26, 10, 0.35), 0 0 14px rgba(214, 170, 96, 0.4); }
+.library-shelf-plaque .ornament { color: #d4ad6c; }
+.library-spines {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 8px;
+  padding: 0 14px 12px;
+  background: linear-gradient(180deg, #8a5f35, #573a1d) bottom / 100% 12px no-repeat;
+  border-radius: 0 0 3px 3px;
+}
+/* A spine: leather in one of four tones, gilt bands top and foot, the title at reading size. */
+.library-spine {
+  --tone: #2f4a3a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 116px;
+  min-height: 180px;
+  padding: 22px 10px 14px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.15;
+  color: #ecd39a;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.07) 28%, rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.32)), var(--tone);
+  border-radius: 4px 4px 2px 2px;
+  box-shadow: inset 0 10px 0 -7px rgba(222, 186, 118, 0.65), inset 0 -10px 0 -7px rgba(222, 186, 118, 0.65), 0 1px 2px rgba(20, 12, 4, 0.4);
+  transition: transform 180ms ease, color 160ms ease;
+}
+.library-spine[data-tone="1"] { --tone: #672e25; } /* oxblood */
+.library-spine[data-tone="2"] { --tone: #26364a; } /* navy */
+.library-spine[data-tone="3"] { --tone: #4d4f30; } /* olive */
+.library-spine .ornament { color: #d4ad6c; opacity: 0.8; }
+.library-spine:hover { transform: translateY(-4px); color: #f7dea8; }
+
+/* The book: two leaves either side of a soft gutter. */
+.library-spread {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 64px;
+  background: linear-gradient(to right, transparent calc(50% - 28px), rgba(120, 84, 40, 0.12) calc(50% - 3px), rgba(120, 84, 40, 0.3) 50%, rgba(120, 84, 40, 0.12) calc(50% + 3px), transparent calc(50% + 28px));
+}
+.library-leaf { min-width: 0; padding: 0 6px 10px; }
+.library-book-title { margin-top: 4px; font-size: 40px; line-height: 1.08; color: var(--ink); }
+.library-part { margin-top: 26px; }
+.library-leaf > .library-part:first-child { margin-top: 0; }
+.library-part-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  font-size: 23px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: linear-gradient(to right, var(--rule-strong), transparent) bottom / 100% 1px no-repeat;
+}
+.library-part-title .ornament { color: var(--brass); }
+.library-prose { margin-top: 10px; font-size: 18px; line-height: 1.5; color: var(--ink-soft); text-wrap: pretty; }
+.library-quiet { font-style: italic; color: var(--ink-mute); }
+.library-notes { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.library-note,
+.library-change,
+.library-visit { position: relative; padding-left: 18px; font-size: 17px; line-height: 1.45; color: var(--ink-soft); text-wrap: pretty; }
+.library-note::before,
+.library-change::before,
+.library-visit::before { content: ""; position: absolute; left: 2px; top: 0.66em; width: 5px; height: 5px; background: var(--brass); opacity: 0.8; transform: rotate(45deg); }
+/* Whose words: a small italic aside, never louder than the note. */
+.library-source { margin-left: 0.55em; font-size: 14px; font-style: italic; color: var(--ink-mute); white-space: nowrap; }
+.library-change-then { color: var(--ink-mute); }
+.library-change-now { margin-top: 3px; }
+.library-change-mark { margin-right: 0.6em; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brass); }
+.library-visit-date { margin-right: 0.6em; font-variant-numeric: lining-nums; color: var(--ink); }
+.library-revised { margin-top: 30px; font-size: 14px; font-style: italic; text-align: right; color: var(--ink-mute); }
+
+/* The table: papers, a little askew. */
+.library-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+.library-paper {
+  --tilt: -0.8deg;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 118px;
+  padding: 18px 18px 16px;
+  color: var(--ink);
+  text-decoration: none;
+  background: linear-gradient(170deg, #f7eed9, #e7d4ac);
+  border: 1px solid rgba(139, 106, 56, 0.35);
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(60, 40, 16, 0.2);
+  transform: rotate(var(--tilt));
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.library-papers li:nth-child(3n + 2) .library-paper { --tilt: 0.7deg; }
+.library-papers li:nth-child(3n) .library-paper { --tilt: -0.3deg; }
+.library-paper.is-section { border-color: #a8844e; box-shadow: inset 0 0 0 3px rgba(247, 238, 218, 0.7), inset 0 0 0 4px rgba(139, 106, 56, 0.35), 0 2px 6px rgba(60, 40, 16, 0.2); }
+.library-paper:hover { transform: rotate(0deg) translateY(-2px); box-shadow: 0 6px 14px rgba(60, 40, 16, 0.26); }
+.library-paper-title { font-size: 22px; line-height: 1.2; }
+.library-paper-line { font-size: 15px; font-style: italic; line-height: 1.35; color: var(--ink-mute); }
+.library-subhead { margin: 36px 0 14px; padding-bottom: 6px; font-size: 26px; line-height: 1.2; color: var(--ink); background: linear-gradient(to right, var(--rule-strong), transparent) bottom / 100% 1px no-repeat; }
+
+@media (prefers-reduced-motion: reduce) {
+  .library-veil, .library-sheet { animation: none; }
+  .library-case-glow, .library-case-name, .library-slip, .library-spine, .library-paper { transition: none; }
+  .library-spine:hover, .library-paper:hover { transform: rotate(var(--tilt, 0deg)); }
+}
+
+@media (max-width: 899px) {
+  .library-spread { grid-template-columns: minmax(0, 1fr); background: none; }
+  .library-leaf + .library-leaf { margin-top: 26px; }
+}
+
+/* A phone: the sheet takes the page above the bar, as Lists does (two classes, so this wins over the shared frame further down). */
+@media (max-width: 767px) {
+  .library-veil { bottom: calc(var(--bar-h) + var(--bar-gap)); padding: 0; align-items: stretch; }
+  .library-veil > .library-sheet { height: 100%; padding: 18px 16px 10px; border-radius: 0; }
+  .library-veil > .library-sheet::after { top: 0; left: 0; right: 0; height: 8px; border-radius: 0; }
+  .library-corner { display: none; }
+  .library-title { font-size: 34px; }
+  .library-book-title { font-size: 32px; }
+  .library-spine { width: 100px; min-height: 156px; font-size: 16px; }
+}
+
+/* ---------- Debug mode: the Library over the rooms (components/library/LibraryDebug.tsx) ----------
+   Five quick taps on the nav's wordmark set `coherence_debug` (Sidebar,
+   debug-mode.ts). While it's on, every room (Home, Today, the Library, Lists
+   opened directly) carries a small parchment in its top right listing what
+   Lumi has filed: each category, its shelves and threads, and the threads in
+   no category, each a link. It is for Chanté to watch the memory at work, not
+   a design for users. It folds on its heading (a <details>), and is hidden
+   below 768px (no wordmark there) and while a sheet is open. */
+.debug-library {
+  position: fixed;
+  top: 112px;
+  right: 24px;
+  z-index: 20;
+  width: min(320px, calc(100vw - 140px));
+  padding: 12px 18px 10px;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 40%, rgba(246, 234, 210, 0.85), rgba(246, 234, 210, 0) 75%),
+    #e7d3ae;
+  border: 1px solid #b8945c;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 4px rgba(247, 238, 218, 0.6),
+    inset 0 0 0 5px rgba(139, 106, 56, 0.28),
+    0 18px 40px rgba(20, 14, 8, 0.45);
+  font-size: 15px;
+  line-height: 1.3;
+}
+.debug-library-head { display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none; }
+.debug-library-kicker { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--brass); }
+.debug-library-title { font-size: 20px; color: var(--ink); }
+.debug-library-body { max-height: calc(100dvh - 420px); min-height: 80px; margin-top: 6px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--brass-soft) transparent; }
+.debug-library-section { margin-top: 10px; }
+.debug-library-section > h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--ink); }
+.debug-library-loose { font-style: italic; font-weight: 500 !important; color: var(--ink-soft) !important; }
+.debug-library-shelf { margin: 6px 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
+.debug-library-books { margin: 2px 0 0 10px; }
+.debug-library-books.is-shelved { margin-left: 22px; }
+.debug-library-books li { position: relative; padding: 2px 0 2px 12px; color: var(--ink); }
+.debug-library-books li::before { content: "·"; position: absolute; left: 2px; color: var(--brass); }
+.debug-library a { color: inherit; text-decoration: none; }
+.debug-library a:hover,
+.debug-library a:focus-visible { text-decoration: underline; text-decoration-color: var(--brass-soft); }
+.debug-library-who { margin-left: 6px; font-size: 11px; font-style: italic; letter-spacing: 0; text-transform: none; color: var(--ink-mute); }
+.debug-library-quiet { margin-top: 8px; font-size: 14px; font-style: italic; color: var(--ink-mute); }
+.debug-library-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule); font-size: 12px; font-style: italic; color: var(--ink-mute); }
+body:has(.lists-sheet, .library-sheet) .debug-library { display: none; }
+@media (max-width: 767px) {
+  .debug-library { display: none; }
+}
+
 /* ---------- Lists: the sheet (components/lists/ListsSheet.tsx) ----------
    After art/mockups/lists-mockup.png: a sheet of parchment over whatever page
    you were on (over the Library's room when /lists is opened directly), with
@@ -1515,7 +1886,8 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 /* Aged paper, after the mockup: light in the middle and browning toward the
    edges, in a brass-lined frame with a lighter band outside it, brass corner
    brackets, and sparks at the foot's corners. The rules on it are brass too. */
-.lists-sheet {
+.lists-sheet,
+.library-sheet {
   --olive: #4a4526;
   --ink: #33281b;
   --ink-soft: #54452f;
@@ -1544,7 +1916,8 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   outline: none;
   animation: lists-rise 220ms ease-out both;
 }
-.lists-sheet::before {
+.lists-sheet::before,
+.library-sheet::before {
   --c: #a8844e;
   content: "";
   position: absolute;
@@ -1561,7 +1934,8 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 .lists-corner-br { right: 14px; }
 /* The top edge is the greeting scroll's rod from Home (Chanté, 2026-09-13): a bar
    of dark wood past both sides, a little heavier for the larger sheet. */
-.lists-sheet::after {
+.lists-sheet::after,
+.library-sheet::after {
   content: "";
   position: absolute;
   top: -8px;
