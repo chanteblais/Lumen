@@ -141,16 +141,33 @@ export async function dismissLead(db: Db, userId: string, id: string, via: Actio
   });
 }
 
-export type MailScan = { at: Date; through: Date };
+export type MailRange = { after: Date; before: Date };
+/** `through`: where the next look starts. `backlog`: older mail a look ran out of pages for — the next look reads it after what's new. */
+export type MailScan = { at: Date; through: Date; backlog?: MailRange };
 
 /** The last look through the mail, derived from the newest `email.scanned` event. */
 export async function latestMailScan(db: Db, userId: string): Promise<MailScan | undefined> {
   const e = await latestEvent(db, userId, EMAIL_SCAN_EVENT);
   if (!e) return undefined;
-  const through = (e.payload as { through?: string }).through;
-  return { at: e.occurredAt, through: through ? new Date(through) : e.occurredAt };
+  const p = e.payload as { through?: string; backlog?: { after: string; before: string } | null };
+  return {
+    at: e.occurredAt,
+    through: p.through ? new Date(p.through) : e.occurredAt,
+    ...(p.backlog ? { backlog: { after: new Date(p.backlog.after), before: new Date(p.backlog.before) } } : {}),
+  };
 }
 
-export async function recordMailScan(db: Db, userId: string, p: { through: Date; read: number; suggested: number }): Promise<void> {
-  await appendEvent(db, { userId, type: EMAIL_SCAN_EVENT, subjectType: "user", subjectId: userId, payload: { through: p.through.toISOString(), read: p.read, suggested: p.suggested } });
+export async function recordMailScan(db: Db, userId: string, p: { through: Date; read: number; suggested: number; backlog?: MailRange }): Promise<void> {
+  await appendEvent(db, {
+    userId,
+    type: EMAIL_SCAN_EVENT,
+    subjectType: "user",
+    subjectId: userId,
+    payload: {
+      through: p.through.toISOString(),
+      read: p.read,
+      suggested: p.suggested,
+      backlog: p.backlog ? { after: p.backlog.after.toISOString(), before: p.backlog.before.toISOString() } : null,
+    },
+  });
 }

@@ -168,7 +168,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | `library.shelved` | `{ under, from, by }` — the thread (the subject) moved under `under` (a thread id, or null: taken off its shelf) from `from`; `by` is `user` (`shelve_thread` on their word), `lumi` or `consolidation` |
 | `library.noted` | `{ note, kind, source, supersedes, by }` — a note filed under the thread (the subject); `supersedes` is the note it replaced, or null |
 | `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
-| `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
+| `email.scanned` | `{ through, read, suggested, backlog }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. `backlog` (2026-09-13, code review A12) is `{ after, before }` or null: older mail this look ran out of pages for, read by the next look after what's new — so mail beyond one look's pages is carried, never skipped, and nothing older than a week is read. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead`. Each once per lead (2026-09-13, code review A6): keeping claims the lead (`status = 'suggested'`) in the transaction that creates the intention, and a second keep returns that intention with no event; a second let-go returns the lead as it is. A lead held already for the same message and title is not inserted again, and gets no `.suggested` |
 | `reflection.claimed` | `{}` (2026-09-13, code review A4) — written before reflection does any work on a session (the subject), on conflict do nothing against `events_reflection_claim_idx`; only the caller whose row came back reflects |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
@@ -187,7 +187,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | `lastSession` | the most recently ended session if it ended in the last 36h — continuity for the context block ("pick it back up") and the abandoned greeting |
 | `avoidedIntentions` | open, touched ≥ 3 times, never in a session — feeds reflection |
 | `strategyEvidence` | per `strategy` belief: sessions whose `approach` matches, split by outcome |
-| `mailScan` | the newest `email.scanned`: when Lumi last looked and the watermark (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
+| `mailScan` | the newest `email.scanned`: when Lumi last looked, the watermark and any backlog (`core/domain/leads.ts → latestMailScan`). Fresh for 30 minutes; Insights looks again only after that |
 | `suggestedLeads` | `leads.status = suggested`, newest first (≤ 12 on Insights, ≤ 8 in the context block). Never counted anywhere |
 
 ## Added in M3 (migration `0001`)

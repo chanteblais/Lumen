@@ -18,6 +18,8 @@ export type EmailMessage = {
 export type RecentMailQuery = {
   /** Only messages newer than this. */
   since: Date;
+  /** Only messages older than this (its second included) — for paging back past the newest `max`. */
+  before?: Date;
   /** Hard cap on messages read. */
   max?: number;
   /** Optional free-text search in the provider's own syntax (Gmail: "from:priya", "invoice"). */
