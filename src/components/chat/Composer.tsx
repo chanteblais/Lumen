@@ -97,7 +97,7 @@ export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
         </button>
       </form>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 px-2">
+      <div className="composer-foot mt-5 flex flex-wrap items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-9">
           {voice.supported && (
             <button

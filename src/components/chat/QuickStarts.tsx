@@ -6,7 +6,7 @@ type Props = { onPick?: (text: string) => void };
 
 export function QuickStarts({ onPick }: Props) {
   return (
-    <div className="mt-10 flex flex-wrap items-center gap-3">
+    <div className="quick-starts mt-10 flex flex-wrap items-center gap-3">
       {QUICK_STARTS.map((s) => (
         <button key={s} type="button" className="chip" onClick={() => onPick?.(s)}>
           {s}
