@@ -1229,6 +1229,10 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   position: relative;
   text-shadow: none;
   margin-top: 8px;
+  /* The rods reach 9px past the parchment (below); this keeps them inside
+     .chat-scroll, which otherwise overflows sideways and lets a finger drag
+     the greeting left and right on a phone. */
+  margin-inline: 9px;
   padding: 20px 34px 22px;
   background: linear-gradient(180deg, rgba(246, 234, 208, 0.74) 0%, rgba(240, 222, 188, 0.72) 55%, rgba(233, 211, 172, 0.74) 100%);
   border-radius: 14px;
