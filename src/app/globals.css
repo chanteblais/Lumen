@@ -674,6 +674,9 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
      cast and contact shadows (drawn inside the figure) painted across the
      bubble's tail and edge where it opens beside her (2026-09-13). */
   z-index: 2;
+  /* .companion turns selection off so a tap on her never highlights anything;
+     her words and yours can still be selected and copied (2026-09-13). */
+  user-select: text;
   width: 330px;
   max-width: calc(100vw - 112px);
   margin-right: 6px;
