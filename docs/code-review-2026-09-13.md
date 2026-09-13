@@ -99,7 +99,7 @@ Domain, database, migrations, reflection and consolidation.
 |---|---|---|---|
 | D1 ✓ | **`core.hooksPath` was absolute again** (the trap row said fixed). Reset to `.githooks` in the repo config on 2026-09-13; still needs a preflight guard so it can't regress silently. | `.git/config`, `scripts/preflight.mjs` | fixed — preflight fails on an absolute path (skipped in CI) |
 | D2 | **The route-auth audit can pass vacuously:** `.pathname` breaks on a path with a space (exits 0, "no API routes"); only `route.ts` under `src/app/api` is walked; one regex over the whole file lets a comment or one gated handler cover every export. | `scripts/check-route-auth.mjs:12, 32, 38, 48` | fixed — per-handler, comment-blind, all `src/app` routes, `"use server"` flagged, missing dir fails |
-| D3 | **No security headers** and `x-powered-by` on. | `next.config.ts` | open |
+| D3 | **No security headers** and `x-powered-by` on. | `next.config.ts` | fixed — no framing, referrer, nosniff, permissions (mic self); `poweredByHeader: false` |
 | D4 | **No startup env validation** — a missing Clerk or OpenAI key shows up at the first request. | `db/client.ts`, `core/ai/model.ts:16` | open |
 | D5 | **`npm audit`: 4 highs, all via `@huggingface/transformers`** (adm-zip via onnxruntime-node, sharp); ~340 MB of installs. Imported only by the voice worker, loaded on the first voice tap. | `chat/voice/whisper.worker.ts:2` | open |
 | D6 | **Preflight compares top-level packages only**, so a nested-only lockfile change goes unnoticed and a stale install gets cloned. | `scripts/preflight.mjs:99-127` | fixed — nested entries checked via npm's hidden lockfile, for clones too |

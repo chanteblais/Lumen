@@ -30,6 +30,11 @@ Things to sort before anyone but Chanté uses Coherence.
 - `NEXT_PUBLIC_CLERK_SIGN_IN_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_URL` · `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` (same values as `.env.local`; without them `auth.protect()` bounces to Clerk's hosted portal instead of `/sign-in`)
 - Scope every variable to **Production and Preview**. A Development-only entry is invisible to deploys. Check with `vercel env ls --scope chante-s-projects1 --project lumen`; the app is `lumen` → https://lumen-nu-steel.vercel.app (the project keeps the old name until it's renamed; see below).
 
+## Security headers (`next.config.ts`, 2026-09-13)
+- [x] On every response: `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'` (no framing, not even same-origin) · `Referrer-Policy: strict-origin-when-cross-origin` · `X-Content-Type-Options: nosniff` · `Permissions-Policy: microphone=(self), camera=(), geolocation=()` (voice input uses the microphone on this origin; nothing uses the camera or location). `x-powered-by` is off (`poweredByHeader: false`).
+- [ ] Check them on the deployed URL: `curl -sI https://lumen-nu-steel.vercel.app/sign-in`.
+- [ ] A full Content-Security-Policy (scripts, styles, connections). Only `frame-ancestors` is set: Clerk's scripts and frames, the voice model's downloads from Hugging Face and its wasm each need an allowance, tested in a browser.
+
 ## Rename outside the repo (Coherence)
 The app and docs say Coherence since 2026-09-12. These still say Lumen, and each is Chanté's call; none of them blocks anything.
 - [ ] **Clerk application name** (dashboard → the *Lumen* app → Settings). This is the one a user sees: "Sign in to Lumen" on the sign-in and sign-up cards, and in verification emails. The name is per application, so dev and production change together; keys, instances and `clerk_user_id`s stay as they are.
