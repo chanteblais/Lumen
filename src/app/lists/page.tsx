@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ListsPanel } from "@/components/lists/ListsPanel";
+import { RoomScene } from "@/components/shell/RoomScene";
 import { requireVisit } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export default async function ListsPage() {
 
   return (
     <div className="library-page">
-      <div className="library-scene" aria-hidden />
+      <RoomScene room="library" />
       <ListsPanel user={user} over={false} />
     </div>
   );

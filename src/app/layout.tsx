@@ -9,6 +9,7 @@ import { TopBar } from "@/components/shell/TopBar";
 import { TimezoneCapture } from "@/components/shell/TimezoneCapture";
 import { FreshOnReturn } from "@/components/shell/FreshOnReturn";
 import { LumiCompanion } from "@/components/shell/LumiCompanion";
+import { SCENE_FADE_SCRIPT } from "@/components/shell/RoomScene";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -37,6 +38,8 @@ export default async function RootLayout({ children, sheet }: LayoutProps<"/">) 
   return (
     <html lang="en" className={`${cormorant.variable} ${garamond.variable} h-full`}>
       <body>
+        {/* First in the body, so it is watching before any room's painting is parsed (RoomScene). */}
+        <script dangerouslySetInnerHTML={{ __html: SCENE_FADE_SCRIPT }} />
         <AuthProvider>
           <TimezoneCapture />
           <FreshOnReturn />

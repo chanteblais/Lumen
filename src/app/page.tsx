@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { after } from "next/server";
 import { Conversation } from "@/components/chat/Conversation";
+import { RoomScene } from "@/components/shell/RoomScene";
 import { listOpenIntentions } from "@/core/domain/intentions";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
@@ -68,7 +69,7 @@ export default async function Home() {
       {/* Home is set in the room: the painting fills the viewport behind the shell
           (globals.css → Home: the room); everything else on the page is the same
           conversation, re-lit for the evening. */}
-      <div className="home-scene" aria-hidden />
+      <RoomScene room="home" />
       <Conversation
         conversationId={conversation.id}
         initialMessages={initialMessages}
