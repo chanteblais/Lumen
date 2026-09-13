@@ -2,7 +2,7 @@
  * Append-only events. Every state change writes one — this is the raw
  * material for the understanding layer. Never update or delete rows.
  */
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { events, type Event } from "@/db/schema";
 
@@ -33,12 +33,21 @@ export async function appendEvent(db: Db, input: EventInput) {
   return row;
 }
 
-/** Recent events of the given types, newest first. Bounded by `since` so the (user, occurred_at) index does the work. */
-export async function listEventsSince(db: Db, userId: string, types: string[], since: Date, limit = 50): Promise<Event[]> {
+/** Several events in one insert — a batch of leads suggested at once. */
+export async function appendEvents(db: Db, inputs: EventInput[]): Promise<void> {
+  if (inputs.length === 0) return;
+  const now = new Date();
+  await db.insert(events).values(
+    inputs.map((i) => ({ userId: i.userId, type: i.type, subjectType: i.subjectType, subjectId: i.subjectId, payload: i.payload ?? {}, occurredAt: i.occurredAt ?? now })),
+  );
+}
+
+/** Recent events of the given types, newest first. Bounded by `since` (and `until`, when given) so the (user, occurred_at) index does the work. */
+export async function listEventsSince(db: Db, userId: string, types: string[], since: Date, limit = 50, until?: Date): Promise<Event[]> {
   return db
     .select()
     .from(events)
-    .where(and(eq(events.userId, userId), inArray(events.type, types), gte(events.occurredAt, since)))
+    .where(and(eq(events.userId, userId), inArray(events.type, types), gte(events.occurredAt, since), until ? lte(events.occurredAt, until) : undefined))
     .orderBy(desc(events.occurredAt))
     .limit(limit);
 }
@@ -54,14 +63,34 @@ export async function latestEvent(db: Db, userId: string, type: string): Promise
   return row;
 }
 
-/** Has reflection already run over this subject (a session)? Keeps the abandoned-session sweep from reflecting twice. */
+export const REFLECTION_CLAIMED = "reflection.claimed";
+
+/**
+ * Has reflection claimed or run over this subject (a session)? Keeps the
+ * abandoned-session sweep from reflecting twice. `reflection.ran` alone marks
+ * sessions reflected on before claims existed.
+ */
 export async function reflectedOn(db: Db, userId: string, subjectId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: events.id })
     .from(events)
-    .where(and(eq(events.userId, userId), eq(events.type, "reflection.ran"), eq(events.subjectId, subjectId)))
+    .where(and(eq(events.userId, userId), inArray(events.type, ["reflection.ran", REFLECTION_CLAIMED]), eq(events.subjectId, subjectId)))
     .limit(1);
   return Boolean(row);
+}
+
+/**
+ * Claim a session for reflection before any work: `reflection.claimed`,
+ * inserted on conflict do nothing against the unique partial index
+ * `events_reflection_claim_idx`. True for exactly one caller, however many race.
+ */
+export async function claimReflection(db: Db, userId: string, sessionId: string, now: Date = new Date()): Promise<boolean> {
+  const rows = await db
+    .insert(events)
+    .values({ userId, type: REFLECTION_CLAIMED, subjectType: "session", subjectId: sessionId, payload: {}, occurredAt: now })
+    .onConflictDoNothing()
+    .returning({ id: events.id });
+  return rows.length > 0;
 }
 
 /** Nothing older than 36 hours can be "today" in any timezone — the cheap bound for today-derived views. */

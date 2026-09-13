@@ -30,7 +30,9 @@ export function gmailReader(token: string, fetchImpl: typeof fetch = fetch): Ema
   return {
     async recent(q: RecentMailQuery): Promise<EmailMessage[]> {
       const max = q.max ?? DEFAULT_MAX;
-      const query = [BASE_QUERY, `after:${Math.floor(q.since.getTime() / 1000)}`, q.search?.trim()].filter(Boolean).join(" ");
+      // `before:` rounds up to the second, so a page boundary inside one second re-reads a message rather than skipping one.
+      const before = q.before ? `before:${Math.ceil(q.before.getTime() / 1000)}` : undefined;
+      const query = [BASE_QUERY, `after:${Math.floor(q.since.getTime() / 1000)}`, before, q.search?.trim()].filter(Boolean).join(" ");
       const list = (await get(`/messages?maxResults=${max}&q=${encodeURIComponent(query)}`)) as { messages?: { id: string }[] };
       const ids = (list.messages ?? []).map((m) => m.id);
       const out: EmailMessage[] = [];

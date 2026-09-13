@@ -101,7 +101,7 @@ export function buildContextBlock(input: ContextInput): string {
     } else {
       lines.push(`- Last here: ${describeGap(input.lastSeenAt, now)}.`);
       if (bucket === "week_plus" || bucket === "long") {
-        lines.push("- That's a long gap. If it comes up, treat coming back as easy; don't mention the length unless they do.");
+        lines.push("- That's a long gap. If it comes up, treat coming back as easy; name how long it's been only if it helps them get their bearings, never as something owed.");
       }
     }
   }

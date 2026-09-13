@@ -132,6 +132,8 @@ Related: [Motion & Interaction](../design/motion-and-interaction.md).
 
 **Method, from review feedback Chanté relayed (2026-09-13); proposed until she settles it:** a grader who is involved grades blind on consistent criteria rather than abstaining, and every run records its grader. Voice and usefulness are graded separately. Rules about numbers, time and explaining herself serve burden and agency; they aren't prohibitions. The largest gap is judgement across short conversations with tools: does Lumi use what she knows, respond well to correction, leave reflection alone when appropriate, and make the next move easier? The nine single-reply scenarios can't show this, and a paired same-clock run is needed before any conclusion about the brief.
 
+**Conversations (2026-09-13).** `scripts/conversation-eval.mjs` runs short conversations with the real tools against a throwaway database, checks the actions in code, and can pair each scenario with and without the brief at one clock, with a blind packet ([log](../voice-eval-log.md) → Conversations). Still missing: a spiral, a framing worth challenging, and a pattern across days, which needs structure question 22 hasn't settled. Still open: who grades the blind packets, and how many runs a conclusion needs.
+
 Related: [Model strategy](../product/lumi-model-strategy.md).
 
 ## 22. Which richer concepts become structure first?
