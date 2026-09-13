@@ -36,7 +36,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 
 | Token | By lantern light | Usage on Home |
 |---|---|---|
-| Paper | `#1a120c` | The dock's fade, the medallion gap, the fleuron's vein |
+| Paper | `#1a120c` | The medallion gap, the fleuron's vein |
 | Paper deep | `rgba(241,230,207,.08)` | Chips, icon buttons, your lines' tint |
 | Card | `rgba(26,18,12,.72)` + `backdrop-filter: blur` | Lumi's plates, the composer, the check-in — dark glass. Write `backdrop-filter` unprefixed and alone: the CSS pipeline adds `-webkit-` for Safari, and a hand-written `-webkit-` line after it makes lightningcss drop the unprefixed one (no blur in Chrome; `npm run check:css` catches it) |
 | Ink / soft / mute | `#f1e6cf` / `#d6c8aa` / `#a89a80` | Parchment type |
@@ -114,7 +114,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.card` | Card surface: `--card` bg, rule border, 6px radius, `--shadow` |
 | `.chip` | Pill button on paper-deep; hover darkens, active nudges 1px |
 | `.icon-btn` | 44px round icon button on paper-deep |
-| `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it. `.chat-scroll` is a size container and its `::after` is one view's height of nothing (`100cqb`, 2026-09-13): the greeting can sit at the top of the view on a fresh open and hold still while it rolls up, and the whole conversation can be scrolled just out of sight (on Home, to see the room). Replaces the measured `room` padding `MessageList` used to add |
+| `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it — except on Home (2026-09-13), where the dock has no background: the fade was a dark box on the painting, with a hard edge where the column stops at the companion lane, and the pill's glass already holds the lines scrolling behind it. `.chat-scroll` is a size container and its `::after` is one view's height of nothing (`100cqb`, 2026-09-13): the greeting can sit at the top of the view on a fresh open and hold still while it rolls up, and the whole conversation can be scrolled just out of sight (on Home, to see the room). Replaces the measured `room` padding `MessageList` used to add |
 | `.today-scene` / `.today-page` / `.today-voice` / `.today-now` / `.today-rest` | Today only: the painted greenhouse behind the shell, the page column, Lumi's words on the painting (`.today-capacity` inside), the one Right now card and the faint slip with the rest (`.today-part`, `.today-closing` inside) (see Color Palette → Today: the garden) |
 | `.home-scene` | Home only: the painted room, fixed behind the shell, with its dimming `::after`; its presence (`.shell:has(.home-scene)`) re-lights every token on the page (see Color Palette → Home: the room) |
 | `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on. From 768px it is set to a measure — `clamp(min(100%, 460px), 70%, 100%)` of the chat column, centred — and `.composer-foot` (the Voice / tagline line) keeps the same measure; phones keep the full width |
