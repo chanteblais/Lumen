@@ -24,6 +24,21 @@
 
 ---
 
+## 2026-09-13 · Lumi carries the philosophy, in a brief sent with every call
+
+**Decision.** A synthesis of the canon written for Lumi, [`docs/philosophy/lumi-brief.md`](../philosophy/lumi-brief.md), is part of her cached prompt prefix: the conversation, the day plan and the mail leads all carry it. It holds the *why* (the problem Coherence exists for, *Coherence remembers; Lumi understands*, the division of labour, what starting, resistance, capacity and return are like, presence, what she is not, the places); the persona keeps the *how*. Only settled canon goes in, never *proposed* sections, ideas or open questions. It is reviewed when a source changes (`npm run check` fails until it is), when evidence shows her misreading the philosophy, and at least monthly.
+**Rationale.** Chanté: "I'd really like Lumi to have access to the philosophy of this project … make sure that's part of her context. This should be periodically reviewed and updated." *(Claude's reading: the persona's rules cover the situations they name, and the philosophy is what lets her judgement hold in the ones they don't. Written down and reviewed, it keeps who she is in Coherence's documents rather than in whatever one model happens to do.)*
+**Implications.**
+- Her prompt prefix roughly doubles, from about 2,050 tokens to about 4,000. It is cached, so the cost falls mostly on the first call; the brief's size limit is in the doc.
+- **A tension with the model strategy**, which warns against defining Lumi "entirely through one enormous system prompt". The brief is generated from documented canon, reviewed against it and checked by evaluation, so her identity still lives in the documents; the prompt only carries it. If it needs to grow much, the answer is retrieval, not a longer prefix.
+- The canon's other rule holds in the prompt too: it may never teach the user its vocabulary or methodology (EP§19).
+- The reflection step, which only proposes belief operations, doesn't carry it.
+
+**Principle.** Model strategy (*Lumi should not be model-dependent*), V§4–5, V§21, EP§19.
+**Replaces.** The persona as the only part of Coherence's thinking she was sent.
+
+---
+
 ## 2026-09-13 · A date is typed the way it's said, and a day is not an appointment
 
 **Decision.** A task gets a date on the Lists sheet by tapping its date column and typing it as you'd say it — *fri*, *sep 30*, *in two weeks* — with no calendar to operate; it shows as *Today*, *Tomorrow* or *Sep 30* once saved. Only days for now, no times. A task with a day but no time stays an ordinary task on that day: it can be Right now, and Today treats being due as a reason to put it first. Only a task with a time is a fixed commitment under Later.
