@@ -13,7 +13,7 @@ import {
   ensureMainConversation,
   loadRecentMessages,
   saveMessage,
-  type LumenUIMessage,
+  type CoherenceUIMessage,
 } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { declineIntention } from "@/core/domain/intentions";
@@ -56,12 +56,12 @@ export async function POST(req: Request) {
     if (id) await reflectAfterSession(db(), user, id);
   });
 
-  const body = (await req.json()) as { message?: LumenUIMessage };
+  const body = (await req.json()) as { message?: CoherenceUIMessage };
   const incoming = body.message;
   if (!incoming || incoming.role !== "user" || !Array.isArray(incoming.parts)) {
     return Response.json({ error: "message required" }, { status: 400 });
   }
-  const userMessage: LumenUIMessage = {
+  const userMessage: CoherenceUIMessage = {
     id: isUuid(incoming.id) ? incoming.id : randomUUID(),
     role: "user",
     parts: incoming.parts,
@@ -182,7 +182,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse<LumenUIMessage>({
+  return result.toUIMessageStreamResponse<CoherenceUIMessage>({
     originalMessages: all,
     generateMessageId: () => randomUUID(),
     sendReasoning: false,

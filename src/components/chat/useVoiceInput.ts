@@ -11,7 +11,7 @@ import type { VoiceEngine, VoiceState } from "./voice/types";
  *
  * Two engines behind one button (see `voice/types.ts`): the browser's own
  * recognition where it works, otherwise a local Whisper model. Engine choice
- * is automatic; `localStorage.lumen.voice = "local" | "speech"` forces one
+ * is automatic; `localStorage.coherence.voice = "local" | "speech"` forces one
  * for testing.
  */
 
@@ -38,7 +38,7 @@ function pickEngine(): VoiceEngineName | undefined {
   if (typeof window === "undefined") return undefined;
   let override: string | null = null;
   try {
-    override = window.localStorage.getItem("lumen.voice");
+    override = window.localStorage.getItem("coherence.voice");
   } catch {}
   const speech = Boolean(getSpeechCtor()) && !isBrave();
   const local = localEngineAvailable();

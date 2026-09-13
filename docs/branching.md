@@ -8,7 +8,7 @@ Deliberately chill (inherited from Glåüm, 2026-09-11). `main` always deploys c
 2. **Branch for anything non-trivial.** Short-lived, named `type/slug`: `feat/…` · `fix/…` · `ux/…` · `docs/…` · `chore/…`. Milestones from `docs/v1-plan.md` are `feat/m<N>-<slug>` (e.g. `feat/m0-shell`).
 3. **Verify before merging:** `npm run check` passes (`next typegen` + `tsc`, eslint incl. the `src/core` import guard, vitest, the route-auth audit), you've clicked through the affected pages on a local dev server, and the **docs audit** (its own section below) is done — every doc the branch's changes touch reads true, fixed on the branch if not. CI (`.github/workflows/ci.yml`) runs the same checks on pushes and PRs; the docs audit is a human/Claude step, CI can't do it.
 4. **Merge with `--no-ff`, then delete the branch.** `git log --first-parent main` reads as a changelog.
-5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `LUMEN_ALLOW_MAIN=1` on those. The docs audit still applies in miniature: does any doc describe the line you just changed?
+5. **Tiny tweaks may go straight to `main`.** Copy edits, doc updates, one-line fixes — use judgment. The pre-commit guard asks for `COHERENCE_ALLOW_MAIN=1` on those. The docs audit still applies in miniature: does any doc describe the line you just changed?
 6. **Migrations ride the branch that needs them.** Apply to prod at merge+deploy time; note the migration in the merge commit message.
 7. **Want eyes on something before it ships?** Push the *branch* — Vercel builds a preview URL — then merge when happy. A pushed branch may also go up as a **pull request** (first one: #1, 2026-09-12): CI runs on it, and the desktop app can watch it and auto-fix CI failures. Merge a PR with **Create a merge commit** — never squash or rebase-merge — so `git log --first-parent main` stays the changelog; delete the branch after. Local `--no-ff` merge and PR merge are interchangeable; the merge commit is the invariant. (`gh` must be on the personal account for this repo — `gh auth switch --user chanteblais`; the work account can push over the `github-personal` SSH alias but can't open PRs here.)
 
@@ -66,7 +66,7 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
-2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `LUMEN_ALLOW_MAIN=1 git commit …`.
+2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here on `main` and stops loudly. `--no-ff` merges are unaffected. Deliberate rule-5 tweaks: `COHERENCE_ALLOW_MAIN=1 git commit …`.
 
 ## Claude sessions
 
@@ -74,7 +74,7 @@ A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githoo
 
 - **Approval first.** Merge + push happen when Chanté has signed off ("looks good", "merge it"). Never push work she hasn't seen.
 - **A push ships all of `main`.** Check `git log --first-parent origin/main..main` before pushing and say what rides along.
-- **Docs audit before the merge and again before the push.** The whole-branch audit above is the gate: every commit that would ride along has its docs folded in and reading true. Stale docs → land the docs fix first (on the branch before a merge; on `main` with `LUMEN_ALLOW_MAIN=1` before a push), then merge or push. Never merge with a docs fix "to follow".
+- **Docs audit before the merge and again before the push.** The whole-branch audit above is the gate: every commit that would ride along has its docs folded in and reading true. Stale docs → land the docs fix first (on the branch before a merge; on `main` with `COHERENCE_ALLOW_MAIN=1` before a push), then merge or push. Never merge with a docs fix "to follow".
 - **Migrations deploy with their code.** Claude applies additive migrations itself (`npm run db:migrate`) on the branch, before review; destructive ones wait for Chanté's explicit go. If a migration can't be applied, hold the push and say why.
 - **When in doubt, don't.** Leave the push to Chanté.
 

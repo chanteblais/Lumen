@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SessionBar } from "@/components/focus/SessionBar";
 import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/declines";
-import type { LumenUIMessage } from "@/core/domain/conversations";
+import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import type { SessionView } from "@/core/domain/sessions";
 import { sessionEventText, sessionFromMessages, type SessionEventResponse } from "@/core/focus";
 import { Composer } from "./Composer";
@@ -15,7 +15,7 @@ import { MessageList } from "./MessageList";
 
 type Props = {
   conversationId: string;
-  initialMessages: LumenUIMessage[];
+  initialMessages: CoherenceUIMessage[];
   greetingLines: string[];
   /** Kicker labels rendered above the greeting, inside the scroll area. */
   kicker?: React.ReactNode;
@@ -63,7 +63,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   const [inSitting, setInSitting] = useState(initialInSitting || Boolean(initialHandoff));
   const transport = useMemo(
     () =>
-      new DefaultChatTransport<LumenUIMessage>({
+      new DefaultChatTransport<CoherenceUIMessage>({
         api: "/api/chat",
         // Send only the new message; the server holds the transcript.
         prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
@@ -71,7 +71,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     [],
   );
 
-  const { messages, sendMessage, status, error } = useChat<LumenUIMessage>({
+  const { messages, sendMessage, status, error } = useChat<CoherenceUIMessage>({
     id: conversationId,
     messages: initialMessages,
     transport,

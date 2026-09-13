@@ -1,6 +1,6 @@
-# Lumen — Product Brief (condensed)
+# Coherence — Product Brief (condensed)
 
-Lumen is an AI companion for **task initiation, momentum, re-entry and body doubling** — not a task manager.
+Coherence is an AI companion for **task initiation, momentum, re-entry and body doubling** — not a task manager.
 
 ## The one question
 Every design and implementation decision is checked against:
@@ -10,7 +10,7 @@ Every design and implementation decision is checked against:
 That question overrides conventional productivity-app assumptions. Corollary: *you don't have to be productive enough to use your productivity system.* The system maintains the user's context; the user does not maintain the system.
 
 ## Core experience (V1)
-- Opening Lumen is a **soft landing**: a greeting and somewhere to begin. No overdue counts, charts, scores, streaks or dashboards.
+- Opening Coherence is a **soft landing**: a greeting and somewhere to begin. No overdue counts, charts, scores, streaks or dashboards.
 - The primary interface is a **conversation** with Lumi. The user talks or types; Lumi responds conversationally and acts on the user's behalf behind the scenes.
 - Everything else lives **behind navigation** (Today, Library, Settings). The landing page stays sparse.
 
@@ -47,11 +47,11 @@ Examples:
 
 Tone should eventually adapt per user (warmth / humour / directness / quiet companionship / active coaching). V1: a single `preferences.tone` hint in the system prompt; adaptation UI later.
 
-## Lumi the character (the companion is named Lumi; the product is still Lumi)
-A tiny hooded figure: oversized ivory cloak, dark face, two warm glowing eyes, antique brass fastener. Mysterious, calm, endearing, slightly mischievous — not childish. **Used sparingly:** a small circular avatar beside his messages. Later: subtle eye/posture states (thinking, focused, amused, curious, waiting, celebrating, sleepy). He must never dominate the interface.
+## Lumi the character (the companion is Lumi, she/her; the product is Coherence, formerly Lumen)
+A tiny hooded figure: an oversized ivory cloak, a hood embroidered with a sun, a dark face, two warm glowing eyes, a ribbon with brass medallions, boots and a lantern (the canon costume since 2026-09-12; `art-direction.md` §2). Mysterious, calm, endearing, slightly mischievous — not childish. **Used sparingly:** a small circular avatar beside her messages. Later: subtle eye/posture states (thinking, focused, amused, curious, waiting, celebrating, sleepy). She must never dominate the interface.
 
 ## Visual direction
-**Antique book × modern editorial interface.** Warm ivory ground with very subtle paper texture · deep charcoal/near-black ink · restrained antique brass accents · elegant serif typography · fine rules · generous negative space · crisp modern layout. No decorative imagery. Personality comes from typography, spacing, micro-interactions, copy, and Lumi himself.
+**Antique book × modern editorial interface.** Warm ivory ground with very subtle paper texture · deep charcoal/near-black ink · restrained antique brass accents · elegant serif typography · fine rules · generous negative space · crisp modern layout. No decorative imagery. Personality comes from typography, spacing, micro-interactions, copy, and Lumi herself.
 
 Rejected: cute, "teenage girl", wellness-app, live-laugh-love, cluttered, over-illustrated, corporate SaaS, generic AI startup.
 

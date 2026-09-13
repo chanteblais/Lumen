@@ -1,6 +1,6 @@
 "use client";
 
-import type { LumenUIMessage } from "@/core/domain/conversations";
+import type { CoherenceUIMessage } from "@/core/domain/conversations";
 
 type ToolPart = { type: string; state?: string; input?: unknown; output?: unknown };
 
@@ -50,7 +50,7 @@ function line(p: ToolPart): string | null {
 }
 
 /** Quiet record of what Lumi did during a reply. Rendered from tool parts; never from prose. */
-export function Ledger({ message }: { message: LumenUIMessage }) {
+export function Ledger({ message }: { message: CoherenceUIMessage }) {
   const lines = message.parts.map((p) => line(p as ToolPart)).filter((l): l is string => Boolean(l));
   if (lines.length === 0) return null;
   return (

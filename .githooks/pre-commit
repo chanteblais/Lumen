@@ -16,14 +16,15 @@ fi
 # 2. No direct commits to main (main = deployable; work happens on branches).
 #    Crossed-session tripwire: a session that thinks it's in Glåüm or All Hands
 #    lands here on main and stops loudly. Deliberate tiny tweaks:
-#      LUMEN_ALLOW_MAIN=1 git commit …
+#      COHERENCE_ALLOW_MAIN=1 git commit …
+#    (LUMEN_ALLOW_MAIN, the name before the product became Coherence, still works.)
 #    (--no-ff merges use the pre-merge-commit hook path, so merges are unaffected.)
 branch=$(git symbolic-ref --quiet --short HEAD)
-if [ "$branch" = "main" ] && [ -z "$LUMEN_ALLOW_MAIN" ]; then
-  echo "✗ Direct commit to main in lumen blocked." >&2
-  echo "  Working on another project (glaum-camp-website? all-hands?) — then your cwd is crossed: this is LUMEN." >&2
+if [ "$branch" = "main" ] && [ -z "$COHERENCE_ALLOW_MAIN" ] && [ -z "$LUMEN_ALLOW_MAIN" ]; then
+  echo "✗ Direct commit to main in coherence blocked." >&2
+  echo "  Working on another project (glaum-camp-website? all-hands?) — then your cwd is crossed: this is COHERENCE (the ~/Projects/lumen checkout)." >&2
   echo "  Meant to commit here? Use a branch (docs/branching.md), or for a deliberate tiny tweak:" >&2
-  echo "    LUMEN_ALLOW_MAIN=1 git commit …" >&2
+  echo "    COHERENCE_ALLOW_MAIN=1 git commit …" >&2
   exit 1
 fi
 

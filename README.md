@@ -1,4 +1,4 @@
-# Lumen
+# Coherence
 
 An AI companion for task initiation, momentum, re-entry and body doubling. Not a task manager.
 

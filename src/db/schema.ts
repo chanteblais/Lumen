@@ -1,5 +1,5 @@
 /**
- * Lumen schema — the domain model as code. See docs/domain.md for the prose.
+ * Coherence schema — the domain model as code. See docs/domain.md for the prose.
  * Eight tables. Everything is keyed by users.id (internal UUID), never by the
  * auth provider's id. Derived judgements (stale, avoided, gap, today's
  * capacity) are computed at read time and never stored.

@@ -5,7 +5,7 @@ import { DefaultChatTransport } from "ai";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Ledger } from "@/components/chat/Ledger";
-import type { LumenUIMessage } from "@/core/domain/conversations";
+import type { CoherenceUIMessage } from "@/core/domain/conversations";
 
 type Props = { onClose: () => void; onSend?: () => void };
 
@@ -32,12 +32,12 @@ export function CompanionBubble({ onClose, onSend }: Props) {
 
   const [transport] = useState(
     () =>
-      new DefaultChatTransport<LumenUIMessage>({
+      new DefaultChatTransport<CoherenceUIMessage>({
         api: "/api/chat",
         prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
       }),
   );
-  const { messages, sendMessage, status, error } = useChat<LumenUIMessage>({ transport, generateId: () => crypto.randomUUID() });
+  const { messages, sendMessage, status, error } = useChat<CoherenceUIMessage>({ transport, generateId: () => crypto.randomUUID() });
   const busy = status === "submitted" || status === "streaming";
 
   useEffect(() => input.current?.focus(), []);
