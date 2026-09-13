@@ -13,7 +13,7 @@ import { reportCapacity } from "@/core/domain/capacity";
 import { completeIntention, createIntention, dropIntention, reopenIntention, updateIntention } from "@/core/domain/intentions";
 import { dismissLead, keepLead } from "@/core/domain/leads";
 import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
-import { findTheirWords, isExplicitAsk, type Heard } from "@/core/domain/memory-rules";
+import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
 import type { EmailReader } from "@/core/email/types";
@@ -53,7 +53,6 @@ function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
 const WHY_NOT: Record<string, string> = {
   secret: "not kept: it looks like a password, code, key or ID number — you don't hold those",
   instruction: "not kept: it reads like an instruction to you, not something about them",
-  sensitive: "not kept: a sensitive personal detail — only when they ask you to remember it, with their_words",
   forgotten: "not kept: they asked you to forget this before",
   "not active": "not found — use an id from the context or recall_memory",
   "not found": "not found — use an id from the context or recall_memory",
@@ -226,7 +225,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
 
     remember: tool({
       description:
-        "Hold onto something durable about the user — only what will still matter next week: a fact, a project, a preference about how you should be, a strategy that helps them start, a pattern you've noticed, or an anti-pattern. source=user_said when they told you, with their_words: their exact words, copied from their message (checked; without a match it's held as your guess). source=lumi_inferred when you noticed it. Never passwords, codes, keys or ID numbers. A sensitive detail (health, sexuality, faith and the like) is kept only when they ask you to remember it. Returns already_held when you knew it, and similar beliefs it may update — correct_belief or revise_belief those rather than keeping two.",
+        "Hold onto something durable about the user — only what will still matter next week: a fact, a project, a preference about how you should be, a strategy that helps them start, a pattern you've noticed, or an anti-pattern. source=user_said when they told you, with their_words: their exact words, copied from their message (checked; without a match it's held as your guess). source=lumi_inferred when you noticed it. Never passwords, codes, keys or ID numbers. Returns already_held when you knew it, and similar beliefs it may update — correct_belief or revise_belief those rather than keeping two.",
       inputSchema: z.object({
         kind: z.enum(KINDS),
         content: z.string().min(3).max(240).describe("One sentence, present tense"),
@@ -250,7 +249,6 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
                 source,
                 confidence: input.confidence,
                 sourceMessageId: (heard ?? latest)?.messageId,
-                explicitAsk: [heard, latest].some((w) => w && isExplicitAsk(w.text)),
               },
             ],
             "lumi",

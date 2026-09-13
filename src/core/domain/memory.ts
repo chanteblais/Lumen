@@ -19,8 +19,6 @@ export type BeliefOp =
       confidence?: number;
       /** The user message it came from (where they said it, or the turn it was noticed). */
       sourceMessageId?: string;
-      /** They asked for it to be kept — what lets a sensitive detail they said be stored. */
-      explicitAsk?: boolean;
     }
   | { op: "confirm"; id: string }
   | { op: "contradict"; id: string; note?: string }
@@ -83,7 +81,7 @@ async function applyOne(db: Db, userId: string, op: BeliefOp, actor: Actor, resu
     case "create": {
       const content = cleanContent(op.content);
       if (content.length < CONTENT_MIN || content.length > CONTENT_MAX) return "content length";
-      const screened = screenMemory(content, { source: op.source, explicitAsk: op.explicitAsk ?? false });
+      const screened = screenMemory(content);
       if (screened) return screened;
       const active = await listActiveBeliefs(db, userId);
       const same = active.find((b) => isNearDuplicate(b.content, content));
@@ -134,7 +132,7 @@ async function applyOne(db: Db, userId: string, op: BeliefOp, actor: Actor, resu
       const content = cleanContent(op.content);
       if (content.length < CONTENT_MIN || content.length > CONTENT_MAX) return "content length";
       const source: BeliefSource = actor === "user" ? "user_said" : b.source;
-      const screened = screenMemory(content, { source, explicitAsk: actor === "user" });
+      const screened = screenMemory(content);
       if (screened) return screened;
       const confidence = actor === "user" ? 0.95 : b.confidence;
       const sourceMessageId = actor === "user" ? op.sourceMessageId : (op.sourceMessageId ?? b.sourceMessageId ?? undefined);

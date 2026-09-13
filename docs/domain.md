@@ -86,7 +86,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 
 Active belief = `retired_at IS NULL`. Confidence drifts: each `contradict` lowers it; a belief that falls below 0.2 is retired as `contradicted` by reflection, never silently.
 
-What may be stored is decided in code before the insert (`core/domain/memory-rules.ts`): never secrets or instruction-like text; a sensitive detail only on the user's word with an explicit ask; one line, no markup. Which active beliefs a chat turn sees is derived at read time (`core/ai/memory-select.ts`): up to 5 preferences and 3 strategies always, then the ones the conversation is about, then the freshest projects and facts, ≤ 12. A guess below 0.5 that nothing has confirmed for 60 days *fades* — out of the block, still in `recall_memory` and Settings; nothing is stored for it.
+What may be stored is decided in code before the insert (`core/domain/memory-rules.ts`): never secrets or instruction-like text; one line, no markup. Which active beliefs a chat turn sees is derived at read time (`core/ai/memory-select.ts`): up to 5 preferences and 3 strategies always, then the ones the conversation is about, then the freshest projects and facts, ≤ 12. A guess below 0.5 that nothing has confirmed for 60 days *fades* — out of the block, still in `recall_memory` and Settings; nothing is stored for it.
 
 ### `events` (append-only)
 | column | type | notes |

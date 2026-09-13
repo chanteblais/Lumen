@@ -87,16 +87,11 @@ describe("what isn't kept", () => {
     expect(await allRows(u)).toHaveLength(0);
   });
 
-  it("keeps a sensitive detail only on their word with an explicit ask", async () => {
+  it("keeps a personal detail they mention in passing, like anything else they say", async () => {
     const u = await createTestUser(db, "Dee");
-    const guessed = await call(toolsFor(u, said("ugh, brain is so loud today")).remember, { kind: "fact", content: "Has ADHD.", source: "lumi_inferred" });
-    expect(String(guessed.error)).toMatch(/sensitive/);
-    const inPassing = await call(toolsFor(u, said("my ADHD is loud today")).remember, { kind: "fact", content: "Has ADHD.", source: "user_said", their_words: "my ADHD is loud today" });
-    expect(String(inPassing.error)).toMatch(/sensitive/);
-    expect(await allRows(u)).toHaveLength(0);
-
-    const asked = await call(toolsFor(u, said("I have ADHD, keep that in mind when we plan")).remember, { kind: "fact", content: "Has ADHD.", source: "user_said", their_words: "I have ADHD" });
-    expect(asked).toMatchObject({ held_as: "their word" });
+    const out = await call(toolsFor(u, said("my ADHD is loud today")).remember, { kind: "fact", content: "Has ADHD.", source: "user_said", their_words: "my ADHD is loud today" });
+    expect(out).toMatchObject({ held_as: "their word" });
+    expect(await allRows(u)).toHaveLength(1);
   });
 
   it("won't store a note that reads as an instruction to Lumi", async () => {

@@ -1,9 +1,9 @@
 /**
  * What may be kept, and on whose word: the pure rules `memory.ts` enforces
- * before anything reaches `memory_notes`. Screens (secrets, instructions,
- * sensitive details), provenance (their words or a guess), duplicates, and the
- * key a forgotten belief leaves behind. No database. See docs/architecture.md →
- * The understanding layer.
+ * before anything reaches `memory_notes`. Screens (secrets, instructions),
+ * provenance (their words or a guess), duplicates, and the key a forgotten
+ * belief leaves behind. No database. See docs/architecture.md → The
+ * understanding layer.
  */
 import { createHash } from "node:crypto";
 import type { BeliefSource } from "@/db/schema";
@@ -31,7 +31,7 @@ export function boundConfidence(source: BeliefSource, c: number): number {
 
 /* ------------------------------------------------------------ screens */
 
-export type ScreenReason = "secret" | "instruction" | "sensitive";
+export type ScreenReason = "secret" | "instruction";
 
 const SECRET_PATTERNS: RegExp[] = [
   // "my password is …", "PIN: 4821", "the door code is 1234"
@@ -59,15 +59,6 @@ const INSTRUCTION_PATTERNS: RegExp[] = [
   // Naming a tool: "call forget_belief", "use create_intention"
   /\b(?:call|use|run|invoke)\s+(?:the\s+)?[a-z]+_[a-z_]+\b/i,
 ];
-
-/**
- * Special-category details (health, sexuality, faith, politics, immigration,
- * criminal history, abuse, addiction, debt). Kept only when the user said it
- * and asked to have it remembered — never inferred, never kept in passing.
- */
-const SENSITIVE = /\b(?:diagnos\w*|adhd|autis\w*|asperger\w*|ocd|ptsd|bipolar|depress(?:ion|ed|ive)|anxiety disorder|panic attacks?|schizo\w*|eating disorder|anorexi\w*|bulimi\w*|suicid\w*|self[- ]harm\w*|medication|meds|prescription|antidepressants?|ssris?|therap(?:y|ist)|psychiatr\w*|chronic (?:illness|pain|fatigue)|cancer|hiv|stds?|stis?|pregnan\w*|miscarriage|abortion|ivf|fertility|disabilit\w*|disabled|gay|lesbian|bisexual|queer|transgender|non[- ]?binary|sexual\w*|religio\w*|church|mosque|synagogue|muslim|christian|catholic|jewish|hindu|sikh|buddhist|atheis\w*|political (?:party|views|affiliation)|voted for|immigration|visa status|undocumented|refugee|asylum|deport\w*|criminal record|arrested|convict\w*|probation|parole|abus(?:e|ed|ive)|assault\w*|trauma\w*|addict\w*|alcoholi\w*|sober|sobriety|rehab|relapse|debt|bankrupt\w*|divorc\w*)\b/i;
-
-const EXPLICIT_ASK = /\b(?:remember|keep (?:that |this |it )?in mind|make a note|note (?:that|this|it|down)|don'?t forget|do not forget|for (?:future reference|next time)|so you know|you should know|hold on ?to)\b/i;
 
 function luhn(digits: string): boolean {
   let sum = 0;
@@ -100,24 +91,15 @@ export function looksLikeInstruction(s: string): boolean {
   return INSTRUCTION_PATTERNS.some((re) => re.test(s));
 }
 
-export function looksSensitive(s: string): boolean {
-  return SENSITIVE.test(s);
-}
-
-/** Did they ask for this to be kept ("remember…", "keep in mind…", "so you know…")? */
-export function isExplicitAsk(text: string): boolean {
-  return EXPLICIT_ASK.test(text);
-}
-
 /**
- * Why this may not be kept, or null when it may. Secrets and instructions are
- * never kept, whoever asks. A sensitive detail is kept only on the user's own
- * word with an explicit ask.
+ * Why this may not be kept, or null when it may. Not a privacy screen (that
+ * waits, Chanté 2026-09-13): secrets would ride along to the model on every
+ * turn, and an instruction stored as a note would talk to Lumi as if it were
+ * her rules. Neither is kept, whoever asks.
  */
-export function screenMemory(content: string, opts: { source: BeliefSource; explicitAsk: boolean }): ScreenReason | null {
+export function screenMemory(content: string): ScreenReason | null {
   if (looksSecret(content)) return "secret";
   if (looksLikeInstruction(content)) return "instruction";
-  if (looksSensitive(content) && !(opts.source === "user_said" && opts.explicitAsk)) return "sensitive";
   return null;
 }
 
