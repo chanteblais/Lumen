@@ -1,14 +1,17 @@
 import type { CSSProperties } from "react";
 
 /**
- * Where the Library's names go on the painting. The numbers are copied from
- * art/scenery/library/library-views.json (v3, measured on
- * art/scenery/library/background.png, 1536×1024): each bookcase's wall face —
- * its top-left, top-right and bottom-left corners, normalized to the painting —
- * and its plaque, in the face's own u/v (0..1 across and down the face). Edit
- * the manifest first, then these. The room page lays them on a stage the size
- * of the painting under its cover fit (globals.css → Library: sections on the
- * bookcases), so a percentage of the stage is a fraction of the painting.
+ * Where the Library's names go on the painting. Measured on the served
+ * art/scenery/library/background.png (1536×1024, the full-size-armchairs
+ * render, 2026-09-13), in the shape of art/scenery/library/library-views.json:
+ * each bookcase's wall face — its top-left, top-right and bottom-left corners
+ * (the arch surround's outer edge, a line just over the arch, the cabinet's
+ * base), normalized to the painting — and its plaque, in the face's own u/v
+ * (0..1 across and down the face). The manifest is still v3, measured on the
+ * archived painting before this one, so these no longer copy it. The room page
+ * lays them on a stage the size of the painting under the Library's fit
+ * (globals.css → Library: sections on the bookcases), so a percentage of the
+ * stage is a fraction of the painting.
  */
 const PAINTING = { w: 1536, h: 1024 } as const;
 
@@ -32,7 +35,7 @@ type BookcaseSlot = {
 export const BOOKCASES: readonly BookcaseSlot[] = [
   {
     id: "collection_02",
-    face: { tl: [0.3952, 0.2168], tr: [0.5163, 0.2168], bl: [0.3952, 0.5498] },
+    face: { tl: [0.4199, 0.207], tr: [0.5475, 0.207], bl: [0.4199, 0.5586] },
     panel: { u: 0.065, v: 0.073, w: 0.86, h: 0.112 },
     name: { u: 0.134, v: 0.098, w: 0.726, h: 0.076 },
     type: 12.5,
@@ -40,15 +43,15 @@ export const BOOKCASES: readonly BookcaseSlot[] = [
   },
   {
     id: "collection_01",
-    face: { tl: [0.2682, 0.2441], tr: [0.3646, 0.1953], bl: [0.2682, 0.6055] },
-    panel: { u: 0.07, v: 0.1, w: 0.86, h: 0.09 },
-    name: { u: 0.15, v: 0.115, w: 0.7, h: 0.07 },
+    face: { tl: [0.2949, 0.2656], tr: [0.3952, 0.2148], bl: [0.2949, 0.6338] },
+    panel: { u: 0.07, v: 0.092, w: 0.86, h: 0.09 },
+    name: { u: 0.15, v: 0.105, w: 0.7, h: 0.07 },
     type: 12.5,
     charsPerLine: 16,
   },
   {
     id: "collection_03",
-    face: { tl: [0.7161, 0.3955], tr: [0.7812, 0.4346], bl: [0.7161, 0.6641] },
+    face: { tl: [0.7207, 0.3867], tr: [0.7962, 0.4316], bl: [0.7207, 0.6719] },
     panel: { u: 0.05, v: 0.06, w: 0.92, h: 0.12 },
     name: { u: 0.12, v: 0.085, w: 0.78, h: 0.09 },
     type: 11.5,
@@ -56,8 +59,8 @@ export const BOOKCASES: readonly BookcaseSlot[] = [
   },
 ];
 
-/** Where the slip for the table lies: on the round table's top, over the open book (the manifest's `central_table.region` is x .4036 y .6592 w .1172 h .1367). */
-export const TABLE_SLIP = { x: 0.456, y: 0.744 } as const;
+/** Where the slip for the table lies: on the round table's top, over the open book. */
+export const TABLE_SLIP = { x: 0.4948, y: 0.7422 } as const;
 
 const pct = (n: number) => `${(n * 100).toFixed(3)}%`;
 
