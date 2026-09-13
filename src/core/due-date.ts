@@ -186,6 +186,22 @@ export function startOfLocalDay(date: string, timeZone: string): Date {
   return new Date(t);
 }
 
+/**
+ * A due date a model wrote (a tool's `due_at`, a mail lead's): a bare day
+ * (`2026-09-20`) is 00:00 that day in the user's timezone — `new Date` would read
+ * it as UTC midnight, the day before west of UTC — and anything with a time is
+ * that instant. Null when it doesn't parse. Tested.
+ */
+export function dueAtFromModel(text: string, timeZone: string): Date | null {
+  const s = text.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const { y, m, d } = toYmd(s);
+    return valid(y, m, d) ? startOfLocalDay(s, timeZone) : null;
+  }
+  const at = new Date(s);
+  return Number.isNaN(at.getTime()) ? null : at;
+}
+
 /** A due_at that is only a day — 00:00 local — rather than a fixed time. Tested. */
 export function isDayOnly(at: Date, timeZone: string): boolean {
   const p = localParts(at, timeZone);

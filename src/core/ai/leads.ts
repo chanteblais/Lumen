@@ -6,6 +6,7 @@
  */
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { dueAtFromModel } from "@/core/due-date";
 import type { EmailMessage } from "@/core/email/types";
 import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
@@ -72,15 +73,16 @@ export async function inferLeads(inputs: LeadInputs): Promise<LeadDraft[]> {
     output: Output.object({ schema: LeadsSchema, name: "mail_leads" }),
     providerOptions: effortOptions("low"),
   });
-  return clampLeads(r.output?.leads ?? [], inputs.messages, inputs.lists, [...inputs.openTitles, ...inputs.handledTitles]);
+  return clampLeads(r.output?.leads ?? [], inputs.messages, inputs.lists, [...inputs.openTitles, ...inputs.handledTitles], inputs.timezone);
 }
 
-/** Pure guardrails over whatever the model returned. Tested. */
+/** Pure guardrails over whatever the model returned. A bare day is 00:00 that day in `timezone`. Tested. */
 export function clampLeads(
   raw: { message_id: string; title: string; why: string; list?: string; due_at?: string; confidence: number }[],
   messages: Pick<EmailMessage, "id">[],
   lists: readonly string[],
   knownTitles: string[] = [],
+  timezone = "UTC",
 ): LeadDraft[] {
   const ids = new Set(messages.map((m) => m.id));
   const known = new Set(knownTitles.map(norm));
@@ -98,13 +100,12 @@ export function clampLeads(
     if (n >= MAX_PER_MESSAGE) continue;
     perMessage.set(l.message_id, n + 1);
     seen.add(key);
-    const due = l.due_at ? new Date(l.due_at) : null;
     out.push({
       messageId: l.message_id,
       title,
       why: stripCounts(l.why.trim()).slice(0, 160),
       list: l.list && lists.includes(l.list) ? l.list : null,
-      dueAt: due && !Number.isNaN(due.getTime()) ? due : null,
+      dueAt: l.due_at ? dueAtFromModel(l.due_at, timezone) : null,
     });
   }
   return out;

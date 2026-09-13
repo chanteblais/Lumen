@@ -1,0 +1,51 @@
+/**
+ * The cached prefix guard. The persona and every tool's description and input
+ * schema are the prompt prefix both providers cache: a byte that moves misses the
+ * cache on every turn after deploy. This pins their sha256 for both states of
+ * `MAIL_ON` (the mail tools and the persona's mail line come and go with it).
+ *
+ * A change to the prefix that you meant: update the hash below in the same commit,
+ * and say in the commit message what moved (docs/architecture.md → System prompt).
+ */
+import { createHash } from "node:crypto";
+import { asSchema } from "ai";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Db } from "@/db/client";
+
+const EXPECTED = {
+  persona: { mailOff: "2005c1b99a05153b051ec3686d8bc7b0a3dee5fc29701cfe8e59e46cd92da194", mailOn: "b70c5645f469e63b7730dddfa16fba6acc97aeefdf491c381af18995f754a1df" },
+  prefix: { mailOff: "397a1169610c14726e4e7bfa533628952001ea66bae5c725d40c47407c8100db", mailOn: "5170dada4ce4b112984ace289f8f59ccfb130023072fb71b4869ffdcf1e89248" },
+};
+
+async function hashes(mailOn: boolean) {
+  vi.resetModules();
+  vi.doMock("@/core/email/types", async (importOriginal) => ({ ...(await importOriginal<object>()), MAIL_ON: mailOn }));
+  const { PERSONA } = await import("./persona");
+  const { buildTools } = await import("./tools");
+  const tools = buildTools({ db: {} as Db, userId: "u", timezone: "UTC" }) as Record<string, { description?: string; inputSchema: Parameters<typeof asSchema>[0] }>;
+  const described = [];
+  for (const [name, t] of Object.entries(tools)) described.push({ name, description: t.description, input: await asSchema(t.inputSchema).jsonSchema });
+  const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+  return { persona: sha(PERSONA), prefix: sha(PERSONA + JSON.stringify(described)), tools: Object.keys(tools) };
+}
+
+afterEach(() => {
+  vi.doUnmock("@/core/email/types");
+  vi.resetModules();
+});
+
+const advice = "The cached prefix (persona + tool descriptions + input schemas) changed. If you meant it, update EXPECTED in src/core/ai/prefix.test.ts in the same commit and note the change; every cached turn misses once after deploy.";
+
+describe("the cached prefix", () => {
+  it("is byte-stable with mail off", async () => {
+    const h = await hashes(false);
+    expect(h.tools).not.toContain("look_at_email");
+    expect({ persona: h.persona, prefix: h.prefix }, advice).toEqual({ persona: EXPECTED.persona.mailOff, prefix: EXPECTED.prefix.mailOff });
+  });
+
+  it("is byte-stable with mail on", async () => {
+    const h = await hashes(true);
+    expect(h.tools).toContain("look_at_email");
+    expect({ persona: h.persona, prefix: h.prefix }, advice).toEqual({ persona: EXPECTED.persona.mailOn, prefix: EXPECTED.prefix.mailOn });
+  });
+});

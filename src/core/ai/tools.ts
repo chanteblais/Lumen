@@ -15,7 +15,8 @@ import { dismissLead, keepLead } from "@/core/domain/leads";
 import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS, shelfPath, shelveThread, whyNotShelve } from "@/core/domain/library";
 import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
 import { matchNotes, rankThreads } from "./library-select";
-import { findTheirWords, type Heard } from "@/core/domain/memory-rules";
+import { findTheirWords, MAX_INFERRED_CONFIDENCE, type Heard } from "@/core/domain/memory-rules";
+import { dueAtFromModel } from "@/core/due-date";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
 import { MAIL_ON, type EmailReader } from "@/core/email/types";
@@ -98,7 +99,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             list: input.list,
             estimateMinutes: input.estimate_minutes,
             effortHint: input.effort_hint,
-            dueAt: input.due_at ? new Date(input.due_at) : null,
+            dueAt: input.due_at ? dueAtFromModel(input.due_at, timezone) : null,
           });
           return { id: row.id, title: row.title, list: row.list, estimate_minutes: row.estimateMinutes };
         }),
@@ -123,7 +124,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             note: input.note,
             list: input.list,
             estimateMinutes: input.estimate_minutes,
-            dueAt: input.due_at === undefined ? undefined : input.due_at ? new Date(input.due_at) : null,
+            dueAt: input.due_at === undefined ? undefined : input.due_at ? dueAtFromModel(input.due_at, timezone) : null,
           });
           // `changed` empty: nothing moved, nothing written — the ledger stays quiet.
           return r ? { id: r.row.id, title: r.row.title, list: r.row.list, changed: r.changed } : { error: "not found" };
@@ -256,7 +257,8 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
                 kind: input.kind,
                 content: input.content,
                 source,
-                confidence: input.confidence,
+                // A guess never starts out sure: the cap is enforced here, not only described.
+                confidence: source === "lumi_inferred" && input.confidence !== undefined ? Math.min(input.confidence, MAX_INFERRED_CONFIDENCE) : input.confidence,
                 sourceMessageId: (heard ?? latest)?.messageId,
               },
             ],

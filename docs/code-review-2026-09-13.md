@@ -54,9 +54,9 @@ Domain, database, migrations, reflection and consolidation.
 
 | id | finding | where | status |
 |---|---|---|---|
-| B1 ✓ | **Due dates from mail land a day early west of UTC.** `new Date("2026-09-20")` is UTC midnight; `dueOn` formats in the user's timezone. | `core/ai/leads.ts:42, 101` | open |
+| B1 ✓ | **Due dates from mail land a day early west of UTC.** `new Date("2026-09-20")` is UTC midnight; `dueOn` formats in the user's timezone. | `core/ai/leads.ts:42, 101` | fixed — `dueAtFromModel` (`core/due-date.ts`): a bare day is 00:00 local; leads and `create/update_intention` share it |
 | B2 | **Mail text reaches a model holding write tools**, and `forget_belief` records actor `user` on the model's word. | `core/ai/tools.ts` (`look_at_email`, `forget_belief`) | open |
-| B3 | **The 0.6 cap on inferred confidence is only in a description**; `execute` doesn't clamp. | `tools.ts` (`remember`) | open |
+| B3 | **The 0.6 cap on inferred confidence is only in a description**; `execute` doesn't clamp. | `tools.ts` (`remember`) | fixed — `remember` clamps a guess to `MAX_INFERRED_CONFIDENCE` in `execute` (the only tool taking a confidence; `boundConfidence` in the domain stays the backstop) |
 | B4 | **The "their words" check is weak and unlocks privileges.** Any 8+ char substring with a space from the last 8 user messages passes; `add_to_library` then runs as actor `user`, which skips `isForgotten`; `shelve_thread` stamps `shelvedBy: "user"`, pinning a thread against consolidation. | `core/ai/memory-rules.ts:112, 120`, `domain/library.ts:210, 236`, `tools.ts` | open |
 | B5 ✓ | **Chat errors are silent.** `onError: () => LUMI_ERROR` logs nothing; `saveMessage` in `onEnd` has no try/catch. | `api/chat/route.ts:224-227` | open |
 | B6 ✓ | **Chat route input.** `req.json()` has no `.catch` (500 on a bad body); three `after()` hooks (plan, reflection, consolidation) are registered before the 400; client `metadata` spreads after `createdAt` and overrides it; `parts` are stored and fed to the model unvalidated. | `route.ts:52-75` | open |
