@@ -226,7 +226,7 @@ body::after {
 .nav-toggle:hover::before,
 .nav-lock:hover::before { opacity: 0.5; }
 .nav-toggle[aria-expanded="true"]::before { opacity: 1; }
-.nav-lock[aria-pressed="true"]::before { opacity: 0.65; } /* locked, the moon glows softer than the pinned star (Chanté: a bit less) — still brighter than a hover */
+.nav-lock[aria-pressed="true"]::before { opacity: 0.8; } /* locked, the moon glows softer than the pinned star (Chanté: a bit less) — still brighter than a hover */
 
 /* Parchment: ink on paper, wherever a sheet of it sits — the nav's panel on
    every page, and the greeting's scroll on Home's dark room. */
