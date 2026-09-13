@@ -1,3 +1,4 @@
+import { ReleaseHeldChats } from "@/components/chat/ReleaseHeldChats";
 import { Divider } from "@/components/ui/Ornament";
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
@@ -5,6 +6,7 @@ import Link from "next/link";
 export default function SignUpPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col">
+      <ReleaseHeldChats />
       <div className="mb-9 px-1">
         <p className="label">Hello</p>
         <div className="my-4"><Divider /></div>

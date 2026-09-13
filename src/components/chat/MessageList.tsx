@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
+import { ThinkingDots, textOf } from "./chat-client";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
 
@@ -58,7 +59,7 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
         {thinking && (
           <div className="msg msg-lumi" aria-label="Lumi is thinking">
             <LumiAvatar size={36} className="msg-avatar" />
-            <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
+            <div className="msg-body"><ThinkingDots label={null} /></div>
           </div>
         )}
         {error && (
@@ -82,13 +83,8 @@ function render(messages: CoherenceUIMessage[]): React.ReactNode[] {
       items.push(<VisitRule key={`rule-${m.id}`} at={at} />);
     }
     if (at) prevAt = at;
-    // One text part per block of speech: Lumi often says a line, acts (a tool
-    // part), then says another. Each block is its own paragraph.
-    const text = m.parts
-      .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-      .map((p) => p.text.trim())
-      .filter(Boolean)
-      .join("\n\n");
+    // One paragraph per block of speech (`textOf`): Lumi often says a line, acts, then says another.
+    const text = textOf(m);
     const hasTools = m.role === "assistant" && m.parts.some((p) => p.type.startsWith("tool-"));
     if (!text && !hasTools) continue;
     items.push(
