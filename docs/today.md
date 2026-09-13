@@ -34,7 +34,7 @@ Top to bottom, in one paper panel on the right of the garden (2026-09-12; the cl
 - **Everything else can wait.** One closing line from the plan when there are open intentions not on the path.
 - **Lumi** — the corner companion already present in the shell. Tap her for a speech bubble and say a thing ("add take out compost") without leaving the page; the path refreshes once she's done. Nothing else.
 
-That's the page. When *Right now* is closed — ticked here, done in chat, anywhere — the path advances in code, not the model (`core/domain/plan-sync.ts` → `advancePlan`): After-that's first row becomes Right now with a plain fixed first step (*Pick it up where it opens.*), and nothing else changes — the day line and the closing slip stay as cut, and nothing is said. When the path runs out while other things are still open, the next open re-cuts it (`first_items`, below). *(This spec promised a one-line acknowledgement in Lumi's voice here; it isn't built. The Garden canon — `product/today-garden.md` §22, on the `docs/today-garden` branch — wants completion acknowledged proportionately, sometimes just "Done.", so it is intended rather than cut; left for Chanté to decide.)*
+That's the page. When *Right now* is closed — ticked here, done in chat, anywhere — the path advances in code, not the model (`core/domain/plan-sync.ts` → `advancePlan`): After-that's first row becomes Right now with a plain fixed first step (*Pick it up where it opens.*), and nothing else changes — the day line and the closing slip stay as cut, and nothing is said. When the path runs out while other things are still open, the next open re-cuts it (`first_items`, below). *(This spec promised a one-line acknowledgement in Lumi's voice here; it isn't built. The Garden canon — `product/today-garden.md` §23 — wants completion acknowledged proportionately, sometimes just "Done.", so it is intended rather than cut; left for Chanté to decide.)*
 
 ### Cut from the mockup, and why
 | Mockup element | Decision | Why |
@@ -105,3 +105,7 @@ Each is a real user message in the one transcript (decision #11 in `architecture
 1. ~~**The product name?**~~ Answered: first Lumen, then **Coherence** (2026-09-12, `decisions.md`); the character stays Lumi.
 2. ~~**Nav.**~~ Answered: Chat (now Home) · Today · Lists · Insights · Settings shipped in M3. The intended model has since become four rooms: **Home · Garden · Library · Study**, with Today becoming the Garden (2026-09-12, [`living/decisions.md`](living/decisions.md)). Where Lists and Insights go is [open](living/open-questions.md).
 3. ~~**Should Today become the landing page?**~~ Answered: no. Home, the conversation, stays the landing (2026-09-12), and the rooms decision keeps it so.
+
+## Reconciliation boundaries — 2026-09-13
+
+This implementation spec is preserved. The complete [Garden](product/today-garden.md) adds scoped exclusions (§111–115), negotiated attention and user priority (§83–88), and meaningful outcomes beyond completion (§131–139). Today's **Later** heading means fixed-time landmarks; it is not interchangeable with a list named Later or “Not today.” [Shared terminology](product/shared-model.md) defines those distinctions. Adaptive triggers and mobile presence remain open questions 26 and 27. Historical promises above are not evidence of implementation.

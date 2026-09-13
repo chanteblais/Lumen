@@ -1,5 +1,7 @@
 # Coherence — Architecture
 
+*Product semantics are in [Shared terminology](product/shared-model.md). This file remains the implementation baseline. In particular, the deterministic abandoned-session strategy contradiction described below is an unresolved inference gap: timeout alone is not evidence of failed work or an ineffective strategy ([question 28](living/open-questions.md)). This reconciliation changes no runtime behaviour.*
+
 Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; after that, changes go through `decisions.md`.
 
 This is the **how**, as built. The **why**, what the AI layer must keep distinct as it grows and what V1 needs of it, is [AI & Information Architecture](product/ai-and-information-architecture.md) (canon). Where the build falls short of it: [open questions](living/open-questions.md) 10–12, 19, 22, 24 and 25.

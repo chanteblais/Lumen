@@ -1,5 +1,7 @@
 # Design System
 
+*[Visual Language](design/visual-language.md) and [Motion & Interaction](design/motion-and-interaction.md) now hold shared design direction. This file retains current tokens, classes and component behaviour; examples in the new documents do not silently change shipped values.*
+
 Antique book × modern editorial interface. Tokens live in `src/app/globals.css` (`:root` custom properties, mapped into Tailwind via `@theme inline`). Tailwind is for layout; the named classes below carry the look.
 
 ---

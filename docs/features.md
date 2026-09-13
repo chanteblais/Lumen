@@ -1,5 +1,7 @@
 # Feature Map
 
+*The complete [space documents](product/spaces.md) describe intended behaviour. This inventory remains what is built. Study, broad Library exploration, direct correction and richer outcomes are not claimed implemented merely because their product documents now exist.*
+
 Every page and feature: who it's for, what it does, key states. Grows with each milestone; keep entries current in the same commit as the code.
 
 ---

@@ -1,5 +1,7 @@
 # Library --- Spatial Information Architecture
 
+*Reconciliation status (2026-09-13): retain this spatial design proposal and its rationale. The [Library product document](../../../docs/product/lists-library.md) defines the broader role; [Shared terminology](../../../docs/product/shared-model.md) defines shared-state ownership. Collections, Thread Groups, shelves and book presentations are views, not compulsory life-model nesting. Concrete spatial interactions remain open; absence of the spatial-map branch assets from main does not mean rejection.*
+
 ## Purpose
 
 The Library is Coherence's long-term space for **continuity of
