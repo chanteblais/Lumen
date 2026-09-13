@@ -86,7 +86,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           .datetime({ offset: true })
           .nullable()
           .optional()
-          .describe("Only if the user named a real deadline or time, ISO 8601 with offset. Otherwise null — never invent a date"),
+          .describe("Only if the user named a real deadline or time, ISO 8601 with offset. A day with no time is 00:00 at the start of that day in their timezone (e.g. 2026-09-18T00:00:00-07:00) — Today reads that as a day, not an appointment. Otherwise null — never invent a date"),
       }),
       execute: (input) =>
         safe(async () => {
@@ -112,7 +112,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
         note: z.string().max(400).nullable().optional(),
         list: z.string().max(40).nullable().optional(),
         estimate_minutes: z.number().int().min(1).max(600).nullable().optional(),
-        due_at: z.string().datetime({ offset: true }).nullable().optional(),
+        due_at: z.string().datetime({ offset: true }).nullable().optional().describe("As in create_intention: a day with no time is 00:00 local that day. null takes the date off"),
       }),
       execute: (input) =>
         safe(async () => {

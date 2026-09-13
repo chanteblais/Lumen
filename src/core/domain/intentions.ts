@@ -5,6 +5,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { intentions, type EffortHint, type Event, type Intention } from "@/db/schema";
+import { isDayOnly } from "@/core/due-date";
 import { localDate } from "@/core/time";
 import { appendEvent, type ActionSource } from "./events";
 
@@ -164,10 +165,14 @@ export function isStale(i: Pick<Intention, "status" | "lastTouchedAt">, now: Dat
   return i.status === "open" && now.getTime() - i.lastTouchedAt.getTime() > STALE_AFTER_MS;
 }
 
-/** Fixed-time intentions for a local date (things with a due_at that day). */
+/**
+ * Fixed-time intentions for a local date: a due_at at a time that day. A date
+ * alone (00:00 local, `core/due-date.ts`) is a day to get it done by, not an
+ * appointment, so it stays a candidate for the path.
+ */
 export function dueOn(list: Intention[], localDate: string, timeZone: string): Intention[] {
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
   return list
-    .filter((i) => i.dueAt && fmt.format(i.dueAt) === localDate)
+    .filter((i) => i.dueAt && fmt.format(i.dueAt) === localDate && !isDayOnly(i.dueAt, timeZone))
     .sort((a, b) => a.dueAt!.getTime() - b.dueAt!.getTime());
 }

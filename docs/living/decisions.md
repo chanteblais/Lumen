@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-09-13 · A date is typed the way it's said, and a day is not an appointment
+
+**Decision.** A task gets a date on the Lists sheet by tapping its date column and typing it as you'd say it — *fri*, *sep 30*, *in two weeks* — with no calendar to operate; it shows as *Today*, *Tomorrow* or *Sep 30* once saved. Only days for now, no times. A task with a day but no time stays an ordinary task on that day: it can be Right now, and Today treats being due as a reason to put it first. Only a task with a time is a fixed commitment under Later.
+**Rationale.** Chanté's ask: "an easy way to do that that doesn't involve a calendar dropdown … click the empty date column for that item. Then it should auto format after it sends", and "leave time for now". *(Claude's reading:)* an essay due Friday is something to do on Friday, not an appointment at midnight; treating it as one would have taken it off the path on the very day it matters.
+**Implications.**
+- Giving a date is optional correction (EP§6); saying it to Lumi still works and means the same thing (`shared-model.md` → equivalent actions).
+- A date that has gone by is still only its date (*Never a count of what's undone*).
+- Vague spans (*next week*) aren't turned into a day (`shared-model.md`: do not invent a precise date). Whether Coherence should hold a *this week* kind of date is not decided.
+- Times, when they come, need a way to tell a day from a fixed time that isn't midnight by convention.
+
+**Principle.** EP§6 (correction beats configuration), V§12 (no failure states), EP§3 (show less than you know).
+**Replaces.** Nothing; before this, dates came only from conversation, and a dated task was treated as fixed-time on its day.
+
+---
+
 ## 2026-09-13 · Recent conversation lives on, and what mattered is filed in the Library
 
 **Decision.** Lumi's memory keeps recent conversation after it scrolls away and keeps revising it: a short memory of each visit and, for the subjects that run through the user's life, a Library thread with a summary Lumi rewrites and a growing archive of notes. When a subject comes up again, Lumi has its summary and the parts of the archive that bear on the moment. Threads are life-model objects. Forgetting something never scrubs the conversation.
