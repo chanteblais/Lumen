@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · The lantern is Lumi's
+
+**Decision.** Lumi stays hands-free most of the time, but the lantern is hers, not one prop among many: she often picks it up, and often sets it down again. Beyond the lantern, she engages with and picks up many things in her world.
+**Rationale.** Chanté: "she should be hands free, but the lantern is hers, and she picks it up often. But also puts it down. Ultimately I would like lumi to engage with and pick up lots of things." *(Claude's reading: the lantern keeps its place in who she is, the warm light she carries, without tying up her hands; handling things is how she lives in the places.)*
+**Implications.**
+- She has two resting states, empty-handed and holding her lantern, each with its own quiet idle, and a movement between them each way.
+- Handling an object is ordinary for her, not a special effect, so making a new one has to be cheap (`animation-pipeline.md`).
+- Her small idle life may be moved by code (`art-direction.md` bet 2), but she is never fully still: breathing and a slow sway stay (Chanté: "still want some sway/breathing motion"; `design/motion-and-interaction.md` §12).
+- Where the lantern rests when she sets it down is open.
+**Principle.** Lumi inhabits her world (spaces §19, §29); a nearly invisible base idle and a shared rest pose (motion §12, §15).
+**Replaces.** Refines *Lumi is hands-free most of the time* (below), which called the lantern one of the things she picks up, "like a book or a cup".
+
 ## 2026-09-13 · On a phone, the nav is a bar along the bottom with its names showing
 
 **Decision.** Below 768px the rail becomes a bar along the bottom of the screen: the five icons, each with its name under it, the place you're in marked with a star. Nothing opens, pins or locks there.
