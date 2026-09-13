@@ -30,6 +30,7 @@ The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gap
 | [EF-Burden Log](ef-burden-log.md) | **Standing ledger:** every place the app asks the user to maintain, decide, rate or tidy something. The dogfood ledger for the one question |
 | [Voice Eval Log](voice-eval-log.md) | Scripted scenarios run against Lumi's persona, what was off, what changed in the prompt |
 | [QA Log](qa-log.md) | QA sweeps: tested/fixed, known-and-deliberate (don't re-report), open items |
+| [Code Review 2026-09-13](code-review-2026-09-13.md) | Whole-project code review: every finding with an id, its owning fix branch and its status (data integrity, AI layer and routes, companion UI, tooling, strictness) |
 | [UX Review Log](ux-review-log.md) | Findings from UX passes with severity / effort / status |
 | [Pre-Production](pre-prod.md) | Checklist before real users |
 | [User Journey](user-journey.md) | The loop a user moves through, as a diagram |
