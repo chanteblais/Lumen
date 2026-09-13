@@ -13,7 +13,7 @@
  "lumi": {
   "height": 120,
   "halfWidth": 17,
-  "reach": 37,
+  "reach": 50,
   "clearance": 24,
   "note": "hood top to feet in painting px at every depth; halfWidth is her cloak at her feet, reach how far her drawing spreads either side of them (hem, hands), clearance her body's reach on the floor"
  },

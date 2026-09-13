@@ -7,9 +7,9 @@ Chanté, 2026-09-13: the drawings' angle is "a little steeper than Home's" (they
 sheet's isometric facings, which read steep). The hem of her cloak is close to a circle on the ground, so on a
 facing-you or facing-away drawing the front hem curve is half an ellipse whose squash is sin(elevation): the sag
 from the hem at the cloak's sides to the hem at its middle, over half the cloak's width. The room's elevation
-comes from its ground axes: in `room-home.json` the rug's and table's edges run `iso.slope` px down per px
-across, and for a ground grid turned 45° that slope is sin(elevation) too. Home: 0.57 → 35°. A candidate passes
-within GATE degrees of the room.
+comes from its ground axes: in Home's `art/scenery/home/layers.json` the rug's and table's edges run `iso.slope` px
+down per px across, and for a ground grid turned 45° that slope is sin(elevation) too. Home: 0.57 → 35°. A candidate
+passes within GATE degrees of the room.
 """
 import glob
 import json
@@ -23,7 +23,7 @@ from scipy import ndimage as ndi
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-ROOM = json.load(open(os.path.join(HERE, 'room-home.json')))
+ROOM = json.load(open(os.path.join(ROOT, 'art', 'scenery', 'home', 'layers.json')))
 ROOM_DEG = math.degrees(math.asin(ROOM['iso']['slope']))
 GATE = 6.0
 

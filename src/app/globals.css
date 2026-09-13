@@ -436,6 +436,15 @@ body::after {
   transition: color 160ms ease;
 }
 .auth-link:hover { color: var(--ink); }
+/* The account button's place, held while Clerk loads (28px, its size), so the
+   clock beside it doesn't slide over when it arrives; it fades in when it does. */
+.auth-slot { display: flex; align-items: center; justify-content: flex-end; min-width: 28px; min-height: 28px; }
+.auth-slot > * { animation: arrive 320ms ease both; }
+/* The clock is empty until mounted (server and client agree); it fades in when set. */
+.clock { opacity: 0; transition: opacity 320ms ease; }
+.clock.is-set { opacity: 1; }
+@keyframes arrive { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .auth-slot > * { animation: none; } .clock { transition: none; } }
 
 .main {
   min-width: 0;
@@ -1144,7 +1153,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #362e29;
+  /* Under the painting's fade, a 24×16 copy of it, stretched soft: it comes into focus rather than popping in. */
+  background: #362e29 url("data:image/webp;base64,UklGRs4AAABXRUJQVlA4IMIAAABQBACdASoYABAAPrVInkmnJCKhMAgA4BaJZACdMoR3Ac90dw7o/P9WuFvAAP7ChWZ1I95QtrXBf/AnUK26dLpxsFimKDYUwgCXBx/kdBMZzWMNcnb4JoyGTVq0+QEJeho0bSi3Oz/Nh+P4athawvSdz9Gbqr+u81mhAAROUMbQ/8uAZLc8gTBSuzQ/uw49bv7f7vxvuE/gZRQfRP6YU55A1kpVuF/UHmEG1JSnIIJUfNuAPGt1xoRmDZco6r9cdUwAAA==") center / cover no-repeat;
 }
 /* The room dims toward the spine and the floor so the text sits in the light:
    darkest along the left edge, lighter where the room shows, dark again behind
@@ -1281,6 +1291,9 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   cursor: pointer;
   transition: transform 160ms ease, filter 160ms ease;
 }
+/* No rod drawn at the bottom (2026-09-13, Chanté preferred the scroll without it): the parchment's own edge
+   ends it. The button stays where the rod was, so tapping under the scroll still rolls it up. */
+.shell:has(.home-scene) .opening-rod { background: none; box-shadow: none; }
 /* A taller target than the 10px rod it looks like. */
 .shell:has(.home-scene) .opening-rod::after { content: ""; position: absolute; inset: -9px 0; }
 .shell:has(.home-scene) .opening-rod:hover { filter: brightness(1.15); transform: translateY(-1px); }
@@ -1337,7 +1350,8 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #6b5236; /* the painting is an image inside (RoomScene; see .scene-painting) */
+  /* the painting is an image inside (RoomScene; see .scene-painting), fading in over a 24×16 copy of itself */
+  background: #6b5236 url("data:image/webp;base64,UklGRtwAAABXRUJQVlA4INAAAAAwBQCdASoYABAAPrVInkmnJCKhMAgA4BaJZgCdMoRwAkgPck9VGR+WWAyeR1lESC4YQAD+0l4SvDo6b4lRfw8XAZxc5PRKD5q/N8GUXGjpwzEJqNZWBcnzSlGV4VNUosX8SuTGs0ehB7JcjM8gWb8vJgUOtNVeEfqyEU3XNKRJoAdzZ1bjfwjai3pPV/gVqeVpVXkver+nhWCRSo7BPzZOodxha/glnah+B87xpaSqv24QJP2J2B0fxS5T+JHtQuITAEHJHcIhVPRIHt1mfRAA") center / cover no-repeat;
 }
 /* A warm veil, heaviest along the left and the top (where
    the clock sits on the painting), clear over the room. */
@@ -1482,7 +1496,8 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #231912; /* the painting's own ground, so the fade-in has no seam (RoomScene; see .scene-painting) */
+  /* the painting's own ground, and a 24×16 copy of it, so the fade-in has no seam (RoomScene; see .scene-painting) */
+  background: #231912 url("data:image/webp;base64,UklGRswAAABXRUJQVlA4IMAAAADQBACdASoYABAAPrVInkmnJCKhMAgA4BaJbACdMoRwAdAdFwOjX32wyEyE5gufAAD+8aZF4Lw9CrRKd1sclq0zmkgf5tuA7baxMYwOaLqxb8VmTm00C08mQ172zv07G6pz7rqzVoQwIWJVnUjroabjA/qpThJ2tcaSqaCmpFT++5tl18vK6T9gc3pvz/Xyom6lS7CxdUbHWSGNSd9LHZn7GCPtSAt/931dq6U7V/s/hrVeCE88iRM38KSRKtBJKAA=") center / cover no-repeat;
 }
 /* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */

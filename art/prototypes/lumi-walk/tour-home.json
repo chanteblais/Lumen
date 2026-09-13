@@ -1,0 +1,16 @@
+{
+  "about": "The walk test's tour of Home, on its layers (art/scenery/home/layers.json). A stop names a layer's proposed anchor where one fits (build.py takes its point from layers.json) or gives painting px; build.py checks every stop against the walkable floor. A stop with rest 0 is a corner of the tour: the page joins it to the next leg, so she rounds it. The loop passes close behind the low table (where the hand-traced map failed), in front of both cushions, by the armchair, beside the desk and chair, and along the balustrade. Replaces room-home.json's tour (2026-09-13).",
+  "tour": [
+    { "anchor": "armchair.stand", "rest": 3.0, "why": "by the armchair, in front of it; the tour starts here standing, so idle grids have 3 s" },
+    { "anchor": "desk.stand", "rest": 2.0, "why": "beside the desk's right end, just out of its columns" },
+    { "at": [450, 604], "rest": 0, "name": "in front of the chair", "why": "the chair behind her, the floor's edge by the desk in front" },
+    { "anchor": "balustrade.lean", "rest": 0, "why": "at the floor's front edge, the balustrade's rail and post tops in front of her feet" },
+    { "at": [700, 806], "rest": 0, "name": "in front of the cream cushion", "why": "nothing of the cushion should cover her" },
+    { "at": [925, 852], "rest": 0, "name": "in front of the green cushion", "why": "13 px outside its grown extent, feet lower than its front corner" },
+    { "at": [1075, 770], "rest": 0, "name": "right of the green cushion", "why": "turning up the table's right side" },
+    { "at": [950, 636], "rest": 0, "name": "close behind the table's back-right edge", "why": "8 px outside its grown extent: the tabletop covers her lower half" },
+    { "at": [797, 552], "rest": 0, "name": "close behind the table's back corner", "why": "the old failure: a bounding box let the top clip her here" },
+    { "at": [655, 630], "rest": 0, "name": "close behind the table's back-left edge", "why": "8 px outside its grown extent" },
+    { "anchor": "table.reach", "rest": 1.6, "why": "by the table's left corner, beside the cream cushion" }
+  ]
+}

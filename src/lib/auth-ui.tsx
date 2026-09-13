@@ -24,8 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 /** Sign in / Sign up when signed out; the account button when signed in. */
 export function AuthControls() {
+  // The slot holds the account button's place while Clerk loads, so the clock beside it doesn't slide over when it arrives.
   return (
-    <>
+    <span className="auth-slot">
       <Show when="signed-out">
         <nav className="flex items-baseline gap-6" aria-label="Account">
           <Link href="/sign-in" className="label auth-link">
@@ -39,6 +40,6 @@ export function AuthControls() {
       <Show when="signed-in">
         <UserButton />
       </Show>
-    </>
+    </span>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Renders the viewer's local date and time. Empty until mounted so server and client markup agree. */
+/** Renders the viewer's local date and time. Empty until mounted so server and client markup agree; it fades in when set (`.clock`). */
 export function Clock() {
   const [text, setText] = useState<string>("");
 
@@ -19,7 +19,7 @@ export function Clock() {
   }, []);
 
   return (
-    <span className="label min-h-[14px]" aria-live="off">
+    <span className={`label clock min-h-[14px]${text ? " is-set" : ""}`} aria-live="off">
       {text}
     </span>
   );
