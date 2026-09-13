@@ -24,6 +24,7 @@ import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
+import { parseWhere } from "@/core/places";
 import { noteSharedFiles, readSharedFiles, sharedFileNoteText, sharedFilesProblem } from "@/core/shared-files";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
@@ -39,6 +40,9 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
  * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
  */
 export async function POST(req: Request) {
+  // Dev timings for the log line: getting ready (auth, loads, selection), her first word, the whole turn.
+  const startedAt = Date.now();
+  let firstWordAt: number | undefined;
   const { user, previous } = await requireVisit();
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
@@ -51,8 +55,10 @@ export async function POST(req: Request) {
   // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
   after(() => consolidateAfter(db(), user, { passes: 1 }));
 
-  const body = (await req.json()) as { message?: CoherenceUIMessage };
+  const body = (await req.json()) as { message?: CoherenceUIMessage; where?: unknown };
   const incoming = body.message;
+  // The page they spoke from and which way in (Home, the bubble, Lists' Add task); nowhere if it doesn't parse.
+  const where = parseWhere(body.where);
   if (!incoming || incoming.role !== "user" || !Array.isArray(incoming.parts)) {
     return Response.json({ error: "message required" }, { status: 400 });
   }
@@ -115,6 +121,7 @@ export async function POST(req: Request) {
   const oldestInView = all[0]?.metadata?.createdAt;
   const libraryView = selectLibrary(library.threads, library.notes, library.episodes, turn, { now: new Date(), windowStartsAt: oldestInView ? new Date(oldestInView) : new Date() });
 
+  const readyAt = Date.now();
   const result = streamText({
     model: chatModel(),
     tools,
@@ -129,6 +136,7 @@ export async function POST(req: Request) {
         content: buildContextBlock({
           displayName: user.displayName,
           timezone: user.timezone,
+          where,
           // The row is created with last_seen_at = created_at, so equality means the first ever turn.
           lastSeenAt: previous.getTime() === user.createdAt.getTime() ? undefined : previous,
           sitting: snap.sitting,
@@ -157,11 +165,14 @@ export async function POST(req: Request) {
       convertDataPart: sharedFileNoteText,
     }),
     providerOptions: chatProviderOptions,
+    onChunk: ({ chunk }) => {
+      if (chunk.type === "text-delta") firstWordAt ??= Date.now();
+    },
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""} ready=${readyAt - startedAt}ms firstWord=${firstWordAt ? `${firstWordAt - startedAt}ms` : "-"} done=${Date.now() - startedAt}ms`);
       }
     },
   });

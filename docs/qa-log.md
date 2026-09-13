@@ -6,6 +6,39 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (8) — Lumi knows the app and where you are (`feat/lumi-environment`)
+
+Chanté: "I'd like Lumi to be aware of her environment and the app's functionality."
+
+### Fixed
+- **She didn't know which page a turn came from.** The bubble on Today sent the same request as Home's composer. Now each client's transport adds `where: { path, via }`; the dev log line reads `where=today/bubble`. Checked live on port 3005: on Today, tap Lumi, "what can I do on this page?" → *Today shows one thing to do now — currently "Take out compost."* / Start with Lumi, Break it down, Not this, Done / *You can also tell me "make today smaller"…* — no tools called, nothing written but the two messages. (That was before merging `main`, when Today still had Start with Lumi.) After the merge, the same question from the same bubble (`where=today/bubble`): the card's Not this, Break it down and Done, "tell me here if you want something easier or a different plan", and on her own she corrected the earlier line: *I mentioned a "Start with Lumi" button earlier — that was incorrect. You can ask for company right here.*
+- **She didn't know what the app does or doesn't.** Eight single turns on `gpt-6-astra` (`voice-eval-log.md` → Run 7): Lists named for "where's all my stuff", a plain *not yet* for reminders, new lists and changing a name, with something close to do instead; no invented buttons.
+- `npm run check`: typecheck, lint, 43 files / 272 tests, route-auth, CSS prefixes and the brief all pass (the brief re-stamped after `lumi.md` §6 changed; its text unchanged). After merging `main`: 45 files / 280 tests, all pass.
+
+### Known and deliberate
+- The place isn't stored on the message: it describes the moment, and history doesn't need it. An old tab (a client from before this change) or a malformed body sends no place, and the context simply has no line.
+- She knows the page, not the screen: which tab of Lists is open, what's typed or scrolled isn't sent (`spaces.md` §31).
+- The map of the app lives in the cached persona, so it goes stale when a page changes: the docs audit's *a page or feature → features.md* step should now also ask whether *The app, and where they are* still reads true.
+
+### Open
+- Her Today reply ran three short paragraphs in the bubble; within the persona's shape, but the bubble is narrow. Watch for length there before tuning.
+- After the merge she answered with a dash list ("card: - Not this … - Break it down … - Done"), which the bubble renders run together on one line: the bubble (and Home) show paragraphs, not lists, and the persona allows a list only for a brain dump. Either the persona holds her to prose here or the reply renderer learns lists — Chanté's call if it recurs.
+- "I can't start." on Home went straight to the Right now instead of first telling unclear from can't-begin (Run 7, #8). Not caused by the place line; watch it.
+
+### Chanté's pass, and what changed
+- **"this one feels too big" read as instructions** (*Just go over to the compost container…*). She chose one question first; the persona now asks what makes it big before offering anything. Scenario rerun: *Is it the whole email to Priya, a particular part, or just too much for today?*
+- **Long waits before her replies.** Dev log: 5–11s per turn, with `cacheRead=0` at the start of every turn on 13–14k tokens; messages show 3–7s from her message saved to Lumi's reply saved. Cause: GPT-6 caches only at a breakpoint, and the implicit one sat at the end of the ever-changing context block, so nothing was read back across turns. Fix: an explicit breakpoint after the persona (`decisions.md`); probes now read 8,281 of ~8,400 tokens from turn 2 on, and the eight-turn eval through the app's own options (each turn from a different page) read 3,938–4,172 of ~4,180 from turn 2 on, where before most turns read nothing. The dev log now prints `ready`, `firstWord` and `done` per turn, so the live gain can be read directly. The first open of a page on the dev server also compiles it (e.g. `GET /lists` 7.5s); that's dev only.
+
+### Highest-value manual tests
+- On Today, tap Lumi: "this one feels too big" — one short question about what makes it big, no step yet.
+- Any two turns a minute apart: the second `[chat]` line should show a large `cacheRead` and a smaller `firstWord` than before.
+- In Lists, Add task: "oat milk" — filed, a few words back.
+- On Home: "can you remind me at 3 to call the dentist?" — a plain *not yet*, with something close to do instead; no invented reminder.
+- On Today: "stay with me while I do this" — company in words, no session, timer or Start with Lumi offered.
+- In the Library bubble: "it's nice in here" — one light line, no scenery speech.
+
+---
+
 ## Sweep 2026-09-13 (7) — no way to sign in from an incognito window (`fix/sign-in-path`)
 
 Chanté: "The site doesn't give a log in option in incognito."
