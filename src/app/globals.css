@@ -976,7 +976,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
-   room (art/scenery/library/background-smaller2.png → public/library-room.webp).
+   room (art/scenery/library/background.png → public/library-room.webp).
    For now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the open floor to the right of the reading circle. The sidebar, the top bar,
    the grain and the way her spot is mapped are shared with Today (the
