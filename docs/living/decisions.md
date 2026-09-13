@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-13 · Lumi is hands-free most of the time
+
+**Decision.** Lumi's usual state is holding nothing. The lantern stops being part of her and becomes one of the things in her world she can pick up and set down, like a book or a cup.
+**Rationale.** Chanté: "Lumi will be hands free often." *(Claude's reading, from the direction that started the work: handling things in her surroundings makes her a resident of the places rather than an emblem carrying a fixed prop.)*
+**Implications.**
+- Her movements are drawn from the hands-free rest pose (`art-direction.md` §4a); objects she holds are what she picked up, and the Library's retrieval (carrying a Thread to the table) builds on it.
+- Her warmth rests on her glowing eyes when nothing lights her hands (`art-direction.md` §2).
+- The lantern body stays served beside the hands-free one for now; whether and when it is retired is an implementation choice (`docs/decisions.md`).
+**Principle.** Lumi inhabits her world (spaces §19, §29); presence, not performance.
+**Replaces.** The lantern carried at all times (the lantern character, 2026-09-12); the hands-free proposal of the same day.
+
 ## 2026-09-13 · The nav is icons, with the names a hover away
 
 **Decision.** The places are icons on a narrow green rail that is always there; their names are on a parchment sheet that opens from the rail on hover, focus or tap, and can be pinned open. The rail marks where you are with a star.
