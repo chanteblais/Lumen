@@ -108,7 +108,7 @@ export function buildContextBlock(input: ContextInput): string {
 
   if (isReentry(input.sitting ? { openedAt: now, gapSeconds: input.sitting.gapSeconds } : undefined)) {
     lines.push(
-      "- This sitting began after a week or more away. The page greeted them with an offer to work out what's still relevant; if they take it up, or ask, run the coming-back pass (persona → Coming back). Don't mention how long it's been unless they do.",
+      "- This sitting began after a week or more away. The page greeted them with an offer to work out what's still relevant; if they take it up, or ask, run the coming-back pass (persona → Coming back). Name how long it's been only if it helps them get their bearings, never as something owed.",
     );
     if (open.some((i) => isStale(i, now))) lines.push("- Some open intentions are stale (flagged below) — those are the ones to ask about.");
   }

@@ -28,7 +28,7 @@ Note why beside every ~ and ✗.
 | 3 | "I don't even know what I need to do." | Ask one orienting question; no framework |
 | 4 | "I've been avoiding this all day." | Name it lightly; smallest threshold; maybe humour |
 | 5 | "I got distracted." | "Welcome back. Where did we end up?" — no absolution speech |
-| 6 | "Haven't opened this in two weeks, everything's a mess." | Offer the relevance pass; no counts |
+| 6 | "Haven't opened this in two weeks, everything's a mess." | Offer the relevance pass; no counts; time away named only to help them get their bearings, never as debt (decided 2026-09-13) |
 | 7 | "Just stay with me while I work." | Three questions: what, first step, how long; then quiet |
 | 8 | "I only have about 20% today." | Match capacity; one small thing; call it enough |
 | 9 | Unstructured brain dump (5+ items) | Capture silently via tools; reflect back one line; ask what's first |
@@ -38,6 +38,17 @@ Note why beside every ~ and ✗.
 ## Runs
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
+
+### Run 6 — 2026-09-13 · scenario 6 on OpenAI after *Lumi may name time away* (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~1:40pm Vancouver, last seen 3h ago)
+The persona and the re-entry context line now allow naming time away when it helps orient, never as debt (`decisions.md` → *Lumi may name time away*). Prefix 4,140 tokens, uncached on this single call. The persona on `main` has grown since run 5 (the Library section), so the difference isn't all this change.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 6 | ✓ | ✓ | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? No need to sort it first." |
+
+**Why:** almost the same reply as run 5. The rule *allows* naming time away and doesn't ask for it, so an unchanged reply is consistent with the change; it isn't evidence for it. The script's context has no stale intentions, so the part the rule is about (orienting someone before the relevance pass) can't come up here. A conversation-length scenario with stale items in context would test it (`lumi.md` §17).
 
 ### Run 5 — 2026-09-13 · all nine on OpenAI with Lumi's brief in the prefix (`gpt-6-astra`, reasoning effort low, `store: false`, context = run at ~noon Vancouver on a Sunday, last seen 3h ago)
 The first run with [Lumi's brief](philosophy/lumi-brief.md) (the canon synthesised for her) placed after the persona's opening paragraph (`decisions.md` → *Lumi carries the philosophy*). Same script and scenarios as run 4, so the two can be read side by side, though run 4 was at 2:40am and this one at noon, and the time of day changes several replies. The script has no tools, so scenario 9 can't capture. Cache: the prefix is 3,994 tokens, cached from the second call (run 4: 2,049). Output 9–158 tokens per reply.
