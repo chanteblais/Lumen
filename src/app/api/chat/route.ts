@@ -7,6 +7,7 @@ import { selectLibrary } from "@/core/ai/library-select";
 import { selectBeliefs } from "@/core/ai/memory-select";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
+import { stableWindow, WINDOW_LOAD, withContext } from "@/core/ai/prompt";
 import { reflectAfterSession } from "@/core/ai/reflect";
 import { needsFirstItems, primeTodaysPlan } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
@@ -24,7 +25,7 @@ import {
   type TurnOutcome,
 } from "@/core/ai/turn";
 import { listRecentActivity } from "@/core/domain/activity";
-import { ensureMainConversation, loadRecentMessages, saveMessage, type CoherenceUIMessage } from "@/core/domain/conversations";
+import { countMessages, ensureMainConversation, loadRecentMessages, saveMessage, type CoherenceUIMessage } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { loadLibraryOrNothing } from "@/core/domain/library";
 import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
@@ -75,8 +76,9 @@ export async function POST(req: Request) {
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick in the Library a minute ago is in Lumi's context before she reads the message.
-  const [history, snap, recentActivity, leads, mailScan, library] = await Promise.all([
-    loadRecentMessages(db(), conversation.id),
+  const [history, total, snap, recentActivity, leads, mailScan, library] = await Promise.all([
+    loadRecentMessages(db(), conversation.id, WINDOW_LOAD),
+    countMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
     MAIL_ON ? listSuggestedLeads(db(), user.id, 8) : undefined,
@@ -85,7 +87,9 @@ export async function POST(req: Request) {
     loadLibraryOrNothing(db(), user.id),
   ]);
   await saveMessage(db(), conversation.id, userMessage);
-  const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
+  // A window whose start moves in steps, so the history's prefix stays cached for several turns (core/ai/prompt.ts).
+  const resent = history.some((m) => m.id === userMessage.id);
+  const all = stableWindow([...history.filter((m) => m.id !== userMessage.id), userMessage], total + (resent ? 0 : 1));
   turn.hadPlan = Boolean(snap.plan);
   turn.firstItemsDue = needsFirstItems(snap, user.timezone);
   if (snap.session.last?.outcome === "abandoned") turn.abandonedSessionId = snap.session.last.id;
@@ -138,11 +142,10 @@ export async function POST(req: Request) {
     // Stop (the send button while she talks) aborts the request: she stops writing and
     // calls no further tools; onEnd keeps what she had said.
     abortSignal: req.signal,
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: context },
-    ],
-    messages: await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }),
+    // The persona (and the tools) are the cached prefix; the conversation follows, and the context block,
+    // which changes every turn, rides last on the newest user message so the history before it caches too.
+    instructions: [{ role: "system", content: PERSONA, providerOptions: cachedPrefixOptions }],
+    messages: withContext(await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }), context),
     providerOptions: chatProviderOptions,
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {

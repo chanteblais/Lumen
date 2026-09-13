@@ -2,7 +2,7 @@
  * The one continuous conversation per user, and its messages stored as
  * AI SDK UIMessage parts. Load a window; the rest is summarised later (M6).
  */
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
@@ -41,6 +41,12 @@ export async function loadRecentMessages(db: Db, conversationId: string, limit =
     .orderBy(desc(messages.createdAt))
     .limit(limit);
   return toUIMessages(rows);
+}
+
+/** How many messages the conversation holds: the chat route's window starts at a step counted from its first (`core/ai/prompt.ts → stableWindow`). */
+export async function countMessages(db: Db, conversationId: string): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(messages).where(eq(messages.conversationId, conversationId));
+  return Number(row?.n ?? 0);
 }
 
 /**
