@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-09-13 · Approved documentation reconciliation
+
+Chanté approved the conceptual comparison and consolidation structure. **Previous approach → why it changed → current approach:**
+
+- Earning/spending coherence → contradicted the foundations and complete space documents → environmental growth is continuity, not a reward economy; recognition survives without currency, unlocks or absence costs.
+- Library primarily described as history → active Threads, commitments and current context also need a home → Library exposes the breadth of the shared life model, with historical and intellectual exploration within it.
+- Later / Not today treated as interchangeable → temporary attention is not a durable priority change → Not today excludes today's foreground without scheduling tomorrow or changing importance; equivalent input methods match only when operation and scope match.
+- Correction treated as generally learned evidence → a local adjustment must not become a permanent rule, but an explicit instruction remains authoritative → learn cautiously and preserve intended scope.
+- Partial Spaces and Garden and scattered design prose → complete documents are available → dedicated product and design documents with shared terminology, preserved originals and a provenance record.
+
+**Requirements and limits.** [Shared model and terminology](../product/shared-model.md) states the approved distinctions. The [reconciliation record](reconciliation.md) maps sources and surviving implementation knowledge. No code, schema or V1 scope changes. Check-in defaults, concrete spatial interactions, adaptive-plan triggers and mobile presence remain open.
+
+**Historical disposition.** The older “Rewards: earning coherence” entry below is superseded, not contested anymore. Earlier Library questions are broadened as above. Old “Later” shorthand and absolute “derived, not maintained” wording are qualified by authority and temporal scope. The original entries remain as history, not competing current requirements. Numbered references to the old Spaces/Garden edition link to the archive. The earlier “all still in force” assertion is subject to these explicit dispositions.
+
 ## 2026-09-13 · Lists is called the Library, and for now it is only its room
 
 **Decision.** The nav item and page *Lists* are renamed **Library** (`/library`; `/lists` redirects), set in a painted reading room with Lumi standing in it. The list view came off the page the same day: nothing sits on the painting. The lists themselves are unchanged — Lumi files into them, Today draws its path from them, and her context reads them — but no page shows them; filing, ticking and correcting happen in conversation.
@@ -117,7 +131,7 @@
 **Principle.** §11 (only what the current decision needs), §14.
 **Replaces.** The V1 nav *Home · Today · Lists · Insights · Settings* as the intended model ([`features.md`](../features.md) → Navigation).
 
-**Addendum, 2026-09-13.** [`docs/product/spaces.md`](../product/spaces.md), Chanté's, is the place document. It keeps everything above and adds:
+**Addendum, 2026-09-13.** [`docs/product/spaces.md`](../archive/2026-09-13-before-reconciliation/docs/product/spaces.md), Chanté's, is the place document. It keeps everything above and adds:
 - A feature is placed by the cognitive mode it belongs to, and never gets a space just for being a feature (§4). The same object appears differently in each space.
 - Navigation stays plain: *Home · Today · Lists · Focus*, with Garden, Library and Study as design vocabulary and the labels tested (§3; open question 15).
 - Spaces are views of one life context. Lumi carries the continuity, and context travels (§19–20).
@@ -126,7 +140,7 @@
 
 **Not reconciled:** it words two questions differently. The Library asks *What am I holding, and where does it belong?* (above: *Where have I been?*), and the Study *What are we doing now?* (above: *What am I doing now?*). The questions above stand until Chanté picks (open questions 2 and 3).
 
-**Addendum, 2026-09-13 (later).** [`docs/product/today-garden.md`](../product/today-garden.md), Chanté's, is the Garden's place document (the text as received is missing §78–119). It keeps *Today is a path, not a pile* and *Lumi proposes; the user decides* (below), and adds:
+**Addendum, 2026-09-13 (later).** [`docs/product/today-garden.md`](../archive/2026-09-13-before-reconciliation/docs/product/today-garden.md), Chanté's, is the Garden's place document (the text as received is missing §78–119). It keeps *Today is a path, not a pile* and *Lumi proposes; the user decides* (below), and adds:
 - Today is a temporary projection of the broader model, never a second source of truth (§2, §121).
 - Capacity changes scope. Low capacity makes the page smaller, never redder, and high capacity is not a reason to fill the day (§12–14).
 - Nothing unfinished becomes overdue debt; carryover comes from renewed relevance, and repeated deferral is a signal, not a score (§52–54).
@@ -135,9 +149,9 @@
 
 **Not reconciled either:** it words the Garden's question as *What deserves my attention today?* (Purpose), *What deserves tending today?* (§59) and *What needs tending today?* (§158), where the decided question is *What matters today?*. It also gives the Library *What am I carrying?* (§59) and the Study *How do we stay with it?* (§60). The questions above stand until Chanté picks (open questions 2, 3 and 5). Where the page as built falls short of it: open questions 5, 16, 20, 22, 26 and 27.
 
-## 2026-09-12 · Rewards: earning coherence ⚠ contested
+## 2026-09-12 · Rewards: earning coherence — superseded 2026-09-13
 
-> **Status: contested by the Product Vision.** Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. The Experience Principles go further: EP§14, *"Growth reflects history, not achievement"*, lists points, currencies, unlock requirements and completion-based decoration as things to watch for, and EP§20 warns against "rewards intended to bring users back without functional reason". Nothing below is a requirement until Chanté reconciles them ([open question 14](open-questions.md)).
+> **Historical status, superseded 2026-09-13 by the approved reconciliation above:** formerly contested by the Product Vision. Recorded from Chanté's message on 2026-09-12, before the vision was added. The vision's §14 says *"inhabited, not gamified … The user is not earning decorations for completing tasks … Growth should feel like expansion, not reward"*, and §20 says Coherence is not *"a gamified habit tracker"*. The Experience Principles go further: EP§14, *"Growth reflects history, not achievement"*, lists points, currencies, unlock requirements and completion-based decoration as things to watch for, and EP§20 warns against "rewards intended to bring users back without functional reason". Nothing below is a requirement until Chanté reconciles them ([open question 14](open-questions.md)).
 
 **As described.** Coherence gamifies. The user earns *coherence* for completing tasks and for just showing up, and spends it on plants or little things for Lumi that she engages with. Always positive, with no negative consequences.
 

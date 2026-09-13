@@ -4,7 +4,7 @@ Loaded automatically at the start of every Claude session in this repo (root `CL
 
 **Coherence** (the product, formerly **Lumen**; the companion character is **Lumi**, she/her) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.**
 
-**Before substantial product/UX work** (features, navigation, AI or Lumi behaviour, prioritisation, notifications, rewards, visual design, motion, onboarding, memory), **read `PROJECT-CANON.md` and the canonical docs it points to for that work.** The canon is the intended product; code is the current one. When they disagree, surface it and don't silently pick one. Only decisions in `docs/living/decisions.md` are requirements; ideas and open questions are not.
+**Before substantial product/UX work** (features, navigation, AI or Lumi behaviour, prioritisation, notifications, rewards, visual design, motion, onboarding, memory), **read `PROJECT-CANON.md` and the canonical docs it points to for that work.** The canon is the intended product; code is the current one. When they disagree, surface it and don't silently pick one. Requirements come from the foundations, approved decisions and settled canonical direction, as scoped in `PROJECT-CANON.md`. Examples and future possibilities do not expand V1; ideas and open questions are not requirements. Shared definitions are in `docs/product/shared-model.md`.
 
 **The question that overrides everything:** does this reduce the user's executive-function burden, or accidentally create more of it? Ask it before adding any field, control, count, or setting.
 
@@ -16,7 +16,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 - `docs/domain.md` — the seven tables, events catalogue, derived views
 - `docs/v1-plan.md` — milestones M0–M7 with done-when + EF checks
 - `docs/decisions.md` — append when a decision changes
-- `docs/features.md` — every page/feature (who, what, states) · `docs/design-system.md` — tokens, classes, patterns · `docs/design-philosophy.md` — what we are / are never (draft)
+- `docs/features.md` — every page/feature (who, what, states) · `docs/design-system.md` — tokens, classes, patterns · `docs/design/visual-language.md` and `docs/design/motion-and-interaction.md` — intended visual and interaction direction
 - `docs/ef-burden-log.md` — **standing ledger** of user-maintained state · `docs/voice-eval-log.md` — persona scenario runs · `docs/qa-log.md` / `docs/ux-review-log.md` · `docs/pre-prod.md`
 - `docs/today.md` — the Today page spec · `docs/branching.md` — branch rules, parallel sessions, dev servers and ports, commit guards
 - `docs/dev-hygiene.md` — **Claude's evolving strategy for keeping development tidy:** session-start and session-end checks, the guards (the preflight), the traps ledger (symptom → cause → catch → fix), the ranked backlog, what goes to Chanté

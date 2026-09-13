@@ -1,5 +1,7 @@
 # Lumi — Relational Intelligence & Behaviour
 
+*Approved clarification (2026-09-13): [Home](../product/home.md) supports reflection without compulsory taskification; [Study](../product/focus-study.md) recognizes restored context and leaving the app as potentially useful outcomes. Explicit user instructions remain authoritative; inferred patterns and individual corrections retain their scope ([Shared terminology](../product/shared-model.md)). Proposed sections below remain proposed.*
+
 *Living document · v0.1 · 2026-09-13. Asked for by [Lumi — Model Strategy](../product/lumi-model-strategy.md). It rests on the [Product Vision](product-vision.md) (**V§**) and the [Experience Principles](experience-principles.md) (**EP§**).*
 
 **How to read the markers.** Every section says where its content comes from:
