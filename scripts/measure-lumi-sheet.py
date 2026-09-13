@@ -1,6 +1,6 @@
 """Measure a new Lumi animation sheet before cutting it.
 
-    python3 scripts/measure-lumi-sheet.py art/<sheet>.png [out-dir]
+    python3 scripts/measure-lumi-sheet.py art/lumi/<sheet>.png [out-dir]
 
 Judge a sheet by numbers first (see art/README.md → Adding a sheet). Finds the
 figures on a flat ground (rows and columns by segmentation, so uneven spacing
@@ -11,7 +11,8 @@ is fine), then prints, per frame:
 and, per step, how much the head silhouette changes against the previous
 frame after the best whole-pixel shift (IoU; ~0.98+ is "the same drawing
 redrawn", <0.95 is a real change or a scale pop), plus the scale that would
-make the figure as tall as the breath rest frame of art/lumi-slow-idle.png.
+make the figure as tall as the breath rest frame of art/archived/rali-slow-idle.png
+(the earlier character's breath sheet, kept as the height reference).
 Writes <out-dir>/<sheet>-aligned.png: every frame on its hood centre and feet
 baseline with a centre line, to flip through by eye.
 """
@@ -24,7 +25,7 @@ from scipy import ndimage as ndi
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = sys.argv[1]
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.dirname(os.path.abspath(SRC))
-REF = os.path.join(ROOT, 'art', 'lumi-slow-idle.png')
+REF = os.path.join(ROOT, 'art', 'archived', 'rali-slow-idle.png')
 
 
 def load(path, box):

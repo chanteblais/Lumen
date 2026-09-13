@@ -1,4 +1,4 @@
-"""Cut Lumi's sprites from art/lumi-lantern-idle.png.
+"""Cut Lumi's sprites from art/lumi/lumi-lantern-idle.png.
 
     python3 scripts/cut-lumi-idle.py [--debug <dir>]
 
@@ -41,7 +41,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'art', 'lumi-lantern-idle.png')
+SRC = os.path.join(ROOT, 'art', 'lumi', 'lumi-lantern-idle.png')
 OUT_BODY = os.path.join(ROOT, 'public', 'lumi-idle.webp')
 OUT_HEADS = os.path.join(ROOT, 'public', 'lumi-heads.png')
 DEBUG = sys.argv[sys.argv.index('--debug') + 1] if '--debug' in sys.argv else None

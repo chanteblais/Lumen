@@ -10,7 +10,7 @@
 
 ## Session start (≤ 3 minutes)
 
-1. `ls art/` — any sheet not in the `art/README.md` table is new and uncut. Sheets marked *retired with the character* are the earlier Lumi (before the lantern, 2026-09-12): reference for technique, never cut again. A sheet that carries a title, numbers or notes is cropped to its rows of cells before measuring, or the text counts as figures.
+1. `ls art/lumi/` — any sheet not in the `art/README.md` table is new and uncut (`art/scenery/` is the painted rooms, `art/archived/` the earlier character's sheets). Sheets marked *retired with the character* are the earlier Lumi (before the lantern, 2026-09-12): reference for technique, never cut again. A sheet that carries a title, numbers or notes is cropped to its rows of cells before measuring, or the text counts as figures.
 2. Read the *Ledger* (last two rows) and the top three of the *Efficiency backlog*. Decide which backlog move this session will land — the top one unless the animation at hand needs another first.
 3. `python3 -c "import numpy, scipy, PIL"` — the scripts need all three (2.5 / 1.18 / 12.2 on 2026-09-12, `/usr/local/bin/python3`).
 4. Port check (`lsof -nP -iTCP:3005 -sTCP:LISTEN -t`, then `lsof -a -p $PID -d cwd`) before starting a review server; the rules are in `CLAUDE.md`.
@@ -26,7 +26,7 @@ Seven stages. The cost of the first two animations sat almost entirely in stages
 Write down, in the ledger row you open for this animation: the movement in one line, which part moves and which parts hold, where it plays (a variation on the breath loop · a reaction · a state), the frame budget (twelve or more in-betweens per motion; 120 ms a frame for a quick gesture, 320–560 ms for a slow one), and how it starts and ends (at or next to the breath rest frame, always — loops hand over there).
 
 ### 2 · Generate (Chanté does this; give her the prompt ready to paste)
-ChatGPT image generation, with `art/lumi-lantern-idle.png` attached as the pose and style reference (its frame 1 is the rest pose; say the lantern holds unless it is the moving part). The recipe that worked is in `art/README.md`; the template below is that recipe as a fill-in prompt. **Save the exact prompt used** as `art/prompts/<sheet>.md` next to the sheet (backlog #5) so the next one is a copy, not a rewrite.
+ChatGPT image generation, with `art/lumi/lumi-lantern-idle.png` attached as the pose and style reference (its frame 1 is the rest pose; say the lantern holds unless it is the moving part). The recipe that worked is in `art/README.md`; the template below is that recipe as a fill-in prompt. **Save the exact prompt used** as `art/prompts/<sheet>.md` next to the sheet (backlog #5) so the next one is a copy, not a rewrite.
 
 ```
 One base drawing of this character; in every frame only <THE MOVING PART> changes.
@@ -107,7 +107,7 @@ Newest first. *Rounds* = messages from Chanté that sent the work back. *Wall cl
 Rank by (rounds or minutes saved per animation) ÷ (effort once). Re-rank at session end. When a move lands, move it to *Landed* with the date and what it actually saved.
 
 1. **The cut takes a sheet spec, not code edits.** Cheaper now the script holds one loop (2026-09-12). Give `scripts/cut-lumi-idle.py` a list of specs — `{sheet, contrast, rows (found by segmentation the way the measure script does, not hard-coded y-ranges), cells, holds: [(span, donor)], settle_to}` — so a new loop is one dict entry and one run. *Saves* ~30 min and the row-coordinate hunting per sheet; removes the "expect N frames" assertion failures. *Done when* the current three loops re-cut byte-identical (or visually identical) from the spec form and `lumi-stretch.png` cuts from a spec alone.
-2. **One command each.** `npm run lumi:measure -- art/x.png`, `lumi:cut`, `lumi:preview`; `lumi:measure` exits non-zero and prints the failed gate from the table above, so a bad sheet is rejected by the tool, not by the fifth review round. *Saves* a few minutes and, more, the temptation to cut a sheet that should be rejected.
+2. **One command each.** `npm run lumi:measure -- art/lumi/x.png`, `lumi:cut`, `lumi:preview`; `lumi:measure` exits non-zero and prints the failed gate from the table above, so a bad sheet is rejected by the tool, not by the fifth review round. *Saves* a few minutes and, more, the temptation to cut a sheet that should be rejected.
 3. **A loop is one entry.** Move `FRAME_MS` next to `LUMI_LOOP_CELLS` (a `{cells, ms, variation}` record per loop in `LumiSprite.tsx`), derive `LUMI_IDLE_FRAMES` from the widest row, and have the cut script read the same table (or write it). Touch points for a new loop: 3 → 1 code file plus docs.
 4. **Prompts are files.** `art/prompts/<sheet>.md` holds the verbatim prompt and the attachments used, saved the moment a sheet is added. The template above is reconstructed from the recipe; the first saved prompt replaces it.
 5. **Compare in one round.** A cue-strip convention for candidate loops (`foot-a`, `foot-b`) that never ship: cut alternatives as extra rows, review once, delete the losers before merge.
@@ -144,5 +144,6 @@ Everything the generator gets wrong and the cut already corrects is in the READM
 
 ## Change log
 
+- 2026-09-12 — `art/` split into `lumi/` (her sheets), `scenery/` (the rooms) and `archived/` (the earlier character, renamed `rali-*`); the cut and measure scripts, the README table and every doc path follow. No animation cut.
 - 2026-09-12 — The lantern character: the ledger's third row; backlog #2 (preview) landed and the list renumbered; a pose-sheet row in the gates; stage 2 and 4 rewritten for the new sheet and the one-cell cut; the crop-before-measure note.
 - 2026-09-12 — Created after the playful-foot work: baseline ledger (two animations), the gates as numbers, the seven-stage path, the first ranked backlog. Prompt template reconstructed from the recipe, not verbatim.

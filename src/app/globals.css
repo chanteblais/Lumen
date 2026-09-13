@@ -691,7 +691,7 @@ body::after {
 }
 
 /* ---------- Home: the room ----------
-   Home is set in a painted room (art/home-background.png → public/home-room.webp):
+   Home is set in a painted room (art/scenery/home-background.png → public/home-room.webp):
    an evening study, lamp-lit — the same book, read by lantern light. The page
    renders one fixed layer (`.home-scene`) behind the shell and the rest is
    the room's light on the same tokens: `.shell:has(.home-scene)` re-maps the

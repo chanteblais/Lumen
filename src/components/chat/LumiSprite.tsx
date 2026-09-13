@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 /**
  * The single source of Lumi's drawings.
  *
- * Both are cut from `art/lumi-lantern-idle.png` (the lantern character,
+ * Both are cut from `art/lumi/lumi-lantern-idle.png` (the lantern character,
  * 2026-09-12) by `scripts/cut-lumi-idle.py`.
  * - `public/lumi-heads.png` — one row of 176px square cells, the six head
  *   expressions (neutral · blink · happy · curious · excited · sleepy), each

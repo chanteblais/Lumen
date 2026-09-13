@@ -1,15 +1,21 @@
 # art/
 
-Lumi's source drawings — the sheets her sprites are cut from. Kept in the repo so the cut can be redone; never served. Also here: `home-background.png`, the painted room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room).
+Source art, never served. Three folders:
+
+- `lumi/` — Lumi's source drawings, the sheets her sprites are cut from. Kept in the repo so the cut can be redone.
+- `scenery/` — the painted rooms. `scenery/home-background.png` is the room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room). `scenery/today-mockup.png` is a mockup for Today, not served.
+- `archived/` — the earlier character (Rali) and the scene mockups; nothing here is cut or served. The scripts still read `archived/rali-slow-idle.png` as the height reference (`scripts/measure-lumi-sheet.py` → `REF`).
 
 | Sheet | What it is | Used by |
 |---|---|---|
-| `lumi-lantern-idle.png` | **The lantern character** (2026-09-12): sixteen cells in two rows of eight on a flat grey-blue ground — neutral, glances, lowered lids, a smile, the lantern raised. Sixteen *drawings*, not in-betweens (head IoU 0.83–0.96 per step), so only the rest cell (row 1, frame 1) is cut for the body, with a breath synthesised from it; six cells become the avatar heads (neutral 1 · blink 1 with the eyes shut · happy 6 · curious 11 · excited 12 · sleepy 7) | `scripts/cut-lumi-idle.py` → `public/lumi-idle.webp` (breath, rows 0–2) and `public/lumi-heads.png` |
-| `lumi-slow-idle.png` | The earlier character: breath · blink · sway, one pose, 1–2px movements | retired with the character — not cut any more |
-| `lumi-idle-foot.png` | The earlier character: the playful foot with a glance, 24 in-betweened frames of one drawing (rest, the head turning toward the kicking foot, the kick with the head held) | retired with the character — not cut any more |
-| `lumi-idle.png` | The earlier character: the playful foot without the glance — superseded by `lumi-idle-foot.png` | not cut any more |
-| `lumi-playful-foot.png` | The earlier character: the first foot-tap, eight frames, each a fresh drawing — superseded by `lumi-idle.png` (too few in-betweens; the whole figure boiled) | not cut any more |
-| `lumi-stretch.png` | The earlier character: a stretch | retired with the character — never cut |
+| `lumi/lumi-lantern-idle.png` | **The lantern character** (2026-09-12): sixteen cells in two rows of eight on a flat grey-blue ground — neutral, glances, lowered lids, a smile, the lantern raised. Sixteen *drawings*, not in-betweens (head IoU 0.83–0.96 per step), so only the rest cell (row 1, frame 1) is cut for the body, with a breath synthesised from it; six cells become the avatar heads (neutral 1 · blink 1 with the eyes shut · happy 6 · curious 11 · excited 12 · sleepy 7) | `scripts/cut-lumi-idle.py` → `public/lumi-idle.webp` (breath, rows 0–2) and `public/lumi-heads.png` |
+| `lumi/lumi-idle.png` | A byte-identical copy of `lumi-lantern-idle.png` | nothing — the cut reads `lumi-lantern-idle.png` |
+| `lumi/lumi-ref.png`, `lumi/lumi.png` | Reference drawings of the lantern character (a scene and a portrait), for prompting | nothing — never cut |
+| `archived/rali-slow-idle.png` | The earlier character: breath · blink · sway, one pose, 1–2px movements | retired with the character — only the height reference for `scripts/measure-lumi-sheet.py` |
+| `archived/rali-idle-foot.png` | The earlier character: the playful foot with a glance, 24 in-betweened frames of one drawing (rest, the head turning toward the kicking foot, the kick with the head held) | retired with the character — not cut any more |
+| `archived/rali-idle.png` | The earlier character: the playful foot without the glance — superseded by `rali-idle-foot.png` | not cut any more |
+| `archived/rali-playful-foot.png` | The earlier character: the first foot-tap, eight frames, each a fresh drawing — superseded by `rali-idle.png` (too few in-betweens; the whole figure boiled) | not cut any more |
+| `archived/rali-stretch.png` | The earlier character: a stretch | retired with the character — never cut |
 
 Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The process (gates, touch points, costs): `docs/animation-pipeline.md`.
 
@@ -23,7 +29,7 @@ Rules for what a sheet may become: `docs/design-system.md` → Lumi sprites. The
 - A flat, untextured, contrasting ground (the grey-blue of the current sheets); no titles, labels, numbers or notes anywhere.
 - Same style, line weight, palette, lighting, hood ornament and lantern as the reference; highest resolution, landscape.
 
-**Measure before judging** — `python3 scripts/measure-lumi-sheet.py art/<sheet>.png` prints per-frame geometry, the eye position (a glance), the per-step head change (IoU) and the scale per row, and writes an aligned strip to flip through. Crop the sheet to its rows of cells first if it carries a title or notes (the lantern sheet does: rows at y 151–393 and 444–687). What the generator gets wrong, and what the cut already fixes:
+**Measure before judging** — `python3 scripts/measure-lumi-sheet.py art/lumi/<sheet>.png` prints per-frame geometry, the eye position (a glance), the per-step head change (IoU) and the scale per row, and writes an aligned strip to flip through. Crop the sheet to its rows of cells first if it carries a title or notes (the lantern sheet does: rows at y 151–393 and 444–687). What the generator gets wrong, and what the cut already fixes:
 
 | Seen on every sheet so far | Fix, in `scripts/cut-lumi-idle.py` |
 |---|---|
