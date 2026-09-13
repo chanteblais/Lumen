@@ -25,8 +25,13 @@ Chanté: "I'd like Lumi to be aware of her environment and the app's functionali
 - After the merge she answered with a dash list ("card: - Not this … - Break it down … - Done"), which the bubble renders run together on one line: the bubble (and Home) show paragraphs, not lists, and the persona allows a list only for a brain dump. Either the persona holds her to prose here or the reply renderer learns lists — Chanté's call if it recurs.
 - "I can't start." on Home went straight to the Right now instead of first telling unclear from can't-begin (Run 7, #8). Not caused by the place line; watch it.
 
+### Chanté's pass, and what changed
+- **"this one feels too big" read as instructions** (*Just go over to the compost container…*). She chose one question first; the persona now asks what makes it big before offering anything. Scenario rerun: *Is it the whole email to Priya, a particular part, or just too much for today?*
+- **Long waits before her replies.** Dev log: 5–11s per turn, with `cacheRead=0` at the start of every turn on 13–14k tokens; messages show 3–7s from her message saved to Lumi's reply saved. Cause: GPT-6 caches only at a breakpoint, and the implicit one sat at the end of the ever-changing context block, so nothing was read back across turns. Fix: an explicit breakpoint after the persona (`decisions.md`); probes now read 8,281 of ~8,400 tokens from turn 2 on, and the eight-turn eval through the app's own options (each turn from a different page) read 3,938–4,172 of ~4,180 from turn 2 on, where before most turns read nothing. The dev log now prints `ready`, `firstWord` and `done` per turn, so the live gain can be read directly. The first open of a page on the dev server also compiles it (e.g. `GET /lists` 7.5s); that's dev only.
+
 ### Highest-value manual tests
-- On Today, tap Lumi: "this one feels too big" — she should take the Right now without asking which.
+- On Today, tap Lumi: "this one feels too big" — one short question about what makes it big, no step yet.
+- Any two turns a minute apart: the second `[chat]` line should show a large `cacheRead` and a smaller `firstWord` than before.
 - In Lists, Add task: "oat milk" — filed, a few words back.
 - On Home: "can you remind me at 3 to call the dentist?" — a plain *not yet*, with something close to do instead; no invented reminder.
 - On Today: "stay with me while I do this" — company in words, no session, timer or Start with Lumi offered.
