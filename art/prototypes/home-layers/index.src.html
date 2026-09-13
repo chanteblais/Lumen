@@ -1,0 +1,418 @@
+<title>Home in layers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --paper: #efeae2;
+    --paper-deep: #e4ddd0;
+    --ink: #1b1a17;
+    --ink-soft: #3f3c36;
+    --ink-mute: #6f685d;
+    --brass: #8f7243;
+    --brass-soft: #c9b58c;
+    --forest: #2a342e;
+    --on-forest: #f1e6cf;
+    --rule: rgba(143, 114, 67, 0.42);
+    --focus: #2a342e;
+    --display: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+    --body: "EB Garamond", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1a120c;
+      --paper-deep: #251a11;
+      --ink: #f1e6cf;
+      --ink-soft: #d6c8aa;
+      --ink-mute: #a89a80;
+      --brass: #d9ac5f;
+      --brass-soft: #f0d9a6;
+      --forest: #34443a;
+      --on-forest: #f1e6cf;
+      --rule: rgba(217, 172, 95, 0.38);
+      --focus: #f0d9a6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1a120c;
+    --paper-deep: #251a11;
+    --ink: #f1e6cf;
+    --ink-soft: #d6c8aa;
+    --ink-mute: #a89a80;
+    --brass: #d9ac5f;
+    --brass-soft: #f0d9a6;
+    --forest: #34443a;
+    --on-forest: #f1e6cf;
+    --rule: rgba(217, 172, 95, 0.38);
+    --focus: #f0d9a6;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { background: var(--paper); color: var(--ink); font: 18px/1.5 var(--body); }
+  main { max-width: 1180px; margin: 0 auto; padding: 30px 20px 60px; display: grid; gap: 16px; }
+  .eyebrow { margin: 0; color: var(--brass); font-variant-caps: all-small-caps; letter-spacing: 0.09em; font-size: 17px; }
+  h1 { margin: 0; font: 600 clamp(32px, 4.4vw, 46px)/1.02 var(--display); letter-spacing: -0.005em; text-wrap: balance; }
+  .lede { margin: 6px 0 0; max-width: 64ch; color: var(--ink-soft); }
+  .frame { background: var(--forest); padding: 7px; border-radius: 7px; position: relative; }
+  .frame::after { content: ""; position: absolute; inset: 3px; border: 1px solid var(--brass-soft); border-radius: 5px; opacity: 0.55; pointer-events: none; }
+  #stage { display: block; width: 100%; height: auto; border-radius: 3px; cursor: crosshair; background: #2a1d14; touch-action: none; }
+  #stage.dragging { cursor: grabbing; }
+  .readout { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 0; color: var(--ink-mute); font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-variant-numeric: tabular-nums; font-size: 17px; }
+  .readout b { color: var(--ink); font-weight: 500; }
+  .below { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 34px; align-items: start; border-top: 1px solid var(--rule); padding-top: 18px; }
+  @media (max-width: 780px) { .below { grid-template-columns: 1fr; gap: 24px; } }
+  .controls { display: grid; gap: 12px; }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+  .label { min-width: 70px; color: var(--ink-mute); font-variant-caps: all-small-caps; letter-spacing: 0.08em; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border: 1px solid var(--rule); border-radius: 999px; }
+  .seg button { font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 3px 13px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--forest); color: var(--on-forest); }
+  .seg button:hover:not([aria-pressed="true"]) { background: var(--paper-deep); }
+  label.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  input[type="checkbox"] { accent-color: var(--forest); width: 16px; height: 16px; }
+  input[type="range"] { accent-color: var(--forest); width: min(260px, 100%); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .notes h2 { margin: 0 0 8px; font: 600 24px/1.15 var(--display); }
+  .notes ul { margin: 0; padding-left: 1.05em; display: grid; gap: 7px; max-width: 60ch; color: var(--ink-soft); }
+  .notes li::marker { color: var(--brass); }
+  .notes .small { margin: 12px 0 0; font-size: 16px; color: var(--ink-mute); max-width: 60ch; }
+  body.chromeless { background: #000; margin: 0; }
+  body.chromeless main { padding: 0; max-width: none; display: block; }
+  body.chromeless header, body.chromeless .readout, body.chromeless .below, body.chromeless .frame { display: none; }
+  #grid { display: block; }
+  pre#test { color: #fff; font: 14px/1.4 ui-monospace, monospace; margin: 0; padding: 10px; white-space: pre-wrap; }
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Layers test · Home · isometric</p>
+    <h1>Home in layers</h1>
+    <p class="lede">The same painting taken apart: an empty room (the furniture cut out and the floor painted in behind it), each piece of furniture as its own layer standing on a ground footprint, and the shadows it casts drawn on the floor under everything. A stand-in Lumi is sorted against the pieces by where their footprints meet the floor. Click the floor to put her somewhere, or drag her.</p>
+  </header>
+
+  <div class="frame"><canvas id="stage" width="1536" height="1024" aria-label="Home's painted room rebuilt from an empty plate and furniture layers, with Lumi standing in it. Click the floor to move her."></canvas></div>
+  <p class="readout" id="readout" aria-live="polite"></p>
+
+  <section class="below">
+    <div class="controls">
+      <div class="row">
+        <span class="label">View</span>
+        <div class="seg" id="view" role="group" aria-label="View">
+          <button type="button" data-v="composed" aria-pressed="true">Composed</button>
+          <button type="button" data-v="plate">Plate only</button>
+          <button type="button" data-v="tinted">Layers tinted</button>
+          <button type="button" data-v="original">Original painting</button>
+        </div>
+      </div>
+      <div class="row" id="cutrow" hidden>
+        <span class="label">Cut</span>
+        <input type="range" id="cut" min="0" max="100" value="50" aria-label="Where the original painting gives way to the layers, from the left">
+        <span class="small" style="color: var(--ink-mute)">original on the left, layers on the right</span>
+      </div>
+      <div class="row">
+        <span class="label"></span>
+        <label class="toggle"><input type="checkbox" id="plan"> Footprints and anchors</label>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h2>What to look at</h2>
+      <ul>
+        <li><b>Close behind the low table</b>, where the hand-traced map failed: the tabletop and what's on it should cover her lower half and nothing else.</li>
+        <li><b>In front of anything</b>, nothing of it should be drawn over her, and no shadow should darken her.</li>
+        <li><b>Plate only:</b> seams where painted-in floor meets the painting — the rug's flowers and border, plank lines, the window's light patches.</li>
+        <li><b>Layers tinted</b> shows what each layer holds; look for floor carried along with a piece (a halo or dark fringe) and for thin things — chair legs, spindles, leaves — gone patchy.</li>
+        <li><b>Original painting</b> cuts between the painting and the rebuilt room: the two should be the same picture.</li>
+      </ul>
+      <p class="small">Footprints are where each piece meets the floor (cyan), extents the widest part dropped to the floor (white), the walkable floor dashed, and anchors — proposals — in red. Her cloak's width at her feet is the short red line.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var ROOM = /*ROOM*/null;
+  var IMG = /*IMAGES*/null;
+  var LUMI = /*LUMI*/null;
+  var TESTS = /*TESTS*/null;
+  var PW = ROOM.size[0], PH = ROOM.size[1];
+  var HALF = ROOM.lumi.halfWidth, REACH = ROOM.lumi.reach;
+  var params = new URLSearchParams(location.search);
+
+  // ---- geometry: the depth rule (the same as depth.py) ---------------------------------------------------------
+  // In one page column two ground points differ only in u + v, so lower on the page is toward the camera. An item
+  // draws over Lumi when some point of its ground polygon lies in one of her columns (feet x ± HALF) lower than her feet.
+  function stripMaxY(poly, a, b) {
+    var best = null;
+    for (var i = 0; i < poly.length; i++) {
+      var p = poly[i], q = poly[(i + 1) % poly.length];
+      if (p[0] >= a && p[0] <= b) best = best === null ? p[1] : Math.max(best, p[1]);
+      if (p[0] !== q[0]) {
+        [a, b].forEach(function (c) {
+          if (c >= Math.min(p[0], q[0]) && c <= Math.max(p[0], q[0])) {
+            var y = p[1] + (c - p[0]) * (q[1] - p[1]) / (q[0] - p[0]);
+            best = best === null ? y : Math.max(best, y);
+          }
+        });
+      }
+    }
+    return best;
+  }
+  function groundOf(L) { return L.extent || L.footprint; }
+  // her feet columns first; failing that, the item's column nearest her if it is within her drawn reach (her hem is wider)
+  function groundYNear(L, fx) {
+    var g = groundOf(L), m = stripMaxY(g, fx - HALF, fx + HALF);
+    if (m !== null) return m;
+    var xs = g.map(function (p) { return p[0]; }), gx0 = Math.min.apply(null, xs), gx1 = Math.max.apply(null, xs);
+    if (gx1 < fx - REACH || gx0 > fx + REACH) return null;
+    var c = Math.min(Math.max(fx, gx0), gx1);
+    return stripMaxY(g, c, c);
+  }
+  function drawsOver(L, fx, fy) {
+    var m = groundYNear(L, fx);
+    return m !== null && m > fy;
+  }
+  function inPoly(x, y, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function walkable(x, y) {
+    return inPoly(x, y, ROOM.walkable.floor) && !ROOM.walkable.minus.some(function (m) { return inPoly(x, y, m.poly); });
+  }
+  var LOW = {};
+  ROOM.layers.forEach(function (L) { LOW[L.id] = Math.max.apply(null, groundOf(L).map(function (p) { return p[1]; })); });
+  // Back-to-front: a topological sort of "in front of" over the layers and Lumi, ties by the lowest ground point.
+  function drawOrder(fx, fy) {
+    var names = ROOM.depth.order.concat(['lumi']), after = {}, indeg = {}, key = {};
+    names.forEach(function (n) { after[n] = []; indeg[n] = 0; key[n] = n === 'lumi' ? fy : LOW[n]; });
+    ROOM.depth.infront.forEach(function (p) { after[p[1]].push(p[0]); });
+    var over = {};
+    ROOM.layers.forEach(function (L) {
+      var m = groundYNear(L, fx);
+      if (m === null) return;
+      if (m > fy) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
+    });
+    names.forEach(function (n) { after[n].forEach(function (b) { indeg[b]++; }); });
+    var ready = names.filter(function (n) { return !indeg[n]; }), out = [];
+    var byKey = function (a, b) { return key[a] - key[b]; };
+    ready.sort(byKey);
+    while (ready.length) {
+      var n = ready.shift();
+      out.push(n);
+      after[n].forEach(function (b) { if (!--indeg[b]) ready.push(b); });
+      ready.sort(byKey);
+    }
+    if (out.length < names.length) names.filter(function (n) { return out.indexOf(n) < 0; }).sort(byKey).forEach(function (n) { out.push(n); });
+    return { order: out, over: over };
+  }
+
+  // ---- images ----------------------------------------------------------------------------------------------------
+  function load(src) { return new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.src = src; }); }
+  var TINTS = ['#ff4f9a', '#3fd0ff', '#ffd23f', '#7cff6b', '#b28bff', '#ff8a3d', '#4dffd2', '#ff5a5a'];
+  var I = { layers: {}, shadows: {}, tinted: {} };
+  function tint(im, colour) {
+    var c = document.createElement('canvas');
+    c.width = im.width; c.height = im.height;
+    var x = c.getContext('2d');
+    x.drawImage(im, 0, 0);
+    x.globalCompositeOperation = 'source-atop';
+    x.globalAlpha = 0.5;
+    x.fillStyle = colour;
+    x.fillRect(0, 0, c.width, c.height);
+    return c;
+  }
+
+  // ---- drawing -----------------------------------------------------------------------------------------------------
+  var S = { x: 797, y: 560, view: 'composed', plan: false, cut: 0.5 };
+  function drawLumi(ctx, fx, fy) {
+    var k = LUMI.scale, w = I.lumi.width / k, h = I.lumi.height / k;
+    ctx.save();
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, 'rgba(30, 16, 8, 0.42)');
+    g.addColorStop(1, 'rgba(30, 16, 8, 0)');
+    ctx.translate(fx, fy);
+    ctx.scale(HALF * 1.25, HALF * 1.25 * ROOM.iso.slope);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 1, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+    ctx.drawImage(I.lumi, fx - LUMI.feet[0] / k, fy - LUMI.feet[1] / k, w, h);
+  }
+  function composed(ctx, fx, fy, tinted, withLumi) {
+    ctx.drawImage(I.plate, 0, 0);
+    ROOM.layers.forEach(function (L) { if (L.shadow) ctx.drawImage(I.shadows[L.id], L.shadow.offset[0], L.shadow.offset[1]); });
+    var d = drawOrder(fx, fy);
+    d.order.forEach(function (n) {
+      if (n === 'lumi') { if (withLumi) drawLumi(ctx, fx, fy); return; }
+      var L = ROOM.layers.filter(function (l) { return l.id === n; })[0];
+      ctx.drawImage(tinted ? I.tinted[n] : I.layers[n], L.offset[0], L.offset[1]);
+    });
+    return d;
+  }
+  // the layers drawn over her that actually cover some of her (the rest are after her in the order but elsewhere on the page)
+  function covering(d, fx, fy) {
+    var k = LUMI.scale, x0 = fx - LUMI.feet[0] / k, y0 = fy - LUMI.feet[1] / k, x1 = x0 + I.lumi.width / k, y1 = y0 + I.lumi.height / k;
+    return Object.keys(d.over).filter(function (id) {
+      var L = ROOM.layers.filter(function (l) { return l.id === id; })[0], im = I.layers[id];
+      return L.offset[0] < x1 && L.offset[0] + im.width > x0 && L.offset[1] < y1 && L.offset[1] + im.height > y0;
+    });
+  }
+  function poly(ctx, p) { ctx.beginPath(); p.forEach(function (q, i) { i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath(); }
+  function plan(ctx, fx, fy) {
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = 'rgba(255, 244, 214, 0.95)';
+    poly(ctx, ROOM.walkable.floor); ctx.stroke();
+    ctx.setLineDash([2, 4]);
+    ctx.strokeStyle = 'rgba(255, 244, 214, 0.45)';
+    ROOM.walkable.minus.forEach(function (m) { poly(ctx, m.poly); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ROOM.layers.forEach(function (L) {
+      ctx.strokeStyle = 'rgba(0, 230, 255, 0.95)'; ctx.lineWidth = 2;
+      poly(ctx, L.footprint); ctx.stroke();
+      if (L.extent) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.2; poly(ctx, L.extent); ctx.stroke(); }
+      Object.keys(L.anchors).forEach(function (name) {
+        var a = L.anchors[name].at;
+        ctx.fillStyle = '#ff3b3b';
+        ctx.beginPath(); ctx.arc(a[0], a[1], 4, 0, 2 * Math.PI); ctx.fill();
+        ctx.font = '13px ui-sans-serif, system-ui, sans-serif';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.strokeText(name, a[0] + 7, a[1] - 5);
+        ctx.fillStyle = '#fff4d6'; ctx.fillText(name, a[0] + 7, a[1] - 5);
+      });
+    });
+    ROOM.blockers.forEach(function (b) { ctx.strokeStyle = 'rgba(255, 140, 40, 0.9)'; ctx.lineWidth = 1.5; poly(ctx, b.footprint); ctx.stroke(); });
+    ctx.strokeStyle = '#ff3b3b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(fx - HALF, fy); ctx.lineTo(fx + HALF, fy); ctx.stroke();
+    ctx.restore();
+  }
+  function render(ctx, st) {
+    ctx.clearRect(0, 0, PW, PH);
+    var d = null;
+    if (st.view === 'plate') ctx.drawImage(I.plate, 0, 0);
+    else d = composed(ctx, st.x, st.y, st.view === 'tinted', true);
+    if (st.view === 'original') {
+      var cx = Math.round(PW * st.cut);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, cx, PH); ctx.clip();
+      ctx.drawImage(I.painting, 0, 0);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255, 244, 214, 0.9)';
+      ctx.fillRect(cx - 1, 0, 2, PH);
+    }
+    if (st.plan) plan(ctx, st.x, st.y);
+    return d;
+  }
+
+  // ---- the page ------------------------------------------------------------------------------------------------------
+  function readout(d) {
+    var el = document.getElementById('readout');
+    if (!el) return;
+    var over = d ? covering(d, S.x, S.y) : [];
+    el.innerHTML = '<span>Feet <b>' + Math.round(S.x) + ', ' + Math.round(S.y) + '</b></span>' +
+      '<span>' + (walkable(S.x, S.y) ? 'On the <b>walkable floor</b>' : '<b>Off the walkable floor</b>') + '</span>' +
+      '<span>Drawn over her <b>' + (over.length ? over.join(', ') : 'nothing') + '</b></span>';
+  }
+  function runPage() {
+    var canvas = document.getElementById('stage'), ctx = canvas.getContext('2d');
+    var paint = function () { readout(render(ctx, S)); };
+    var toPainting = function (e) {
+      var r = canvas.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * PW / r.width, y: (e.clientY - r.top) * PH / r.height };
+    };
+    var dragging = false;
+    canvas.addEventListener('pointerdown', function (e) {
+      var p = toPainting(e);
+      dragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.classList.add('dragging');
+      S.x = p.x; S.y = p.y; paint();
+    });
+    canvas.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var p = toPainting(e);
+      S.x = p.x; S.y = p.y; paint();
+    });
+    var end = function () { dragging = false; canvas.classList.remove('dragging'); };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    var seg = document.getElementById('view');
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      S.view = b.dataset.v;
+      document.getElementById('cutrow').hidden = S.view !== 'original';
+      paint();
+    });
+    document.getElementById('cut').addEventListener('input', function (e) { S.cut = e.target.value / 100; paint(); });
+    document.getElementById('plan').addEventListener('change', function (e) { S.plan = e.target.checked; paint(); });
+    paint();
+  }
+
+  // `?grid=1[&cell=WxH&zoom=Z&cols=N&view=tinted&plan=1]`: Lumi at each of TESTS.points in one canvas, each cell
+  // centred on her, labelled with the point and the layers drawn over her (capture.py screenshots it).
+  function runGrid() {
+    document.body.classList.add('chromeless');
+    var cell = (params.get('cell') || '300x260').split('x').map(Number), zoom = parseFloat(params.get('zoom') || '2.2');
+    var cols = parseInt(params.get('cols') || '6', 10), pts = TESTS.points, rows = Math.ceil(pts.length / cols);
+    var big = document.createElement('canvas');
+    big.id = 'grid'; big.width = cell[0] * cols; big.height = cell[1] * rows;
+    document.querySelector('main').appendChild(big);
+    var g = big.getContext('2d'), full = document.createElement('canvas');
+    full.width = PW; full.height = PH;
+    var f = full.getContext('2d');
+    pts.forEach(function (p, i) {
+      var st = { x: p.x, y: p.y, view: params.get('view') || 'composed', plan: params.has('plan'), cut: 0.5 };
+      var d = render(f, st);
+      var sw = cell[0] / zoom, sh = (cell[1] - 34) / zoom, cx = i % cols * cell[0], cy = Math.floor(i / cols) * cell[1];
+      g.drawImage(full, p.x - sw / 2, p.y - 70 - sh / 2, sw, sh, cx, cy, cell[0], cell[1] - 34);
+      g.fillStyle = '#111'; g.fillRect(cx, cy + cell[1] - 34, cell[0], 34);
+      g.font = '13px ui-sans-serif, system-ui, sans-serif';
+      g.fillStyle = walkable(p.x, p.y) ? '#fff4d6' : '#ff8a8a';
+      g.fillText((i + 1) + '. ' + p.label, cx + 6, cy + cell[1] - 19);
+      g.fillStyle = '#9fe7ff';
+      var over = covering(d, p.x, p.y);
+      g.fillText('covering her: ' + (over.length ? over.join(', ') : 'nothing'), cx + 6, cy + cell[1] - 5);
+      g.strokeStyle = '#000'; g.strokeRect(cx + 0.5, cy + 0.5, cell[0] - 1, cell[1] - 1);
+    });
+    document.title = 'ready';
+  }
+  // `?test=1`: the JS depth rule against depth.py's answers for every test case.
+  function runTest() {
+    document.body.classList.add('chromeless');
+    var bad = 0, lines = [];
+    TESTS.cases.forEach(function (c) {
+      var L = ROOM.layers.filter(function (l) { return l.id === c.layer; })[0];
+      var got = drawsOver(L, c.x, c.y);
+      if (got !== c.want) { bad++; lines.push('BAD ' + c.layer + ' at ' + c.x + ',' + c.y + ': js ' + got + ', python ' + c.want); }
+    });
+    TESTS.walk.forEach(function (c) {
+      var got = walkable(c.x, c.y);
+      if (got !== c.want) { bad++; lines.push('BAD walkable at ' + c.x + ',' + c.y + ': js ' + got + ', python ' + c.want); }
+    });
+    lines.unshift(TESTS.cases.length + ' depth cases, ' + TESTS.walk.length + ' walkable cases, ' + bad + ' disagreements');
+    var pre = document.createElement('pre'); pre.id = 'test'; pre.textContent = lines.join('\n');
+    document.querySelector('main').appendChild(pre);
+    document.title = 'ready';
+  }
+
+  Promise.all([load(IMG.plate), load(IMG.painting), load(IMG.lumi)].concat(ROOM.layers.map(function (L) {
+    return Promise.all([load(IMG.layers[L.id]), L.shadow ? load(IMG.shadows[L.id]) : null]).then(function (r) {
+      I.layers[L.id] = r[0]; if (r[1]) I.shadows[L.id] = r[1];
+    });
+  }))).then(function (r) {
+    I.plate = r[0]; I.painting = r[1]; I.lumi = r[2];
+    ROOM.layers.forEach(function (L, i) { I.tinted[L.id] = tint(I.layers[L.id], TINTS[i % TINTS.length]); });
+    if (params.has('test')) runTest();
+    else if (params.has('grid')) runGrid();
+    else runPage();
+  });
+})();
+</script>

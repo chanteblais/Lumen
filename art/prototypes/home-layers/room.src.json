@@ -1,0 +1,185 @@
+{
+  "about": "Home's painting as an empty plate plus furniture layers: the hand-traced source. Painting px of art/scenery/home/background.png (1536x1024), traced by eye on 2-3x zooms with a 10px grid (2026-09-13). layers.py reads this and writes art/scenery/home/layers.json. `body`: polygons hugging the item's silhouette ~2px outside (solid: alpha 1 inside, the difference matte decides only the edge band); `foliage`: polygons where the whole inside is difference-matted (leaves, fringes); `mask`: the generous hole sent to the edit API, taking in the contact shadow; `footprint`: where the item meets the floor (feet of legs, base of a cushion); `extent`: the widest part dropped to the floor when it overhangs the footprint (a tabletop), used for depth and clearance; `height`: floor to the top of the item itself, px; `anchors`: proposals.",
+  "painting": "art/scenery/home/background.png",
+  "size": [1536, 1024],
+  "iso": { "slope": 0.57 },
+  "lumi": { "height": 120, "halfWidth": 17, "clearance": 24 },
+
+  "inventory": [
+    { "id": "table", "layer": true, "why": "the low table with its books, lantern, plant, small stack and mug stands in the middle of the rug; she walks all round it, and close behind it is where the hand-traced map failed" },
+    { "id": "cushion-cream", "layer": true, "why": "the tasselled floor cushion in front of the table: she passes behind it (between it and the table's left leg is too tight, but along its left and right) and in front of it" },
+    { "id": "cushion-green", "layer": true, "why": "the quilted green floor cushion in front of the table, the same" },
+    { "id": "armchair", "layer": true, "why": "the green armchair with its star pillow and two throws: against the bookcase, so she is only ever in front of it or beside it, but it is where she sits (armchair.sit), and the chair's front edge is the floor's edge there" },
+    { "id": "stool", "layer": true, "why": "the round side stool with its books and a small plant, beside the armchair; she stands beside it and in front of it, and it carries a place anchor" },
+    { "id": "desk", "layer": true, "why": "the writing desk under the window, with its cabinet, lamp, books, open book, mug and the potted plant on its left end: against the wall, so only in front of or beside her, but it is where she writes and reads" },
+    { "id": "chair", "layer": true, "why": "the desk chair with the throw over its back, standing out from the desk: she can stand beside it with its back overlapping her" },
+    { "id": "balustrade", "layer": true, "why": "the railing and posts round the stair going down at the front, with the ivy on its first post: she is only ever behind it, and its posts and rail cross her feet when she stands at the floor's front edge" },
+    { "id": "stair-up", "layer": false, "why": "the stair up through the arch on the right: built into the wall and the arch; she can only stand in front of it, and cutting it would mean inventing the wall under it. Stays in the plate; its bottom step is a blocker for the floor" },
+    { "id": "bookcase-right", "layer": false, "why": "the low bookcase with the record player, its plants, pots and candle stack along the right wall: against the wall, she can only be in front of it, and cutting it would mean repainting the wall. Stays in the plate; its front is the floor's edge" },
+    { "id": "log-basket", "layer": false, "why": "the log basket and the poker bucket beside the stove: on the hearth corner against the walls, behind anywhere she can stand. Stays in the plate" },
+    { "id": "stove", "layer": false, "why": "the stove on its hearth: architecture (the brief keeps the fireplace in the plate); the hearth's edge bounds the floor" },
+    { "id": "hanging-ivy", "layer": false, "why": "the ivy hanging off the left wall's outer corner and from the ceiling beams: outside the room's floor, never near her" },
+    { "id": "rugs", "layer": false, "why": "the big rug and the runner: floor (the brief keeps them in the plate)" },
+    { "id": "walls-windows", "layer": false, "why": "walls, the window, the bookcase over the armchair, pictures, the banner, the lamps on the walls: never in front of her" }
+  ],
+
+  "plate_candidates": {
+    "A": "A-v2-120023-2.png",
+    "B": "B-v1-110714-1.png",
+    "C": "C-v1-110750-1.png",
+    "D": "D-v1-120100-1.png"
+  },
+
+  "clusters": {
+    "A": { "layers": ["table", "cushion-cream", "cushion-green"], "prompt": "rug" },
+    "B": { "layers": ["armchair", "stool"], "prompt": "corner" },
+    "C": { "layers": ["desk", "chair"], "prompt": "window" },
+    "D": { "layers": ["balustrade"], "prompt": "stairwell" }
+  },
+
+  "layers": [
+    {
+      "id": "table",
+      "body": [
+        [[631,610],[671,588],[675,580],[681,569],[716,559],[797,513],[963,609],[963,626],[950,632],[950,675],[923,675],[923,644],[815,707],[815,756],[791,756],[791,706],[674,643],[674,676],[645,676],[645,627],[632,622]]
+      ],
+      "foliage": [
+        [[806,548],[815,528],[840,521],[870,523],[896,535],[909,556],[910,585],[900,594],[806,562]]
+      ],
+      "mask": [[620,610],[662,584],[670,562],[698,550],[795,503],[840,512],[882,516],[908,532],[918,572],[976,604],[977,632],[964,642],[964,690],[924,694],[872,718],[828,726],[828,770],[780,772],[776,724],[740,704],[690,690],[638,692],[628,660],[618,630]],
+      "shadow": true,
+      "footprint": [[645,673],[797,588],[950,672],[803,758]],
+      "extent": [[628,675],[797,576],[967,674],[807,768]],
+      "height": 62,
+      "anchors": { "table.place": [760, 640], "table.reach": [612, 700] }
+    },
+    {
+      "id": "cushion-cream",
+      "body": [
+        [[642,722],[662,700],[700,678],[718,669],[740,678],[770,703],[775,722],[774,742],[740,758],[718,764],[700,757],[663,745],[648,735]]
+      ],
+      "foliage": [],
+      "mask": [[632,722],[655,695],[700,668],[720,658],[745,668],[780,698],[786,725],[783,752],[745,770],[716,778],[692,768],[655,754],[634,742]],
+      "shadow": true,
+      "footprint": [[648,727],[704,695],[772,725],[716,760]],
+      "extent": [[640,727],[704,691],[779,725],[716,764]],
+      "height": 32,
+      "anchors": { "cushion-cream.sit": [712, 712] }
+    },
+    {
+      "id": "cushion-green",
+      "body": [
+        [[824,745],[845,725],[868,705],[910,684],[955,694],[1012,730],[1014,748],[995,785],[950,810],[928,824],[900,815],[860,795],[830,772]]
+      ],
+      "foliage": [],
+      "mask": [[812,745],[838,718],[866,695],[910,673],[958,683],[1024,724],[1026,754],[1004,796],[956,822],[928,836],[894,828],[850,807],[816,782]],
+      "shadow": true,
+      "footprint": [[830,765],[915,716],[1008,770],[925,820]],
+      "extent": [[821,765],[915,711],[1018,770],[925,825]],
+      "height": 42,
+      "anchors": { "cushion-green.sit": [918, 752] }
+    },
+    {
+      "id": "armchair",
+      "body": [
+        [[852,222],[900,226],[945,245],[972,268],[976,300],[981,318],[981,334],[960,338],[962,452],[940,458],[905,458],[890,455],[889,470],[875,473],[860,466],[812,446],[785,434],[755,423],[750,400],[750,318],[762,305],[835,272],[845,240]]
+      ],
+      "foliage": [],
+      "mask": [[845,210],[905,213],[956,236],[986,260],[992,340],[974,346],[974,464],[902,482],[880,490],[854,482],[744,438],[736,400],[736,312],[754,294],[828,260],[836,230]],
+      "shadow": true,
+      "footprint": [[755,420],[850,375],[973,427],[878,472]],
+      "extent": [[749,420],[850,372],[982,427],[878,476]],
+      "height": 150,
+      "anchors": { "armchair.sit": [822, 388], "armchair.stand": [760, 486] }
+    },
+    {
+      "id": "stool",
+      "body": [
+        [[950,380],[958,362],[968,345],[983,340],[985,318],[995,303],[1012,308],[1020,325],[1030,345],[1034,362],[1043,375],[1043,407],[1042,466],[1030,466],[1030,447],[1000,452],[1000,486],[987,486],[987,452],[962,447],[960,468],[948,468],[949,405]]
+      ],
+      "foliage": [],
+      "mask": [[938,378],[955,350],[975,330],[980,305],[995,291],[1018,297],[1035,338],[1052,368],[1056,470],[1042,482],[1006,500],[980,500],[938,478]],
+      "shadow": true,
+      "footprint": [[952,466],[998,441],[1040,463],[994,488]],
+      "extent": [[949,464],[963,446],[996,438],[1029,446],[1044,464],[1029,482],[996,490],[963,482]],
+      "height": 82,
+      "anchors": { "stool.place": [996, 380] }
+    },
+    {
+      "id": "desk",
+      "body": [
+        [[122,440],[133,420],[135,390],[178,390],[180,366],[200,358],[372,286],[380,262],[398,234],[416,262],[425,290],[446,308],[481,329],[481,354],[475,358],[475,460],[455,460],[455,374],[267,468],[267,576],[208,608],[196,604],[132,568],[127,488],[122,470]]
+      ],
+      "foliage": [
+        [[70,330],[98,312],[140,300],[170,310],[196,336],[212,352],[208,380],[182,394],[140,394],[132,440],[120,472],[110,496],[78,480],[70,400]]
+      ],
+      "mask": [[62,322],[98,302],[140,296],[170,304],[196,328],[210,350],[365,280],[375,254],[398,224],[420,254],[432,284],[452,300],[492,325],[492,472],[282,590],[210,622],[185,618],[122,580],[117,500],[100,502],[68,488],[60,400]],
+      "shadow": true,
+      "footprint": [[131,564],[206,606],[468,460],[393,418]],
+      "extent": [[120,558],[206,608],[482,452],[400,408]],
+      "height": 118,
+      "anchors": { "desk.place": [330, 420], "desk.stand": [520, 470] }
+    },
+    {
+      "id": "chair",
+      "body": [
+        [[373,405],[442,373],[450,379],[448,410],[385,439],[373,433]],
+        [[371,428],[387,424],[387,568],[371,569]],
+        [[424,388],[442,380],[441,535],[426,535]],
+        [[397,428],[407,424],[407,468],[397,470]],
+        [[410,420],[421,415],[421,466],[410,468]],
+        [[316,459],[360,436],[434,456],[434,480],[380,503],[316,477]],
+        [[326,474],[336,478],[324,540],[312,538]],
+        [[330,495],[373,515],[373,524],[330,504]],
+        [[386,462],[412,455],[436,458],[439,470],[437,526],[430,532],[394,542],[388,532]]
+      ],
+      "foliage": [
+        [[386,526],[438,514],[438,540],[432,556],[394,564],[384,548]]
+      ],
+      "mask": [[362,374],[392,358],[436,360],[460,374],[458,500],[454,542],[448,570],[395,582],[362,586],[304,556],[302,468],[312,440],[362,426]],
+      "shadow": true,
+      "footprint": [[316,540],[378,504],[440,534],[380,570]],
+      "extent": [[312,540],[378,500],[450,534],[382,573]],
+      "height": 135,
+      "anchors": { "chair.sit": [380, 470] }
+    },
+    {
+      "id": "balustrade",
+      "body": [
+        [[245,700],[265,690],[285,700],[284,860],[250,860],[246,730]],
+        [[280,722],[402,812],[402,832],[280,744]],
+        [[398,815],[427,812],[428,942],[398,942]],
+        [[400,815],[466,785],[466,805],[400,837]],
+        [[443,812],[454,808],[454,922],[443,922]],
+        [[460,760],[488,750],[517,760],[515,925],[463,925]],
+        [[512,808],[612,872],[612,892],[512,828]],
+        [[528,845],[542,850],[542,954],[528,954]],
+        [[560,865],[577,870],[577,974],[560,974]],
+        [[593,885],[609,890],[609,994],[593,994]],
+        [[608,870],[633,860],[660,870],[658,1024],[610,1024]],
+        [[655,886],[792,976],[792,998],[655,908]],
+        [[678,935],[692,940],[692,1024],[678,1024]],
+        [[710,955],[724,960],[724,1024],[710,1024]],
+        [[745,975],[757,980],[757,1024],[745,1024]]
+      ],
+      "foliage": [
+        [[205,700],[240,690],[300,740],[330,760],[362,770],[405,800],[412,840],[396,880],[380,960],[360,1000],[330,995],[300,960],[290,900],[270,960],[255,960],[240,900],[215,860],[205,780]]
+      ],
+      "mask": [[196,692],[240,680],[300,700],[410,790],[460,748],[490,738],[528,750],[528,800],[612,852],[640,848],[672,862],[672,878],[806,968],[806,1024],[196,1024]],
+      "shadow": false,
+      "footprint": [[262,856],[413,944],[490,918],[620,998],[800,1100],[808,1092],[628,990],[498,910],[421,936],[270,848]],
+      "extent": null,
+      "height": 145,
+      "anchors": { "balustrade.lean": [560, 838] }
+    }
+  ],
+
+  "blockers": [
+    { "id": "stair-up", "footprint": [[1128,480],[1190,440],[1350,520],[1306,577]] },
+    { "id": "bookcase-right", "footprint": [[1300,590],[1330,520],[1536,640],[1536,900],[1380,870]] },
+    { "id": "log-basket", "footprint": [[480,300],[520,270],[590,300],[560,330]] }
+  ],
+
+  "floor_note": "The floor her feet may stand on, ignoring furniture: room-home.json's walkable, pushed out where the plate shows more floor (up to the hearth, the wall base right of the stool, the stair's bottom step) and already inset from walls, rug-free edges and the floor's front edge by her cloak's reach. Walkable = this minus every footprint (extent where given) and blocker grown by her clearance.",
+  "floor": [[520,330],[740,330],[740,470],[1040,500],[1070,470],[1128,508],[1300,605],[1380,860],[1120,960],[853,945],[640,880],[460,790],[267,690],[480,573],[493,400]]
+}
