@@ -6,6 +6,29 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (2) — page load: fewer round trips, and fresh on Back and on return (`fix/page-load-round-trips`, worktree, port 3006)
+
+Chanté chose fewer waits over loading screens, "but make sure we reload when anything changes".
+
+### Verified (dev server, signed in, from Vancouver against us-east-2; three warm runs each, same method as the sweep below)
+- **Library** 0.32s → **0.17s**. **Today** first byte 0.35s → **0.24s** (complete 0.67s → 0.53s). **Home** 0.85s → **0.51s**. Each page still carried its content (Home's composer and greeting, Today's Right now card, the Library's scene); no errors in the server log.
+- **The visit query returns the previous visit.** `UPDATE users … FROM users AS before … RETURNING before.last_seen_at`, run in a rolled-back transaction: the returned previous equalled the row's value before the update, the new stamp was now.
+- **Back re-reads.** Library → Today by the nav link, then Back: the Library was shown and a fresh `/library?_rsc` request followed.
+- `npm run check`: types, lint, 89 tests, route-auth (accepts `requireVisit()`), CSS prefixes.
+
+### Known and deliberate
+- **No cookie or token copy of the user.** Folding the lookup into the visit write took the round trip away without keeping a copy that could go stale.
+- **Returning to a tab re-reads after a minute away, not every time.** Flicking between tabs doesn't cost a server render and a visit each time.
+- The first request ever still takes the old two-step path (create the row, then stamp it).
+
+### Open
+- The refresh on returning to a tab isn't exercised by the automation tab (it is always hidden); read, not clicked.
+
+### Highest-value manual tests
+- On Today, open Home, tell Lumi you've done Today's Right now thing, press Back: Today shows the path without it (a moment after it appears).
+- Leave a tab on the Library, use the companion bubble in another tab, come back after a minute: the page is re-read.
+- A first visit after 30+ minutes away: Home still greets you as coming back.
+
 ## Sweep 2026-09-13 — page load: the database pool and the function region (`fix/db-pool-stall`, worktree)
 
 Chanté: "the page loading is quite slow." Measured from her machine against the real pooler (scripts in the session scratchpad, not committed).

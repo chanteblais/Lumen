@@ -6,22 +6,22 @@ import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
 import { reflectAfterSession } from "@/core/ai/reflect";
 import { primeTodaysPlan } from "@/core/ai/today-plan";
-import { ensureMainConversation, isInSitting, loadRecentMessages } from "@/core/domain/conversations";
+import { ensureMainConversation, isInSitting, loadRecentMainMessages } from "@/core/domain/conversations";
 import { resolveSession, toSessionView } from "@/core/domain/sessions";
 import { currentSitting, visitBeforeSitting } from "@/core/domain/users";
 import { db } from "@/db/client";
-import { recordVisit, requireUser } from "@/lib/auth";
+import { requireVisit } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const user = await requireUser();
-  const previous = await recordVisit(user);
+  // One round trip (the user and the visit), then everything else at once.
+  const { user, previous } = await requireVisit();
   // Cut today's path now, off the response, so Today opens with it ready.
   after(() => primeTodaysPlan(db(), user));
-  const conversation = await ensureMainConversation(db(), user.id);
-  const [initialMessages, open, sitting, session] = await Promise.all([
-    loadRecentMessages(db(), conversation.id),
+  const [conversation, initialMessages, open, sitting, session] = await Promise.all([
+    ensureMainConversation(db(), user.id),
+    loadRecentMainMessages(db(), user.id),
     listOpenIntentions(db(), user.id),
     currentSitting(db(), user.id),
     // Sweeps a session left open past its threshold (closed as abandoned) and returns what's running.

@@ -23,7 +23,7 @@ import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { isSessionEventResponse } from "@/core/focus";
 import { db } from "@/db/client";
-import { recordVisit, requireUser } from "@/lib/auth";
+import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
 
 export const maxDuration = 60;
@@ -36,8 +36,7 @@ const LUMI_ERROR = "I lost the thread for a second. Say that again?";
  * Tools execute server-side and loop up to five steps so Lumi can act, then speak.
  */
 export async function POST(req: Request) {
-  const user = await requireUser();
-  const previous = await recordVisit(user);
+  const { user, previous } = await requireVisit();
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
   // (a "not this", a capacity report, letting things go on the way back, an ask
