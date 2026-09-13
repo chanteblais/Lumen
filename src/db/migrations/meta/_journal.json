@@ -36,6 +36,20 @@
       "when": 1789316717091,
       "tag": "0004_library",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789326406907,
+      "tag": "0005_thread_shelves",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789331597142,
+      "tag": "0006_data_integrity",
+      "breakpoints": true
     }
   ]
 }

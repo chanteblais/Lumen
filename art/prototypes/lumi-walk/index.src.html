@@ -72,6 +72,9 @@
   .tour[aria-pressed="false"] { background: transparent; color: var(--ink); border-color: var(--rule); }
   .tour:disabled { opacity: 0.5; cursor: default; }
   label.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .cues { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+  .cues button { font: inherit; font-size: 15px; color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 11px; cursor: pointer; }
+  .cues button:hover { background: var(--paper-deep); }
   input[type="checkbox"] { accent-color: var(--forest); width: 16px; height: 16px; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .notes h2 { margin: 0 0 8px; font: 600 24px/1.15 var(--display); }
@@ -86,9 +89,9 @@
 
 <main>
   <header>
-    <p class="eyebrow">Walk test · Home · isometric</p>
+    <p class="eyebrow">Walk test · Home in layers · isometric</p>
     <h1>Lumi walks Home</h1>
-    <p class="lede">Drawings of her at the room’s angle, a drawing for every sixteenth of a turn, half of them mirrored. She walks eight ways, rounds corners on the move and turns through the drawings between; code moves the pieces: boots that step, legs drawn to each boot, a cloak that sways and trails a turn. Click the floor to send her somewhere, or let her walk the tour.</p>
+    <p class="lede">Drawings of her at the room’s angle, one for every sixteenth of a turn and one more just past side-on, most of them mirrored. She walks eight ways, rounds corners on the move and turns through the drawings between; code moves the pieces: boots that step, legs drawn to each boot, a cloak that sways and trails a turn. Click the floor to send her somewhere, or let her walk the tour.</p>
   </header>
 
   <div class="frame"><canvas id="stage" aria-label="Home's painted room with Lumi walking in it. Click the floor to send her there."></canvas></div>
@@ -134,17 +137,35 @@
         <span class="label"></span>
         <label class="toggle"><input type="checkbox" id="plan"> Show the floor plan</label>
       </div>
+      <div class="row">
+        <span class="label">Idle</span>
+        <div class="cues" id="cues" role="group" aria-label="Play one idle movement now">
+          <button type="button" data-cue="blink">Blink</button>
+          <button type="button" data-cue="glance">Glance</button>
+          <button type="button" data-cue="tilt">Tilt</button>
+          <button type="button" data-cue="happy">Happy</button>
+          <button type="button" data-cue="curious">Curious</button>
+          <button type="button" data-cue="sleepy">Sleepy</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"></span>
+        <label class="toggle"><input type="checkbox" id="auto" checked> Auto idle</label>
+      </div>
     </div>
 
     <div class="notes">
       <h2>What to look at</h2>
       <ul>
+        <li><b>Behind and in front:</b> the room is Home taken apart into an empty floor and its furniture as layers, and a piece is drawn over her only when its footprint reaches lower on the page than her feet. Close behind the low table its top should cover her lower half and never her hood; in front of the cushions, the chair or the armchair nothing of them should cover her; her shadow stays under every piece.</li>
         <li>A corner of a quarter turn or less, she rounds on the move, turning through the drawings between. A sharper one, she stops, her hood leans toward the new way, and she steps round.</li>
         <li><b>Turn:</b> Morph (the default) treats her facing as a place on the ring rather than a drawing: between two drawings it warps each of them row by row until her two edges and the feature between them — the face, or the sun on her hood — land in the same place, then crossfades. Swap is the old behaviour, a hard change of drawing every sixteenth of a turn. Does the morph read as one figure rotating, and does anything tear, ghost or balloon?</li>
-        <li>She faces the way she walks. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking.</li>
+        <li>She faces the way she walks. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking. The plan also draws the walkable floor (dashed), where her feet may not go (dotted), each piece’s footprint (cyan) and overhang (white), the blockers left in the painting (orange), the proposed anchors (red), and her feet’s width, the columns the depth rule tests (a red bar).</li>
         <li>Her legs run from under the cloak to her boots every step.</li>
+        <li><b>Idle:</b> standing she blinks at uneven gaps, now and then glances or tilts her head, sways very slowly, and rarely looks curious or sleepy; walking, she only blinks and glances. Her eyes are drawn over the painted ones, so they can shut, shift and change shape. Try the cues: do the eyes read as hers, or as stickers? Does the tilt bend the collar or tear it?</li>
+        <li>Turning away past side-on, her ribbon bow and medallions shrink to a sliver and go — a drawing just past side-on carries them — rather than fading out.</li>
       </ul>
-      <p class="small">Her height is in the painting’s own pixels; the table stands about 65. Heights, pace and the turn style here are for judging, not settings in the app.</p>
+      <p class="small">Her height is in the painting’s own pixels; the table stands about 62. Heights, pace and the turn style here are for judging, not settings in the app.</p>
     </div>
   </section>
 </main>
@@ -155,15 +176,20 @@
 
   var RIG = /*RIG*/null;
   var MORPH = /*MORPH*/null;
+  // Home's layers (art/scenery/home/layers.json, trimmed to what the page reads) plus the tour (tour-home.json, its
+  // anchors resolved by build.py) and each layer's floor-coloured pixels (fringe.py, for ?occlusion=1)
   var ROOM = /*ROOM*/null;
+  var SCENE = /*SCENE*/null;
   var PARTS = /*PARTS*/null;
-  var ROOM_SRC = '__ROOM_URI__';
+  var PLATE_SRC = '__PLATE_URI__';
   var PW = ROOM.size[0], PH = ROOM.size[1];
+  var TOUR = ROOM.tour;
 
   var params = new URLSearchParams(location.search);
   var GRID = params.get('grid');
   var STILL_T = params.has('t') ? parseFloat(params.get('t')) : null;
-  var HEADLESS = !!GRID || STILL_T !== null || params.has('audit') || params.has('trace');
+  var AROUND = params.has('around') ? params.get('around').split(',').map(parseFloat) : null;   // with ?audit=1
+  var HEADLESS = !!GRID || STILL_T !== null || params.has('audit') || params.has('trace') || params.has('occlusion');
   var reduceMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   var reduced = !HEADLESS && !!(reduceMq && reduceMq.matches);
 
@@ -193,9 +219,23 @@
     pulse: 0.14,      // Turn: Swap — the small squash that carries each change of drawing (Morph has no pop to hide)
     breath: 1.3,      // px at the hood top, resting
     breathS: 3.2,
-    clearance: 24,    // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
     cell: 5,          // the path grid, in ground units
-    turnCost: 14      // px a path pays for each 45° of turning, so it turns rarely
+    turnCost: 14,     // px a path pays for each 45° of turning, so it turns rarely
+    jog: 4            // a path corner this close to the straight line past it is a jog, not a corner, and is dropped
+  };
+  // The idle (the pieces test's life, on the rig's drawings), in seconds and painting px at her height of 120. Canon:
+  // docs/design/motion-and-interaction.md §12–14 — a base idle nearly invisible, blinks irregular, alternates rare.
+  var IDLE = {
+    blinkMin: 2.5, blinkMax: 6.5, doubleBlink: 0.2,   // the next blink, and how often it is a double
+    motionMin: 8, motionMax: 20,                      // the next glance or tilt (glances 6 in 7)
+    exprMin: 40, exprMax: 90,                         // the next expression (curious or sleepy), standing only
+    glance: 0.10,     // a glance moves the eyes this share of the face's width
+    glanceHood: 0.5,  // and the hood follows it this many px
+    tiltTop: 0.018,   // a full tilt moves the hood top this share of her height (~2.2 px), falling to nothing at the neck
+    headY: 1.0,       // sleepy lowers the hood and curious lifts it by up to this, px
+    sway: 0.6,        // standing, she sways this far at the hood, px
+    swayS: 4.2,       // over this long
+    lens: 0.14        // what a shut eye leaves lit, as a share of its height (the pieces')
   };
 
   // ---- small maths -------------------------------------------------------------------------------------
@@ -219,60 +259,198 @@
     return inside;
   }
 
-  // ---- the room: isometric ground, furniture ---------------------------------------------------------------
+  // ---- the room: isometric ground, Home's layers---------------------------------------------------------------
   var B = ROOM.iso.slope;
   function toUV(x, y) { return { u: (x + y / B) / 2, v: (y / B - x) / 2 }; }
   function fromUV(u, v) { return { x: u - v, y: (u + v) * B }; }
   var UV_PX = Math.sqrt(1 + B * B);   // screen px per ground unit along either axis
-  var OCC = ROOM.occluders.map(function (o) {
-    var uv = o.footprint.map(function (p) { return toUV(p[0], p[1]); });
-    return {
-      id: o.id, cutout: o.cutout, footprint: o.footprint,
-      u0: Math.min.apply(null, uv.map(function (q) { return q.u; })), u1: Math.max.apply(null, uv.map(function (q) { return q.u; })),
-      v0: Math.min.apply(null, uv.map(function (q) { return q.v; })), v1: Math.max.apply(null, uv.map(function (q) { return q.v; }))
-    };
-  });
-  function clearanceUV() { return T.clearance * sizeMul() / UV_PX; }
-  function blocked(p) {
-    var q = toUV(p.x, p.y), c = clearanceUV();
-    for (var i = 0; i < OCC.length; i++) {
-      var o = OCC[i];
-      if (q.u > o.u0 - c && q.u < o.u1 + c && q.v > o.v0 - c && q.v < o.v1 + c) return true;
-    }
-    return false;
-  }
-  function standable(p) { return inPoly(p, ROOM.walkable) && !blocked(p); }
+  var LAYER = {};
+  ROOM.layers.forEach(function (L) { LAYER[L.id] = L; });
 
-  // ---- sixteen facings ------------------------------------------------------------------------------------------
-  // Clockwise round the ring, 22.5° apart: nine drawn (facing you round to facing away), seven mirrored. The eight even
-  // ones are the ways she walks — each has its step on the path grid — and the odd ones are drawings she turns through
-  // (Chanté: "Turning could still be smoother"). A facing whose drawing isn't there yet borrows its nearest drawn one.
-  var ORDER = ['s', 'ssw', 'sw', 'wsw', 'w', 'wnw', 'nw', 'nnw', 'n'];
-  var SAY = ['toward you', 'toward you, a little left', 'toward you, to the left', 'to the left, a little toward you', 'to the left',
-    'to the left, a little away', 'away, to the left', 'away, a little left', 'away from you', 'away, a little right', 'away, to the right',
-    'to the right, a little away', 'to the right', 'to the right, a little toward you', 'toward you, to the right', 'toward you, a little right'];
-  var IDS = ['s', 'ssw', 'sw', 'wsw', 'w', 'wnw', 'nw', 'nnw', 'n', 'nne', 'ne', 'ene', 'e', 'ese', 'se', 'sse'];
-  var N_DIRS = 16;
-  function drawnNear(i) {
-    for (var r = 0; r < ORDER.length; r++) {
-      if (ORDER[i - r] && RIG[ORDER[i - r]]) return ORDER[i - r];
-      if (ORDER[i + r] && RIG[ORDER[i + r]]) return ORDER[i + r];
+  // The depth rule, ported verbatim from art/prototypes/home-layers/index.src.html, which is depth.py's twin — depth.py
+  // stays the reference. In one page column two ground points differ only in u + v, so lower on the page is toward the
+  // camera. An item draws over Lumi when some point of its ground polygon (extent, else footprint) lies in one of her
+  // columns (feet x ± HALF) lower on the page than her feet by more than the margin; an item with ground only within
+  // her drawn reach (x ± REACH) is tested at its column nearest her; out of reach it cannot overlap her. HALF and REACH
+  // are layers.json's, set for her height of 120; here they scale with her height, so at 120 the rule is depth.py's.
+  function HALF() { return ROOM.lumi.halfWidth * sizeMul(); }
+  function REACH() { return ROOM.lumi.reach * sizeMul(); }
+  function stripMaxY(poly, a, b) {
+    var best = null;
+    for (var i = 0; i < poly.length; i++) {
+      var p = poly[i], q = poly[(i + 1) % poly.length];
+      if (p[0] >= a && p[0] <= b) best = best === null ? p[1] : Math.max(best, p[1]);
+      if (p[0] !== q[0]) {
+        [a, b].forEach(function (c) {
+          if (c >= Math.min(p[0], q[0]) && c <= Math.max(p[0], q[0])) {
+            var y = p[1] + (c - p[0]) * (q[1] - p[1]) / (q[0] - p[0]);
+            best = best === null ? y : Math.max(best, y);
+          }
+        });
+      }
     }
-    return Object.keys(RIG)[0];
+    return best;
   }
-  var DIRS = IDS.map(function (id, k) {
-    var phi = k * Math.PI / 8, du = (Math.cos(phi) - Math.sin(phi)) * Math.SQRT1_2, dv = (Math.cos(phi) + Math.sin(phi)) * Math.SQRT1_2;
-    var p = fromUV(du, dv), l = Math.hypot(p.x, p.y), oi = k <= 8 ? k : 16 - k;
-    var d = { id: id, img: drawnNear(oi), mirror: k > 8, say: SAY[k], v: { x: p.x / l, y: p.y / l }, fore: l };
-    if (k % 2 === 0) {
+  // depth.py's column_interval: [min y, max y] where page column c crosses the polygon, or null (the occlusion count)
+  function columnInterval(poly, c) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < poly.length; i++) {
+      var p = poly[i], q = poly[(i + 1) % poly.length], y;
+      if (p[0] === q[0]) { if (p[0] === c) { lo = Math.min(lo, p[1], q[1]); hi = Math.max(hi, p[1], q[1]); } continue; }
+      if (c < Math.min(p[0], q[0]) || c > Math.max(p[0], q[0])) continue;
+      y = p[1] + (c - p[0]) * (q[1] - p[1]) / (q[0] - p[0]);
+      lo = Math.min(lo, y); hi = Math.max(hi, y);
+    }
+    return lo === Infinity ? null : [lo, hi];
+  }
+  function groundOf(L) { return L.extent || L.footprint; }
+  // her feet columns first; failing that, the item's column nearest her if it is within her drawn reach (her hem is wider)
+  function groundYNear(L, fx) {
+    var g = groundOf(L), m = stripMaxY(g, fx - HALF(), fx + HALF());
+    if (m !== null) return m;
+    var xs = g.map(function (p) { return p[0]; }), gx0 = Math.min.apply(null, xs), gx1 = Math.max.apply(null, xs);
+    if (gx1 < fx - REACH() || gx0 > fx + REACH()) return null;
+    var c = Math.min(Math.max(fx, gx0), gx1);
+    return stripMaxY(g, c, c);
+  }
+  function drawsOver(L, fx, fy) {
+    var m = groundYNear(L, fx);
+    return m !== null && m > fy + ROOM.depth.margin;
+  }
+  var LOW = {};
+  ROOM.layers.forEach(function (L) { LOW[L.id] = Math.max.apply(null, groundOf(L).map(function (p) { return p[1]; })); });
+  // Back-to-front: a topological sort of "in front of" over the layers and Lumi, ties by the lowest ground point.
+  function drawOrder(fx, fy) {
+    var names = ROOM.depth.order.concat(['lumi']), after = {}, indeg = {}, key = {};
+    names.forEach(function (n) { after[n] = []; indeg[n] = 0; key[n] = n === 'lumi' ? fy : LOW[n]; });
+    ROOM.depth.infront.forEach(function (p) { after[p[1]].push(p[0]); });
+    var over = {};
+    ROOM.layers.forEach(function (L) {
+      var m = groundYNear(L, fx);
+      if (m === null) return;
+      if (m > fy + ROOM.depth.margin) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
+    });
+    names.forEach(function (n) { after[n].forEach(function (b) { indeg[b]++; }); });
+    var ready = names.filter(function (n) { return !indeg[n]; }), out = [];
+    var byKey = function (a, b) { return key[a] - key[b]; };
+    ready.sort(byKey);
+    while (ready.length) {
+      var n = ready.shift();
+      out.push(n);
+      after[n].forEach(function (b) { if (!--indeg[b]) ready.push(b); });
+      ready.sort(byKey);
+    }
+    if (out.length < names.length) names.filter(function (n) { return out.indexOf(n) < 0; }).sort(byKey).forEach(function (n) { out.push(n); });
+    return { order: out, over: over };
+  }
+
+  // Where her feet may stand: inside layers.json's `walkable.floor` and outside every footprint (extent where given)
+  // and blocker grown by her clearance as a ground circle. At her height of 120 that is layers.json's `walkable.minus`
+  // as written; at another height the same polygons are grown here by depth.py's `grow`, ported (hull of the polygon's
+  // vertices plus a 16-point ellipse, one hull for a convex polygon, one per edge of a concave one).
+  function hull(points) {
+    var seen = {}, pts = [];
+    points.forEach(function (p) {
+      var x = Math.round(p[0] * 100) / 100, y = Math.round(p[1] * 100) / 100, k = x + ',' + y;
+      if (!seen[k]) { seen[k] = true; pts.push([x, y]); }
+    });
+    pts.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    if (pts.length < 3) return pts;
+    var cross = function (o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); };
+    var lower = [], upper = [], i;
+    for (i = 0; i < pts.length; i++) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0) lower.pop();
+      lower.push(pts[i]);
+    }
+    for (i = pts.length - 1; i >= 0; i--) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0) upper.pop();
+      upper.push(pts[i]);
+    }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+  function convex(poly) {
+    var n = poly.length, sign = 0;
+    for (var i = 0; i < n; i++) {
+      var a = poly[i], b = poly[(i + 1) % n], c = poly[(i + 2) % n];
+      var z = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+      if (z) { if (sign && (z > 0) !== (sign > 0)) return false; sign = z; }
+    }
+    return true;
+  }
+  function grow(poly, r) {
+    var ell = [];
+    for (var i = 0; i < 16; i++) ell.push([r * Math.cos(2 * Math.PI * i / 16), r * B * Math.sin(2 * Math.PI * i / 16)]);
+    var plus = function (pts) {
+      var out = [];
+      pts.forEach(function (p) { ell.forEach(function (e) { out.push([p[0] + e[0], p[1] + e[1]]); }); });
+      return out;
+    };
+    if (convex(poly)) return [hull(plus(poly))];
+    return poly.map(function (p, k) { return hull(plus([p, poly[(k + 1) % poly.length]])); });
+  }
+  var minusCache = { key: null, polys: null };
+  function minusPolys() {
+    var m = sizeMul();
+    if (minusCache.key === m) return minusCache.polys;
+    var polys = [];
+    if (Math.abs(m - 1) < 1e-9) polys = ROOM.walkable.minus.map(function (q) { return q.poly; });
+    else {
+      var r = ROOM.lumi.clearance * m;
+      ROOM.layers.forEach(function (L) { Array.prototype.push.apply(polys, grow(groundOf(L), r)); });
+      ROOM.blockers.forEach(function (b) { Array.prototype.push.apply(polys, grow(b.footprint, r)); });
+    }
+    minusCache = { key: m, polys: polys };
+    return polys;
+  }
+  function standable(p) {
+    if (!inPoly(p, ROOM.walkable.floor)) return false;
+    var ms = minusPolys();
+    for (var i = 0; i < ms.length; i++) if (inPoly(p, ms[i])) return false;
+    return true;
+  }
+
+  // ---- the ring of facings: angles, not even steps ---------------------------------------------------------------
+  // Every drawing sits on the ring at the angle it was drawn at — `facings.py` writes that into rig-walk.json as
+  // `deg`, and each drawing strictly between facing you (0°) and facing away (180°) is mirrored to the other side.
+  // Nine of the ten are 22.5° apart; `wbw` sits at 101.25°, between side-on and the first view from behind, because
+  // that is the one seam where two neighbours hold different things — the ribbon bow and the medallions are on one
+  // and not the other, so a morph across it could only dissolve them (Chanté, 2026-09-13: "Do the extra drawing").
+  // Her facing is therefore a number of **degrees**, not a place on an even ring: turns interpolate it in degrees and
+  // the morph pairs whichever two entries it lies between. The eight ways she walks are still the multiples of 45°.
+  var SAY = {
+    s: 'toward you', ssw: 'toward you, a little left', sw: 'toward you, to the left',
+    wsw: 'to the left, a little toward you', w: 'to the left', wbw: 'to the left, just past side-on',
+    wnw: 'to the left, a little away', nw: 'away, to the left', nnw: 'away, a little left', n: 'away from you'
+  };
+  var MIRROR_ID = { ssw: 'sse', sw: 'se', wsw: 'ese', w: 'e', wbw: 'ebe', wnw: 'ene', nw: 'ne', nnw: 'nne' };
+  var DIRS = [];
+  Object.keys(RIG).forEach(function (f) {
+    var deg = RIG[f].deg;
+    if (typeof deg !== 'number') return;   // a drawing facings.py has not placed is not on the ring at all
+    DIRS.push({ id: f, img: f, deg: deg, mirror: false, say: SAY[f] || f });
+    if (deg > 0 && deg < 180) {
+      DIRS.push({ id: MIRROR_ID[f] || (f + '-m'), img: f, deg: 360 - deg, mirror: true,
+        say: (SAY[f] || f).replace(/left/g, 'right') });
+    }
+  });
+  DIRS.sort(function (a, b) { return a.deg - b.deg; });
+  var N_DIRS = DIRS.length;
+  DIRS.forEach(function (d) {
+    var phi = d.deg * Math.PI / 180;
+    var du = (Math.cos(phi) - Math.sin(phi)) * Math.SQRT1_2, dv = (Math.cos(phi) + Math.sin(phi)) * Math.SQRT1_2;
+    var p = fromUV(du, dv), l = Math.hypot(p.x, p.y);
+    d.v = { x: p.x / l, y: p.y / l };
+    d.fore = l;
+    if (Math.abs(d.deg / 45 - Math.round(d.deg / 45)) < 1e-9) {   // a walking direction: it has a step on the grid
       var mx = Math.max(Math.abs(du), Math.abs(dv));
       d.step = [Math.round(du / mx), Math.round(dv / mx)];
       var q = fromUV(d.step[0], d.step[1]);
       d.len = Math.hypot(q.x, q.y);
     }
-    return d;
   });
-  var WALK = [0, 2, 4, 6, 8, 10, 12, 14];
+  var WALK = [];
+  DIRS.forEach(function (d, i) { if (d.step) WALK.push(i); });
+  var STEP_DEG = 22.5;   // the ring's usual step: what a turn's pace and a rounded corner are still measured in
   // Where each drawing really faces on the page, from its face measured by facings.py (or, from behind, judged by eye):
   // turned `turned` degrees on the ground from facing you (or away), toward the viewer's left, mirrored where the page
   // mirrors it. The audit and the floor plan judge her against this, not against the label.
@@ -291,7 +469,21 @@
     DIRS.forEach(function (d, i) { var dot = (d.v.x * v.x + d.v.y * v.y) / l; if (dot > bd) { bd = dot; best = i; } });
     return best;
   }
-  function ringDist(a, b) { var d = ((b - a) % N_DIRS + N_DIRS) % N_DIRS; return d > N_DIRS / 2 ? d - N_DIRS : d; }
+  // the signed shortest way round the ring from a to b, in degrees
+  function degDist(a, b) { var d = (b - a) % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; }
+  function wrapDeg(a) { return ((a % 360) + 360) % 360; }
+  function nearestDir(deg) {
+    var best = 0, bd = Infinity;
+    for (var i = 0; i < N_DIRS; i++) { var e = Math.abs(degDist(DIRS[i].deg, deg)); if (e < bd) { bd = e; best = i; } }
+    return best;
+  }
+  // the two neighbouring ring entries a facing lies between, and how far from the first to the second
+  function bracket(deg) {
+    var d = wrapDeg(deg), a = 0;
+    for (var i = 0; i < N_DIRS; i++) { if (DIRS[i].deg <= d + 1e-9) a = i; else break; }
+    var b = (a + 1) % N_DIRS, span = wrapDeg(DIRS[b].deg - DIRS[a].deg) || 360;
+    return { a: a, b: b, t: clamp(wrapDeg(d - DIRS[a].deg) / span, 0, 1) };
+  }
 
   // ---- the morph: what in one drawing is the same thing as what in the next ----------------------------------------
   // morph.py measured, for every row of each drawn facing, three x knots — the silhouette's left edge, one feature
@@ -334,6 +526,19 @@
     legs.sort(function (p, q) { return p.contact[0] - q.contact[0]; });
     return { ms: ms, legs: legs, kind: MORPHN[d.img] ? MORPHN[d.img].kind : 'front' };
   });
+  // Her eyes in the same units and the same page order (slot 0 the screen-left eye), so a morph moves them the way it
+  // moves the legs. Turning away, the far eye has no partner in the next drawing and fades over the morph instead of
+  // vanishing at a change of drawing; past side-on the last one fades into wbw. A view from behind has none.
+  var EYEN = DIRS.map(function (d) {
+    var R = RIG[d.img], ms = d.mirror ? -1 : 1, h = R.height;
+    if (!R.eyes) return { eyes: [] };
+    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2;
+    var eyes = R.eyes.map(function (e, i) {
+      return { i: i, x: ms * (e.cx - rootX) / h, y: (e.cy - R.feet) / h, rx: e.rx / h, ry: e.ry / h };
+    });
+    eyes.sort(function (p, q) { return p.x - q.x; });
+    return { eyes: eyes };
+  });
   function lerp(a, b, t) { return a + (b - a) * t; }
 
   // ---- paths on the ground grid: eight directions, few turns, rounded corners -------------------------------------
@@ -341,7 +546,7 @@
   function ground() {
     var key = ui.size;
     if (gridCache.key === key) return gridCache;
-    var uvs = ROOM.walkable.map(function (p) { return toUV(p[0], p[1]); });
+    var uvs = ROOM.walkable.floor.map(function (p) { return toUV(p[0], p[1]); });
     var u0 = Math.min.apply(null, uvs.map(function (q) { return q.u; })), v0 = Math.min.apply(null, uvs.map(function (q) { return q.v; }));
     var u1 = Math.max.apply(null, uvs.map(function (q) { return q.u; })), v1 = Math.max.apply(null, uvs.map(function (q) { return q.v; }));
     var nu = Math.ceil((u1 - u0) / T.cell) + 1, nv = Math.ceil((v1 - v0) / T.cell) + 1, free = new Uint8Array(nu * nv);
@@ -393,7 +598,7 @@
         if (ni < 0 || nj < 0 || ni >= G.nu || nj >= G.nv || !G.free[nj * G.nu + ni]) continue;
         if (st[0] && st[1] && (!G.free[j * G.nu + ni] || !G.free[nj * G.nu + i])) continue;   // no cutting a corner
         var nn = nj * G.nu + ni, ns = nn * 8 + k;
-        var c = cost[s] + Dk.len * T.cell + (k === dcur ? 0 : T.turnCost * Math.abs(ringDist(WALK[dcur], WALK[k])) / 2);
+        var c = cost[s] + Dk.len * T.cell + (k === dcur ? 0 : T.turnCost * Math.abs(degDist(DIRS[WALK[dcur]].deg, Dk.deg)) / 45);
         if (c < cost[ns]) { cost[ns] = c; prev[ns] = s; push(c + hfun(nn), ns); }
       }
     }
@@ -425,18 +630,42 @@
     }
     return out.length ? out : [end];
   }
+  // Two tour legs joined at a stop with no rest, or a path's short joining stretches, can leave a jog of a few pixels:
+  // a stretch that steps off the line she is walking and straight back onto it. Rounded, a jog was a turn out and a
+  // turn back inside half a second — at ~8.5 s in the tour she turned nw → nnw and straight back to nw, over three
+  // stretches of 2.6, 2.7 and 5.4 px that sat 3 px off the line. A corner within T.jog px of the straight line between
+  // its neighbours is not a corner: it is dropped, as long as that straight line is still floor she can stand on. Her
+  // last point, where she was sent, always stays.
+  function straighten(a, pts) {
+    var tol = T.jog * sizeMul(), out = pts.slice();
+    for (var pass = 0; pass < 6; pass++) {
+      var dropped = false;
+      for (var i = 0; i < out.length - 1; i++) {
+        var p0 = i ? out[i - 1] : a, P = out[i], C = out[i + 1];
+        var ux = C.x - p0.x, uy = C.y - p0.y, l = Math.hypot(ux, uy);
+        if (l < 1e-6 || Math.abs((P.x - p0.x) * uy - (P.y - p0.y) * ux) / l > tol) continue;
+        var ok = true;
+        for (var s = 1; s < 8 && ok; s++) ok = standable({ x: p0.x + ux * s / 8, y: p0.y + uy * s / 8 });
+        if (ok) { out.splice(i, 1); dropped = true; i--; }
+      }
+      if (!dropped) break;
+    }
+    return out;
+  }
   // A corner of a quarter turn or less becomes a short curve (a quadratic through the corner, five points), so she
-  // walks round it changing drawing a sixteenth of a turn at a time; sharper corners, or curves that would leave the
-  // floor or brush the furniture, stay corners where she stops and steps round.
+  // walks round it turning on the move; sharper corners, or curves that would leave the floor or brush the furniture,
+  // stay corners where she stops and steps round. A quadratic's heading runs one way from the first stretch's to the
+  // second's, so once the jogs are straightened no curve turns her past the facing it ends on and back.
   function roundCorners(a, pts) {
+    pts = straighten(a, pts);
     var r0 = T.arc * sizeMul(), out = [], prev = a;
     for (var i = 0; i < pts.length; i++) {
       var P = pts[i], C = pts[i + 1];
       if (!C) { out.push(P); break; }
       var ux = P.x - prev.x, uy = P.y - prev.y, lu = Math.hypot(ux, uy), wx = C.x - P.x, wy = C.y - P.y, lw = Math.hypot(wx, wy);
-      var turn = Math.abs(ringDist(dirFor({ x: ux, y: uy }, 0), dirFor({ x: wx, y: wy }, 0)));
+      var turn = Math.abs(degDist(DIRS[dirFor({ x: ux, y: uy }, 0)].deg, DIRS[dirFor({ x: wx, y: wy }, 0)].deg));
       var r = Math.min(r0, lu / 2, lw / 2);
-      if (turn === 0 || turn > 4 || r < 4) { out.push(P); prev = P; continue; }
+      if (turn < 1e-6 || turn > 90 + 1e-6 || r < 4) { out.push(P); prev = P; continue; }
       var p1 = { x: P.x - ux / lu * r, y: P.y - uy / lu * r }, p2 = { x: P.x + wx / lw * r, y: P.y + wy / lw * r }, curve = [];
       for (var s = 0; s <= 4; s++) {
         var t = s / 4, it = 1 - t;
@@ -448,49 +677,54 @@
   }
 
   // ---- state ----------------------------------------------------------------------------------------------
-  var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: true,
-    morph: params.get('turn') !== 'swap' && CAN_MORPH };
+  // ?tour=0 keeps her standing where the tour starts (for idle grids); ?idle=0 schedules no idle (cues still fire)
+  var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: params.get('tour') !== '0',
+    morph: params.get('turn') !== 'swap' && CAN_MORPH, auto: params.get('idle') !== '0' };
   function sizeMul() { return ui.size / 120; }
   var random = rng(7);
   var S;
   function resetSim() {
-    var start = ROOM.tour[0].at;
+    var start = TOUR[0].at, k0 = nearestDir(45), p0 = DIRS[k0].deg;   // she starts facing the front diagonal
     S = {
-      x: start[0], y: start[1], p: 2, praw: 2, dirIdx: 2, spinTo: null,
-      path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
+      x: start[0], y: start[1], p: p0, praw: p0, dirIdx: k0, spinTo: null, roundAhead: null,
+      path: [], leg: 0, legRest: TOUR[0].rest, hold: TOUR[0].rest, waiting: true,
       r: 0, phi: 0, L: T.speed * T.step,
-      turnActive: false, turnT: 0, turnFrom: 2, turnTo: 2, turnEl: 0, turnDur: T.turnStep,
+      turnActive: false, turnT: 0, turnFrom: p0, turnTo: p0, turnEl: 0, turnDur: T.turnStep,
       turnP: 0, turnIndex: 0, turnTotal: 0, turnSide: 0,
       turnLean: 0, swing: 0, swingV: 0, stepFoot: 0, stepP: 0,
       pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]], snapped: 0,
-      feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, nextBlink: 1.2, blinks: [], cam: null
+      feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, idle: newIdle(), cam: null
     };
   }
   function turning() { return S.turnActive || S.turnT > 0; }
   function rounding() { return S.spinTo !== null; }
-  // Her facing is a place on the ring, not a drawing: p runs 0..16 and a turn slides it. S.dirIdx is still the drawing
-  // nearest to it, and everything that reads a facing — the paths, the audit, the floor plan, the readout — still
-  // reads that. praw is p before it is wrapped, so a turn that crosses 0 keeps its direction.
+  // Her facing is a number of degrees on the ring (0 facing you, 90 side-on to the left, 180 away), not a drawing: a
+  // turn slides it. S.dirIdx is only the drawing nearest to it, and everything that reads a facing — the paths, the
+  // audit, the floor plan, the readout — still reads that. praw is p before it is wrapped, so a turn that crosses 0°
+  // keeps its direction.
   function setP(raw) {
     var was = S.dirIdx;
     S.praw = raw;
-    S.p = ((raw % N_DIRS) + N_DIRS) % N_DIRS;
-    S.dirIdx = ((Math.round(S.p) % N_DIRS) + N_DIRS) % N_DIRS;
+    S.p = wrapDeg(raw);
+    S.dirIdx = nearestDir(S.p);
     if (S.dirIdx !== was) crossed(was, S.dirIdx);
   }
-  // A sixteenth crossed: the hem swings out behind it, and with Turn: Swap — where the drawing really does change here,
-  // with nothing in between — a small squash carries the change.
+  // A drawing crossed: the hem swings out behind it, in proportion to the angle crossed (so the two narrow steps either
+  // side of wbw give two half swings, not two whole ones), and with Turn: Swap — where the drawing really does change
+  // here, with nothing in between — a small squash carries the change.
   function crossed(from, to) {
     if (reduced) return;
-    var side = Math.sign(DIRS[to].v.x - DIRS[from].v.x) || Math.sign(ringDist(from, to));
-    S.swingV -= side * T.trail * sizeMul();
+    var step = degDist(DIRS[from].deg, DIRS[to].deg);
+    var side = Math.sign(DIRS[to].v.x - DIRS[from].v.x) || Math.sign(step);
+    S.swingV -= side * T.trail * sizeMul() * Math.min(1, Math.abs(step) / STEP_DEG);
     if (!ui.morph) S.pulse = T.pulse;
   }
-  function aimIdx() { return rounding() ? ((Math.round(S.spinTo) % N_DIRS) + N_DIRS) % N_DIRS : S.dirIdx; }
-  // The direction on the page a ring position walks in — the ring's own maths, but for a p between two facings, so
+  // the facing she is turning to on the move, or the drawing she is on
+  function aimDeg() { return rounding() ? S.spinTo : DIRS[S.dirIdx].deg; }
+  // The direction on the page a facing walks in — the ring's own maths, but for a facing between two drawings, so
   // that rounding a corner she can walk the way she is half-turned rather than pivoting on the spot.
   function dirVecAt(p) {
-    var phi = p * Math.PI / (N_DIRS / 2);
+    var phi = p * Math.PI / 180;
     var q = fromUV((Math.cos(phi) - Math.sin(phi)) * Math.SQRT1_2, (Math.cos(phi) + Math.sin(phi)) * Math.SQRT1_2);
     var l = Math.hypot(q.x, q.y) || 1;
     return { x: q.x / l, y: q.y / l };
@@ -500,13 +734,13 @@
   // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it.
   function nextLeg() {
     var pts = [], from = { x: S.x, y: S.y }, k = S.leg, rest = 0;
-    for (var guard = 0; guard < ROOM.tour.length; guard++) {
-      var k2 = (k + 1) % ROOM.tour.length, t = ROOM.tour[k2], p = findPath(from, { x: t.at[0], y: t.at[1] });
+    for (var guard = 0; guard < TOUR.length; guard++) {
+      var k2 = (k + 1) % TOUR.length, t = TOUR[k2], p = findPath(from, { x: t.at[0], y: t.at[1] });
       if (!p) break;
       pts = pts.concat(p); from = p[p.length - 1]; k = k2; rest = t.rest;
       if (rest > 0) break;
     }
-    if (!pts.length) { S.leg = (S.leg + 1) % ROOM.tour.length; S.hold = 0.5; S.waiting = true; return; }   // no way round: skip it
+    if (!pts.length) { S.leg = (S.leg + 1) % TOUR.length; S.hold = 0.5; S.waiting = true; return; }   // no way round: skip it
     S.leg = k;
     startWalk(roundCorners({ x: S.x, y: S.y }, pts), rest);
   }
@@ -522,7 +756,8 @@
     S.settleFrom = S.feet.map(function (f) { return f.slice(); });
     S.settle = fromWalk ? 0.24 : 0;
     S.spinTo = null;
-    var delta = ringDist(S.p, to), n = Math.max(1, Math.round(Math.abs(delta)));
+    // the pace is still counted in 22.5° steps, so the drawing at 101.25° does not make a turn through it any slower
+    var delta = degDist(S.p, DIRS[to].deg), n = Math.max(1, Math.round(Math.abs(delta) / STEP_DEG));
     S.turnSide = Math.sign(DIRS[to].v.x - DIRS[S.dirIdx].v.x) || Math.sign(delta) || 1;
     S.turnFrom = S.praw; S.turnTo = S.praw + delta; S.turnEl = 0;
     S.turnDur = 0;
@@ -530,10 +765,15 @@
     S.turnT = (fromWalk ? 0.24 : 0) + T.turnLead;
     S.turnActive = true; S.turnP = 0; S.turnIndex = 0; S.turnTotal = n;
   }
-  // Rounding a corner on the move: no swap, p just runs on to the next sixteenth over T.round.
+  // Rounding a corner on the move: no swap, p just runs on toward the new facing, T.round per 22.5°. A round already
+  // under way is never reversed by a newer one: a turn through a corner goes one way.
   function beginRound(to) {
-    var delta = ringDist(S.p, to);
-    if (!delta) return;
+    var delta = degDist(S.p, DIRS[to].deg);
+    if (Math.abs(delta) < 1e-6) return;
+    if (rounding()) {
+      var going = S.spinTo - S.praw;
+      if (Math.abs(going) > 1e-6 && Math.sign(going) !== Math.sign(delta)) return;
+    }
     S.spinTo = S.praw + delta;
   }
   function footOffsets(phi, L, liftPx) {
@@ -550,12 +790,7 @@
   function step(dt) {
     var m = sizeMul();
     S.time += dt;
-    if (S.time >= S.nextBlink) {
-      S.blinks.push(S.time);
-      if (random() < 0.2) S.blinks.push(S.time + 0.38);
-      S.nextBlink = S.time + 2.5 + random() * 4;
-    }
-    S.blinks = S.blinks.filter(function (b) { return S.time - b < 0.6; });
+    idleTick();
     if (S.pulse > 0) S.pulse = Math.max(0, S.pulse - dt);
     S.swingV += (-70 * S.swing - 7 * S.swingV) * dt;
     S.swing += S.swingV * dt;
@@ -565,9 +800,9 @@
       // a corner rounded on the move: p runs on toward the next sixteenth while she keeps walking. A sixteenth takes
       // T.round; if the corner turns out to be two, the pace rises to match, so her facing never falls behind the
       // curve she is walking (which the audit would read as walking sideways).
-      var togo = S.spinTo - S.praw, mv = Math.min(Math.abs(togo), dt * Math.max(1, Math.abs(togo)) / T.round);
+      var togo = S.spinTo - S.praw, mv = Math.min(Math.abs(togo), dt * Math.max(STEP_DEG, Math.abs(togo)) / T.round);
       setP(S.praw + mv * Math.sign(togo));
-      if (Math.abs(S.spinTo - S.praw) < 1e-4) { setP(S.spinTo); S.spinTo = null; }
+      if (Math.abs(S.spinTo - S.praw) < 1e-3) { setP(S.spinTo); S.spinTo = null; }
     }
     if (turning()) {
       if (S.turnT > 0) S.turnT -= dt;
@@ -576,26 +811,36 @@
         var u = clamp(S.turnEl / S.turnDur, 0, 1);
         setP(S.turnFrom + (S.turnTo - S.turnFrom) * smooth(u));
         // a boot steps round every two sixteenths; the count follows p rather than a queue
-        var done = Math.abs(S.praw - S.turnFrom);
+        var done = Math.abs(S.praw - S.turnFrom) / STEP_DEG;
         S.turnIndex = Math.min(Math.floor(done), S.turnTotal - 1);
         S.turnP = clamp(done - S.turnIndex, 0, 1);
         if (u >= 1) { setP(S.turnTo); S.turnActive = false; S.turnT = T.turnSettle; }
       }
     } else if (S.path.length) {
-      var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
-      if (d < 0.4) {
-        S.snapped += d;   // the audit counts how far corners are jumped rather than walked
-        S.x = tgt.x; S.y = tgt.y; S.path.shift();
+      var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy), nxt = S.path[1];
+      // Rounding a corner she walks an arc beside the path (see the blend below), so she does not home in on each of
+      // its points: a point counts as reached once it is behind her along the stretch after it. Homing in, the last
+      // pixel or so to a point swung steeply off the arc, turned her past the facing she was rounding to and back, and
+      // walked that half pixel 39° off her face (the audit's one sideways stretch, in the random clicks).
+      var passed = rounding() && !reduced && !!nxt && d < 3 && (nxt.x - tgt.x) * -dx + (nxt.y - tgt.y) * -dy >= 0;
+      if (d < 0.4 || passed) {
+        if (!passed) { S.snapped += d; S.x = tgt.x; S.y = tgt.y; }   // the audit counts how far corners are jumped rather than walked
+        S.path.shift(); S.roundAhead = null;
         if (!S.path.length) {
           S.settleFrom = S.feet.map(function (f) { return f.slice(); });
           S.settle = 0.24; S.r = 0; S.hold = S.legRest; S.waiting = true;
         }
       } else {
-        var want = dirFor({ x: dx, y: dy }, S.dirIdx), dd = ringDist(aimIdx(), want);
-        if (dd !== 0) {
-          if (reduced) setP(want);
-          else if (Math.abs(dd) === 1 && S.r > 0.3) beginRound(want);    // a sixteenth of a turn on the move: rounding a corner
-          else if (d > 6 || S.r <= 0.3) { beginTurn(want); return; }     // stop, lean in, step round
+        // on an arc, within a few px of a point the way to it is noise: she turns by the stretch after it instead
+        var arcNear = rounding() && !reduced && !!nxt && d < 3;
+        var wantV = arcNear ? { x: nxt.x - tgt.x, y: nxt.y - tgt.y } : { x: dx, y: dy };
+        var want = dirFor(wantV, S.dirIdx), dd = degDist(aimDeg(), DIRS[want].deg);
+        // S.roundAhead: she already turned early for the corner at the end of this stretch, so she holds that facing
+        // until she gets there instead of turning back to the stretch she is finishing
+        if (Math.abs(dd) > 1e-6 && S.roundAhead !== tgt) {
+          if (reduced) setP(DIRS[want].deg);
+          else if (Math.abs(dd) <= STEP_DEG + 0.5 && S.r > 0.3) beginRound(want);   // a small turn on the move: rounding a corner
+          else if (d > 6 || S.r <= 0.3) { beginTurn(want); return; }                // stop, lean in, step round
         }
         // A turn that takes time has to start before the corner, not at it: begin rounding half a turn-step early, so
         // she is halfway round as the heading changes rather than a whole sixteenth behind it. (A swap could wait for
@@ -605,7 +850,8 @@
           if (Math.hypot(nx2, ny2) > 0.5) {
             var nDir = dirFor({ x: nx2, y: ny2 }, S.dirIdx);
             var spd0 = T.speed * m * DIRS[S.dirIdx].fore / UV_PX * S.r;
-            if (Math.abs(ringDist(S.dirIdx, nDir)) === 1 && spd0 > 0 && d / spd0 <= T.round / 2) beginRound(nDir);
+            var ahead = Math.abs(degDist(DIRS[S.dirIdx].deg, DIRS[nDir].deg));
+            if (ahead > 1e-6 && ahead <= STEP_DEG + 0.5 && spd0 > 0 && d / spd0 <= T.round / 2) { beginRound(nDir); S.roundAhead = tgt; }
           }
         }
         // slow for the next corner she has to stop at (more than a sixteenth of a turn from one stretch to the next)
@@ -613,7 +859,7 @@
         for (var i = 1; i < S.path.length; i++) {
           var nd = { x: S.path[i].x - prevPt.x, y: S.path[i].y - prevPt.y }, nl = Math.hypot(nd.x, nd.y);
           var ndir = dirFor(nd, prevDir);
-          if (nl > 0.5 && Math.abs(ringDist(prevDir, ndir)) > 1) break;
+          if (nl > 0.5 && Math.abs(degDist(DIRS[prevDir].deg, DIRS[ndir].deg)) > STEP_DEG + 0.5) break;
           remain += nl; prevPt = S.path[i]; prevDir = ndir;
         }
         // pace and stride are set on the ground: walking up or down the page (where the ground is foreshortened) she
@@ -622,11 +868,13 @@
         S.L = speed * T.step;
         var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
         S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
-        var move = Math.min(d, speed * S.r * dt);
+        // on an arc with a point after this one she keeps her pace through the point instead of stopping on it
+        var arcing = rounding() && !reduced && !!nxt;
+        var move = arcing ? speed * S.r * dt : Math.min(d, speed * S.r * dt);
         // rounding a corner she walks the way she is facing, which is between two drawings — so the corner is an arc
         // she actually walks rather than a pivot, and she is never carried sideways while her facing catches up
         var ux = dx / d, uy = dy / d;
-        if (rounding() && !reduced && move < d - 1e-6) {
+        if (rounding() && !reduced && (arcing || move < d - 1e-6)) {
           // halfway between the two: enough of an arc that she is never carried far off her facing, not so much that
           // she leaves the path she is walking
           var fv = dirVecAt(S.p), bx = (fv.x + ux) / 2, by = (fv.y + uy) / 2, bl = Math.hypot(bx, by);
@@ -767,16 +1015,133 @@
     }
   }
 
+  // ---- the idle ---------------------------------------------------------------------------------------------------
+  // The pieces test's life, folded onto the rig (Chanté, 2026-09-13: "fold them in sounds right"): blinks, glances (the
+  // eyes shift inside the face and the hood follows a touch), a head tilt, and three expressions — happy, curious,
+  // sleepy. Each channel eases between values on the sim clock, so a grid or a trace sees exactly what the page plays.
+  // The canon (docs/design/motion-and-interaction.md §12–14): blinks at irregular 2.5–6.5 s, a glance or a tilt every
+  // 8–20 s, an expression rarely (curious or sleepy every 40–90 s, one pass, back to rest), long stretches of nothing.
+  // Glances may come while she walks; a tilt or an expression only while she stands, and one under way when she sets
+  // off is let go. Reduced motion: a cue jumps to its pose and back, and nothing is scheduled.
+  var IDLE_REST = { open: 1, sc: 1, arc: 0, gx: 0, tx: 0, ty: 0, tilt: 0 };
+  function rnd(a, b) { return a + random() * (b - a); }
+  function newIdle() {
+    var tw = {};
+    Object.keys(IDLE_REST).forEach(function (k) { tw[k] = { from: IDLE_REST[k], to: IDLE_REST[k], start: 0, dur: 0 }; });
+    return {
+      tw: tw, blinks: [], actions: [], busyUntil: 0, kind: null,
+      nextBlink: 1.2, nextMotion: rnd(IDLE.motionMin, IDLE.motionMax), nextExpr: rnd(IDLE.exprMin, IDLE.exprMax),
+      // ?cue=curious@0.5,blink@2 fires cues at those sim times, whatever the scheduler is doing — for grids
+      forced: (params.get('cue') || '').split(',').filter(Boolean).map(function (s) {
+        var q = s.split('@');
+        return { name: q[0], t: parseFloat(q[1] || '0') || 0, done: false };
+      })
+    };
+  }
+  function easeIO(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function ival(k) {
+    var t = S.idle.tw[k];
+    if (t.dur <= 0 || S.time >= t.start + t.dur) return t.to;
+    return t.from + (t.to - t.from) * easeIO((S.time - t.start) / t.dur);
+  }
+  function ito(k, v, dur) { S.idle.tw[k] = { from: ival(k), to: v, start: S.time, dur: reduced ? 0 : dur }; }
+  function restAll(eyeDur, headDur) {
+    ito('open', 1, eyeDur); ito('sc', 1, eyeDur); ito('arc', 0, eyeDur); ito('gx', 0, eyeDur);
+    ito('tx', 0, headDur); ito('ty', 0, headDur); ito('tilt', 0, headDur);
+  }
+  // one motion at a time: set it, hold it, then everything eases back to rest
+  function motion(kind, set, hold, back) {
+    var I = S.idle;
+    I.actions = I.actions.filter(function (a) { return a.group !== 'motion'; });
+    set();
+    I.kind = kind;
+    I.busyUntil = S.time + hold + back;
+    I.actions.push({ time: S.time + hold, group: 'motion', fn: function () { restAll(0.18, back); I.kind = null; } });
+  }
+  // the pieces test's cues, timings in seconds; tilt is a share of a full tilt (IDLE.tiltTop), ty a share of IDLE.headY
+  var CUES = {
+    blink: function () { S.idle.blinks.push(S.time); },
+    glance: function (dir) {
+      dir = dir || (random() < 0.5 ? -1 : 1);
+      motion('glance', function () { restAll(0.16, 0.45); ito('gx', dir, 0.16); ito('tx', dir, 0.45); ito('tilt', 0.24 * dir, 0.45); }, 1.35, 0.42);
+    },
+    tilt: function (dir) {
+      dir = dir || (random() < 0.5 ? -1 : 1);
+      motion('tilt', function () { restAll(0.18, 0.6); ito('tilt', dir, 0.65); }, 1.6, 0.65);
+    },
+    happy: function () {
+      motion('happy', function () { restAll(0.18, 0.45); ito('open', 0, 0.16); ito('arc', 1, 0.2); ito('ty', -0.4, 0.45); }, 2.2, 0.45);
+    },
+    curious: function () {
+      motion('curious', function () { restAll(0.18, 0.5); ito('sc', 1.12, 0.2); ito('tilt', 0.8, 0.55); ito('ty', -0.2, 0.55); }, 2.4, 0.55);
+    },
+    sleepy: function () {
+      motion('sleepy', function () { restAll(0.2, 0.7); ito('open', 0.36, 0.42); ito('ty', 0.6, 0.8); }, 3.0, 0.6);
+    }
+  };
+  function fireCue(name) {
+    if (name === 'glanceLeft') CUES.glance(-1);
+    else if (name === 'glanceRight') CUES.glance(1);
+    else if (name === 'tiltLeft') CUES.tilt(-1);
+    else if (name === 'tiltRight') CUES.tilt(1);
+    else if (CUES[name]) CUES[name]();
+  }
+  function idleTick() {
+    var I = S.idle, standing = !S.path.length && !turning();
+    I.forced.forEach(function (c) { if (!c.done && S.time >= c.t) { c.done = true; fireCue(c.name); } });
+    var due = I.actions.filter(function (a) { return a.time <= S.time; });
+    if (due.length) {
+      I.actions = I.actions.filter(function (a) { return a.time > S.time; });
+      due.forEach(function (a) { a.fn(); });
+    }
+    // a tilt or an expression is for standing: when she sets off she lets it go
+    if (!standing && I.kind && I.kind !== 'glance') {
+      I.actions = I.actions.filter(function (a) { return a.group !== 'motion'; });
+      restAll(0.18, 0.35);
+      I.kind = null;
+      I.busyUntil = S.time + 0.35;
+    }
+    if (reduced || !ui.auto) return;
+    if (S.time >= I.nextBlink) {
+      I.blinks.push(S.time);
+      if (random() < IDLE.doubleBlink) I.blinks.push(S.time + 0.38);
+      I.nextBlink = S.time + rnd(IDLE.blinkMin, IDLE.blinkMax);
+    }
+    if (S.time >= I.nextMotion) {
+      if (S.time < I.busyUntil) I.nextMotion = I.busyUntil + rnd(1.5, 3);
+      else {
+        if (standing && random() < 1 / 7) CUES.tilt(); else CUES.glance();   // walking, glances only
+        I.nextMotion = S.time + rnd(IDLE.motionMin, IDLE.motionMax);
+      }
+    }
+    if (S.time >= I.nextExpr) {
+      // only when she will stand long enough to finish it, and never on top of another motion
+      var staysPut = standing && (!(ui.tour && S.waiting) || S.hold > 3.8);
+      if (!staysPut || S.time < I.busyUntil) I.nextExpr = S.time + rnd(2, 5);
+      else {
+        if (random() < 0.5) CUES.curious(); else CUES.sleepy();
+        I.nextExpr = S.time + rnd(IDLE.exprMin, IDLE.exprMax);
+        I.nextMotion = Math.max(I.nextMotion, I.busyUntil + rnd(4, 9));   // then a rest: no glance straight after it
+      }
+    }
+  }
   function blinkAmount() {
-    var a = 0;
-    S.blinks.forEach(function (b) {
+    var I = S.idle, a = 0;
+    I.blinks = I.blinks.filter(function (b) { return S.time - b < 0.6; });
+    I.blinks.forEach(function (b) {
       var t = S.time - b, v = 0;
       if (t < 0) return;
-      if (t < 0.09) v = smooth(t / 0.09); else if (t < 0.15) v = 1; else if (t < 0.28) v = 1 - smooth((t - 0.15) / 0.13);
+      if (reduced) v = t < 0.3 ? 1 : 0;
+      else if (t < 0.09) v = smooth(t / 0.09); else if (t < 0.15) v = 1; else if (t < 0.28) v = 1 - smooth((t - 0.15) / 0.13);
       a = Math.max(a, v);
     });
-    return reduced ? 0 : a;
+    return a;
   }
+  function idlePose() {
+    return { open: ival('open'), sc: ival('sc'), arc: ival('arc'), gx: ival('gx'), tx: ival('tx'), ty: ival('ty'),
+      tilt: ival('tilt'), blink: blinkAmount() };
+  }
+  function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
 
   // Fill a target's six knot columns for one drawing of a morph: this drawing's own three knots, and the three the
   // morph is sending them to (the lerp of A's and B's, read at the same height). Both in this drawing's own pixels.
@@ -819,6 +1184,135 @@
                        : KO[4] + (sx - KO[1]) * (KO[5] - KO[4]) / Math.max(0.05, KO[2] - KO[1]);
   }
 
+  // The eyes, the pieces test's way on the rig's drawings. First the painted eyes and their halo go under the face's
+  // own black — feathered, and clipped to the face so it never reaches the hood's lining — then each eye is drawn back
+  // in the painted eye's colours from the middle out, with the pieces' halo, where the idle puts it: shifted for a
+  // glance, under a curved lid for a blink or sleepy, bigger for curious, ^ ^ for happy. In a morph an eye both
+  // drawings have sits at the lerp of the two, as the legs do; an eye only this drawing has (the far eye as she turns
+  // away, the last one going past side-on into wbw) stays on this drawing's own face and fades with it.
+  var EYE_COVER = 2.5;            // the painted halo reaches ~2.45 eye radii
+  var EYE_RING = [254, 250, 228];  // the bright ring inside the rim, for happy's strokes (the pieces')
+  function drawEyes(ctx, P, dirIdx, mix, kn, padX, padT, sxScale, mapY, xoff, ip) {
+    var R = P.R;
+    if (!R.eyes || !R.facePoly) return;
+    var mir = DIRS[dirIdx].mirror, ms = mir ? -1 : 1;
+    var own = EYEN[dirIdx].eyes, other = mix ? EYEN[mix.a === dirIdx ? mix.b : mix.a].eyes : null;
+    var u = mix ? (mix.a === dirIdx ? mix.t : 1 - mix.t) : 0;
+    var toX = function (sx, ys) { return padX + P.rootX + (morphX(kn, P, sx, ys) - P.rootX) * sxScale + xoff(ys); };
+    var vscale = function (ys) { return (mapY(ys + 1) - mapY(ys - 1)) / 2; };
+    // which of the other drawing's eyes is the same eye: by page order when both have as many, else the near one (the
+    // screen-left eye on a drawing turned left, the screen-right one mirrored) pairs with the near one
+    var partner = function (i) {
+      if (!other || !other.length) return null;
+      if (own.length === other.length) return other[i];
+      if (own.length > other.length) return i === (mir ? own.length - 1 : 0) ? other[mir ? other.length - 1 : 0] : null;
+      return other[mir ? other.length - 1 : 0];
+    };
+    ctx.save();
+    ctx.beginPath();
+    R.facePoly.forEach(function (q, n) {
+      var ys = q[1] * P.sy, x = toX(q[0] * P.sx, ys), y = padT + mapY(ys);
+      if (n) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    });
+    ctx.closePath();
+    ctx.clip();
+    // the painted eyes out, where they are in this drawing (warped with it)
+    R.eyes.forEach(function (e) {
+      var ys = e.cy * P.sy, cx = toX(e.cx * P.sx, ys), cy = padT + mapY(ys);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(e.rx * P.sx * sxScale * EYE_COVER, e.ry * P.sy * vscale(ys) * EYE_COVER);
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, rgba(R.faceBlack, 1)); g.addColorStop(0.8, rgba(R.faceBlack, 1)); g.addColorStop(1, rgba(R.faceBlack, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, 1, 0, 2 * Math.PI); ctx.fill();
+      ctx.restore();
+    });
+    var EB = R.eyeBody, G = R.eyeGlow, glowR = G.stops[G.stops.length - 1][0];
+    var rim = EB[EB.length - 1][1], core = EB[0][1];
+    var open = clamp(ip.open * (1 - ip.blink), 0, 1), v = IDLE.lens + (1 - IDLE.lens) * open;
+    var noArc = clamp(1 - ip.arc, 0, 1), arc = clamp(ip.arc, 0, 1);
+    own.forEach(function (e, i) {
+      var q = partner(i), cx, cy, rx, ry, ys;
+      if (q) {
+        ys = P.feet + lerp(e.y, q.y, u) * P.height;
+        cx = padX + P.rootX + ms * lerp(e.x, q.x, u) * P.hx * sxScale + xoff(ys);
+        rx = lerp(e.rx, q.rx, u) * P.hx * sxScale;
+        ry = lerp(e.ry, q.ry, u) * P.height;
+      } else {
+        var src = R.eyes[e.i];
+        ys = src.cy * P.sy;
+        cx = toX(src.cx * P.sx, ys);
+        rx = src.rx * P.sx * sxScale;
+        ry = src.ry * P.sy;
+      }
+      cy = padT + mapY(ys);
+      ry *= vscale(ys);
+      cx += ms * ip.gx * IDLE.glance * R.faceW * P.sx * sxScale;   // a glance, in the page's sides
+      rx *= ip.sc; ry *= ip.sc;
+      if (noArc > 0.002) {
+        // the halo, squashed onto what the lid leaves lit
+        var gcy = cy + ry - ry * v, grx = rx * (0.55 + 0.45 * v), gry = Math.max(0.01, ry * v);
+        ctx.save();
+        ctx.globalAlpha = noArc;
+        ctx.translate(cx, gcy);
+        ctx.scale(grx, gry);
+        var g = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+        g.addColorStop(0, rgba(G.colour, G.stops[0][1]));
+        G.stops.forEach(function (st) { g.addColorStop(Math.min(1, st[0] / glowR), rgba(G.colour, st[1])); });
+        ctx.fillStyle = g;
+        ctx.fillRect(-glowR, -glowR, 2 * glowR, 2 * glowR);
+        ctx.restore();
+        // the eye under its lid. The lid's edge bows down in the middle as it closes (the pieces' lid was a straight
+        // cut, the weak spot that test named); open, it sits on the eye's top and cuts nothing
+        var lid = cy + ry - 2 * ry * v, bow = ry * 0.7 * Math.min(v, 1 - v);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx - rx - 2, lid - bow * 0.3);
+        ctx.quadraticCurveTo(cx, lid + bow, cx + rx + 2, lid - bow * 0.3);
+        ctx.lineTo(cx + rx + 2, cy + ry + 2);
+        ctx.lineTo(cx - rx - 2, cy + ry + 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.globalAlpha = noArc;
+        ctx.translate(cx, cy);
+        ctx.scale(rx, ry);
+        var b = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        EB.forEach(function (st) { b.addColorStop(st[0], rgba(st[1], 1)); });
+        b.addColorStop(1, rgba(rim, 0));
+        ctx.fillStyle = b;
+        ctx.beginPath(); ctx.arc(0, 0, 1, 0, 2 * Math.PI); ctx.fill();
+        ctx.restore();
+      }
+      if (arc > 0.002) {
+        // happy: ^ ^, thick glowing strokes (the pieces')
+        var hw = rx * 0.34, rimw = rx * 0.12;
+        ctx.save();
+        ctx.globalAlpha = arc;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        var path = function () {
+          ctx.beginPath();
+          ctx.moveTo(cx - rx * 1.05, cy + ry * 0.22);
+          ctx.quadraticCurveTo(cx, cy - ry * 0.82, cx + rx * 1.05, cy + ry * 0.22);
+        };
+        path();
+        ctx.shadowColor = rgba(G.colour, 0.85);
+        ctx.shadowBlur = Math.max(0, rx * 0.9);
+        ctx.strokeStyle = rgba(G.colour, 0.35);
+        ctx.lineWidth = 2 * (hw + rimw) + rx * 0.3;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'rgba(0,0,0,0)';
+        path(); ctx.strokeStyle = rgba(rim, 1); ctx.lineWidth = 2 * (hw + rimw); ctx.stroke();
+        path(); ctx.strokeStyle = rgba(EYE_RING, 1); ctx.lineWidth = 2 * hw; ctx.stroke();
+        path(); ctx.strokeStyle = rgba(core, 1); ctx.lineWidth = 1.1 * hw; ctx.stroke();
+        ctx.restore();
+      }
+    });
+    ctx.restore();
+  }
+
   // Draw her, facing ring position dirIdx, into a target's canvas; returns where it goes, in painting px. With `mix`
   // — { a, b, t }, the two drawings a turn is between and how far — this drawing is warped onto the shared, lerped
   // knots, and its legs, boots and feet are put where the lerp says, so the two halves of the morph coincide.
@@ -855,31 +1349,28 @@
     var wHead = function (y) { return 1 - smooth((y - P.chin) / Math.max(1, P.neck - P.chin)); };
     var wHem = function (y) { return smooth((y - hemTop) / Math.max(1, P.feet - hemTop)); };
     var headDY = -T.bob * m * 0.45 * Math.sin(Math.PI * frac(2 * (phi - 0.06))) * w * D;
-    var mapY = function (j) { return P.feet + (j - P.feet) * syAll + bob + dip + (headDY - bob * 0.25) * wHead(j) * (walking ? 1 : 0); };
+    // the idle: a glance carries the hood a touch, a tilt shears it from the neck up (nothing at the neck, the most at
+    // the hood top, and the head weight bends the collar rather than tearing it), sleepy lowers it and curious lifts it,
+    // and standing she sways very slowly from the feet. Sides are the page's, so they flip on a mirrored drawing.
+    var ip = idlePose();
+    var idleSway = still ? 0 : IDLE.sway * m * Math.sin(TAU * S.time / IDLE.swayS + 0.9) * (1 - w) * D;
+    var idleTx = ip.tx * IDLE.glanceHood * m * ms * D, idleTy = ip.ty * IDLE.headY * m * D;
+    var idleTilt = ip.tilt * IDLE.tiltTop * P.height * ms, neckSpan = Math.max(1, P.neck - (P.feet - P.height));
+    var mapY = function (j) {
+      return P.feet + (j - P.feet) * syAll + bob + dip + ((headDY - bob * 0.25) * (walking ? 1 : 0) + idleTy) * wHead(j);
+    };
     var xoff = function (j) {
-      var h = clamp((P.feet - j) / P.height, 0, 1.1);
-      return sway * 0.6 + (roll + lean) * h + head * wHead(j) + hem * wHem(j);
+      var h = clamp((P.feet - j) / P.height, 0, 1.1), wh = wHead(j);
+      return sway * 0.6 + (roll + lean) * h + head * wh + hem * wHem(j)
+        + idleSway * h + (idleTx + idleTilt * clamp((P.neck - j) / neckSpan, 0, 1)) * wh;
     };
     var sxScale = (1 + squash * 0.7) * (1 - 0.06 * pa);
     warp(P, tg.image, W, H, mapY, xoff, sxScale, padX, padT, kn);
     bctx.putImageData(tg.image, 0, 0);
 
-    // blinks: her own black drawn down over each eye, wide enough to take the painted rim and glow
-    var R = P.R, a = blinkAmount();
-    if (R.eyes && a > 0.01) {
-      bctx.fillStyle = 'rgb(' + R.faceBlack.join(',') + ')';
-      R.eyes.forEach(function (e) {
-        var ys = e.cy * P.sy, cy = padT + mapY(ys);
-        var cx = padX + P.rootX + (morphX(kn, P, e.cx * P.sx, ys) - P.rootX) * sxScale + xoff(ys);
-        var rx = e.rx * P.sx * 1.7, ry = e.ry * P.sy * syAll * 1.4;
-        bctx.save();
-        bctx.beginPath();
-        bctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
-        bctx.clip();
-        bctx.fillRect(cx - rx - 1, cy - ry - 1, 2 * rx + 2, 2 * ry * a + 1);
-        bctx.restore();
-      });
-    }
+    // the eyes, drawn in code over the painted ones (a view from behind has none)
+    var R = P.R;
+    drawEyes(bctx, P, dirIdx, mix, kn, padX, padT, sxScale, mapY, xoff, ip);
 
     var fctx = tg.fig.getContext('2d');
     fctx.clearRect(0, 0, W, H);
@@ -930,19 +1421,20 @@
   // Where the drawing on screen actually faces. With Turn: Morph, part-way through a turn she is genuinely between two
   // drawings, so the audit and the floor plan's red arrow read the facing between them; with Swap she is always on one.
   function faceNow() {
-    var q = (ui.morph && !reduced) ? S.p : S.dirIdx, a = Math.floor(q), t = q - a;
-    var A = DIRS[a % N_DIRS].face;
-    if (t < 1e-4) return A;
-    var B = DIRS[(a + 1) % N_DIRS].face;
-    var x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t, l = Math.hypot(x, y) || 1;
+    if (!ui.morph || reduced) return DIRS[S.dirIdx].face;
+    var br = bracket(S.p), A = DIRS[br.a].face;
+    if (br.t < 1e-4) return A;
+    var B = DIRS[br.b].face;
+    var x = A.x + (B.x - A.x) * br.t, y = A.y + (B.y - A.y) * br.t, l = Math.hypot(x, y) || 1;
     return { x: x / l, y: y / l };
   }
 
+  // the two ring entries her facing lies between, by angle — so across the seam the pairs are w ↔ wbw and wbw ↔ wnw
   function morphMix() {
     if (!ui.morph || reduced) return null;
-    var a = Math.floor(S.p), t = S.p - a;
-    if (t < 0.004 || t > 0.996) return null;
-    return { a: a % N_DIRS, b: (a + 1) % N_DIRS, t: t };
+    var br = bracket(S.p);
+    if (br.t < 0.004 || br.t > 0.996) return null;
+    return br;
   }
 
   // ---- the scene ----------------------------------------------------------------------------------------------
@@ -968,14 +1460,81 @@
     ctx.restore();
   }
 
+  // ---- the room drawn: the plate and every shadow, her contact shadow, then the layers and her in depth order ------
+  // Scaled once per device scale D (a size of the stage, or a zoom), never per frame. The plate with the shadows laid
+  // on it is one canvas at painting size, and one at D when that fits FLOOR_BUDGET (a close follow camera doesn't, and
+  // draws the painting-size one scaled). Each layer is one canvas at D, drawn on whole device pixels with the camera
+  // rounded to them, so the layers sit exactly on the plate.
+  var FLOOR_BUDGET = 8e6;
+  var floorCanvas = null, sceneCache = { key: '' };
+  function floorComposite() {
+    if (floorCanvas) return floorCanvas;
+    floorCanvas = document.createElement('canvas');
+    floorCanvas.width = PW; floorCanvas.height = PH;
+    var x = floorCanvas.getContext('2d');
+    x.drawImage(images.plate, 0, 0);
+    ROOM.layers.forEach(function (L) { if (L.shadow) x.drawImage(images['shadow:' + L.id], L.shadow.offset[0], L.shadow.offset[1]); });
+    return floorCanvas;
+  }
+  function sceneAt(D) {
+    var key = D.toFixed(5);
+    if (sceneCache.key === key) return sceneCache;
+    var sc = { key: key, floor: null, layers: {} }, fw = Math.ceil(PW * D), fh = Math.ceil(PH * D);
+    if (fw * fh <= FLOOR_BUDGET) {
+      sc.floor = document.createElement('canvas');
+      sc.floor.width = fw; sc.floor.height = fh;
+      var fx = sc.floor.getContext('2d');
+      fx.imageSmoothingEnabled = true; fx.imageSmoothingQuality = 'high';
+      fx.drawImage(floorComposite(), 0, 0, PW * D, PH * D);
+    }
+    ROOM.layers.forEach(function (L) {
+      var im = images['layer:' + L.id], ix = Math.floor(L.offset[0] * D), iy = Math.floor(L.offset[1] * D);
+      var c = document.createElement('canvas');
+      c.width = Math.max(1, Math.ceil((L.offset[0] + im.width) * D) - ix);
+      c.height = Math.max(1, Math.ceil((L.offset[1] + im.height) * D) - iy);
+      var x = c.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(im, L.offset[0] * D - ix, L.offset[1] * D - iy, im.width * D, im.height * D);
+      sc.layers[L.id] = { c: c, ix: ix, iy: iy };
+    });
+    sceneCache = sc;
+    return sc;
+  }
+
   function render(ctx, wDev, hDev, cam) {
-    var D = cam.D;
+    var D = cam.D, sc = sceneAt(D);
+    var ox = Math.round(cam.x0 * D), oy = Math.round(cam.y0 * D);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, wDev, hDev);
-    ctx.setTransform(D, 0, 0, D, -cam.x0 * D, -cam.y0 * D);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(images.room, 0, 0, PW, PH);
+    if (sc.floor) {
+      var sw = Math.min(wDev, sc.floor.width - ox), sh = Math.min(hDev, sc.floor.height - oy);
+      if (sw > 0 && sh > 0) ctx.drawImage(sc.floor, ox, oy, sw, sh, 0, 0, sw, sh);
+    } else {
+      // too big to scale whole (a close follow camera): a window round the view, scaled once and slid over until the
+      // view leaves it, instead of scaling the painting every frame
+      var FW = Math.ceil(PW * D), FH = Math.ceil(PH * D), win = sc.win;
+      var stale = !win || (ox < win.x && win.x > 0) || (oy < win.y && win.y > 0) ||
+        (ox + wDev > win.x + win.c.width && win.x + win.c.width < FW) || (oy + hDev > win.y + win.c.height && win.y + win.c.height < FH);
+      if (stale) {
+        var mx = Math.round(wDev / 4), my = Math.round(hDev / 4);
+        var wx = Math.max(0, ox - mx), wy = Math.max(0, oy - my);
+        var ww = Math.max(1, Math.min(FW - wx, wDev + 2 * mx)), wh = Math.max(1, Math.min(FH - wy, hDev + 2 * my));
+        if (!win) win = sc.win = { c: document.createElement('canvas'), x: 0, y: 0 };
+        if (win.c.width !== ww || win.c.height !== wh) { win.c.width = ww; win.c.height = wh; }
+        var wc = win.c.getContext('2d');
+        wc.setTransform(1, 0, 0, 1, 0, 0);
+        wc.clearRect(0, 0, ww, wh);
+        wc.imageSmoothingEnabled = true; wc.imageSmoothingQuality = 'high';
+        wc.setTransform(D, 0, 0, D, -wx, -wy);
+        wc.drawImage(floorComposite(), 0, 0);
+        win.x = wx; win.y = wy;
+      }
+      var su = ox - win.x, sv = oy - win.y, sw2 = Math.min(wDev, win.c.width - su), sh2 = Math.min(hDev, win.c.height - sv);
+      if (sw2 > 0 && sh2 > 0) ctx.drawImage(win.c, su, sv, sw2, sh2, 0, 0, sw2, sh2);
+    }
+    ctx.setTransform(D, 0, 0, D, -ox, -oy);
 
     // Between two drawings: A and B both warped onto the same knots. The nearer of the two goes down whole and the
     // other over it at its share, which is a straight lerp where they overlap — and since the morph has already put
@@ -999,37 +1558,60 @@
     ctx.fill();
     ctx.restore();
 
-    place(ctx, fig);
-    if (mix) {
-      ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
-      place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
-      ctx.globalAlpha = 1;
+    // then the layers and her, back to front by the depth rule: a layer is drawn over her only when its ground reaches
+    // lower on the page than her feet in her columns; her contact shadow above is under every layer
+    var order = drawOrder(S.x, S.y).order;
+    for (var oi = 0; oi < order.length; oi++) {
+      if (order[oi] === 'lumi') {
+        place(ctx, fig);
+        if (mix) {
+          ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
+          place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+          ctx.globalAlpha = 1;
+        }
+        continue;
+      }
+      var lc = sc.layers[order[oi]];
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(lc.c, lc.ix - ox, lc.iy - oy);
+      ctx.setTransform(D, 0, 0, D, -ox, -oy);
     }
 
-    // furniture she is behind, cut from the painting and laid back over her
-    var q = toUV(S.x, S.y);
-    OCC.forEach(function (o) {
-      if (q.u >= o.u1 || q.v >= o.v1) return;
-      ctx.save();
-      polyPath(ctx, o.cutout);
-      ctx.clip();
-      ctx.drawImage(images.room, 0, 0, PW, PH);
-      ctx.restore();
-    });
-
     if (ui.plan) {
+      // outlines only: a filled polygon would wash over her where she overlaps it on the page. The floor dashed, the
+      // footprints and blockers grown by her clearance dotted (where her feet may not go), footprints cyan, extents
+      // white, blockers orange, anchors red, and her feet columns (x ± HALF, what the depth rule tests) a red bar
       ctx.lineWidth = 1.6 / D;
       ctx.setLineDash([6 / D, 5 / D]);
       ctx.strokeStyle = 'rgba(240, 217, 166, 0.95)';
-      polyPath(ctx, ROOM.walkable); ctx.stroke();
+      polyPath(ctx, ROOM.walkable.floor); ctx.stroke();
+      ctx.setLineDash([2 / D, 4 / D]);
+      ctx.lineWidth = 1.2 / D;
+      ctx.strokeStyle = 'rgba(255, 244, 214, 0.5)';
+      minusPolys().forEach(function (p) { polyPath(ctx, p); ctx.stroke(); });
       ctx.setLineDash([]);
-      OCC.forEach(function (o) {
-        // outlines only: a filled footprint would wash over her where she overlaps it on the page
-        ctx.strokeStyle = 'rgba(255, 244, 214, 0.75)';
-        polyPath(ctx, o.footprint); ctx.stroke();
-        ctx.strokeStyle = 'rgba(217, 172, 95, 0.9)';
-        polyPath(ctx, o.cutout); ctx.stroke();
+      ROOM.layers.forEach(function (L) {
+        ctx.strokeStyle = 'rgba(0, 230, 255, 0.95)'; ctx.lineWidth = 2 / D;
+        polyPath(ctx, L.footprint); ctx.stroke();
+        if (L.extent) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.2 / D; polyPath(ctx, L.extent); ctx.stroke(); }
       });
+      ROOM.blockers.forEach(function (b) {
+        ctx.strokeStyle = 'rgba(255, 140, 40, 0.9)'; ctx.lineWidth = 1.5 / D;
+        polyPath(ctx, b.footprint); ctx.stroke();
+      });
+      ctx.font = (12 / D) + 'px ui-sans-serif, system-ui, sans-serif';
+      ROOM.layers.forEach(function (L) {
+        Object.keys(L.anchors).forEach(function (name) {
+          var a = L.anchors[name].at;
+          ctx.fillStyle = '#ff3b3b';
+          ctx.beginPath(); ctx.arc(a[0], a[1], 3.5 / D, 0, 2 * Math.PI); ctx.fill();
+          ctx.lineWidth = 3 / D; ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.strokeText(name, a[0] + 6 / D, a[1] - 4 / D);
+          ctx.fillStyle = '#fff4d6'; ctx.fillText(name, a[0] + 6 / D, a[1] - 4 / D);
+        });
+      });
+      ctx.strokeStyle = 'rgba(255, 59, 59, 0.9)'; ctx.lineWidth = 2 / D;
+      ctx.beginPath(); ctx.moveTo(S.x - HALF(), S.y); ctx.lineTo(S.x + HALF(), S.y); ctx.stroke();
       if (S.path.length) {
         ctx.strokeStyle = 'rgba(255, 244, 214, 0.95)';
         ctx.lineWidth = 2.2 / D;
@@ -1081,7 +1663,7 @@
   // corners are jumped, and writes the numbers into <pre id="audit"> (capture.py --audit prints them).
   function runAudit() {
     document.body.classList.add('chromeless');
-    var dt = 1 / 60, pick = rng(11);
+    var dt = 1 / 60;
     var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0, faceOffDeg: {} };
     DIRS.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
     function run(frames) {
@@ -1097,11 +1679,45 @@
         var mx = S.x - x0, my = S.y - y0, len = Math.hypot(mx, my);
         if (len < 1e-6) continue;
         var v = faceNow(), ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
+        // ?around=t0,t1: every frame between those sim times, for a number the grids cannot reach (the random clicks)
+        if (AROUND && S.time >= AROUND[0] && S.time <= AROUND[1]) {
+          log.frames = log.frames || [];
+          log.frames.push({ t: +S.time.toFixed(3), x: +S.x.toFixed(2), y: +S.y.toFixed(2), p: +S.p.toFixed(2), ang: +ang.toFixed(1),
+            len: +len.toFixed(2), state: turning() ? 'turning' : rounding() ? 'rounding' : 'walking', spinTo: S.spinTo,
+            ahead: !!S.roundAhead, next: S.path.slice(0, 3).map(function (p) { return [+p.x.toFixed(1), +p.y.toFixed(1)]; }) });
+        }
         log.walkedPx += len;
         if (ang > 25) log.sidewaysPx += len;
-        if (ang > log.worstDeg) { log.worstDeg = ang; log.worstAt = { x: Math.round(S.x), y: Math.round(S.y), facing: DIRS[S.dirIdx].id, t: +S.time.toFixed(2) }; }
+        if (ang > log.worstDeg) {
+          log.worstDeg = ang;
+          log.worstAt = { x: Math.round(S.x), y: Math.round(S.y), facing: DIRS[S.dirIdx].id, p: +S.p.toFixed(2), t: +S.time.toFixed(2),
+            moved: [+(mx / len).toFixed(2), +(my / len).toFixed(2)], len: +len.toFixed(2),
+            state: turning() ? 'turning' : rounding() ? 'rounding' : 'walking', spinTo: S.spinTo, r: +S.r.toFixed(2),
+            ahead: !!S.roundAhead, next: S.path.slice(0, 3).map(function (p) { return [Math.round(p.x), Math.round(p.y)]; }) };
+        }
       }
     }
+    walkAudit(run, log);
+    ['walkedPx', 'sidewaysPx', 'worstDeg', 'snappedPx'].forEach(function (k) { log[k] = Math.round(log[k] * 10) / 10; });
+    var pre = document.createElement('pre');
+    pre.id = 'audit';
+    pre.textContent = JSON.stringify(log);
+    document.querySelector('main').appendChild(pre);
+    document.title = 'ready';
+  }
+  // The walk the audit and the occlusion count share: every tour leg checked for a path, the tour for two minutes, then
+  // 60 seeded random clicks on the walkable floor. `run(frames)` steps the sim and measures; `unreachable` counts the
+  // tour legs and the clicks with no path.
+  function walkAudit(run, log) {
+    var pick = rng(11);
+    log.tourLegs = TOUR.length;
+    TOUR.forEach(function (t, k) {
+      var n = TOUR[(k + 1) % TOUR.length];
+      if (!findPath({ x: t.at[0], y: t.at[1] }, { x: n.at[0], y: n.at[1] })) {
+        log.unreachable++;
+        (log.tourLegsUnreachable = log.tourLegsUnreachable || []).push(k);
+      }
+    });
     run(120 * 60);
     ui.tour = false;
     for (var c = 0; c < 60; c++) {
@@ -1119,13 +1735,158 @@
       for (var f = 0; f < 60 * 40 && (S.path.length || turning()); f += 30) run(30);
       run(30);
     }
-    ['walkedPx', 'sidewaysPx', 'worstDeg', 'snappedPx'].forEach(function (k) { log[k] = Math.round(log[k] * 10) / 10; });
+  }
+
+  // `?occlusion=1`: the audit's walk (walkAudit), and at every fourth frame (every second during a morph) her drawing
+  // rendered alone into one buffer and the layers the depth order draws after her into another, both round her feet at
+  // room scale (D = 1). It counts, over the whole walk:
+  //   behindPx      her pixels (alpha > 0.5) covered (layer alpha > 0.1) by a layer drawn after her that the depth rule
+  //                 does not put in front of her — must be 0;
+  //   fringePx      her pixels covered by a layer drawn after her where that layer's pixel is floor-coloured (fringe.py's
+  //                 classifier, listed by build.py) — must be 0;
+  //   outOfReachPx  her pixels overlapping, in either order, a layer whose ground is out of her reach (groundYNear null):
+  //                 their order is arbitrary there, so this says whether REACH spans her widest drawing in motion;
+  //   columnMissPx  her pixels drawn over a layer whose ground, in that very page column, lies wholly lower than her
+  //                 feet (it stands in front of her there): a layer failing to cover what should be behind it;
+  //   columnOverPx  layer pixels drawn over her whose ground, in that column, lies wholly higher than her feet.
+  // The last two are what one order per layer cannot get right beside a footprint's corner and what HALF trades off:
+  // information, with the worst frame, not a gate. Then growCheck (the JS port of depth.py's grow against layers.json's
+  // polygons) and renderMs (render() at a 1166 css px stage at 2×, whole room and follow camera, flushed each frame).
+  function runOcclusion() {
+    document.body.classList.add('chromeless');
+    var dt = 1 / 60, BOX = 220, frameN = 0;
+    var log = { samples: 0, clicks: 0, unreachable: 0, behindPx: 0, fringePx: 0, outOfReachPx: 0, columnMissPx: 0,
+      columnOverPx: 0, coveredPx: 0, framesCovered: 0, halfWidth: HALF(), reach: REACH(), margin: ROOM.depth.margin,
+      framesWith: {}, worst: {} };
+    var LA = {};
+    ROOM.layers.forEach(function (L) {
+      var im = images['layer:' + L.id], c = document.createElement('canvas');
+      c.width = im.width; c.height = im.height;
+      var x = c.getContext('2d');
+      x.drawImage(im, 0, 0);
+      var px = x.getImageData(0, 0, im.width, im.height).data, a = new Uint8Array(im.width * im.height), fl = new Uint8Array(im.width * im.height);
+      for (var i = 0; i < a.length; i++) a[i] = px[i * 4 + 3];
+      (ROOM.floorlike[L.id] || []).forEach(function (p) {
+        var u = p[0] - L.offset[0], v = p[1] - L.offset[1];
+        if (u >= 0 && v >= 0 && u < im.width && v < im.height) fl[v * im.width + u] = 1;
+      });
+      LA[L.id] = { L: L, a: a, fl: fl, w: im.width, h: im.height, x: L.offset[0], y: L.offset[1] };
+    });
+    var herC = document.createElement('canvas'), frontC = document.createElement('canvas');
+    herC.width = herC.height = frontC.width = frontC.height = BOX;
+    var hctx = herC.getContext('2d', { willReadFrequently: true }), fctx = frontC.getContext('2d', { willReadFrequently: true });
+    function where(ids) {
+      return { t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), facing: DIRS[S.dirIdx].id, p: +S.p.toFixed(1),
+        state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting',
+        phase: ui.tour ? 'tour' : 'clicks', layers: Object.keys(ids) };
+    }
+    function sample() {
+      var ox = Math.round(S.x) - BOX / 2, oy = Math.round(S.y) - Math.round(BOX * 0.72);
+      var mix = morphMix(), under = mix && mix.t > 0.5 ? mix.b : mix ? mix.a : S.dirIdx;
+      hctx.setTransform(1, 0, 0, 1, 0, 0); hctx.clearRect(0, 0, BOX, BOX);
+      hctx.setTransform(1, 0, 0, 1, -ox, -oy);
+      place(hctx, drawFigure(1, under, CUR, mix));
+      if (mix) {
+        hctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
+        place(hctx, drawFigure(1, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+        hctx.globalAlpha = 1;
+      }
+      var ha = hctx.getImageData(0, 0, BOX, BOX).data;
+      var d = drawOrder(S.x, S.y), after = {}, seen = false;
+      fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, BOX, BOX);
+      d.order.forEach(function (n) {
+        if (n === 'lumi') { seen = true; return; }
+        if (!seen) return;
+        after[n] = true;
+        fctx.drawImage(images['layer:' + n], LAYER[n].offset[0] - ox, LAYER[n].offset[1] - oy);
+      });
+      var fa = fctx.getImageData(0, 0, BOX, BOX).data;
+      var near = ROOM.layers.map(function (L) { return { id: L.id, g: groundYNear(L, S.x), A: LA[L.id], col: {} }; });
+      var margin = ROOM.depth.margin;
+      var n = { behind: 0, fringe: 0, reach: 0, miss: 0, over: 0, covered: 0 }, ids = { behind: {}, fringe: {}, reach: {}, miss: {}, over: {} };
+      for (var j = 0; j < BOX; j++) {
+        for (var i = 0; i < BOX; i++) {
+          var q = (j * BOX + i) * 4;
+          if (ha[q + 3] <= 127) continue;
+          if (fa[q + 3] > 25) n.covered++;
+          var px = ox + i, py = oy + j;
+          for (var k = 0; k < near.length; k++) {
+            var e = near[k], A = e.A, u = px - A.x, v = py - A.y;
+            if (u < 0 || v < 0 || u >= A.w || v >= A.h || A.a[v * A.w + u] <= 25) continue;
+            var drawnAfter = !!after[e.id];
+            if (e.g === null) { n.reach++; ids.reach[e.id] = true; }
+            if (drawnAfter && !d.over[e.id]) { n.behind++; ids.behind[e.id] = true; }
+            if (drawnAfter && A.fl[v * A.w + u]) { n.fringe++; ids.fringe[e.id] = true; }
+            var iv = e.col[px];
+            if (iv === undefined) iv = e.col[px] = columnInterval(groundOf(A.L), px);
+            if (iv) {
+              if (!drawnAfter && iv[0] > S.y + margin) { n.miss++; ids.miss[e.id] = true; }
+              else if (drawnAfter && iv[1] < S.y - margin) { n.over++; ids.over[e.id] = true; }
+            }
+          }
+        }
+      }
+      log.samples++;
+      if (n.covered) { log.coveredPx += n.covered; log.framesCovered++; }
+      [['behindPx', 'behind'], ['fringePx', 'fringe'], ['outOfReachPx', 'reach'], ['columnMissPx', 'miss'], ['columnOverPx', 'over']].forEach(function (kv) {
+        var v = n[kv[1]];
+        if (!v) return;
+        log[kv[0]] += v;
+        log.framesWith[kv[0]] = (log.framesWith[kv[0]] || 0) + 1;
+        if (!log.worst[kv[0]] || v > log.worst[kv[0]].px) log.worst[kv[0]] = Object.assign({ px: v }, where(ids[kv[1]]));
+      });
+    }
+    function run(frames) {
+      for (var f = 0; f < frames; f++) {
+        step(dt);
+        frameN++;
+        if (frameN % 4 === 0 || (frameN % 2 === 0 && morphMix())) sample();
+      }
+    }
+    walkAudit(run, log);
+
+    var gc = { polys: 0, mismatched: 0, maxDiff: 0 }, groups = {};
+    ROOM.walkable.minus.forEach(function (m) { (groups[m.of] = groups[m.of] || []).push(m.poly); });
+    ROOM.layers.map(function (L) { return [L.id, groundOf(L)]; })
+      .concat(ROOM.blockers.map(function (b) { return [b.id, b.footprint]; }))
+      .forEach(function (pair) {
+        var mine = grow(pair[1], ROOM.lumi.clearance), theirs = groups[pair[0]] || [];
+        if (mine.length !== theirs.length) { gc.mismatched++; return; }
+        mine.forEach(function (p, i) {
+          gc.polys++;
+          if (p.length !== theirs[i].length) { gc.mismatched++; return; }
+          p.forEach(function (v, k) { gc.maxDiff = Math.max(gc.maxDiff, Math.abs(v[0] - theirs[i][k][0]), Math.abs(v[1] - theirs[i][k][1])); });
+        });
+      });
+    gc.maxDiff = +gc.maxDiff.toFixed(3);
+    log.growCheck = gc;
+
+    var W0 = 2332, H0 = Math.round(W0 * PH / PW), stage = document.createElement('canvas');
+    stage.width = W0; stage.height = H0;
+    var sctx = stage.getContext('2d'), perf = {};
+    [['room', 1], ['follow', 2.3]].forEach(function (v) {
+      S.cam = null;
+      var t0 = performance.now();
+      render(sctx, W0, H0, camera(W0, H0, v[1], true));
+      sctx.getImageData(0, 0, 1, 1);
+      perf[v[0] + 'FirstMs'] = +(performance.now() - t0).toFixed(1);
+      var t1 = performance.now();
+      for (var f = 0; f < 40; f++) {
+        step(dt);
+        render(sctx, W0, H0, camera(W0, H0, v[1], false));
+        sctx.getImageData(0, 0, 1, 1);
+      }
+      perf[v[0] + 'Ms'] = +((performance.now() - t1) / 40).toFixed(2);
+    });
+    log.renderMs = perf;
+
     var pre = document.createElement('pre');
     pre.id = 'audit';
     pre.textContent = JSON.stringify(log);
     document.querySelector('main').appendChild(pre);
     document.title = 'ready';
   }
+
   // `?trace=start,step,count`: at each sample where she is, the drawing she shows, where it faces and where she heads
   function runTrace() {
     document.body.classList.add('chromeless');
@@ -1136,7 +1897,14 @@
       var f = faceNow();
       rows.push({ t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), dir: DIRS[S.dirIdx].id, p: +S.p.toFixed(2), img: DIRS[S.dirIdx].img, face: [+f.x.toFixed(2), +f.y.toFixed(2)],
         heading: S.path.length ? [+(nx / nl).toFixed(2), +(ny / nl).toFixed(2)] : null,
-        state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting', r: +S.r.toFixed(2) });
+        state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting', r: +S.r.toFixed(2),
+        // the next few points she is walking to, and how long each stretch is: a wobble in her facing is usually a
+        // wobble in the path, and without these a trace cannot tell the two apart
+        next: S.path.slice(0, 4).map(function (p, k) {
+          var q = k ? S.path[k - 1] : { x: S.x, y: S.y };
+          return [Math.round(p.x), Math.round(p.y), +Math.hypot(p.x - q.x, p.y - q.y).toFixed(1),
+            DIRS[dirFor({ x: p.x - q.x, y: p.y - q.y }, 0)].id];
+        }) });
     }
     var pre = document.createElement('pre');
     pre.id = 'audit';
@@ -1150,6 +1918,7 @@
     resetSim();
     if (params.get('audit')) { runAudit(); return; }
     if (params.get('trace')) { runTrace(); return; }
+    if (params.get('occlusion')) { runOcclusion(); return; }
     if (GRID) { runGrid(); return; }
     var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
     var readout = document.getElementById('readout'), hint = document.getElementById('hint');
@@ -1187,7 +1956,7 @@
       if (ui.tour) { setTour(false); return; }
       setTour(true);
       hint.textContent = '';
-      if (!S.path.length) { S.leg = ROOM.tour.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
+      if (!S.path.length) { S.leg = TOUR.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
     });
     if (reduced) {
       tourBtn.disabled = true;
@@ -1210,6 +1979,27 @@
     var planEl = document.getElementById('plan');
     planEl.checked = ui.plan;
     planEl.addEventListener('change', function () { ui.plan = planEl.checked; });
+    var autoEl = document.getElementById('auto');
+    autoEl.checked = ui.auto && !reduced;
+    autoEl.disabled = reduced;
+    autoEl.addEventListener('change', function () {
+      ui.auto = autoEl.checked;
+      if (!ui.auto) return;
+      var I = S.idle;   // switched back on: start the clocks from now, so nothing fires at once
+      I.nextBlink = S.time + rnd(IDLE.blinkMin, IDLE.blinkMax);
+      I.nextMotion = S.time + rnd(IDLE.motionMin, IDLE.motionMax);
+      I.nextExpr = S.time + rnd(IDLE.exprMin, IDLE.exprMax);
+    });
+    document.getElementById('cues').addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-cue]'); if (!b) return;
+      var cue = b.getAttribute('data-cue');
+      var moving = S.path.length > 0 || turning();
+      if (moving && cue !== 'blink' && cue !== 'glance') { hint.textContent = 'She saves that for when she’s standing still.'; return; }
+      hint.textContent = '';
+      fireCue(cue);
+      // a cue on demand pushes the next scheduled motion back, so the scheduler doesn't pile one straight on top of it
+      if (cue !== 'blink') S.idle.nextMotion = Math.max(S.idle.nextMotion, S.time + 8);
+    });
 
     var lastCam = { D: 1, x0: 0, y0: 0 };
     stage.addEventListener('click', function (ev) {
@@ -1221,7 +2011,7 @@
       hint.textContent = '';
       setTour(false);
       if (reduced) {
-        setP(dirFor({ x: p.x - S.x, y: p.y - S.y }, S.dirIdx));
+        setP(DIRS[dirFor({ x: p.x - S.x, y: p.y - S.y }, S.dirIdx)].deg);
         S.x = p.x; S.y = p.y; S.path = [];
         return;
       }
@@ -1236,6 +2026,10 @@
       if (!reduced) {
         var n = Math.max(1, Math.ceil(dt / (1 / 120)));
         for (var i = 0; i < n; i++) step(dt / n);
+      } else {
+        // reduced motion: she stays put, but the clock runs so a cue can jump to its pose and back
+        S.time += dt;
+        idleTick();
       }
       lastCam = camera(stage.width, stage.height, ui.view === 'follow' ? 2.3 : 1, false);
       render(sctx, stage.width, stage.height, lastCam);
@@ -1257,10 +2051,15 @@
       im.src = src;
     });
   }
-  var names = Object.keys(PARTS);
-  Promise.all([load(ROOM_SRC)].concat(names.map(function (n) { return load(PARTS[n]); }))).then(function (imgs) {
-    images.room = imgs[0];
-    names.forEach(function (n, i) { images[n] = imgs[i + 1]; });
+  // the plate, the rig's pieces, every layer and its shadow
+  var keys = ['plate'], srcs = [PLATE_SRC];
+  Object.keys(PARTS).forEach(function (n) { keys.push(n); srcs.push(PARTS[n]); });
+  ROOM.layers.forEach(function (L) {
+    keys.push('layer:' + L.id); srcs.push(SCENE.layers[L.id]);
+    if (L.shadow) { keys.push('shadow:' + L.id); srcs.push(SCENE.shadows[L.id]); }
+  });
+  Promise.all(srcs.map(load)).then(function (imgs) {
+    keys.forEach(function (k, i) { images[k] = imgs[i]; });
     start();
   }).catch(function (err) {
     document.getElementById('hint').textContent = 'The drawings didn’t load, so there’s nothing to walk.';

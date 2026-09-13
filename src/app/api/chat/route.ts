@@ -22,6 +22,7 @@ import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
+import { MAIL_ON } from "@/core/email/types";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
   after(() => primeTodaysPlan(db(), user, recut));
   // Fold finished stretches of conversation into memory — an episode per visit, notes filed
   // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
-  after(() => consolidateAfter(db(), user));
+  after(() => consolidateAfter(db(), user, { passes: 1 }));
 
   const body = (await req.json()) as { message?: CoherenceUIMessage };
   const incoming = body.message;
@@ -68,8 +69,8 @@ export async function POST(req: Request) {
     loadRecentMessages(db(), conversation.id),
     loadSnapshot(db(), user),
     listRecentActivity(db(), user.id, new Date(Date.now() - TODAY_BOUND_MS)),
-    listSuggestedLeads(db(), user.id, 8),
-    latestMailScan(db(), user.id),
+    MAIL_ON ? listSuggestedLeads(db(), user.id, 8) : undefined,
+    MAIL_ON ? latestMailScan(db(), user.id) : undefined,
     // Never throws: the turn carries on without the Library if it can't be read.
     loadLibraryOrNothing(db(), user.id),
   ]);
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
     onPlanChange: (change) => {
       if (!recut || change.reason === "asked") recut = change;
     },
-    mail: lazyMailReader(user),
+    mail: MAIL_ON ? lazyMailReader(user) : undefined,
     // What they've actually said lately: a belief rests on their word only when its their_words is in here.
     userWords: all
       .filter((m) => m.role === "user")
@@ -135,7 +136,8 @@ export async function POST(req: Request) {
           capacity: snap.capacity,
           plan: snap.plan,
           declinedToday: snap.declinedToday,
-          mailScan: mailScan ? { at: mailScan.at } : null,
+          // Mail off: undefined leaves Their mail out of the context altogether.
+          mailScan: MAIL_ON ? (mailScan ? { at: mailScan.at } : null) : undefined,
           leads,
         }),
       },

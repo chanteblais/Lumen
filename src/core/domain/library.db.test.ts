@@ -4,17 +4,17 @@
  * carries, the chat tools, forgetting, isolation and failure.
  */
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { consolidate, type ConsolidationInputs, type RawProposal } from "@/core/ai/consolidate";
+import { consolidate, consolidateAfter, type ConsolidationInputs, type RawProposal } from "@/core/ai/consolidate";
 import { buildContextBlock } from "@/core/ai/context";
 import { selectLibrary } from "@/core/ai/library-select";
 import { buildTools } from "@/core/ai/tools";
 import type { Db } from "@/db/client";
-import { conversations, episodes, messages, type User } from "@/db/schema";
+import { conversations, episodes, events, messages, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
 import { ensureMainConversation } from "./conversations";
-import { listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing } from "./library";
+import { buildShelves, claimWatermark, getOwnedThread, insertEpisode, listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing, shelveThread, unconsolidatedMessages } from "./library";
 import type { Heard } from "./memory-rules";
 
 let db: Db;
@@ -136,14 +136,118 @@ describe("consolidation", () => {
     expect(retried).toMatchObject({ status: "done" });
   });
 
-  it("consolidates a stretch once when two runs race", async () => {
+  it("consolidates a stretch once when two runs race, and only one pays for the model call", async () => {
     const u = await createTestUser(db, "Uma");
     await say(u, "2026-09-11T09:00:00Z", "user", "Can you help me plan groceries for the week, something cheap and easy?");
     await say(u, "2026-09-11T09:01:00Z", "assistant", "Lentils, eggs, rice. Two big cooks.");
     const propose = vi.fn(async (): Promise<RawProposal> => ({ episode: { summary: "You planned the week's groceries together." }, threads: [], notes: [] }));
     const results = await Promise.all([consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose }), consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose })]);
-    expect(results.map((r) => r.status).sort()).toEqual(["done", "lost"]);
+    expect(results.map((r) => r.status).sort()).toEqual(["busy", "done"]);
+    expect(propose).toHaveBeenCalledOnce();
     expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+    const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
+    expect(c.consolidatingUntil).toBeNull();
+  });
+
+  it("rolls back everything a run wrote when another claimed the stretch during its model call", async () => {
+    const u = await createTestUser(db, "Ula");
+    await say(u, "2026-09-11T09:00:00Z", "user", "For my book the ending should happen on the ferry, I keep coming back to my book.");
+    const last = await say(u, "2026-09-11T09:01:00Z", "assistant", "The ferry ending. That fits.");
+    const c = await ensureMainConversation(db, u.id);
+    const r = await consolidate(db, u, {
+      now: clock("2026-09-11T12:00:00Z"),
+      propose: async () => {
+        // A run whose lease had run out got there first.
+        await claimWatermark(db, c.id, null, last);
+        return {
+          episode: { summary: "You worked on the book's ending." },
+          threads: [{ ref: "new:book", title: "The book", summary: "A novel; the ending is on the ferry." }],
+          notes: [{ thread: "new:book", kind: "idea", content: "The ending happens on the ferry.", source: "lumi_inferred" }],
+        };
+      },
+    });
+    expect(r).toEqual({ status: "lost" });
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toEqual([]);
+    expect(await listThreads(db, u.id)).toEqual([]);
+    const trail = await db.select().from(events).where(eq(events.userId, u.id));
+    expect(trail.map((e) => e.type)).not.toEqual(expect.arrayContaining(["memory.consolidated"]));
+    expect(trail.filter((e) => e.type.startsWith("library.") || e.type === "memory.consolidation_failed")).toEqual([]);
+  });
+
+  it("claims the watermark last, so the conversation row is locked only for the commit", async () => {
+    const log: string[] = [];
+    const logged = await openTestDb({ logger: { logQuery: (q) => log.push(q) } });
+    try {
+      const u = await createTestUser(logged.db, "Log");
+      const c = await ensureMainConversation(logged.db, u.id);
+      for (const [at, role, text] of [
+        ["2026-09-11T09:00:00Z", "user", "I finally booked the movers for the Halifax move, it's on the 30th."],
+        ["2026-09-11T09:01:00Z", "assistant", "Movers booked. That was the big one."],
+      ] as const)
+        await logged.db.insert(messages).values({ conversationId: c.id, role, parts: [{ type: "text", text }], createdAt: new Date(at) });
+      log.length = 0;
+      const r = await consolidate(logged.db, u, { now: clock("2026-09-11T12:00:00Z"), propose: async () => ({ episode: { summary: "You booked the movers for Halifax." }, threads: [], notes: [] }) });
+      expect(r).toMatchObject({ status: "done" });
+      const claimAt = log.map((q) => /^update "conversations" set "summary_through_message_id"/.test(q)).lastIndexOf(true);
+      expect(claimAt).toBeGreaterThan(log.findIndex((q) => q.startsWith('insert into "episodes"')));
+      expect(claimAt).toBeGreaterThan(log.map((q) => q.startsWith('insert into "events"')).lastIndexOf(true));
+      // After the claim only the lease is let go.
+      expect(log.slice(claimAt + 1).every((q) => q.includes('"consolidating_until"'))).toBe(true);
+    } finally {
+      await logged.close();
+    }
+  });
+
+  it("backs off a stretch that keeps failing, and a null proposal is a failure, not an empty stretch", async () => {
+    const u = await createTestUser(db, "Fen");
+    await say(u, "2026-09-11T09:00:00Z", "user", "Let's sort out the grant report, the dentist booking and my mum's birthday present.");
+    const last = await say(u, "2026-09-11T09:01:00Z", "assistant", "Grant report first. The rest are quick.");
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = vi.fn(async (): Promise<RawProposal> => Promise.reject(new Error("output didn't match the schema")));
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose: failing })).toEqual({ status: "failed" });
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:05:00Z"), propose: failing })).toEqual({ status: "waiting", until: new Date("2026-09-11T12:10:00Z") });
+    expect(failing).toHaveBeenCalledOnce();
+
+    const nothing = vi.fn(async () => null);
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:11:00Z"), propose: nothing })).toEqual({ status: "failed" });
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:50:00Z"), propose: nothing })).toEqual({ status: "waiting", until: new Date("2026-09-11T13:11:00Z") });
+    quiet.mockRestore();
+
+    const [c] = await db.select().from(conversations).where(eq(conversations.userId, u.id));
+    expect(c.summaryThroughMessageId).toBeNull();
+    const failures = await db.select().from(events).where(and(eq(events.userId, u.id), eq(events.type, "memory.consolidation_failed")));
+    expect(failures.map((e) => e.payload)).toEqual([{ from: null, through: last }, { from: null, through: last }]);
+
+    expect(await consolidate(db, u, { now: clock("2026-09-11T13:12:00Z"), propose: async () => ({ episode: { summary: "You planned the grant report first." }, threads: [], notes: [] }) })).toMatchObject({ status: "done" });
+  });
+
+  it("leaves a stretch another run holds, and takes it once that lease has run out", async () => {
+    const u = await createTestUser(db, "Lia");
+    await say(u, "2026-09-11T09:00:00Z", "user", "Can we plan the garden this weekend, raised beds and a plum tree?");
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Raised beds first, the tree in autumn.");
+    const c = await ensureMainConversation(db, u.id);
+    await db.update(conversations).set({ consolidatingUntil: new Date("2026-09-11T12:02:00Z") }).where(eq(conversations.id, c.id));
+    const propose = vi.fn(async (): Promise<RawProposal> => ({ episode: { summary: "You planned the garden together." }, threads: [], notes: [] }));
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:00:00Z"), propose })).toEqual({ status: "busy" });
+    expect(propose).not.toHaveBeenCalled();
+    expect(await consolidate(db, u, { now: clock("2026-09-11T12:03:00Z"), propose })).toMatchObject({ status: "done" });
+    const [after] = await db.select().from(conversations).where(eq(conversations.id, c.id));
+    expect(after.consolidatingUntil).toBeNull();
+  });
+
+  it("runs as many passes as it's given — one for a chat turn", async () => {
+    const u = await createTestUser(db, "Pax");
+    await say(u, "2026-09-11T09:00:00Z", "user", "Morning: I want to get the tax forms done before lunch today.");
+    await say(u, "2026-09-11T09:01:00Z", "assistant", "Tax forms before lunch. Which one first?");
+    await say(u, "2026-09-11T11:00:00Z", "user", "Afternoon: the tax forms are done, now the grocery plan for the week.");
+    await say(u, "2026-09-11T11:01:00Z", "assistant", "Nice. Groceries, then.");
+    const deps = { now: clock("2026-09-11T14:00:00Z"), propose: async (): Promise<RawProposal> => ({ episode: { summary: "You worked through part of the day's list." }, threads: [], notes: [] }) };
+    const quiet = vi.spyOn(console, "log").mockImplementation(() => {});
+    await consolidateAfter(db, u, { passes: 1, deps });
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+    await consolidateAfter(db, u, { deps });
+    quiet.mockRestore();
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(2);
   });
 
   it("waits while the visit is still going, and moves past a stretch with nothing in it", async () => {
@@ -208,6 +312,62 @@ describe("the Library in conversation", () => {
   });
 });
 
+describe("sections of the Library", () => {
+  it("consolidation gathers loose threads into a section, Lumi sees where they sit, and doesn't undo what they placed", async () => {
+    const u = await createTestUser(db, "Ivo");
+    const heard = said("the memory design and the onboarding are both part of coherence");
+    const tools = toolsFor(u, heard);
+    const memory = (await call(tools.add_to_library, { new_thread: "Memory design", kind: "idea", content: "Beliefs carry evidence.", their_words: heard.text })) as { thread_id: string };
+    const onboarding = (await call(tools.add_to_library, { new_thread: "Onboarding", kind: "idea", content: "No setup ritual on the first visit.", their_words: heard.text })) as { thread_id: string };
+
+    await say(u, "2026-09-12T19:00:00Z", "user", "The memory design and the onboarding are both part of Coherence, the app I'm building.");
+    await say(u, "2026-09-12T19:01:00Z", "assistant", "Both parts of Coherence, then.");
+    const r = await consolidate(db, u, {
+      now: clock("2026-09-12T21:00:00Z"),
+      propose: async () => ({
+        threads: [{ ref: "new:app", title: "Coherence", summary: "The companion app they're building; memory design and onboarding are parts of it." }],
+        notes: [],
+        shelve: [
+          { thread: memory.thread_id, under: "new:app" },
+          { thread: onboarding.thread_id, under: "new:app" },
+        ],
+      }),
+    });
+    expect(r).toMatchObject({ status: "done", threadsCreated: 1, shelved: 2 });
+
+    const held = await listThreads(db, u.id);
+    const app = held.find((t) => t.title === "Coherence")!;
+    const { sections, loose } = buildShelves(held);
+    expect(sections.map((s) => s.thread.title)).toEqual(["Coherence"]);
+    expect(sections[0].shelves[0].books.map((b) => b.title).sort()).toEqual(["Memory design", "Onboarding"]);
+    expect(loose).toEqual([]);
+    expect(held.find((t) => t.id === memory.thread_id)).toMatchObject({ parentId: app.id, shelvedBy: "lumi" });
+
+    // Lumi knows where a thread sits.
+    const view = selectLibrary(held, [], [], { message: "about the memory design" }, { now: new Date("2026-09-13T09:00:00Z") });
+    expect(view.open[0]).toMatchObject({ shelf: ["Coherence"] });
+    expect(await call(tools.open_thread, { id: app.id })).toMatchObject({ in: [], holds: expect.arrayContaining([{ id: memory.thread_id, title: "Memory design" }]) });
+
+    // They take onboarding off the shelf; consolidation can't put it back.
+    const off = said("onboarding is its own thing");
+    expect(await call(toolsFor(u, off).shelve_thread, { thread_id: onboarding.thread_id, their_words: off.text })).toMatchObject({ in: [] });
+    expect(await shelveThread(db, u.id, onboarding.thread_id, app.id, "consolidation")).toEqual({ skipped: "placed by them" });
+
+    // Without their words, nothing moves; a fourth level is refused.
+    expect(await call(tools.shelve_thread, { thread_id: onboarding.thread_id, under_id: app.id, their_words: "put it back" })).toHaveProperty("error");
+    const deeper = said("put coherence under a new section called work");
+    const nested = await call(toolsFor(u, deeper).shelve_thread, { thread_id: app.id, new_section: "Work", their_words: deeper.text });
+    expect(nested).toMatchObject({ in: ["Work"] });
+    expect(await shelveThread(db, u.id, onboarding.thread_id, memory.thread_id, "user")).toMatchObject({ skipped: expect.stringMatching(/too deep/) });
+
+    // Forgetting a section leaves what was in it loose, never deleted.
+    const forget = said("forget the work section");
+    const work = (await listThreads(db, u.id)).find((t) => t.title === "Work")!;
+    expect(await call(toolsFor(u, forget).forget_from_library, { thread_id: work.id, their_words: forget.text })).toMatchObject({ ok: true });
+    expect((await getOwnedThread(db, u.id, app.id))?.parentId).toBeNull();
+  });
+});
+
 describe("each user's Library is their own", () => {
   it("another user can't open, add to, find or forget a thread, and consolidation never shows them another's", async () => {
     const a = await createTestUser(db, "Ava");
@@ -236,6 +396,23 @@ describe("each user's Library is their own", () => {
     expect(seen?.notes).toEqual([]);
     expect((await listCurrentNotes(db, a.id, [String(id)])).map((x) => x.content)).toEqual(["The garden gets raised beds."]);
     expect((await loadLibraryOrNothing(db, b.id)).threads).toEqual([]);
+  });
+});
+
+describe("the watermark", () => {
+  it("reads from the latest episode's end when the watermark message is gone, not from the start", async () => {
+    const u = await createTestUser(db, "Wim");
+    const c = await ensureMainConversation(db, u.id);
+    const first = await say(u, "2026-09-10T09:00:00Z", "user", "an old stretch, already folded in");
+    const endOfOld = await say(u, "2026-09-10T09:05:00Z", "assistant", "the end of it");
+    const fresh = await say(u, "2026-09-11T09:00:00Z", "user", "something new since");
+    await insertEpisode(db, { userId: u.id, conversationId: c.id, summary: "The old stretch.", leftOff: null, startedAt: new Date("2026-09-10T09:00:00Z"), endedAt: new Date("2026-09-10T09:05:00Z"), throughMessageId: endOfOld });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rows = await unconsolidatedMessages(db, c.id, randomUUID());
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+    expect(rows.map((r) => r.id)).toEqual([fresh]);
+    expect(rows.map((r) => r.id)).not.toContain(first);
   });
 });
 

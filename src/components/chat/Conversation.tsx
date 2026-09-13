@@ -1,10 +1,9 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
+import { LUMI_LOST_THREAD, useHeldChat } from "./chat-client";
 import { Composer } from "./Composer";
 import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
@@ -19,6 +18,12 @@ type Props = {
   initialInSitting: boolean;
 };
 
+/** Where the turn in flight began: its user message (the last one). */
+function lastUserIndex(messages: CoherenceUIMessage[]) {
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
+  return messages.length;
+}
+
 /**
  * Home's conversation. Nothing on Today sends you here any more: Not this and
  * Break it down happen on Today's card (2026-09-13). A link can still carry
@@ -27,30 +32,25 @@ type Props = {
 export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
-  // Every page open is a fresh start: the greeting card sits after everything
-  // that was there when the page opened, and what you say next goes below it.
-  const [cardAt] = useState(initialMessages.length);
-  // Quick starts are for the moment of starting: shown until you've said
-  // something this sitting, and again next time you come back.
-  const [inSitting, setInSitting] = useState(initialInSitting);
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport<CoherenceUIMessage>({
-        api: "/api/chat",
-        // Send only the new message; the server holds the transcript.
-        prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
-      }),
-    [],
-  );
 
-  const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({
-    id: conversationId,
-    messages: initialMessages,
-    transport,
-    generateId: () => crypto.randomUUID(),
+  // Held above the page (`chat-client.tsx`), so leaving Home mid-turn doesn't stop
+  // Lumi. With no turn in flight it is seeded fresh from what the server just
+  // rendered; back mid-turn, it is the chat still talking (`resumed`), and the
+  // server's copy — which has your message but not yet her reply — is set aside.
+  // Landing refreshes the page you went to, never Home itself.
+  const { messages, sendMessage, stop, status, error, busy, resumed } = useHeldChat("home", {
+    seed: { id: conversationId, messages: initialMessages },
+    refreshUnlessOn: "/",
   });
 
-  const busy = status === "submitted" || status === "streaming";
+  // Every page open is a fresh start: the greeting card sits after everything
+  // that was there when the page opened, and what you say next goes below it.
+  // Back mid-turn, the card goes before the turn still arriving, so it reads as this visit.
+  const [cardAt] = useState(() => (resumed ? lastUserIndex(messages) : initialMessages.length));
+  // Quick starts are for the moment of starting: shown until you've said
+  // something this sitting, and again next time you come back.
+  const [inSitting, setInSitting] = useState(initialInSitting || resumed);
+
   const send = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -77,7 +77,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
           cardAt={cardAt}
           card={<Greeting lines={greetingLines} onQuickStart={send} compact={inSitting} />}
           thinking={status === "submitted"}
-          error={error ? "I lost the thread for a second. Say that again?" : undefined}
+          error={error ? LUMI_LOST_THREAD : undefined}
         />
       </div>
       <Composer onSend={send} onStop={stop} busy={busy} initialValue={prefill} />

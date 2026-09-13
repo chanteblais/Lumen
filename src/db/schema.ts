@@ -14,7 +14,9 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -52,11 +54,18 @@ export const conversations = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     kind: text("kind").notNull().default("main"),
     summary: text("summary"),
+    /** Consolidation's watermark: messages up to it are folded into memory. No FK — a pointer into history (see domain.md). */
     summaryThroughMessageId: uuid("summary_through_message_id"),
+    /** A consolidation run's lease: set before its model call, cleared when it finishes; an expired one is free to take. */
+    consolidatingUntil: ts("consolidating_until"),
     createdAt: ts("created_at").notNull().defaultNow(),
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
-  (t) => [index("conversations_user_idx").on(t.userId)],
+  (t) => [
+    index("conversations_user_idx").on(t.userId),
+    // One main conversation per user: two first visits racing can't make a second.
+    uniqueIndex("conversations_user_main_idx").on(t.userId).where(sql`${t.kind} = 'main'`),
+  ],
 );
 
 /* ------------------------------------------------------------- messages */
@@ -130,7 +139,11 @@ export const focusSessions = pgTable(
     endedAt: ts("ended_at"),
     outcome: text("outcome").$type<SessionOutcome>(),
   },
-  (t) => [index("focus_sessions_user_started_idx").on(t.userId, t.startedAt)],
+  (t) => [
+    index("focus_sessions_user_started_idx").on(t.userId, t.startedAt),
+    // One open session per user: two starts racing can't leave two running.
+    uniqueIndex("focus_sessions_user_open_idx").on(t.userId).where(sql`${t.endedAt} is null`),
+  ],
 );
 
 /* --------------------------------------------- memory_notes (beliefs) */
@@ -189,16 +202,23 @@ export const episodes = pgTable(
     threadIds: jsonb("thread_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
-  (t) => [index("episodes_user_ended_idx").on(t.userId, t.endedAt)],
+  (t) => [
+    index("episodes_user_ended_idx").on(t.userId, t.endedAt),
+    // `thread_ids @> '["…"]'`: a thread's visits, and scrubbing a forgotten thread.
+    index("episodes_thread_ids_idx").using("gin", t.threadIds),
+  ],
 );
 
 /**
  * A persistent subject of the user's life that Lumi keeps an archive for — a
  * book they're writing, practicum, a theory. Not a project table and not a
- * list: intentions stay flat, and how the Library room shows threads
- * (Collections, Thread Groups, shelves) isn't modelled yet. Resting and
- * archival are derived from `last_discussed_at`, never stored.
+ * list: intentions stay flat. A thread can sit under a broader one
+ * (`parent_id`); a thread with threads under it is a section of the Library,
+ * and one of those inside a section is a shelf — derived at read time
+ * (`buildShelves`), never stored. Resting and archival are derived from
+ * `last_discussed_at`, never stored.
  */
+export type ShelvedBy = "user" | "lumi";
 export const threads = pgTable(
   "threads",
   {
@@ -210,11 +230,15 @@ export const threads = pgTable(
     /** Lumi's quick orientation — what it is, where it stands, what's open — rewritten as notes arrive. */
     summary: text("summary"),
     summaryRevisedAt: ts("summary_revised_at"),
+    /** The broader thread it belongs under ("the ferry chapter" under "the book"). Null: not shelved. Forgetting the parent leaves it loose. */
+    parentId: uuid("parent_id").references((): AnyPgColumn => threads.id, { onDelete: "set null" }),
+    /** Who put it there. Lumi never moves a thread they placed. */
+    shelvedBy: text("shelved_by").$type<ShelvedBy>(),
     /** The last time it came up: a note filed, a summary rewritten. */
     lastDiscussedAt: ts("last_discussed_at").notNull().defaultNow(),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
-  (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt)],
+  (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt), index("threads_parent_idx").on(t.parentId)],
 );
 
 export type ThreadNoteKind = "idea" | "decision" | "question" | "progress" | "detail";
@@ -311,7 +335,12 @@ export const leads = pgTable(
     suggestedAt: ts("suggested_at").notNull().defaultNow(),
     resolvedAt: ts("resolved_at"),
   },
-  (t) => [index("leads_user_status_idx").on(t.userId, t.status, t.suggestedAt), index("leads_user_ref_idx").on(t.userId, t.sourceRef)],
+  (t) => [
+    index("leads_user_status_idx").on(t.userId, t.status, t.suggestedAt),
+    index("leads_user_ref_idx").on(t.userId, t.sourceRef),
+    // A message can yield several leads, but never the same one twice (two looks racing). Titles are whitespace-normalised in code.
+    uniqueIndex("leads_user_ref_title_idx").on(t.userId, t.sourceRef, sql`lower(${t.title})`),
+  ],
 );
 
 /* --------------------------------------------------------------- events */
@@ -330,6 +359,8 @@ export const events = pgTable(
   (t) => [
     index("events_user_occurred_idx").on(t.userId, t.occurredAt),
     index("events_user_type_occurred_idx").on(t.userId, t.type, t.occurredAt),
+    // Reflection claims a session once (`reflection.claimed`, inserted on conflict do nothing).
+    uniqueIndex("events_reflection_claim_idx").on(t.userId, t.subjectId).where(sql`${t.type} = 'reflection.claimed'`),
   ],
 );
 

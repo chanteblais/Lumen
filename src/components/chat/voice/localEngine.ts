@@ -83,7 +83,9 @@ function transcribe(audio: Float32Array): Promise<string> {
       }
     };
     w.addEventListener("message", onMessage);
-    w.postMessage({ type: "transcribe", id, audio } satisfies WorkerIn);
+    // Every caller hands over a fresh copy (`concat`) and never reads it again,
+    // so the samples move to the worker instead of being copied (up to ~19 MB a pass).
+    w.postMessage({ type: "transcribe", id, audio } satisfies WorkerIn, [audio.buffer]);
   });
 }
 
@@ -136,8 +138,15 @@ export function createLocalEngine(): VoiceEngine {
   let stopping = false;
   let lastText = "";
   let micLabel = "";
+  /**
+   * Which take is current. Every teardown moves it on, so a capture or a start
+   * still waiting on the permission prompt, the audio context or the model sees
+   * it has been let go — and stops the microphone it was just handed.
+   */
+  let take = 0;
 
   const teardown = () => {
+    take++;
     if (timer) clearInterval(timer);
     timer = null;
     stream?.getTracks().forEach((t) => t.stop());
@@ -171,15 +180,24 @@ export function createLocalEngine(): VoiceEngine {
     }
   };
 
-  const capture = async () => {
+  /** Opens the mic into the worklet. False when the take was let go while it waited (nothing is left running). */
+  const capture = async (mine: number): Promise<boolean> => {
     // Create the context inside the tap, before any await: a context made
     // after the permission prompt has eaten the user gesture starts
     // suspended, and a suspended context feeds the worklet nothing.
     const ac = new AudioContext({ sampleRate: SAMPLE_RATE });
     ctx = ac;
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    micLabel = stream.getAudioTracks()[0]?.label ?? "";
+    const granted = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (mine !== take) {
+      // Stopped during the permission prompt: teardown already closed the context,
+      // but these tracks arrived after it, so they are stopped here or the mic stays on.
+      granted.getTracks().forEach((t) => t.stop());
+      return false;
+    }
+    stream = granted;
+    micLabel = granted.getAudioTracks()[0]?.label ?? "";
     if (ac.state !== "running") await ac.resume();
+    if (mine !== take) return false; // teardown stopped the tracks and closed the context
     console.debug("[voice] mic:", micLabel || "(unnamed)", "context:", ac.state, ac.sampleRate + " Hz");
     if (ac.state !== "running") throw new Error("audio context " + ac.state);
     const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" }));
@@ -188,6 +206,7 @@ export function createLocalEngine(): VoiceEngine {
     } finally {
       URL.revokeObjectURL(url);
     }
+    if (mine !== take) return false;
     const node = new AudioWorkletNode(ac, "coherence-pcm");
     const ratio = ac.sampleRate / SAMPLE_RATE;
     node.port.onmessage = ({ data }: MessageEvent<Float32Array>) => {
@@ -196,9 +215,10 @@ export function createLocalEngine(): VoiceEngine {
       chunks.push(frame);
       length += frame.length;
     };
-    ac.createMediaStreamSource(stream).connect(node);
+    ac.createMediaStreamSource(granted).connect(node);
     // The worklet needs a sink to run; it outputs silence.
     node.connect(ac.destination);
+    return true;
   };
 
   return {
@@ -210,27 +230,35 @@ export function createLocalEngine(): VoiceEngine {
       chunks = [];
       length = 0;
       cb.onState("preparing");
+      const mine = take;
       // Ask for the mic first (that's the prompt the user sees), then load
       // the model while audio is already being captured — nothing said
       // during the wait is lost.
-      capture()
+      capture(mine)
         .catch((err: unknown) => {
           const name = err instanceof Error ? err.name : "";
           console.warn("[voice] microphone:", err);
           throw new Error(name === "NotAllowedError" || name === "SecurityError" ? MIC_BLOCKED : name === "NotFoundError" ? NO_MIC : GENERIC_ERROR);
         })
-        .then(() => ensureWorker().catch((err: unknown) => {
-          console.warn("[voice] model load:", err);
-          throw new Error(GENERIC_ERROR);
-        }))
-        .then(() => {
-          if (!cb) return; // aborted meanwhile
-          if (stopping) return; // stopped during preparing: finish with what we have
+        .then((captured) =>
+          captured &&
+          ensureWorker().then(
+            () => true,
+            (err: unknown) => {
+              console.warn("[voice] model load:", err);
+              throw new Error(GENERIC_ERROR);
+            },
+          ),
+        )
+        .then((captured) => {
+          // Stopped or aborted meanwhile (stop finishes with what was heard), or a
+          // newer take has started: this one has nothing more to do.
+          if (!captured || mine !== take || !cb || stopping) return;
           cb.onState("listening");
           timer = setInterval(() => void livePass(), LIVE_EVERY_MS);
         })
         .catch((err: Error) => {
-          if (cb) finish("", err.message);
+          if (mine === take && cb) finish("", err.message);
         });
     },
     stop() {

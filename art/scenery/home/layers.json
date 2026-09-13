@@ -1,0 +1,2584 @@
+{
+ "about": "Home as an empty plate plus furniture layers, cut from art/scenery/home/background.png (2026-09-13, art/prototypes/home-layers/). A prototype, not served. Painting px throughout. Draw the plate, then every shadow, then the layers and Lumi in depth order (`depth`). Built by plate.py from room.src.json.",
+ "plate": "plate.png",
+ "painting": "background.png",
+ "size": [
+  1536,
+  1024
+ ],
+ "iso": {
+  "slope": 0.57,
+  "note": "ground u = (x + y/slope)/2, v = (y/slope - x)/2; toward the camera is +u and +v"
+ },
+ "lumi": {
+  "height": 120,
+  "halfWidth": 17,
+  "reach": 50,
+  "clearance": 24,
+  "note": "hood top to feet in painting px at every depth; halfWidth is her cloak at her feet, reach how far her drawing spreads either side of them (hem, hands), clearance her body's reach on the floor"
+ },
+ "depth": {
+  "rule": "An item draws over Lumi when some point of its ground polygon (extent if given, else footprint) lies in one of her page columns (feet x \u00b1 halfWidth) lower on the page than her feet. In one page column two ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider parts of her drawing: if its ground comes within her reach (feet x \u00b1 reach), test at its column nearest her feet; out of reach it cannot overlap her. A ground point counts as lower only by more than `margin` px, so a footprint corner level with her feet doesn't cover her hem. Order the layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
+  "margin": 4,
+  "order": [
+   "armchair",
+   "stool",
+   "desk",
+   "chair",
+   "table",
+   "cushion-cream",
+   "cushion-green",
+   "balustrade"
+  ],
+  "infront": [
+   [
+    "stool",
+    "armchair"
+   ],
+   [
+    "table",
+    "armchair"
+   ],
+   [
+    "cushion-cream",
+    "armchair"
+   ],
+   [
+    "cushion-green",
+    "armchair"
+   ],
+   [
+    "balustrade",
+    "armchair"
+   ],
+   [
+    "table",
+    "stool"
+   ],
+   [
+    "chair",
+    "desk"
+   ],
+   [
+    "cushion-cream",
+    "table"
+   ],
+   [
+    "cushion-green",
+    "stool"
+   ],
+   [
+    "cushion-green",
+    "table"
+   ],
+   [
+    "balustrade",
+    "desk"
+   ],
+   [
+    "balustrade",
+    "chair"
+   ],
+   [
+    "balustrade",
+    "table"
+   ],
+   [
+    "balustrade",
+    "cushion-cream"
+   ]
+  ]
+ },
+ "layers": [
+  {
+   "id": "armchair",
+   "src": "layers/armchair.png",
+   "offset": [
+    750,
+    223
+   ],
+   "shadow": {
+    "src": "layers/armchair-shadow.png",
+    "offset": [
+     739,
+     214
+    ]
+   },
+   "footprint": [
+    [
+     755,
+     420
+    ],
+    [
+     850,
+     375
+    ],
+    [
+     973,
+     427
+    ],
+    [
+     878,
+     472
+    ]
+   ],
+   "extent": [
+    [
+     749,
+     420
+    ],
+    [
+     850,
+     372
+    ],
+    [
+     982,
+     427
+    ],
+    [
+     878,
+     476
+    ]
+   ],
+   "height": 150,
+   "anchors": {
+    "armchair.sit": {
+     "at": [
+      822,
+      388
+     ],
+     "proposal": true
+    },
+    "armchair.stand": {
+     "at": [
+      760,
+      486
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "stool",
+   "src": "layers/stool.png",
+   "offset": [
+    948,
+    303
+   ],
+   "shadow": {
+    "src": "layers/stool-shadow.png",
+    "offset": [
+     937,
+     294
+    ]
+   },
+   "footprint": [
+    [
+     952,
+     466
+    ],
+    [
+     998,
+     441
+    ],
+    [
+     1040,
+     463
+    ],
+    [
+     994,
+     488
+    ]
+   ],
+   "extent": [
+    [
+     949,
+     464
+    ],
+    [
+     963,
+     446
+    ],
+    [
+     996,
+     438
+    ],
+    [
+     1029,
+     446
+    ],
+    [
+     1044,
+     464
+    ],
+    [
+     1029,
+     482
+    ],
+    [
+     996,
+     490
+    ],
+    [
+     963,
+     482
+    ]
+   ],
+   "height": 82,
+   "anchors": {
+    "stool.place": {
+     "at": [
+      996,
+      380
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "desk",
+   "src": "layers/desk.png",
+   "offset": [
+    77,
+    238
+   ],
+   "shadow": {
+    "src": "layers/desk-shadow.png",
+    "offset": [
+     65,
+     235
+    ]
+   },
+   "footprint": [
+    [
+     131,
+     564
+    ],
+    [
+     206,
+     606
+    ],
+    [
+     468,
+     460
+    ],
+    [
+     393,
+     418
+    ]
+   ],
+   "extent": [
+    [
+     120,
+     558
+    ],
+    [
+     206,
+     608
+    ],
+    [
+     482,
+     452
+    ],
+    [
+     400,
+     408
+    ]
+   ],
+   "height": 118,
+   "anchors": {
+    "desk.place": {
+     "at": [
+      330,
+      420
+     ],
+     "proposal": true
+    },
+    "desk.stand": {
+     "at": [
+      520,
+      470
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "chair",
+   "src": "layers/chair.png",
+   "offset": [
+    314,
+    373
+   ],
+   "shadow": {
+    "src": "layers/chair-shadow.png",
+    "offset": [
+     290,
+     378
+    ]
+   },
+   "footprint": [
+    [
+     316,
+     540
+    ],
+    [
+     378,
+     504
+    ],
+    [
+     440,
+     534
+    ],
+    [
+     380,
+     570
+    ]
+   ],
+   "extent": [
+    [
+     312,
+     540
+    ],
+    [
+     378,
+     500
+    ],
+    [
+     450,
+     534
+    ],
+    [
+     382,
+     573
+    ]
+   ],
+   "height": 135,
+   "anchors": {
+    "chair.sit": {
+     "at": [
+      380,
+      470
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "table",
+   "src": "layers/table.png",
+   "offset": [
+    633,
+    515
+   ],
+   "shadow": {
+    "src": "layers/table-shadow.png",
+    "offset": [
+     622,
+     510
+    ]
+   },
+   "footprint": [
+    [
+     645,
+     673
+    ],
+    [
+     797,
+     588
+    ],
+    [
+     950,
+     672
+    ],
+    [
+     803,
+     758
+    ]
+   ],
+   "extent": [
+    [
+     628,
+     675
+    ],
+    [
+     797,
+     576
+    ],
+    [
+     967,
+     674
+    ],
+    [
+     807,
+     768
+    ]
+   ],
+   "height": 62,
+   "anchors": {
+    "table.place": {
+     "at": [
+      760,
+      640
+     ],
+     "proposal": true
+    },
+    "table.reach": {
+     "at": [
+      612,
+      700
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "cushion-cream",
+   "src": "layers/cushion-cream.png",
+   "offset": [
+    644,
+    670
+   ],
+   "shadow": {
+    "src": "layers/cushion-cream-shadow.png",
+    "offset": [
+     339,
+     668
+    ]
+   },
+   "footprint": [
+    [
+     648,
+     727
+    ],
+    [
+     704,
+     695
+    ],
+    [
+     772,
+     725
+    ],
+    [
+     716,
+     760
+    ]
+   ],
+   "extent": [
+    [
+     640,
+     727
+    ],
+    [
+     704,
+     691
+    ],
+    [
+     779,
+     725
+    ],
+    [
+     716,
+     764
+    ]
+   ],
+   "height": 32,
+   "anchors": {
+    "cushion-cream.sit": {
+     "at": [
+      712,
+      712
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "cushion-green",
+   "src": "layers/cushion-green.png",
+   "offset": [
+    825,
+    685
+   ],
+   "shadow": {
+    "src": "layers/cushion-green-shadow.png",
+    "offset": [
+     743,
+     670
+    ]
+   },
+   "footprint": [
+    [
+     830,
+     765
+    ],
+    [
+     915,
+     716
+    ],
+    [
+     1008,
+     770
+    ],
+    [
+     925,
+     820
+    ]
+   ],
+   "extent": [
+    [
+     821,
+     765
+    ],
+    [
+     915,
+     711
+    ],
+    [
+     1018,
+     770
+    ],
+    [
+     925,
+     825
+    ]
+   ],
+   "height": 42,
+   "anchors": {
+    "cushion-green.sit": {
+     "at": [
+      918,
+      752
+     ],
+     "proposal": true
+    }
+   }
+  },
+  {
+   "id": "balustrade",
+   "src": "layers/balustrade.png",
+   "offset": [
+    205,
+    692
+   ],
+   "shadow": null,
+   "footprint": [
+    [
+     262,
+     856
+    ],
+    [
+     413,
+     944
+    ],
+    [
+     490,
+     918
+    ],
+    [
+     620,
+     998
+    ],
+    [
+     800,
+     1100
+    ],
+    [
+     808,
+     1092
+    ],
+    [
+     628,
+     990
+    ],
+    [
+     498,
+     910
+    ],
+    [
+     421,
+     936
+    ],
+    [
+     270,
+     848
+    ]
+   ],
+   "extent": null,
+   "height": 145,
+   "anchors": {
+    "balustrade.lean": {
+     "at": [
+      560,
+      838
+     ],
+     "proposal": true
+    }
+   }
+  }
+ ],
+ "blockers": [
+  {
+   "id": "stair-up",
+   "footprint": [
+    [
+     1128,
+     480
+    ],
+    [
+     1190,
+     440
+    ],
+    [
+     1350,
+     520
+    ],
+    [
+     1306,
+     577
+    ]
+   ],
+   "note": "stays in the plate; blocks the floor only"
+  },
+  {
+   "id": "bookcase-right",
+   "footprint": [
+    [
+     1300,
+     590
+    ],
+    [
+     1330,
+     520
+    ],
+    [
+     1536,
+     640
+    ],
+    [
+     1536,
+     900
+    ],
+    [
+     1380,
+     870
+    ]
+   ],
+   "note": "stays in the plate; blocks the floor only"
+  },
+  {
+   "id": "log-basket",
+   "footprint": [
+    [
+     480,
+     300
+    ],
+    [
+     520,
+     270
+    ],
+    [
+     590,
+     300
+    ],
+    [
+     560,
+     330
+    ]
+   ],
+   "note": "stays in the plate; blocks the floor only"
+  }
+ ],
+ "floor": [
+  [
+   520,
+   330
+  ],
+  [
+   740,
+   330
+  ],
+  [
+   740,
+   470
+  ],
+  [
+   1040,
+   500
+  ],
+  [
+   1070,
+   470
+  ],
+  [
+   1128,
+   508
+  ],
+  [
+   1300,
+   605
+  ],
+  [
+   1380,
+   860
+  ],
+  [
+   1120,
+   960
+  ],
+  [
+   853,
+   945
+  ],
+  [
+   640,
+   880
+  ],
+  [
+   460,
+   790
+  ],
+  [
+   267,
+   690
+  ],
+  [
+   480,
+   573
+  ],
+  [
+   493,
+   400
+  ]
+ ],
+ "walkable": {
+  "note": "Her feet may stand inside `floor` and outside every polygon of `minus`: each item's extent or footprint, and each blocker, grown by her clearance as a ground circle (an ellipse clearance wide and clearance*slope tall on the page; one hull per convex polygon, one per edge of a concave one).",
+  "floor": [
+   [
+    520,
+    330
+   ],
+   [
+    740,
+    330
+   ],
+   [
+    740,
+    470
+   ],
+   [
+    1040,
+    500
+   ],
+   [
+    1070,
+    470
+   ],
+   [
+    1128,
+    508
+   ],
+   [
+    1300,
+    605
+   ],
+   [
+    1380,
+    860
+   ],
+   [
+    1120,
+    960
+   ],
+   [
+    853,
+    945
+   ],
+   [
+    640,
+    880
+   ],
+   [
+    460,
+    790
+   ],
+   [
+    267,
+    690
+   ],
+   [
+    480,
+    573
+   ],
+   [
+    493,
+    400
+   ]
+  ],
+  "minus": [
+   {
+    "of": "table",
+    "poly": [
+     [
+      604.0,
+      675.0
+     ],
+     [
+      605.83,
+      669.76
+     ],
+     [
+      611.03,
+      665.33
+     ],
+     [
+      780.03,
+      566.33
+     ],
+     [
+      787.82,
+      563.36
+     ],
+     [
+      797.0,
+      562.32
+     ],
+     [
+      806.18,
+      563.36
+     ],
+     [
+      813.97,
+      566.33
+     ],
+     [
+      983.97,
+      664.33
+     ],
+     [
+      989.17,
+      668.76
+     ],
+     [
+      991.0,
+      674.0
+     ],
+     [
+      989.17,
+      679.24
+     ],
+     [
+      983.97,
+      683.67
+     ],
+     [
+      823.97,
+      777.67
+     ],
+     [
+      816.18,
+      780.64
+     ],
+     [
+      807.0,
+      781.68
+     ],
+     [
+      797.82,
+      780.64
+     ],
+     [
+      790.03,
+      777.67
+     ],
+     [
+      611.03,
+      684.67
+     ],
+     [
+      605.83,
+      680.24
+     ]
+    ]
+   },
+   {
+    "of": "cushion-cream",
+    "poly": [
+     [
+      616.0,
+      727.0
+     ],
+     [
+      617.83,
+      721.76
+     ],
+     [
+      623.03,
+      717.33
+     ],
+     [
+      687.03,
+      681.33
+     ],
+     [
+      694.82,
+      678.36
+     ],
+     [
+      704.0,
+      677.32
+     ],
+     [
+      713.18,
+      678.36
+     ],
+     [
+      720.97,
+      681.33
+     ],
+     [
+      795.97,
+      715.33
+     ],
+     [
+      801.17,
+      719.76
+     ],
+     [
+      803.0,
+      725.0
+     ],
+     [
+      801.17,
+      730.24
+     ],
+     [
+      795.97,
+      734.67
+     ],
+     [
+      732.97,
+      773.67
+     ],
+     [
+      725.18,
+      776.64
+     ],
+     [
+      716.0,
+      777.68
+     ],
+     [
+      706.82,
+      776.64
+     ],
+     [
+      699.03,
+      773.67
+     ],
+     [
+      623.03,
+      736.67
+     ],
+     [
+      617.83,
+      732.24
+     ]
+    ]
+   },
+   {
+    "of": "cushion-green",
+    "poly": [
+     [
+      797.0,
+      765.0
+     ],
+     [
+      798.83,
+      759.76
+     ],
+     [
+      804.03,
+      755.33
+     ],
+     [
+      898.03,
+      701.33
+     ],
+     [
+      905.82,
+      698.36
+     ],
+     [
+      915.0,
+      697.32
+     ],
+     [
+      924.18,
+      698.36
+     ],
+     [
+      931.97,
+      701.33
+     ],
+     [
+      1034.97,
+      760.33
+     ],
+     [
+      1040.17,
+      764.76
+     ],
+     [
+      1042.0,
+      770.0
+     ],
+     [
+      1040.17,
+      775.24
+     ],
+     [
+      1034.97,
+      779.67
+     ],
+     [
+      941.97,
+      834.67
+     ],
+     [
+      934.18,
+      837.64
+     ],
+     [
+      925.0,
+      838.68
+     ],
+     [
+      915.82,
+      837.64
+     ],
+     [
+      908.03,
+      834.67
+     ],
+     [
+      804.03,
+      774.67
+     ],
+     [
+      798.83,
+      770.24
+     ]
+    ]
+   },
+   {
+    "of": "armchair",
+    "poly": [
+     [
+      725.0,
+      420.0
+     ],
+     [
+      726.83,
+      414.76
+     ],
+     [
+      732.03,
+      410.33
+     ],
+     [
+      833.03,
+      362.33
+     ],
+     [
+      840.82,
+      359.36
+     ],
+     [
+      850.0,
+      358.32
+     ],
+     [
+      859.18,
+      359.36
+     ],
+     [
+      866.97,
+      362.33
+     ],
+     [
+      998.97,
+      417.33
+     ],
+     [
+      1004.17,
+      421.76
+     ],
+     [
+      1006.0,
+      427.0
+     ],
+     [
+      1004.17,
+      432.24
+     ],
+     [
+      998.97,
+      436.67
+     ],
+     [
+      894.97,
+      485.67
+     ],
+     [
+      887.18,
+      488.64
+     ],
+     [
+      878.0,
+      489.68
+     ],
+     [
+      868.82,
+      488.64
+     ],
+     [
+      861.03,
+      485.67
+     ],
+     [
+      732.03,
+      429.67
+     ],
+     [
+      726.83,
+      425.24
+     ]
+    ]
+   },
+   {
+    "of": "stool",
+    "poly": [
+     [
+      925.0,
+      464.0
+     ],
+     [
+      926.83,
+      458.76
+     ],
+     [
+      940.83,
+      440.76
+     ],
+     [
+      946.03,
+      436.33
+     ],
+     [
+      953.82,
+      433.36
+     ],
+     [
+      986.82,
+      425.36
+     ],
+     [
+      996.0,
+      424.32
+     ],
+     [
+      1005.18,
+      425.36
+     ],
+     [
+      1038.18,
+      433.36
+     ],
+     [
+      1045.97,
+      436.33
+     ],
+     [
+      1051.17,
+      440.76
+     ],
+     [
+      1066.17,
+      458.76
+     ],
+     [
+      1068.0,
+      464.0
+     ],
+     [
+      1066.17,
+      469.24
+     ],
+     [
+      1051.17,
+      487.24
+     ],
+     [
+      1045.97,
+      491.67
+     ],
+     [
+      1038.18,
+      494.64
+     ],
+     [
+      1005.18,
+      502.64
+     ],
+     [
+      996.0,
+      503.68
+     ],
+     [
+      986.82,
+      502.64
+     ],
+     [
+      953.82,
+      494.64
+     ],
+     [
+      946.03,
+      491.67
+     ],
+     [
+      940.83,
+      487.24
+     ],
+     [
+      926.83,
+      469.24
+     ]
+    ]
+   },
+   {
+    "of": "desk",
+    "poly": [
+     [
+      96.0,
+      558.0
+     ],
+     [
+      97.83,
+      552.76
+     ],
+     [
+      103.03,
+      548.33
+     ],
+     [
+      383.03,
+      398.33
+     ],
+     [
+      390.82,
+      395.36
+     ],
+     [
+      400.0,
+      394.32
+     ],
+     [
+      409.18,
+      395.36
+     ],
+     [
+      416.97,
+      398.33
+     ],
+     [
+      498.97,
+      442.33
+     ],
+     [
+      504.17,
+      446.76
+     ],
+     [
+      506.0,
+      452.0
+     ],
+     [
+      504.17,
+      457.24
+     ],
+     [
+      498.97,
+      461.67
+     ],
+     [
+      222.97,
+      617.67
+     ],
+     [
+      215.18,
+      620.64
+     ],
+     [
+      206.0,
+      621.68
+     ],
+     [
+      196.82,
+      620.64
+     ],
+     [
+      189.03,
+      617.67
+     ],
+     [
+      103.03,
+      567.67
+     ],
+     [
+      97.83,
+      563.24
+     ]
+    ]
+   },
+   {
+    "of": "chair",
+    "poly": [
+     [
+      288.0,
+      540.0
+     ],
+     [
+      289.83,
+      534.76
+     ],
+     [
+      295.03,
+      530.33
+     ],
+     [
+      361.03,
+      490.33
+     ],
+     [
+      368.82,
+      487.36
+     ],
+     [
+      378.0,
+      486.32
+     ],
+     [
+      387.18,
+      487.36
+     ],
+     [
+      394.97,
+      490.33
+     ],
+     [
+      466.97,
+      524.33
+     ],
+     [
+      472.17,
+      528.76
+     ],
+     [
+      474.0,
+      534.0
+     ],
+     [
+      472.17,
+      539.24
+     ],
+     [
+      466.97,
+      543.67
+     ],
+     [
+      398.97,
+      582.67
+     ],
+     [
+      391.18,
+      585.64
+     ],
+     [
+      382.0,
+      586.68
+     ],
+     [
+      372.82,
+      585.64
+     ],
+     [
+      365.03,
+      582.67
+     ],
+     [
+      295.03,
+      549.67
+     ],
+     [
+      289.83,
+      545.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      238.0,
+      856.0
+     ],
+     [
+      239.83,
+      850.76
+     ],
+     [
+      245.03,
+      846.33
+     ],
+     [
+      252.82,
+      843.36
+     ],
+     [
+      262.0,
+      842.32
+     ],
+     [
+      271.18,
+      843.36
+     ],
+     [
+      278.97,
+      846.33
+     ],
+     [
+      429.97,
+      934.33
+     ],
+     [
+      435.17,
+      938.76
+     ],
+     [
+      437.0,
+      944.0
+     ],
+     [
+      435.17,
+      949.24
+     ],
+     [
+      429.97,
+      953.67
+     ],
+     [
+      422.18,
+      956.64
+     ],
+     [
+      413.0,
+      957.68
+     ],
+     [
+      403.82,
+      956.64
+     ],
+     [
+      396.03,
+      953.67
+     ],
+     [
+      245.03,
+      865.67
+     ],
+     [
+      239.83,
+      861.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      389.0,
+      944.0
+     ],
+     [
+      390.83,
+      938.76
+     ],
+     [
+      396.03,
+      934.33
+     ],
+     [
+      403.82,
+      931.36
+     ],
+     [
+      480.82,
+      905.36
+     ],
+     [
+      490.0,
+      904.32
+     ],
+     [
+      499.18,
+      905.36
+     ],
+     [
+      506.97,
+      908.33
+     ],
+     [
+      512.17,
+      912.76
+     ],
+     [
+      514.0,
+      918.0
+     ],
+     [
+      512.17,
+      923.24
+     ],
+     [
+      506.97,
+      927.67
+     ],
+     [
+      499.18,
+      930.64
+     ],
+     [
+      422.18,
+      956.64
+     ],
+     [
+      413.0,
+      957.68
+     ],
+     [
+      403.82,
+      956.64
+     ],
+     [
+      396.03,
+      953.67
+     ],
+     [
+      390.83,
+      949.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      466.0,
+      918.0
+     ],
+     [
+      467.83,
+      912.76
+     ],
+     [
+      473.03,
+      908.33
+     ],
+     [
+      480.82,
+      905.36
+     ],
+     [
+      490.0,
+      904.32
+     ],
+     [
+      499.18,
+      905.36
+     ],
+     [
+      506.97,
+      908.33
+     ],
+     [
+      636.97,
+      988.33
+     ],
+     [
+      642.17,
+      992.76
+     ],
+     [
+      644.0,
+      998.0
+     ],
+     [
+      642.17,
+      1003.24
+     ],
+     [
+      636.97,
+      1007.67
+     ],
+     [
+      629.18,
+      1010.64
+     ],
+     [
+      620.0,
+      1011.68
+     ],
+     [
+      610.82,
+      1010.64
+     ],
+     [
+      603.03,
+      1007.67
+     ],
+     [
+      473.03,
+      927.67
+     ],
+     [
+      467.83,
+      923.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      596.0,
+      998.0
+     ],
+     [
+      597.83,
+      992.76
+     ],
+     [
+      603.03,
+      988.33
+     ],
+     [
+      610.82,
+      985.36
+     ],
+     [
+      620.0,
+      984.32
+     ],
+     [
+      629.18,
+      985.36
+     ],
+     [
+      636.97,
+      988.33
+     ],
+     [
+      816.97,
+      1090.33
+     ],
+     [
+      822.17,
+      1094.76
+     ],
+     [
+      824.0,
+      1100.0
+     ],
+     [
+      822.17,
+      1105.24
+     ],
+     [
+      816.97,
+      1109.67
+     ],
+     [
+      809.18,
+      1112.64
+     ],
+     [
+      800.0,
+      1113.68
+     ],
+     [
+      790.82,
+      1112.64
+     ],
+     [
+      783.03,
+      1109.67
+     ],
+     [
+      603.03,
+      1007.67
+     ],
+     [
+      597.83,
+      1003.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      776.0,
+      1100.0
+     ],
+     [
+      777.83,
+      1094.76
+     ],
+     [
+      785.83,
+      1086.76
+     ],
+     [
+      791.03,
+      1082.33
+     ],
+     [
+      798.82,
+      1079.36
+     ],
+     [
+      808.0,
+      1078.32
+     ],
+     [
+      817.18,
+      1079.36
+     ],
+     [
+      824.97,
+      1082.33
+     ],
+     [
+      830.17,
+      1086.76
+     ],
+     [
+      832.0,
+      1092.0
+     ],
+     [
+      830.17,
+      1097.24
+     ],
+     [
+      822.17,
+      1105.24
+     ],
+     [
+      816.97,
+      1109.67
+     ],
+     [
+      809.18,
+      1112.64
+     ],
+     [
+      800.0,
+      1113.68
+     ],
+     [
+      790.82,
+      1112.64
+     ],
+     [
+      783.03,
+      1109.67
+     ],
+     [
+      777.83,
+      1105.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      604.0,
+      990.0
+     ],
+     [
+      605.83,
+      984.76
+     ],
+     [
+      611.03,
+      980.33
+     ],
+     [
+      618.82,
+      977.36
+     ],
+     [
+      628.0,
+      976.32
+     ],
+     [
+      637.18,
+      977.36
+     ],
+     [
+      644.97,
+      980.33
+     ],
+     [
+      824.97,
+      1082.33
+     ],
+     [
+      830.17,
+      1086.76
+     ],
+     [
+      832.0,
+      1092.0
+     ],
+     [
+      830.17,
+      1097.24
+     ],
+     [
+      824.97,
+      1101.67
+     ],
+     [
+      817.18,
+      1104.64
+     ],
+     [
+      808.0,
+      1105.68
+     ],
+     [
+      798.82,
+      1104.64
+     ],
+     [
+      791.03,
+      1101.67
+     ],
+     [
+      611.03,
+      999.67
+     ],
+     [
+      605.83,
+      995.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      474.0,
+      910.0
+     ],
+     [
+      475.83,
+      904.76
+     ],
+     [
+      481.03,
+      900.33
+     ],
+     [
+      488.82,
+      897.36
+     ],
+     [
+      498.0,
+      896.32
+     ],
+     [
+      507.18,
+      897.36
+     ],
+     [
+      514.97,
+      900.33
+     ],
+     [
+      644.97,
+      980.33
+     ],
+     [
+      650.17,
+      984.76
+     ],
+     [
+      652.0,
+      990.0
+     ],
+     [
+      650.17,
+      995.24
+     ],
+     [
+      644.97,
+      999.67
+     ],
+     [
+      637.18,
+      1002.64
+     ],
+     [
+      628.0,
+      1003.68
+     ],
+     [
+      618.82,
+      1002.64
+     ],
+     [
+      611.03,
+      999.67
+     ],
+     [
+      481.03,
+      919.67
+     ],
+     [
+      475.83,
+      915.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      397.0,
+      936.0
+     ],
+     [
+      398.83,
+      930.76
+     ],
+     [
+      404.03,
+      926.33
+     ],
+     [
+      411.82,
+      923.36
+     ],
+     [
+      488.82,
+      897.36
+     ],
+     [
+      498.0,
+      896.32
+     ],
+     [
+      507.18,
+      897.36
+     ],
+     [
+      514.97,
+      900.33
+     ],
+     [
+      520.17,
+      904.76
+     ],
+     [
+      522.0,
+      910.0
+     ],
+     [
+      520.17,
+      915.24
+     ],
+     [
+      514.97,
+      919.67
+     ],
+     [
+      507.18,
+      922.64
+     ],
+     [
+      430.18,
+      948.64
+     ],
+     [
+      421.0,
+      949.68
+     ],
+     [
+      411.82,
+      948.64
+     ],
+     [
+      404.03,
+      945.67
+     ],
+     [
+      398.83,
+      941.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      246.0,
+      848.0
+     ],
+     [
+      247.83,
+      842.76
+     ],
+     [
+      253.03,
+      838.33
+     ],
+     [
+      260.82,
+      835.36
+     ],
+     [
+      270.0,
+      834.32
+     ],
+     [
+      279.18,
+      835.36
+     ],
+     [
+      286.97,
+      838.33
+     ],
+     [
+      437.97,
+      926.33
+     ],
+     [
+      443.17,
+      930.76
+     ],
+     [
+      445.0,
+      936.0
+     ],
+     [
+      443.17,
+      941.24
+     ],
+     [
+      437.97,
+      945.67
+     ],
+     [
+      430.18,
+      948.64
+     ],
+     [
+      421.0,
+      949.68
+     ],
+     [
+      411.82,
+      948.64
+     ],
+     [
+      404.03,
+      945.67
+     ],
+     [
+      253.03,
+      857.67
+     ],
+     [
+      247.83,
+      853.24
+     ]
+    ]
+   },
+   {
+    "of": "balustrade",
+    "poly": [
+     [
+      238.0,
+      856.0
+     ],
+     [
+      239.83,
+      850.76
+     ],
+     [
+      247.83,
+      842.76
+     ],
+     [
+      253.03,
+      838.33
+     ],
+     [
+      260.82,
+      835.36
+     ],
+     [
+      270.0,
+      834.32
+     ],
+     [
+      279.18,
+      835.36
+     ],
+     [
+      286.97,
+      838.33
+     ],
+     [
+      292.17,
+      842.76
+     ],
+     [
+      294.0,
+      848.0
+     ],
+     [
+      292.17,
+      853.24
+     ],
+     [
+      284.17,
+      861.24
+     ],
+     [
+      278.97,
+      865.67
+     ],
+     [
+      271.18,
+      868.64
+     ],
+     [
+      262.0,
+      869.68
+     ],
+     [
+      252.82,
+      868.64
+     ],
+     [
+      245.03,
+      865.67
+     ],
+     [
+      239.83,
+      861.24
+     ]
+    ]
+   },
+   {
+    "of": "stair-up",
+    "poly": [
+     [
+      1104.0,
+      480.0
+     ],
+     [
+      1105.83,
+      474.76
+     ],
+     [
+      1111.03,
+      470.33
+     ],
+     [
+      1173.03,
+      430.33
+     ],
+     [
+      1180.82,
+      427.36
+     ],
+     [
+      1190.0,
+      426.32
+     ],
+     [
+      1199.18,
+      427.36
+     ],
+     [
+      1206.97,
+      430.33
+     ],
+     [
+      1366.97,
+      510.33
+     ],
+     [
+      1372.17,
+      514.76
+     ],
+     [
+      1374.0,
+      520.0
+     ],
+     [
+      1372.17,
+      525.24
+     ],
+     [
+      1328.17,
+      582.24
+     ],
+     [
+      1322.97,
+      586.67
+     ],
+     [
+      1315.18,
+      589.64
+     ],
+     [
+      1306.0,
+      590.68
+     ],
+     [
+      1296.82,
+      589.64
+     ],
+     [
+      1289.03,
+      586.67
+     ],
+     [
+      1111.03,
+      489.67
+     ],
+     [
+      1105.83,
+      485.24
+     ]
+    ]
+   },
+   {
+    "of": "bookcase-right",
+    "poly": [
+     [
+      1276.0,
+      590.0
+     ],
+     [
+      1277.83,
+      584.76
+     ],
+     [
+      1307.83,
+      514.76
+     ],
+     [
+      1313.03,
+      510.33
+     ],
+     [
+      1320.82,
+      507.36
+     ],
+     [
+      1330.0,
+      506.32
+     ],
+     [
+      1339.18,
+      507.36
+     ],
+     [
+      1346.97,
+      510.33
+     ],
+     [
+      1552.97,
+      630.33
+     ],
+     [
+      1558.17,
+      634.76
+     ],
+     [
+      1560.0,
+      640.0
+     ],
+     [
+      1560.0,
+      900.0
+     ],
+     [
+      1558.17,
+      905.24
+     ],
+     [
+      1552.97,
+      909.67
+     ],
+     [
+      1545.18,
+      912.64
+     ],
+     [
+      1536.0,
+      913.68
+     ],
+     [
+      1526.82,
+      912.64
+     ],
+     [
+      1370.82,
+      882.64
+     ],
+     [
+      1363.03,
+      879.67
+     ],
+     [
+      1357.83,
+      875.24
+     ],
+     [
+      1356.0,
+      870.0
+     ]
+    ]
+   },
+   {
+    "of": "log-basket",
+    "poly": [
+     [
+      456.0,
+      300.0
+     ],
+     [
+      457.83,
+      294.76
+     ],
+     [
+      463.03,
+      290.33
+     ],
+     [
+      503.03,
+      260.33
+     ],
+     [
+      510.82,
+      257.36
+     ],
+     [
+      520.0,
+      256.32
+     ],
+     [
+      529.18,
+      257.36
+     ],
+     [
+      536.97,
+      260.33
+     ],
+     [
+      606.97,
+      290.33
+     ],
+     [
+      612.17,
+      294.76
+     ],
+     [
+      614.0,
+      300.0
+     ],
+     [
+      612.17,
+      305.24
+     ],
+     [
+      582.17,
+      335.24
+     ],
+     [
+      576.97,
+      339.67
+     ],
+     [
+      569.18,
+      342.64
+     ],
+     [
+      560.0,
+      343.68
+     ],
+     [
+      550.82,
+      342.64
+     ],
+     [
+      470.82,
+      312.64
+     ],
+     [
+      463.03,
+      309.67
+     ],
+     [
+      457.83,
+      305.24
+     ]
+    ]
+   }
+  ]
+ },
+ "inventory": [
+  {
+   "id": "table",
+   "layer": true,
+   "why": "the low table with its books, lantern, plant, small stack and mug stands in the middle of the rug; she walks all round it, and close behind it is where the hand-traced map failed"
+  },
+  {
+   "id": "cushion-cream",
+   "layer": true,
+   "why": "the tasselled floor cushion in front of the table: she passes behind it (between it and the table's left leg is too tight, but along its left and right) and in front of it"
+  },
+  {
+   "id": "cushion-green",
+   "layer": true,
+   "why": "the quilted green floor cushion in front of the table, the same"
+  },
+  {
+   "id": "armchair",
+   "layer": true,
+   "why": "the green armchair with its star pillow and two throws: against the bookcase, so she is only ever in front of it or beside it, but it is where she sits (armchair.sit), and the chair's front edge is the floor's edge there"
+  },
+  {
+   "id": "stool",
+   "layer": true,
+   "why": "the round side stool with its books and a small plant, beside the armchair; she stands beside it and in front of it, and it carries a place anchor"
+  },
+  {
+   "id": "desk",
+   "layer": true,
+   "why": "the writing desk under the window, with its cabinet, lamp, books, open book, mug and the potted plant on its left end: against the wall, so only in front of or beside her, but it is where she writes and reads"
+  },
+  {
+   "id": "chair",
+   "layer": true,
+   "why": "the desk chair with the throw over its back, standing out from the desk: she can stand beside it with its back overlapping her"
+  },
+  {
+   "id": "balustrade",
+   "layer": true,
+   "why": "the railing and posts round the stair going down at the front, with the ivy on its first post: she is only ever behind it, and its posts and rail cross her feet when she stands at the floor's front edge"
+  },
+  {
+   "id": "stair-up",
+   "layer": false,
+   "why": "the stair up through the arch on the right: built into the wall and the arch; she can only stand in front of it, and cutting it would mean inventing the wall under it. Stays in the plate; its bottom step is a blocker for the floor"
+  },
+  {
+   "id": "bookcase-right",
+   "layer": false,
+   "why": "the low bookcase with the record player, its plants, pots and candle stack along the right wall: against the wall, she can only be in front of it, and cutting it would mean repainting the wall. Stays in the plate; its front is the floor's edge"
+  },
+  {
+   "id": "log-basket",
+   "layer": false,
+   "why": "the log basket and the poker bucket beside the stove: on the hearth corner against the walls, behind anywhere she can stand. Stays in the plate"
+  },
+  {
+   "id": "stove",
+   "layer": false,
+   "why": "the stove on its hearth: architecture (the brief keeps the fireplace in the plate); the hearth's edge bounds the floor"
+  },
+  {
+   "id": "hanging-ivy",
+   "layer": false,
+   "why": "the ivy hanging off the left wall's outer corner and from the ceiling beams: outside the room's floor, never near her"
+  },
+  {
+   "id": "rugs",
+   "layer": false,
+   "why": "the big rug and the runner: floor (the brief keeps them in the plate)"
+  },
+  {
+   "id": "walls-windows",
+   "layer": false,
+   "why": "walls, the window, the bookcase over the armchair, pictures, the banner, the lamps on the walls: never in front of her"
+  }
+ ],
+ "recompose": {
+  "meanAbs": 0.031,
+  "maxAbs": 117,
+  "perMask": {
+   "armchair": {
+    "meanAbs": 0.05,
+    "maxAbs": 36,
+    "over8": 0.0006
+   },
+   "stool": {
+    "meanAbs": 0.08,
+    "maxAbs": 20,
+    "over8": 0.0006
+   },
+   "desk": {
+    "meanAbs": 0.09,
+    "maxAbs": 78,
+    "over8": 0.0022
+   },
+   "chair": {
+    "meanAbs": 0.15,
+    "maxAbs": 70,
+    "over8": 0.008
+   },
+   "table": {
+    "meanAbs": 0.1,
+    "maxAbs": 109,
+    "over8": 0.0031
+   },
+   "cushion-cream": {
+    "meanAbs": 0.09,
+    "maxAbs": 70,
+    "over8": 0.0022
+   },
+   "cushion-green": {
+    "meanAbs": 0.06,
+    "maxAbs": 29,
+    "over8": 0.0011
+   },
+   "balustrade": {
+    "meanAbs": 0.19,
+    "maxAbs": 117,
+    "over8": 0.0092
+   }
+  }
+ }
+}

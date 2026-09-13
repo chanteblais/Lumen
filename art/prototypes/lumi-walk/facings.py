@@ -6,9 +6,11 @@
 Chanté, 2026-09-13: "she's still not always walking forward ... it should be a relatively easy task of marking where
 her face is and always making sure it's facing in the direction she's walking." The page's audit proved she moved
 along the direction each drawing was *assigned*; this checks each drawing actually faces that way — and it found
-the two diagonals turned ~29° and well short of 45°. Since "Turning could still be smoother" there are sixteen
-facings, 22.5° apart: nine drawn (s, ssw, sw, wsw, w facing you round to side-on; wnw, nw, nnw, n on round to facing
-away), seven mirrored.
+the two diagonals turned ~29° and well short of 45°. Since "Turning could still be smoother" the ring is dense: ten
+drawn facings (s, ssw, sw, wsw, w facing you round to side-on; wbw, wnw, nw, nnw, n on round to facing away) and
+eight mirrored, eighteen in all. They are **not evenly spaced**: nine sit 22.5° apart, and `wbw` sits at 101.25°,
+between side-on and the first view from behind, where the bow and the medallions leave. The page reads each
+drawing's angle from `DEG` here, interpolates her facing in degrees and morphs between the two nearest.
 
 The mark, over the hood rows (hood top to the chin, 46% of her height), for a view with a face: the face — the
 dark void inside the hood — and its centre. `turn` is its offset from the hood's centre as a share of the hood's
@@ -33,16 +35,23 @@ from scipy import ndimage as ndi
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-B = json.load(open(os.path.join(HERE, 'room-home.json')))['iso']['slope']
+B = json.load(open(os.path.join(ROOT, 'art', 'scenery', 'home', 'layers.json')))['iso']['slope']
 CHIN = 0.46
 GATE = 7.5
-ORDER = ['s', 'ssw', 'sw', 'wsw', 'w', 'wnw', 'nw', 'nnw', 'n']   # the drawn facings, facing you round to facing away
-BACK = {'wnw', 'nw', 'nnw', 'n'}
-WANT = {n: (i * 22.5 if n not in BACK else 180 - i * 22.5) for i, n in enumerate(ORDER)}   # turn from facing you (front) or away (back)
-JUDGED = {'nw': 45.0, 'wnw': 67.5, 'nnw': 22.5}
-# the page's sixteen: ring position k (22.5° steps clockwise from facing you), drawing, mirrored
-RING = [(k, ORDER[k] if k <= 8 else ORDER[16 - k], k > 8) for k in range(16)]
-NAMES = ['s', 'ssw', 'sw', 'wsw', 'w', 'wnw', 'nw', 'nnw', 'n', 'nne', 'ne', 'ene', 'e', 'ese', 'se', 'sse']
+# The drawn facings and the angle each one is turned on the ground, facing you (0°) round to facing away (180°).
+# Not even steps any more: `wbw` sits at 101.25°, an eighth of a turn-step past side-on, because that is where the
+# ribbon bow and the medallions leave (Chanté, 2026-09-13: "Do the extra drawing").
+ORDER = ['s', 'ssw', 'sw', 'wsw', 'w', 'wbw', 'wnw', 'nw', 'nnw', 'n']
+DEG = {'s': 0.0, 'ssw': 22.5, 'sw': 45.0, 'wsw': 67.5, 'w': 90.0, 'wbw': 101.25, 'wnw': 112.5, 'nw': 135.0,
+       'nnw': 157.5, 'n': 180.0}
+BACK = {'wbw', 'wnw', 'nw', 'nnw', 'n'}
+# what each drawing should measure: its turn from facing you for a view with a face, from facing away for one without
+WANT = {n: (DEG[n] if n not in BACK else 180 - DEG[n]) for n in ORDER}
+JUDGED = {'nw': 45.0, 'wbw': 78.75, 'wnw': 67.5, 'nnw': 22.5}
+# the page's ring: every drawing at its angle, plus a mirror of each one that is neither facing you nor facing away
+MIRROR = {'ssw': 'sse', 'sw': 'se', 'wsw': 'ese', 'w': 'e', 'wbw': 'ebe', 'wnw': 'ene', 'nw': 'ne', 'nnw': 'nne'}
+RING = sorted([(DEG[n], n, n, False) for n in ORDER]
+              + [(360 - DEG[n], MIRROR[n], n, True) for n in ORDER if 0 < DEG[n] < 180])
 
 
 def arg(name, default):
@@ -83,7 +92,7 @@ if '--candidates' in sys.argv:
     from lumi_cut import Sheet
     folder = arg('--candidates', '').rstrip('/')
     target = float(arg('--target', 45))
-    back = os.path.basename(folder) in ('lumi-iso-back', 'lumi-iso-n', 'lumi-iso-wnw', 'lumi-iso-nnw')
+    back = os.path.basename(folder) in ('lumi-iso-back', 'lumi-iso-n', 'lumi-iso-wbw', 'lumi-iso-wnw', 'lumi-iso-nnw')
     side = side_scale()
     if back:
         print(f'{os.path.basename(folder)}: a view from behind has no face to measure — judge by eye in a strip between its two neighbours')
@@ -120,7 +129,10 @@ for n in ORDER:
     else:
         m['angle'] = angle(m['turn'], side)
         print(f"{n:3s} {m['what']} turn {m['turn']:+.3f} → turned {m['angle']:5.1f}° (needs {WANT[n]:.1f}°)")
-    # the page reads these: where each drawing really faces, so its audit and floor plan judge the drawing, not its label
+    # the page reads these: the angle the drawing sits at on the ring (it builds the ring from them, and mirrors each
+    # one strictly between facing you and facing away), and where the drawing really faces, so the audit and the floor
+    # plan judge the drawing and not its label
+    rig[n]['deg'] = DEG[n]
     rig[n]['turned'] = round(m['angle'], 1)
     rig[n]['back'] = n in BACK
     M[n] = m
@@ -132,7 +144,7 @@ size, cell = 1500, 250
 sheet = Image.new('RGB', (size, size), (224, 206, 180))
 d = ImageDraw.Draw(sheet)
 cx0 = cy0 = size / 2
-for k, img, mirror in RING:
+for deg, name, img, mirror in RING:
     if img not in M:
         continue
     m = M[img]
@@ -143,7 +155,7 @@ for k, img, mirror in RING:
         mx = fig.width - 1 - mx
     s = cell * 0.78 / fig.height
     fig = fig.resize((int(fig.width * s), int(fig.height * s)), Image.LANCZOS)
-    phi = k * math.pi / 8
+    phi = math.radians(deg)
     du, dv = (math.cos(phi) - math.sin(phi)) / math.sqrt(2), (math.cos(phi) + math.sin(phi)) / math.sqrt(2)
     sx, sy = du - dv, (du + dv) * B
     L = math.hypot(sx, sy)
@@ -152,7 +164,7 @@ for k, img, mirror in RING:
     fx0, fy0 = ox + fig.width / 2, oy + m['feet'] * s
     d.line([fx0, fy0, fx0 + sx / L * 70, fy0 + sy / L * 70], fill=(40, 90, 200), width=4)
     d.ellipse([ox + mx * s - 5, oy + m['y'] * s - 5, ox + mx * s + 5, oy + m['y'] * s + 5], outline=(220, 30, 60), width=3)
-    d.text((ox, oy + fig.height + 2), f"{NAMES[k]} ({img}{' mirrored' if mirror else ''}) {m['angle']:.0f}°", fill=(30, 20, 10))
+    d.text((ox, oy + fig.height + 2), f"{name} ({img}{' mirrored' if mirror else ''}) {deg:.4g}° · drawn {m['angle']:.0f}°", fill=(30, 20, 10))
 os.makedirs(os.path.join(HERE, 'out'), exist_ok=True)
 sheet.save(os.path.join(HERE, 'out', 'facings.png'))
 print('wrote out/facings.png')

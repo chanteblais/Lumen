@@ -9,6 +9,7 @@
  * layer. Pure. See docs/architecture.md → The Library.
  */
 import type { Episode, Thread, ThreadNote } from "@/db/schema";
+import { shelfPath } from "@/core/domain/library";
 import { contentWords, normalizeText } from "@/core/words";
 import { termWeights, type TurnSignals } from "./memory-select";
 
@@ -24,7 +25,7 @@ const PHRASE = { message: 10, focus: 6, recent: 3 } as const;
 const BODY_WEIGHT = 0.5;
 const BODY_CAP = 4;
 
-export type SelectableThread = Pick<Thread, "id" | "title" | "aliases" | "summary" | "lastDiscussedAt">;
+export type SelectableThread = Pick<Thread, "id" | "title" | "aliases" | "summary" | "lastDiscussedAt"> & { parentId?: string | null };
 export type SelectableNote = Pick<ThreadNote, "id" | "threadId" | "content" | "createdAt" | "supersededById">;
 export type SelectableEpisode = Pick<Episode, "endedAt">;
 
@@ -58,12 +59,16 @@ export function rankNotes<N extends SelectableNote>(notes: N[], signals: TurnSig
 }
 
 export type LibraryView<T, N, E> = {
-  open: { thread: T; notes: N[] }[];
-  index: { thread: T; resting: boolean }[];
+  /** `shelf`: the titles of the threads it sits under, section first — where it is in their Library. */
+  open: { thread: T; notes: N[]; shelf: string[] }[];
+  index: { thread: T; resting: boolean; shelf: string[] }[];
   /** More threads are held than the index shows. */
   moreThreads: boolean;
   episodes: E[];
 };
+
+/** Most recently discussed first, then by id — consolidation stamps one time on every thread it touches, and the order mustn't vary between turns. */
+const byRecency = (a: SelectableThread, b: SelectableThread) => b.lastDiscussedAt.getTime() - a.lastDiscussedAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
 
 export function selectLibrary<T extends SelectableThread, N extends SelectableNote, E extends SelectableEpisode>(
   threads: T[],
@@ -78,16 +83,17 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
   const opened = threads
     .map((t) => ({ t, s: threadScore(t, byThread.get(t.id) ?? [], signals) }))
     .filter((x) => x.s >= OPEN_THRESHOLD)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .slice(0, MAX_OPEN);
   const openIds = new Set(opened.map((x) => x.t.id));
-  const rest = threads.filter((t) => !openIds.has(t.id)).sort((a, b) => b.lastDiscussedAt.getTime() - a.lastDiscussedAt.getTime());
+  const rest = threads.filter((t) => !openIds.has(t.id)).sort(byRecency);
 
   const since = opts.now.getTime() - EPISODE_DAYS * 86_400_000;
   const window = opts.windowStartsAt?.getTime();
+  const shelf = (t: T) => shelfPath(threads, t.id).map((p) => p.title);
   return {
-    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals).slice(0, NOTES_PER_THREAD) })),
-    index: rest.slice(0, INDEX_SIZE).map((t) => ({ thread: t, resting: opts.now.getTime() - t.lastDiscussedAt.getTime() > RESTING_AFTER_DAYS * 86_400_000 })),
+    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals).slice(0, NOTES_PER_THREAD), shelf: shelf(x.t) })),
+    index: rest.slice(0, INDEX_SIZE).map((t) => ({ thread: t, resting: opts.now.getTime() - t.lastDiscussedAt.getTime() > RESTING_AFTER_DAYS * 86_400_000, shelf: shelf(t) })),
     moreThreads: rest.length > INDEX_SIZE,
     episodes:
       window === undefined
@@ -105,7 +111,7 @@ export function rankThreads<T extends SelectableThread>(threads: T[], text: stri
   return threads
     .map((t) => ({ t, s: threadScore(t, notes.filter((n) => n.threadId === t.id), signals) }))
     .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .map((x) => x.t);
 }
 

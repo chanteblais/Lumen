@@ -1,6 +1,6 @@
-import { Suspense } from "react";
 import { after } from "next/server";
 import { Conversation } from "@/components/chat/Conversation";
+import { LibraryDebug } from "@/components/library/LibraryDebug";
 import { RoomScene } from "@/components/shell/RoomScene";
 import { Divider } from "@/components/ui/Ornament";
 import { greeting } from "@/core/ai/greeting";
@@ -53,12 +53,13 @@ export default async function Home() {
   );
 
   return (
-    <Suspense>
+    <>
       {/* Home is set in the room: the painting fills the viewport behind the shell
           (globals.css → Home: the room); everything else on the page is the same
           conversation, re-lit for the evening. */}
       <RoomScene room="home" />
+      <LibraryDebug userId={user.id} />
       <Conversation conversationId={conversation.id} initialMessages={initialMessages} greetingLines={lines} kicker={kicker} initialInSitting={inSitting} />
-    </Suspense>
+    </>
   );
 }

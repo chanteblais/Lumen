@@ -77,14 +77,14 @@ export function buildContextBlock(input: ContextInput): string {
     } else {
       lines.push(`- Last here: ${describeGap(input.lastSeenAt, now)}.`);
       if (bucket === "week_plus" || bucket === "long") {
-        lines.push("- That's a long gap. If it comes up, treat coming back as easy; don't mention the length unless they do.");
+        lines.push("- That's a long gap. If it comes up, treat coming back as easy; name how long it's been only if it helps them get their bearings, never as something owed.");
       }
     }
   }
 
   if (isReentry(input.sitting ? { openedAt: now, gapSeconds: input.sitting.gapSeconds } : undefined)) {
     lines.push(
-      "- This sitting began after a week or more away. The page greeted them with an offer to work out what's still relevant; if they take it up, or ask, run the coming-back pass (persona → Coming back). Don't mention how long it's been unless they do.",
+      "- This sitting began after a week or more away. The page greeted them with an offer to work out what's still relevant; if they take it up, or ask, run the coming-back pass (persona → Coming back). Name how long it's been only if it helps them get their bearings, never as something owed.",
     );
     if (open.some((i) => isStale(i, now))) lines.push("- Some open intentions are stale (flagged below) — those are the ones to ask about.");
   }
@@ -185,11 +185,12 @@ export function buildContextBlock(input: ContextInput): string {
     if (input.libraryUnavailable) lines.push("- Couldn't read the Library this turn. Don't claim to remember or not remember a thread; if it matters, say you can't check right now.");
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: input.timezone, month: "short", day: "numeric" });
     for (const o of library?.open ?? []) {
-      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
+      const under = o.shelf.length ? ` · in ${o.shelf.map(asQuoted).join(" › ")}` : "";
+      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})${under}`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
       for (const n of o.notes) lines.push(`- ${n.id} · ${n.kind} · "${asQuoted(n.content)}" · ${n.source === "user_said" ? "their word" : "your reading"} · ${day.format(n.createdAt)}`);
     }
     if (library?.index.length) {
-      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.resting ? ", resting" : ""})`).join(" · ");
+      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.shelf.length ? `, in ${asQuoted(x.shelf[x.shelf.length - 1])}` : ""}${x.resting ? ", resting" : ""})`).join(" · ");
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }

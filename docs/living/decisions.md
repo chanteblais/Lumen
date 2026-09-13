@@ -21,6 +21,65 @@
 
 ---
 
+## 2026-09-13 · Lumi may name time away when it helps someone get their bearings
+
+**Decision.** In conversation, Lumi may say how long someone has been away when that helps them orient, as in the model strategy's *"You disappeared for four days. We don't need to reconstruct the four days."* She never does it in a way that makes the absence feel like a debt. Counts of what's undone stay out, and so does any tally of what piled up. Pages show neither.
+**Rationale.** Chanté adopted the recommendation from review feedback she relayed ([open question 17](open-questions.md)). The persona's "never say how long it's been" contradicted the model strategy's own example, and in voice eval run 5 Lumi echoed a user's "two weeks" while declining to reconstruct them, which oriented rather than accused. *(Claude's reading: a number is judged by whether it adds burden or costs agency, and a gap named in order to set it down does neither; a count of what's undone is still a bill.)*
+**Implications.**
+- The persona ("What you're for" and *Coming back*) and the context block's re-entry line allow it.
+- The day plan's line on Today still never names the gap. A page isn't a conversation, and widening that is Chanté's call.
+- Open question 17 is settled for time away. Whether a count may appear inside a noticed pattern ("you've moved this three times") stays open.
+
+**Principle.** V§8, V§12, EP§8; model strategy.
+**Replaces.** "Never … say how long it's been" (persona → *Coming back*) and "Don't mention how long it's been unless they do" (context block).
+
+## 2026-09-13 · Mail is switched off, for now
+
+**Decision.** Lumi doesn't read mail, and Insights leaves the nav, until mail comes back. The code stays, behind one switch (`MAIL_ON` in `src/core/email/types.ts`).
+**Rationale.** Chanté asked: "If I turn off the mail integration, will users still get a warning when they create an account?", then asked for the app side of it. *(Claude's reading:)* reading Gmail is a restricted Google scope. While the app asks for it, Google sign-in can't be published without Google's security review: anyone off the test list is blocked, and test users see the unverified-app screen. Without it, the consent screen can be published with no review, so signing up with Google stops being a warning before the product has begun.
+**Implications.**
+- Nothing new for the user to keep; the Connect Google chip, which came back about weekly in Testing, goes with it.
+- Leads already noticed stay stored, unanswered, and nothing shows them while mail is off. Turning it back on brings them back.
+- Mail returning means Google's verification for `gmail.readonly`. Where mail would live is still open question 4.
+
+**Principle.** The one question (does this reduce executive-function burden?): a blocked or alarming sign-up is burden before the product begins.
+**Replaces.** Suspends *Mail is a look, not an inbox* (below) while mail is off. That entry stays as the design for when it returns.
+
+---
+
+## 2026-09-13 · Threads that become categories become sections of the Library
+
+**Decision.** A thread can sit under a broader thread. A thread that holds threads is a **section** of the Library; inside a section, a thread that holds threads of its own is a **shelf**; the threads are **books**, titled with their names. Three levels at most. Lumi does the arranging between visits, conservatively, and the user corrects it by saying where something belongs. The Library shows the sections on its bookcases, and a section opens to its shelves and books; a book opens to where the thread stands.
+**Rationale.** Chanté: "I'd like you to keep building on lumi's memory system, and incorporate it into the library. Threads that become categories should gain their own section in the library. Eventually you'll be able to click on the different sections and see all the books that are there. The title of the books will be all your threads." Her mockup opens a thread as a book: *Library › Coherence › Memory & Continuity › AI Continuity & Identity*, with *Where we've arrived*, *What we've settled — for now*, *Still alive* and *How this thread changed*. *(Claude's reading:)* this is Library §17 ("Coherence may begin as an item under Ideas. Over time, it becomes substantial enough to have its own section") and §55 (structure emerges conservatively), and it answers the presentation half of spatial-map question 7: a Collection and a Thread Group are threads, not a separate filing layer.
+**Implications.**
+- Nothing is named, filed or kept by the user. A section's name is the thread's name, the words they use; it appears only once two threads belong under it. A thread Lumi shelved stays put, and a placement the user makes is never undone by Lumi.
+- Being a section is derived from what a thread holds, never stored, so a section disappears on its own if everything leaves it.
+- One place per thread for now. Cross-links (Library §34) are not built.
+- Which bookcase a section takes is presentation (the order sections arrived), not data. The slot count, the alcove, painted close-ups, Lumi's size in the room and the stage remain open (question 3).
+- Correction is in words only for now. Dragging in the Library remains open (`ef-burden-log.md`).
+- Forgetting a section forgets that thread only; what was in it becomes loose.
+
+**Principle.** V§4 and EP§1 (the system does the organising), EP§6 (correction beats configuration), EP§2–4 (progressive disclosure: room → section → shelf → book), EP§17 (a note shows whether it is their word or Lumi's reading), Library §17, §25–28, §33, §39, §55.
+**Replaces.** "Collections, Thread Groups, shelves and a Library page stay open" in *Recent conversation lives on…* (below), for the presentation model only.
+**Confirmed.** Chanté, 2026-09-13, as a working version. On what a section is: "A section is like a category. It might be yoga, cooking, the title of a book they're writing, some area of focus — something they keep mentioning in various ways. It's what threads fall under." On placement: the names on the bookcases in arrival order, parchment over the room and the table page stand as a working version. The proper integration into the room waits ("Let's wait to integrate it properly"), and so do the spatial map's remaining questions. Until then, the same day: the rooms stay bare, and the categories and threads show only in a hidden debug mode, as parchment over the rooms (Chanté: "a debug mode button somewhere hidden that, when turned on, shows the categories and threads as parchment over the rooms").
+
+---
+
+## 2026-09-13 · Lumi carries the philosophy, in a brief sent with every call
+
+**Decision.** A synthesis of the canon written for Lumi, [`docs/philosophy/lumi-brief.md`](../philosophy/lumi-brief.md), is part of her cached prompt prefix: the conversation, the day plan and the mail leads all carry it. It holds the *why* (the problem Coherence exists for, *Coherence remembers; Lumi understands*, the division of labour, what starting, resistance, capacity and return are like, presence, what she is not, the places); the persona keeps the *how*. Only settled canon goes in, never *proposed* sections, ideas or open questions. It is reviewed when a source changes (`npm run check` fails until it is), when evidence shows her misreading the philosophy, and at least monthly.
+**Rationale.** Chanté: "I'd really like Lumi to have access to the philosophy of this project … make sure that's part of her context. This should be periodically reviewed and updated." *(Claude's reading: the persona's rules cover the situations they name, and the philosophy is what lets her judgement hold in the ones they don't. Written down and reviewed, it keeps who she is in Coherence's documents rather than in whatever one model happens to do.)*
+**Implications.**
+- Her prompt prefix roughly doubles, from about 2,050 tokens to about 4,000. It is cached, so the cost falls mostly on the first call; the brief's size limit is in the doc.
+- **A tension with the model strategy**, which warns against defining Lumi "entirely through one enormous system prompt". The brief is generated from documented canon, reviewed against it and checked by evaluation, so her identity still lives in the documents; the prompt only carries it. If it needs to grow much, the answer is retrieval, not a longer prefix.
+- The canon's other rule holds in the prompt too: it may never teach the user its vocabulary or methodology (EP§19).
+- The reflection step, which only proposes belief operations, doesn't carry it.
+
+**Principle.** Model strategy (*Lumi should not be model-dependent*), V§4–5, V§21, EP§19.
+**Replaces.** The persona as the only part of Coherence's thinking she was sent.
+
+---
+
 ## 2026-09-13 · A date is typed the way it's said, and a day is not an appointment
 
 **Decision.** A task gets a date on the Lists sheet by tapping its date column and typing it as you'd say it — *fri*, *sep 30*, *in two weeks* — with no calendar to operate; it shows as *Today*, *Tomorrow* or *Sep 30* once saved. Only days for now, no times. A task with a day but no time stays an ordinary task on that day: it can be Right now, and Today treats being due as a reason to put it first. Only a task with a time is a fixed commitment under Later.
@@ -341,6 +400,8 @@ Distilled from the engineering log, [`product.md`](../product.md) and [`today.md
 
 ### Quiet by default · 2026-09-11
 
+*Partly superseded 2026-09-13: check-ins went with focus sessions (Today does its own organising, above), so Lumi currently speaks unprompted not at all; the greeting stays deterministic.*
+
 **Decision.** Lumi speaks unprompted only at check-ins the user agreed to. The greeting and the check-ins are deterministic.
 **Rationale.** Effective presence is often quiet (§7). An unprompted message is a small demand.
 **Implications.** Any future notification must clear this bar (open question 9).
@@ -348,12 +409,16 @@ Distilled from the engineering log, [`product.md`](../product.md) and [`today.md
 
 ### A session's end is a fact, not a request · 2026-09-12
 
+*Suspended 2026-09-13: focus sessions are removed from the product for now (Today does its own organising, above). This stays the design for when they return.*
+
 **Decision.** Focus sessions start only through Lumi. *Done* and *End* close a session in code, with no "did you finish?". A session left open is offered back once and never treated as a failure.
 **Rationale.** Three asks up front, none during: the body double doesn't interrogate.
 **Implications.** No timer controls to configure. No stats, streaks or session history.
 **Principle.** §7, §12.
 
 ### Mail is a look, not an inbox · 2026-09-12
+
+**Suspended 2026-09-13:** mail is switched off for now ([Mail is switched off, for now](#2026-09-13--mail-is-switched-off-for-now)). This stays the design for when it returns.
 
 **Decision.** Lumi reads recent mail read-only and asks one question per thing she noticed, with two answers: *Still needs doing* or *Let it go*.
 **Rationale.** A second inbox would be a second system to manage.

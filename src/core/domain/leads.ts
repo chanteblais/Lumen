@@ -5,9 +5,10 @@
  */
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { type Db } from "@/db/client";
-import { leads, type Lead, type LeadSource } from "@/db/schema";
-import { appendEvent, latestEvent, type ActionSource } from "./events";
-import { createIntention } from "./intentions";
+import { leads, type Intention, type Lead, type LeadSource } from "@/db/schema";
+import { appendEvent, appendEvents, latestEvent, type ActionSource } from "./events";
+import { createIntention, getIntention } from "./intentions";
+import { atomic } from "./tx";
 
 export const EMAIL_SCAN_EVENT = "email.scanned";
 /** A look through the mail is fresh for this long; the page doesn't look again sooner. */
@@ -27,29 +28,40 @@ export type NewLead = {
   receivedAt?: Date | null;
 };
 
+/** A lead's title as stored: trimmed, inner whitespace collapsed. The unique index (`leads_user_ref_title_idx`) compares it lower-cased. */
+export function leadTitle(s: string): string {
+  return s.trim().replace(/\s+/g, " ");
+}
+
+/**
+ * Insert what's new and return it. A lead already held for the same message
+ * and title — two looks racing, or the same thing proposed twice — is skipped
+ * by the unique index, with no event.
+ */
 export async function createLeads(db: Db, userId: string, inputs: NewLead[]): Promise<Lead[]> {
   if (inputs.length === 0) return [];
-  const rows = await db
-    .insert(leads)
-    .values(
-      inputs.map((i) => ({
-        userId,
-        source: i.source ?? "email",
-        sourceRef: i.sourceRef,
-        title: i.title.trim(),
-        why: i.why?.trim() || null,
-        list: i.list?.trim() || null,
-        dueAt: i.dueAt ?? null,
-        fromName: i.fromName?.trim() || null,
-        subject: i.subject?.trim() || null,
-        receivedAt: i.receivedAt ?? null,
-      })),
-    )
-    .returning();
-  for (const r of rows) {
-    await appendEvent(db, { userId, type: "lead.suggested", subjectType: "lead", subjectId: r.id, payload: { source: r.source, list: r.list } });
-  }
-  return rows;
+  return atomic(db, async (tx) => {
+    const rows = await tx
+      .insert(leads)
+      .values(
+        inputs.map((i) => ({
+          userId,
+          source: i.source ?? "email",
+          sourceRef: i.sourceRef,
+          title: leadTitle(i.title),
+          why: i.why?.trim() || null,
+          list: i.list?.trim() || null,
+          dueAt: i.dueAt ?? null,
+          fromName: i.fromName?.trim() || null,
+          subject: i.subject?.trim() || null,
+          receivedAt: i.receivedAt ?? null,
+        })),
+      )
+      .onConflictDoNothing()
+      .returning();
+    await appendEvents(tx, rows.map((r) => ({ userId, type: "lead.suggested", subjectType: "lead" as const, subjectId: r.id, payload: { source: r.source, list: r.list } })));
+    return rows;
+  });
 }
 
 export async function listSuggestedLeads(db: Db, userId: string, limit = 12): Promise<Lead[]> {
@@ -82,43 +94,80 @@ export async function getLead(db: Db, userId: string, id: string): Promise<Lead 
   return row;
 }
 
-/** "Still needs doing": the lead becomes an intention. Returns both, or undefined when it isn't theirs or already resolved. */
-export async function keepLead(db: Db, userId: string, id: string, via: ActionSource = "app") {
-  const lead = await getLead(db, userId, id);
-  if (!lead || lead.status !== "suggested") return undefined;
-  const intention = await createIntention(db, userId, {
-    title: lead.title,
-    note: [lead.why, lead.subject ? `From mail: "${lead.subject}"${lead.fromName ? ` — ${lead.fromName}` : ""}` : null].filter(Boolean).join(" "),
-    list: lead.list,
-    dueAt: lead.dueAt,
+/**
+ * "Still needs doing": the lead becomes an intention, in one transaction that
+ * first claims the lead (`WHERE status = 'suggested'`). Kept already — a second
+ * tap, Lumi and Insights at once — it returns the intention it became, with no
+ * second one and no second event. Undefined when it isn't theirs or was let go.
+ */
+export async function keepLead(db: Db, userId: string, id: string, via: ActionSource = "app"): Promise<{ lead: Lead; intention: Intention } | undefined> {
+  return atomic(db, async (tx) => {
+    const [claimed] = await tx
+      .update(leads)
+      .set({ status: "kept", resolvedAt: new Date() })
+      .where(and(eq(leads.id, id), eq(leads.userId, userId), eq(leads.status, "suggested")))
+      .returning();
+    if (!claimed) {
+      const lead = await getLead(tx, userId, id);
+      const intention = lead?.status === "kept" && lead.intentionId ? await getIntention(tx, userId, lead.intentionId) : undefined;
+      return lead && intention ? { lead, intention } : undefined;
+    }
+    const intention = await createIntention(tx, userId, {
+      title: claimed.title,
+      note: [claimed.why, claimed.subject ? `From mail: "${claimed.subject}"${claimed.fromName ? ` — ${claimed.fromName}` : ""}` : null].filter(Boolean).join(" "),
+      list: claimed.list,
+      dueAt: claimed.dueAt,
+    });
+    const [lead] = await tx.update(leads).set({ intentionId: intention.id }).where(eq(leads.id, id)).returning();
+    await appendEvent(tx, { userId, type: "lead.kept", subjectType: "lead", subjectId: id, payload: { via, intention_id: intention.id } });
+    return { lead, intention };
   });
-  const now = new Date();
-  const [row] = await db.update(leads).set({ status: "kept", intentionId: intention.id, resolvedAt: now }).where(eq(leads.id, id)).returning();
-  await appendEvent(db, { userId, type: "lead.kept", subjectType: "lead", subjectId: id, payload: { via, intention_id: intention.id } });
-  return { lead: row, intention };
 }
 
-/** "Let it go": handled, not a thing, or not theirs — the distinction isn't asked. */
+/** "Let it go": handled, not a thing, or not theirs — the distinction isn't asked. Let go already: the lead as it is, no second event. Undefined when it isn't theirs or was kept. */
 export async function dismissLead(db: Db, userId: string, id: string, via: ActionSource = "app"): Promise<Lead | undefined> {
-  const [row] = await db
-    .update(leads)
-    .set({ status: "dismissed", resolvedAt: new Date() })
-    .where(and(eq(leads.id, id), eq(leads.userId, userId), eq(leads.status, "suggested")))
-    .returning();
-  if (row) await appendEvent(db, { userId, type: "lead.dismissed", subjectType: "lead", subjectId: id, payload: { via } });
-  return row;
+  return atomic(db, async (tx) => {
+    const [row] = await tx
+      .update(leads)
+      .set({ status: "dismissed", resolvedAt: new Date() })
+      .where(and(eq(leads.id, id), eq(leads.userId, userId), eq(leads.status, "suggested")))
+      .returning();
+    if (!row) {
+      const lead = await getLead(tx, userId, id);
+      return lead?.status === "dismissed" ? lead : undefined;
+    }
+    await appendEvent(tx, { userId, type: "lead.dismissed", subjectType: "lead", subjectId: id, payload: { via } });
+    return row;
+  });
 }
 
-export type MailScan = { at: Date; through: Date };
+export type MailRange = { after: Date; before: Date };
+/** `through`: where the next look starts. `backlog`: older mail a look ran out of pages for — the next look reads it after what's new. */
+export type MailScan = { at: Date; through: Date; backlog?: MailRange };
 
 /** The last look through the mail, derived from the newest `email.scanned` event. */
 export async function latestMailScan(db: Db, userId: string): Promise<MailScan | undefined> {
   const e = await latestEvent(db, userId, EMAIL_SCAN_EVENT);
   if (!e) return undefined;
-  const through = (e.payload as { through?: string }).through;
-  return { at: e.occurredAt, through: through ? new Date(through) : e.occurredAt };
+  const p = e.payload as { through?: string; backlog?: { after: string; before: string } | null };
+  return {
+    at: e.occurredAt,
+    through: p.through ? new Date(p.through) : e.occurredAt,
+    ...(p.backlog ? { backlog: { after: new Date(p.backlog.after), before: new Date(p.backlog.before) } } : {}),
+  };
 }
 
-export async function recordMailScan(db: Db, userId: string, p: { through: Date; read: number; suggested: number }): Promise<void> {
-  await appendEvent(db, { userId, type: EMAIL_SCAN_EVENT, subjectType: "user", subjectId: userId, payload: { through: p.through.toISOString(), read: p.read, suggested: p.suggested } });
+export async function recordMailScan(db: Db, userId: string, p: { through: Date; read: number; suggested: number; backlog?: MailRange }): Promise<void> {
+  await appendEvent(db, {
+    userId,
+    type: EMAIL_SCAN_EVENT,
+    subjectType: "user",
+    subjectId: userId,
+    payload: {
+      through: p.through.toISOString(),
+      read: p.read,
+      suggested: p.suggested,
+      backlog: p.backlog ? { after: p.backlog.after.toISOString(), before: p.backlog.before.toISOString() } : null,
+    },
+  });
 }

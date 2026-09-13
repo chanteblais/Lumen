@@ -17,8 +17,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import postcss from 'postcss'
 import tailwind from '@tailwindcss/postcss'
+import { ROOT } from './lib.mjs'
 
-const ROOT = new URL('..', import.meta.url).pathname
 const ENTRY = join(ROOT, 'src/app/globals.css')
 
 // Prefixed properties with no unprefixed twin in the rules that use them.

@@ -12,9 +12,11 @@
     "test": "vitest run",
     "preflight": "node scripts/preflight.mjs",
     "precheck": "node scripts/preflight.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes && npm run check:css",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:routes && npm run check:css && npm run check:brief",
     "check:routes": "node scripts/check-route-auth.mjs",
     "check:css": "node scripts/check-css-prefixes.mjs",
+    "check:brief": "node scripts/lumi-brief.mjs --check",
+    "brief": "node scripts/lumi-brief.mjs",
     "land": "node scripts/land.mjs",
     "worktrees": "node scripts/worktrees.mjs",
     "db:generate": "drizzle-kit generate",
@@ -33,10 +35,11 @@
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "zod": "^4.6.2"
+    "zod": "^4.6.4"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.2",
     "@types/react": "^19",

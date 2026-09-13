@@ -4,10 +4,11 @@
  * the fact; everything judged about it (running, abandoned, elapsed) is
  * derived at read time. Every write appends an event.
  */
-import { and, desc, eq, isNull, lt } from "drizzle-orm";
+import { and, desc, eq, gte, isNull } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { focusSessions, intentions, type FocusSession, type SessionOutcome } from "@/db/schema";
 import { appendEvent, TODAY_BOUND_MS } from "./events";
+import { atomic } from "./tx";
 
 export type StartSessionInput = {
   goal: string;
@@ -54,57 +55,76 @@ export function elapsedMinutes(s: Pick<FocusSession, "startedAt">, now: Date = n
 }
 
 /**
- * Begin a session. One at a time: a session still open is closed as
- * stopped early first (they moved on to something else — no judgement)
- * and returned as `replaced`, so the caller can reflect on it too.
+ * Begin a session. One at a time, held by the unique index
+ * `focus_sessions_user_open_idx`: a session still running is closed as stopped
+ * early first (they moved on to something else — no judgement) and returned
+ * as `replaced`, so the caller can reflect on it too; one left open past its
+ * threshold and not yet swept closes as abandoned, which is what it was. When
+ * another start lands at the same moment, its session is the one returned —
+ * two starts never leave two running.
  */
 export async function startFocusSession(db: Db, userId: string, input: StartSessionInput, now: Date = new Date()): Promise<{ session: FocusSession; replaced?: FocusSession }> {
-  const open = await activeSession(db, userId, now);
-  const replaced = open ? await endFocusSession(db, userId, open.id, "stopped_early", now) : undefined;
-  const [row] = await db
-    .insert(focusSessions)
-    .values({
+  return atomic(db, async (tx) => {
+    const open = await tx.select().from(focusSessions).where(and(eq(focusSessions.userId, userId), isNull(focusSessions.endedAt)));
+    let replaced: FocusSession | undefined;
+    for (const s of open) {
+      const closed = await endFocusSession(tx, userId, s.id, isAbandoned(s, now) ? "abandoned" : "stopped_early", now);
+      if (closed?.outcome === "stopped_early") replaced = closed;
+    }
+    const [row] = await tx
+      .insert(focusSessions)
+      .values({
+        userId,
+        intentionId: input.intentionId ?? null,
+        goal: input.goal.trim(),
+        firstStep: input.firstStep.trim(),
+        approach: input.approach?.trim() || null,
+        plannedMinutes: input.plannedMinutes,
+        checkInMinutes: input.checkInMinutes,
+        startedAt: now,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (!row) {
+      // Another start committed between the close and this insert: its session is the one running.
+      const [winner] = await tx.select().from(focusSessions).where(and(eq(focusSessions.userId, userId), isNull(focusSessions.endedAt))).limit(1);
+      if (!winner) throw new Error("startFocusSession: the insert conflicted, but no session is open");
+      return { session: winner, replaced };
+    }
+    if (row.intentionId) {
+      await tx.update(intentions).set({ lastTouchedAt: now }).where(and(eq(intentions.id, row.intentionId), eq(intentions.userId, userId)));
+    }
+    await appendEvent(tx, {
       userId,
-      intentionId: input.intentionId ?? null,
-      goal: input.goal.trim(),
-      firstStep: input.firstStep.trim(),
-      approach: input.approach?.trim() || null,
-      plannedMinutes: input.plannedMinutes,
-      checkInMinutes: input.checkInMinutes,
-      startedAt: now,
-    })
-    .returning();
-  if (row.intentionId) {
-    await db.update(intentions).set({ lastTouchedAt: now }).where(and(eq(intentions.id, row.intentionId), eq(intentions.userId, userId)));
-  }
-  await appendEvent(db, {
-    userId,
-    type: "session.started",
-    subjectType: "session",
-    subjectId: row.id,
-    payload: { goal: row.goal, first_step: row.firstStep, planned_minutes: row.plannedMinutes, approach: row.approach, intention_id: row.intentionId },
-    occurredAt: now,
+      type: "session.started",
+      subjectType: "session",
+      subjectId: row.id,
+      payload: { goal: row.goal, first_step: row.firstStep, planned_minutes: row.plannedMinutes, approach: row.approach, intention_id: row.intentionId },
+      occurredAt: now,
+    });
+    return { session: row, replaced };
   });
-  return { session: row, replaced };
 }
 
 /** Close a running session. Returns undefined when it isn't theirs or is already closed. */
 export async function endFocusSession(db: Db, userId: string, id: string, outcome: SessionOutcome, now: Date = new Date()): Promise<FocusSession | undefined> {
-  const [row] = await db
-    .update(focusSessions)
-    .set({ endedAt: now, outcome })
-    .where(and(eq(focusSessions.id, id), eq(focusSessions.userId, userId), isNull(focusSessions.endedAt)))
-    .returning();
-  if (!row) return undefined;
-  await appendEvent(db, {
-    userId,
-    type: "session.ended",
-    subjectType: "session",
-    subjectId: row.id,
-    payload: { outcome, actual_minutes: outcome === "abandoned" ? null : elapsedMinutes(row, now), approach: row.approach, intention_id: row.intentionId },
-    occurredAt: now,
+  return atomic(db, async (tx) => {
+    const [row] = await tx
+      .update(focusSessions)
+      .set({ endedAt: now, outcome })
+      .where(and(eq(focusSessions.id, id), eq(focusSessions.userId, userId), isNull(focusSessions.endedAt)))
+      .returning();
+    if (!row) return undefined;
+    await appendEvent(tx, {
+      userId,
+      type: "session.ended",
+      subjectType: "session",
+      subjectId: row.id,
+      payload: { outcome, actual_minutes: outcome === "abandoned" ? null : elapsedMinutes(row, now), approach: row.approach, intention_id: row.intentionId },
+      occurredAt: now,
+    });
+    return row;
   });
-  return row;
 }
 
 export type CheckInResponse = "ok" | "stuck" | "distracted" | "done";
@@ -139,7 +159,7 @@ export async function activeSession(db: Db, userId: string, now: Date = new Date
  * greeting offers to pick it back up or let it go. Returns what it closed.
  */
 export async function sweepAbandoned(db: Db, userId: string, now: Date = new Date()): Promise<FocusSession[]> {
-  const open = await db.select().from(focusSessions).where(and(eq(focusSessions.userId, userId), isNull(focusSessions.endedAt), lt(focusSessions.startedAt, now)));
+  const open = await db.select().from(focusSessions).where(and(eq(focusSessions.userId, userId), isNull(focusSessions.endedAt)));
   const closed: FocusSession[] = [];
   for (const s of open) {
     if (!isAbandoned(s, now)) continue;
@@ -166,12 +186,13 @@ export async function resolveSession(db: Db, userId: string, now: Date = new Dat
   return { active, last };
 }
 
+/** The session that ended most recently, at or after `since`. Open sessions (no `ended_at`) never match, so they can't crowd it out of the sort. */
 async function lastEndedSession(db: Db, userId: string, since: Date): Promise<FocusSession | undefined> {
-  const rows = await db
+  const [row] = await db
     .select()
     .from(focusSessions)
-    .where(and(eq(focusSessions.userId, userId), lt(focusSessions.startedAt, new Date())))
+    .where(and(eq(focusSessions.userId, userId), gte(focusSessions.endedAt, since)))
     .orderBy(desc(focusSessions.endedAt))
-    .limit(5);
-  return rows.find((r) => r.endedAt && r.endedAt >= since);
+    .limit(1);
+  return row;
 }
