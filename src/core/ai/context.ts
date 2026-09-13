@@ -1,4 +1,5 @@
 import { declineLabel } from "@/core/declines";
+import { isDayOnly } from "@/core/due-date";
 import { dayPart, describeGap, gapBucket } from "@/core/time";
 import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
@@ -267,11 +268,12 @@ export function buildContextBlock(input: ContextInput): string {
     if (input.libraryUnavailable) lines.push("- Couldn't read the Library this turn. Don't claim to remember or not remember a thread; if it matters, say you can't check right now.");
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: input.timezone, month: "short", day: "numeric" });
     for (const o of library?.open ?? []) {
-      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
+      const under = o.shelf.length ? ` · in ${o.shelf.map(asQuoted).join(" › ")}` : "";
+      lines.push(`### ${asQuoted(o.thread.title)} (${o.thread.id})${under}`, `- Summary: ${o.thread.summary ? `"${asQuoted(o.thread.summary)}"` : "none yet"}`);
       for (const n of o.notes) lines.push(`- ${n.id} · ${n.kind} · "${asQuoted(n.content)}" · ${n.source === "user_said" ? "their word" : "your reading"} · ${day.format(n.createdAt)}`);
     }
     if (library?.index.length) {
-      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.resting ? ", resting" : ""})`).join(" · ");
+      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.shelf.length ? `, in ${asQuoted(x.shelf[x.shelf.length - 1])}` : ""}${x.resting ? ", resting" : ""})`).join(" · ");
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }
@@ -293,12 +295,15 @@ export function describeActivity(a: ActivityItem): string {
     case "intention.created":
       return `you saved ${t}`;
     case "intention.updated": {
+      if (onPage && a.fields?.length === 1 && a.fields[0] === "dueAt") return `they changed the date on ${t} in Lists`;
       const fields = a.fields?.length ? ` (${a.fields.join(", ")})` : "";
       return onPage ? `they moved ${t} in Lists${fields}` : `you changed ${t}${fields}`;
     }
   }
 }
 
+/** A day-only date (00:00 local) is just the day; anything else carries its time. */
 function fmtDue(d: Date, timeZone: string): string {
+  if (isDayOnly(d, timeZone)) return new Intl.DateTimeFormat("en-CA", { timeZone, month: "short", day: "numeric" }).format(d);
   return new Intl.DateTimeFormat("en-CA", { timeZone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(d);
 }

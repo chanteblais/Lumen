@@ -28,6 +28,23 @@ Scripted scenarios run against Lumi's persona (`src/core/ai/persona.ts`), what w
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 5 — 2026-09-13 · all nine on OpenAI with Lumi's brief in the prefix (`gpt-6-astra`, reasoning effort low, `store: false`, context = run at ~noon Vancouver on a Sunday, last seen 3h ago)
+The first run with [Lumi's brief](philosophy/lumi-brief.md) (the canon synthesised for her) placed after the persona's opening paragraph (`decisions.md` → *Lumi carries the philosophy*). Same script and scenarios as run 4, so the two can be read side by side, though run 4 was at 2:40am and this one at noon, and the time of day changes several replies. **Not graded** (Chanté's call, as with run 4). The script has no tools, so scenario 9 can't capture. Cache: the prefix is 3,994 tokens, cached from the second call (run 4: 2,049). Output 9–158 tokens per reply.
+
+| # | Grade | Lumi said |
+|---|---|---|
+| 1 | | "What's the thing? I'll help find the first physical move, not make you a plan." → (grant report, due Monday) "Open the grant report file—or a blank document if there isn't one yet. Nothing to write yet." |
+| 2 | | "Tell me what's on your plate — messy is fine. If anything has a firm deadline, include it." → (the five things) "The thesis and camp website are the bigger pieces, with correspondence and everyday errands alongside. / Unless something else is due today, I'd start with a supervisor email — a more contained task than either project. / Open a draft and write the subject line for one of them." |
+| 3 | | "What's floating around in your head — work, home, anything half-remembered? No need to put it in order." |
+| 4 | | "What's the task?" → (insurance call) "Put the insurance number on screen — that's the first step, not the call yet. / Check their Sunday hours while you're there." |
+| 5 | | "Welcome back. Where did we end up?" |
+| 6 | | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? It doesn't need to come out in order." |
+| 7 | | "I'm here. What are you working on?" → (chapter 3, 45 minutes) "Open chapter 3 and read the paragraph where you want to begin editing. I'm here while you work." |
+| 8 | | "Let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+| 9 | | "Thesis and the extension email; deploy troubleshooting. / Dentist, desk, and the lamp wire thing. / Washington trip, and getting back to Sam. / I'd start with Priya—the extension could change how much room you have for the rewrite. / What date do you want to ask for?" |
+
+**What to look at (Claude's notes for Chanté's grading, not grades):** scenario 6 now takes up the canon's *we don't need to reconstruct* line in its own words, and names the length of the gap by echoing the user's "two weeks" (whether she may name a gap's length is open question 17). In scenario 1, "not make you a plan" explains her method, which the persona says she never does. Scenarios 2 and 9 each group the pile without a count, then pick one thing and say why.
+
 ### Run 4 — 2026-09-13 · all nine on OpenAI (`scripts/voice-eval.mjs`, `gpt-6-astra`, reasoning effort low, `store: false`, context = run at ~2:40am Vancouver, last seen 3h ago)
 The first run after the switch (`decisions.md` → *Lumi runs on OpenAI*). **Not graded:** Claude doesn't judge a comparison with Claude in it (open question 21), so the replies are here verbatim for Chanté. The script has no tools, so scenario 9 can't capture. Cache: `cacheRead=2049` from the second call on, and the prefix is cached across scenarios. Output 9–105 tokens per reply.
 

@@ -94,5 +94,6 @@ if (!moved.ok) {
 }
 
 console.log(`✓ landed ${branch} on main: ${git("log", "--oneline", "-1", mergeSha)}`);
-console.log("  next: delete the branch once its worktree is gone or detached (git branch -d " + branch + ");");
+console.log(`  next: once its worktree is gone or detached, delete the branch: git merge-base --is-ancestor ${branch} main && git branch -D ${branch}`);
+console.log("  (not -d: it judges merged against the HEAD of the checkout it runs in, and a parked checkout trails main);");
 console.log("  push main on approval — check `git log --first-parent origin/main..main` for what rides along.");

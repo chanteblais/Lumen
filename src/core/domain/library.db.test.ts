@@ -14,7 +14,7 @@ import type { Db } from "@/db/client";
 import { conversations, episodes, messages, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
 import { ensureMainConversation } from "./conversations";
-import { listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing } from "./library";
+import { buildShelves, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing, shelveThread } from "./library";
 import type { Heard } from "./memory-rules";
 
 let db: Db;
@@ -205,6 +205,62 @@ describe("the Library in conversation", () => {
     expect(await call(toolsFor(u, said(words)).forget_from_library, { thread_id: added.thread_id, their_words: words })).toEqual({ ok: true, forgot: "thread" });
     expect(await listThreads(db, u.id)).toEqual([]);
     expect(await call(toolsFor(u).open_thread, { id: added.thread_id })).toHaveProperty("error");
+  });
+});
+
+describe("sections of the Library", () => {
+  it("consolidation gathers loose threads into a section, Lumi sees where they sit, and doesn't undo what they placed", async () => {
+    const u = await createTestUser(db, "Ivo");
+    const heard = said("the memory design and the onboarding are both part of coherence");
+    const tools = toolsFor(u, heard);
+    const memory = (await call(tools.add_to_library, { new_thread: "Memory design", kind: "idea", content: "Beliefs carry evidence.", their_words: heard.text })) as { thread_id: string };
+    const onboarding = (await call(tools.add_to_library, { new_thread: "Onboarding", kind: "idea", content: "No setup ritual on the first visit.", their_words: heard.text })) as { thread_id: string };
+
+    await say(u, "2026-09-12T19:00:00Z", "user", "The memory design and the onboarding are both part of Coherence, the app I'm building.");
+    await say(u, "2026-09-12T19:01:00Z", "assistant", "Both parts of Coherence, then.");
+    const r = await consolidate(db, u, {
+      now: clock("2026-09-12T21:00:00Z"),
+      propose: async () => ({
+        threads: [{ ref: "new:app", title: "Coherence", summary: "The companion app they're building; memory design and onboarding are parts of it." }],
+        notes: [],
+        shelve: [
+          { thread: memory.thread_id, under: "new:app" },
+          { thread: onboarding.thread_id, under: "new:app" },
+        ],
+      }),
+    });
+    expect(r).toMatchObject({ status: "done", threadsCreated: 1, shelved: 2 });
+
+    const held = await listThreads(db, u.id);
+    const app = held.find((t) => t.title === "Coherence")!;
+    const { sections, loose } = buildShelves(held);
+    expect(sections.map((s) => s.thread.title)).toEqual(["Coherence"]);
+    expect(sections[0].shelves[0].books.map((b) => b.title).sort()).toEqual(["Memory design", "Onboarding"]);
+    expect(loose).toEqual([]);
+    expect(held.find((t) => t.id === memory.thread_id)).toMatchObject({ parentId: app.id, shelvedBy: "lumi" });
+
+    // Lumi knows where a thread sits.
+    const view = selectLibrary(held, [], [], { message: "about the memory design" }, { now: new Date("2026-09-13T09:00:00Z") });
+    expect(view.open[0]).toMatchObject({ shelf: ["Coherence"] });
+    expect(await call(tools.open_thread, { id: app.id })).toMatchObject({ in: [], holds: expect.arrayContaining([{ id: memory.thread_id, title: "Memory design" }]) });
+
+    // They take onboarding off the shelf; consolidation can't put it back.
+    const off = said("onboarding is its own thing");
+    expect(await call(toolsFor(u, off).shelve_thread, { thread_id: onboarding.thread_id, their_words: off.text })).toMatchObject({ in: [] });
+    expect(await shelveThread(db, u.id, onboarding.thread_id, app.id, "consolidation")).toEqual({ skipped: "placed by them" });
+
+    // Without their words, nothing moves; a fourth level is refused.
+    expect(await call(tools.shelve_thread, { thread_id: onboarding.thread_id, under_id: app.id, their_words: "put it back" })).toHaveProperty("error");
+    const deeper = said("put coherence under a new section called work");
+    const nested = await call(toolsFor(u, deeper).shelve_thread, { thread_id: app.id, new_section: "Work", their_words: deeper.text });
+    expect(nested).toMatchObject({ in: ["Work"] });
+    expect(await shelveThread(db, u.id, onboarding.thread_id, memory.thread_id, "user")).toMatchObject({ skipped: expect.stringMatching(/too deep/) });
+
+    // Forgetting a section leaves what was in it loose, never deleted.
+    const forget = said("forget the work section");
+    const work = (await listThreads(db, u.id)).find((t) => t.title === "Work")!;
+    expect(await call(toolsFor(u, forget).forget_from_library, { thread_id: work.id, their_words: forget.text })).toMatchObject({ ok: true });
+    expect((await getOwnedThread(db, u.id, app.id))?.parentId).toBeNull();
   });
 });
 

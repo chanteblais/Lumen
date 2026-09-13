@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE)) + os.sep   # the repo root (this i
 os.makedirs(S, exist_ok=True)
 ROOMS = [
     ('today', 'art/scenery/today/background.png', 630, 346, dict(contact=0.45, shade=(92, 56, 28), cast_a=0.55, lean=42, length=0.5, light=(255, 218, 170), light_a=0.45)),
-    ('library', 'art/scenery/library/background.png', 1190, 890, dict(contact=0.45, shade=(74, 38, 20), cast_a=0.5, lean=55, length=0.4, light=(255, 206, 160), light_a=0.5)),
+    ('library', 'art/archived/scene_mockups/library-background-frontal.png', 1190, 890, dict(contact=0.45, shade=(74, 38, 20), cast_a=0.5, lean=55, length=0.4, light=(255, 206, 160), light_a=0.5)),
 ]
 H_CSS, W_CSS = 150, round(150 * 176 / 208)
 
