@@ -38,7 +38,7 @@ client renders text; tool parts render as quiet "ledger" lines (✦ Noted · Dra
 ```
 
 ### System prompt = stable prefix + volatile context
-1. **Persona + behavioural rules + tool guidance** (`src/core/ai/persona.ts`). Byte-stable across turns; first cache breakpoint lives here. Keep it under ~2k tokens; the voice guide in `product.md` is its source.
+1. **Persona + behavioural rules + tool guidance** (`src/core/ai/persona.ts`). Byte-stable across turns; first cache breakpoint lives here. Keep it under ~2k tokens. It implements `docs/philosophy/lumi.md` (Lumi's behaviour, since 2026-09-13; before that, the voice guide in `product.md`).
 2. **Context block** (`src/core/ai/context.ts`), regenerated every turn, placed *after* the cached prefix:
    - now (user's local time + weekday), timezone
    - time since last visit (`users.last_seen_at`), phrased in buckets ("3 hours", "9 days")
@@ -74,7 +74,7 @@ Wired: `create_intention` (+ `list`, `estimate_minutes`), `update_intention`, `c
 
 Rules for tools:
 - Every write tool also appends an `events` row (append-only). This is non-negotiable — it is the raw material for future pattern memory.
-- Tool results are compact JSON (`{id, title, status}`), never prose. Lumi narrates in his own words.
+- Tool results are compact JSON (`{id, title, status}`), never prose. Lumi narrates in her own words.
 - Tools never throw to the model; failures return `{error}` so Lumi can say "I couldn't save that" instead of the turn dying.
 - No `list_*` read tools over our own state in V1; the context block covers reads. Add them when caps bite. `look_at_email` is the exception: mail is not our state, it is large, and it is read only when asked.
 - Tool descriptions are part of the cached prefix — keep them stable.

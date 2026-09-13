@@ -2,6 +2,8 @@
 
 Scripted scenarios run against Lumi's persona (`src/core/ai/persona.ts`), what was off, and what changed. Newest first. The scenario list is the nine situations in `product.md` plus anything that came up in real use.
 
+**This log is design evidence** for [`docs/philosophy/lumi.md`](philosophy/lumi.md) (§15). When a reply is especially good or bad, name the behaviour behind it there. Since 2026-09-13 Lumi's model is under evaluation ([model strategy](product/lumi-model-strategy.md)), so every run names the model it used, and comparison runs grade each model on the same scenarios.
+
 **Grading (manual, per reply):** ✓ in voice · ~ slightly off (note why) · ✗ wrong register. Watch for the classic failures: over-reassuring, over-planning (a list where a step would do), therapy-speak, exclamation marks, restating feelings, offering three options, lecturing.
 
 ---
