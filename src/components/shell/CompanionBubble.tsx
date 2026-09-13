@@ -1,15 +1,11 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { LUMI_LOST_THREAD, ThinkingDots, hasReply, textOf, useAutoResize, useHeldChat } from "@/components/chat/chat-client";
 import { Ledger } from "@/components/chat/Ledger";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 
 type Props = { onClose: () => void; onSend?: () => void };
-
-const LUMI_ERROR = "I lost the thread for a second. Say that again?";
 
 // Placement, in px (the CSS matches: .companion gap 14, bubble 330 wide).
 const BUBBLE_W = 330;
@@ -19,6 +15,12 @@ const WINDOW_MARGIN = 24;
 /** Less room than this above her and the bubble opens beside her instead. */
 const ROOM_ABOVE = 300;
 
+/** What you last said in this chat, if anything — shown again when the bubble reopens mid-turn. */
+const lastSaid = (messages: CoherenceUIMessage[]) => {
+  const said = [...messages].reverse().find((m) => m.role === "user");
+  return said ? { text: textOf(said), n: 0 } : null;
+};
+
 /**
  * A speech bubble above the corner companion: say one thing to Lumi from any
  * page without leaving it. The message goes through the same `/api/chat`
@@ -26,27 +28,19 @@ const ROOM_ABOVE = 300;
  * main conversation and is there when you next open Home). Lumi's reply
  * shows here, with the ledger of what she did; once the turn has landed the
  * page refreshes so Today / Library reflect any writes. Nothing to maintain:
- * Escape, a click outside or a click on Lumi closes it.
+ * Escape, a click outside or a click on Lumi closes it — and closing doesn't
+ * stop her: the chat is held outside the bubble (`useHeldChat`), so a turn in
+ * flight finishes, and reopening while she's still going shows it.
  *
  * Sending has to feel like it landed: what you said appears as a bubble that
  * slides in, the box says she's on it, and `onSend` lets Lumi blink.
  */
 export function CompanionBubble({ onClose, onSend }: Props) {
-  const router = useRouter();
   const [value, setValue] = useState("");
-  const [said, setSaid] = useState<{ text: string; n: number } | null>(null);
-  const input = useRef<HTMLTextAreaElement>(null);
+  const { messages, sendMessage, stop, status, error, busy } = useHeldChat("bubble");
+  const [said, setSaid] = useState(() => lastSaid(messages));
+  const { ref: input, resize } = useAutoResize();
   const bubble = useRef<HTMLDivElement>(null);
-
-  const [transport] = useState(
-    () =>
-      new DefaultChatTransport<CoherenceUIMessage>({
-        api: "/api/chat",
-        prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
-      }),
-  );
-  const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({ transport, generateId: () => crypto.randomUUID() });
-  const busy = status === "submitted" || status === "streaming";
 
   // The bubble never runs off the window. Above her when there's room; where she
   // stands high in a painting (Today), beside her, growing down. Either way it is
@@ -71,18 +65,18 @@ export function CompanionBubble({ onClose, onSend }: Props) {
   const exchange = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
 
-  useEffect(() => input.current?.focus(), []);
-
-  const resize = () => {
-    const el = input.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
-  };
+  useEffect(() => input.current?.focus(), [input]);
 
   // Escape or a click anywhere else closes; the companion button toggles itself.
+  // Escape hands focus back to her button, where the bubble was opened from; a
+  // click elsewhere leaves focus where you clicked.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const her = bubble.current?.parentElement?.querySelector<HTMLElement>(".companion-btn");
+      onClose();
+      her?.focus();
+    };
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (bubble.current?.contains(t) || (t instanceof Element && t.closest(".companion-btn"))) return;
@@ -95,18 +89,6 @@ export function CompanionBubble({ onClose, onSend }: Props) {
       document.removeEventListener("mousedown", onDown);
     };
   }, [onClose]);
-
-  // When a turn lands, refresh the page underneath so it reflects what Lumi did.
-  const landed = useRef(false);
-  useEffect(() => {
-    if (busy) landed.current = true;
-    else if (landed.current) {
-      landed.current = false;
-      // The route's after() may still be re-cutting today's path; give it a beat.
-      const t = setTimeout(() => router.refresh(), 700);
-      return () => clearTimeout(t);
-    }
-  }, [busy, router]);
 
   const send = () => {
     const text = value.trim();
@@ -121,10 +103,7 @@ export function CompanionBubble({ onClose, onSend }: Props) {
   };
 
   const reply = [...messages].reverse().find((m) => m.role === "assistant");
-  const replyText = reply?.parts
-    .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  const replyText = reply ? textOf(reply) : undefined;
 
   useEffect(() => {
     const el = exchange.current;
@@ -144,11 +123,9 @@ export function CompanionBubble({ onClose, onSend }: Props) {
           }}
         >
           <p key={said.n} className="companion-said">{said.text}</p>
-          {status === "submitted" && (
-            <p className="thinking-dots" aria-label="Lumi is thinking"><span>·</span><span>·</span><span>·</span></p>
-          )}
-          {error && <p className="text-ink-soft">{LUMI_ERROR}</p>}
-          {reply && (replyText || reply.parts.some((p) => p.type.startsWith("tool-"))) && (
+          {status === "submitted" && <ThinkingDots />}
+          {error && <p className="text-ink-soft">{LUMI_LOST_THREAD}</p>}
+          {reply && hasReply(reply) && (
             <div className="companion-reply">
               {replyText?.split(/\n{2,}/).filter(Boolean).map((para, i) => (
                 <p key={i}>{para}</p>

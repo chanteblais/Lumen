@@ -139,7 +139,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.chat-page` / `.chat-scroll` / `.composer-dock` | Chat layout: flex column filling `.main`; the transcript scrolls; the dock sits below with a paper fade above it — except on Home (2026-09-13), where the dock has no background: the fade was a dark box on the painting, with a hard edge where the column stops at the companion lane, and the pill's glass already holds the lines scrolling behind it. `.chat-scroll` is a size container and its `::after` is one view's height of nothing (`100cqb`, 2026-09-13): the greeting can sit at the top of the view on a fresh open and hold still while it rolls up, and the whole conversation can be scrolled just out of sight (on Home, to see the room). Replaces the measured `room` padding `MessageList` used to add |
 | `.today-scene` / `.today-page` / `.today-voice` / `.today-now` / `.today-rest` | Today only: the painted greenhouse behind the shell, the page column, Lumi's words on the painting (`.today-capacity` inside), the one Right now card and the faint slip with the rest (`.today-part`, `.today-closing` inside) (see Color Palette → Today: the garden) |
 | `.home-scene` | Home only: the painted room, fixed behind the shell, with its dimming `::after`; its presence (`.shell:has(.home-scene)`) re-lights every token on the page (see Color Palette → Home: the room) |
-| `.composer` | The pill input container; `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on. From 768px it is set to a measure — `clamp(min(100%, 460px), 70%, 100%)` of the chat column, centred — and `.composer-foot` (the Voice / tagline line) keeps the same measure; phones keep the full width |
+| `.composer` | The pill input container: the textarea, then send (30px in from the pill's left end; the inert `+` before the textarea was removed 2026-09-13). The `textarea` inside is display-font, auto-grows to 160px. `.is-listening` = brass border + soft ring while voice input is on. From 768px it is set to a measure — `clamp(min(100%, 460px), 70%, 100%)` of the chat column, centred — and `.composer-foot` (the Voice / tagline line) keeps the same measure; phones keep the full width |
 | `.send` | 54px forest circle (52px on phones; 64px until 2026-09-13); disabled at 45% opacity |
 | `.tool-link` | Text+icon quiet button (Add file / Voice / Tools) |
 | `.nav-item` | One row of the nav, one link per place: `.nav-icon` on the rail, `.nav-mark` (the star on the rail's rule) and `.name` on the parchment; `[aria-current="page"]` lights the icon's tile, shows the star and tints the name |
@@ -147,7 +147,7 @@ Heading defaults: none imposed. Headings are display-font lines set per surface;
 | `.row` / `.row-quiet` | A list row: hairline beneath, 12px (8px quiet) of air; last row has no rule |
 | `.circle` | The complete/reopen circle: hairline ring, brass on hover, forest fill when `.is-done` — and the tick draws itself in one stroke (220ms, the path carries `pathLength="1"`) |
 | `.chat-now` | The part of the transcript said this visit: each `.msg` in it rises 6px and fades in over 260ms as it lands (`msg-in`); earlier messages are simply there |
-| `.thinking-dots` | Lumi's three slow brass dots — in the chat while she thinks, and in Today's Right now card while the path is being cut (no grey skeleton bars) |
+| `.thinking-dots` | Lumi's three slow brass dots — in the chat while she thinks, and in Today's Right now card while the path is being cut (no grey skeleton bars). In a chat client, render `<ThinkingDots />` (`components/chat/chat-client.tsx`; `label={null}` when the parent already says "Lumi is thinking"). Under reduced motion they hold still at 0.6 |
 | `.session-bar` / `.session-checkin` | Focus Together (M5): the ruled strip above the composer while a session runs (`.session-goal` 24px display, `.session-step` 16px ink-soft, `.session-side` with the elapsed `.label-mute` and the End `.tool-link`), and the check-in as a small `--card` plate above it (`.session-question` 22px display + `.chip`s), fading in over 160ms |
 
 ---
@@ -222,7 +222,7 @@ Lumi's hooded head in the forest circle with a brass hairline ring, drawn as fla
 ## Accessibility
 
 - Every icon-only button has an `aria-label`.
-- Every animation stops under `prefers-reduced-motion` — the companion, the check-in plate, messages landing, the tick drawing.
+- Every animation stops under `prefers-reduced-motion` — the companion (which follows the setting live, not only at load), the check-in plate, messages landing, the tick drawing, the thinking dots (held at a steady 0.6) and the listening mic.
 - Nav uses `aria-current="page"`; its rows carry `aria-label` (the names are hidden while the parchment is folded), keyboard focus in the nav opens the parchment, and the compass star is a button with `aria-expanded`.
 - Focus: one ring for the whole book — `:focus-visible` is a 1px brass outline offset 3px. The composer textarea suppresses it (the pill's `.is-listening`/border carries state).
 - Selection is brass-soft on ink. Scrollbars are thin and translucent brass, never the browser grey.

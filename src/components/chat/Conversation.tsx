@@ -1,7 +1,6 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SessionBar } from "@/components/focus/SessionBar";
@@ -9,6 +8,7 @@ import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import type { SessionView } from "@/core/domain/sessions";
 import { sessionEventText, sessionFromMessages, type SessionEventResponse } from "@/core/focus";
+import { LUMI_LOST_THREAD, chatTransport, isBusy, newMessageId } from "./chat-client";
 import { Composer } from "./Composer";
 import { Greeting } from "./Greeting";
 import { MessageList } from "./MessageList";
@@ -61,24 +61,19 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   // Quick starts are for the moment of starting: shown until you've said
   // something this sitting, and again next time you come back.
   const [inSitting, setInSitting] = useState(initialInSitting || Boolean(initialHandoff));
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport<CoherenceUIMessage>({
-        api: "/api/chat",
-        // Send only the new message; the server holds the transcript.
-        prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
-      }),
-    [],
-  );
+  const [transport] = useState(chatTransport);
 
+  // Owned by this page, unlike the bubble's and the Lists add-line's held chats
+  // (`chat-client.tsx`): it opens on the transcript the server rendered, which a
+  // chat kept across visits would contradict.
   const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({
     id: conversationId,
     messages: initialMessages,
     transport,
-    generateId: () => crypto.randomUUID(),
+    generateId: newMessageId,
   });
 
-  const busy = status === "submitted" || status === "streaming";
+  const busy = isBusy(status);
   const send = (text: string, extra?: Record<string, unknown>) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -127,7 +122,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
           cardAt={cardAt}
           card={<Greeting lines={greetingLines} onQuickStart={send} compact={inSitting} />}
           thinking={status === "submitted"}
-          error={error ? "I lost the thread for a second. Say that again?" : undefined}
+          error={error ? LUMI_LOST_THREAD : undefined}
         />
       </div>
       {session && <SessionBar session={session} busy={busy} quietKey={messages.length} onEvent={sessionEvent} onGone={setGone} />}
