@@ -16,7 +16,7 @@
 4. Skim *Traps* for the area you're about to touch.
 
 ## Session end (≤ 3 minutes, before the last commit)
-1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link.
+1. Stop every server you started, and only those. Any left running for review: say which port serves which branch, as a clickable link — in every reply while it runs, not only the one that started it.
 2. Merged branches deleted; nothing of yours in `git stash list`; your worktree committed or clean.
 3. Anything that cost a turn → a *Traps* row. Land one *Backlog* item, or re-rank it if something moved.
 4. Fix what this doc got wrong; add a *Change log* line.
