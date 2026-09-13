@@ -95,6 +95,25 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 7 — 2026-09-13 · all nine on OpenAI after focus sessions were removed (`feat/today-in-place`; `gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:40pm Vancouver, last seen 3h ago)
+The persona lost *Focus Together*, *Not this* and the *Body double* quick start, *Company* now reads "be there: one short line, then quiet until they speak", and the brief's places line says there are no focus sessions and that Today's changes happen on its card. Prefix ~3,480 tokens, cached from the second call (run 6: 4,140 uncached, before this change and before `main`'s later persona edits). The script runs without tools, so nothing is saved in scenario 9.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file. No writing yet—just get it on the screen." |
+| 2 | ✓ | ✓ | "Tell me what's competing for your attention — messy is fine." → reflects the shape (the big three against the everyday two), then one question: "Is anything here due soon, or holding someone else up?" |
+| 3 | ✓ | ✓ | "What's on your mind that might need attention? Say it in whatever order it comes—no need to make a list first." |
+| 4 | ✓ | ✓ | "What's the task?" → "Pull up their phone number. No need to dial yet." |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" — right tone; with no running session in context there is nothing to point back to, so the question is the only move |
+| 6 | ✓ | ✓ | "We can start with what matters now, rather than reconstructing the last two weeks. / What's on your mind? You don't need to sort it first." |
+| 7 | ✓ | ✓ | "I'm here. I'll stay quiet while you work." → "I'm here while you edit. No need to check in until you want to." |
+| 8 | ✓ | ✓ | "Let's keep today small. One small thing can be enough. / Is there anything that can't wait until tomorrow?" |
+| 9 | ✓ | ✓ | the dump reflected in three short lines, then one pick with its reason: "I'd start with Priya's email, so the extension question can move while you do something else. Open a draft addressed to her." |
+
+**Why:** the change this run checks is scenario 7, the ask focus sessions used to answer. She gives company in words and goes quiet, and offers no session, timer or check-in schedule that no longer exists; "no need to check in until you want to" puts the check-in in their hands. Nothing elsewhere regressed against run 5: steps before plans (1, 4), one question at a time (2, 3, 8), no counts (9). Scenario 5 is weaker without a session to return to, which is the cost of the removal, not a voice failure.
+
 ### Run 6 — 2026-09-13 · scenario 6 on OpenAI after *Lumi may name time away* (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~1:40pm Vancouver, last seen 3h ago)
 The persona and the re-entry context line now allow naming time away when it helps orient, never as debt (`decisions.md` → *Lumi may name time away*). Prefix 4,140 tokens, uncached on this single call. The persona on `main` has grown since run 5 (the Library section), so the difference isn't all this change.
 

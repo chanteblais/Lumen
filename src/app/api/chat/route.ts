@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import { buildContextBlock, type SessionEventNow, type StartNow } from "@/core/ai/context";
+import { buildContextBlock } from "@/core/ai/context";
 import { consolidateAfter } from "@/core/ai/consolidate";
 import { selectLibrary } from "@/core/ai/library-select";
 import { selectBeliefs } from "@/core/ai/memory-select";
@@ -9,10 +9,8 @@ import { loadLibraryOrNothing } from "@/core/domain/library";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
 import { PERSONA } from "@/core/ai/persona";
 import { hasReply } from "@/core/ai/reply";
-import { reflectAfterSession } from "@/core/ai/reflect";
 import { primeTodaysPlan, type Recut } from "@/core/ai/today-plan";
 import { buildTools } from "@/core/ai/tools";
-import { isDeclineReason } from "@/core/declines";
 import { listRecentActivity } from "@/core/domain/activity";
 import {
   ensureMainConversation,
@@ -22,13 +20,10 @@ import {
   type CoherenceUIMessage,
 } from "@/core/domain/conversations";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
-import { declineIntention } from "@/core/domain/intentions";
 import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
-import { elapsedMinutes, endFocusSession, getSession, recordCheckIn } from "@/core/domain/sessions";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
-import { isSessionEventResponse } from "@/core/focus";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
@@ -46,21 +41,11 @@ export async function POST(req: Request) {
   const { user, previous } = await requireVisit();
   // Once the turn has streamed (and any tool writes have landed), make sure
   // today's path exists — or re-cut it if this turn changed what shapes it
-  // (a "not this", a capacity report, letting things go on the way back, an ask
-  // for a different shape of day). An ask carries Lumi's pick and wins over
-  // the plain reasons; declines and capacity reach the planner from the
-  // snapshot regardless of which reason is recorded.
+  // (a capacity report, letting things go on the way back, an ask for a
+  // different shape of day). An ask carries Lumi's pick and wins over the plain
+  // reasons; capacity reaches the planner from the snapshot regardless.
   let recut: Recut | undefined;
   after(() => primeTodaysPlan(db(), user, recut));
-  // A session that closed during this turn (Done / End tap, end_focus_session, or
-  // replaced by a new one) is reflected on once the reply has streamed — as is
-  // one the snapshot's sweep just closed as abandoned (reflection runs once per session).
-  let endedSessionId: string | undefined;
-  let abandonedSessionId: string | undefined;
-  after(async () => {
-    const id = endedSessionId ?? abandonedSessionId;
-    if (id) await reflectAfterSession(db(), user, id);
-  });
   // Fold finished stretches of conversation into memory — an episode per visit, notes filed
   // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
   after(() => consolidateAfter(db(), user, { passes: 1 }));
@@ -79,36 +64,6 @@ export async function POST(req: Request) {
 
   const conversation = await ensureMainConversation(db(), user.id);
 
-  // "Not this" from Today arrives as a real user message with the reason in
-  // metadata. Record it before the context is built, so Lumi answers the reason.
-  let declinedNow: { title: string; reason?: string } | undefined;
-  const meta = userMessage.metadata;
-  if (meta?.kind === "declined" && isUuid(meta.intentionId)) {
-    const reason = isDeclineReason(meta.reason) ? meta.reason : undefined;
-    const row = await declineIntention(db(), user.id, meta.intentionId, reason);
-    if (row) {
-      declinedNow = { title: row.title, reason };
-      recut = { reason: "declined" };
-    }
-  }
-
-  // A tap on the session's check-in or End arrives the same way. Code records
-  // it — and closes the session on Done / End — before Lumi sees the message,
-  // so her one line is about a fact, not a request. (Yep never gets here.)
-  let sessionEventNow: SessionEventNow | undefined;
-  if (meta?.kind === "session_event" && isUuid(meta.sessionId) && isSessionEventResponse(meta.response) && meta.response !== "ok") {
-    const s = await getSession(db(), user.id, meta.sessionId);
-    if (s && !s.endedAt) {
-      const minute = elapsedMinutes(s);
-      if (meta.response !== "end") await recordCheckIn(db(), user.id, s.id, meta.response);
-      if (meta.response === "done" || meta.response === "end") {
-        await endFocusSession(db(), user.id, s.id, meta.response === "done" ? "completed" : "stopped_early");
-        endedSessionId = s.id;
-      }
-      sessionEventNow = { response: meta.response, goal: s.goal, minute, intentionId: s.intentionId };
-    }
-  }
-
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick in the Library a minute ago is in Lumi's context before she reads the message.
   const [history, snap, recentActivity, leads, mailScan, library] = await Promise.all([
@@ -122,30 +77,14 @@ export async function POST(req: Request) {
   ]);
   await saveMessage(db(), conversation.id, userMessage);
   const all = [...history.filter((m) => m.id !== userMessage.id), userMessage];
-  if (snap.session.last?.outcome === "abandoned") abandonedSessionId = snap.session.last.id;
-
-  // "Start with Lumi" from Today is a button, not a question: tell Lumi so, with
-  // the first step Today's path already chose, so she opens the session instead of asking.
-  let startNow: StartNow | undefined;
-  if (meta?.kind === "start_intention" && isUuid(meta.intentionId)) {
-    const i = snap.openIntentions.find((x) => x.id === meta.intentionId);
-    if (i) {
-      const fromPlan = snap.plan?.rightNow?.intentionId === i.id ? snap.plan.rightNow.firstStep : undefined;
-      startNow = { intentionId: i.id, title: i.title, firstStep: fromPlan ?? i.nextAction, estimateMinutes: i.estimateMinutes };
-    }
-  }
 
   const tools = buildTools({
     db: db(),
     userId: user.id,
     timezone: user.timezone,
-    preferences: user.preferences,
     reentry: isReentry(snap.sitting),
     onPlanChange: (change) => {
       if (!recut || change.reason === "asked") recut = change;
-    },
-    onSessionEnd: (id) => {
-      endedSessionId ??= id;
     },
     mail: MAIL_ON ? lazyMailReader(user) : undefined,
     // What they've actually said lately: a belief rests on their word only when its their_words is in here.
@@ -157,10 +96,11 @@ export async function POST(req: Request) {
   });
 
   // What this turn is about — for choosing beliefs and for opening Library threads.
+  const rightNow = snap.plan?.rightNow ? snap.openIntentions.find((i) => i.id === snap.plan!.rightNow!.intentionId) : undefined;
   const turn = {
     message: messageText(userMessage),
     recent: all.slice(-7, -1).map(messageText),
-    focus: [snap.session.active?.goal, snap.session.active?.firstStep, startNow?.title],
+    focus: [rightNow?.title],
   };
   // Not every belief rides along: what she always honours, what this turn is about, the freshest projects.
   const memory = selectBeliefs(snap.beliefs, turn);
@@ -196,12 +136,7 @@ export async function POST(req: Request) {
           libraryUnavailable: library.unavailable,
           capacity: snap.capacity,
           plan: snap.plan,
-          declinedNow,
           declinedToday: snap.declinedToday,
-          session: snap.session.active,
-          lastSession: snap.session.last,
-          sessionEventNow,
-          startNow,
           // Mail off: undefined leaves Their mail out of the context altogether.
           mailScan: MAIL_ON ? (mailScan ? { at: mailScan.at } : null) : undefined,
           leads,
@@ -214,7 +149,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}`);
       }
     },
   });
@@ -226,7 +161,7 @@ export async function POST(req: Request) {
     messageMetadata: ({ part }) => (part.type === "start" ? { createdAt: new Date().toISOString() } : undefined),
     onError: () => LUMI_ERROR,
     onEnd: async ({ responseMessage }) => {
-      // She can say nothing (a "yep" during a session needs no answer), and a turn stopped
+      // She can say nothing (a plain "ok" can need no answer), and a turn stopped
       // before a word leaves nothing either: no words and no tools is not saved (core/ai/reply.ts).
       if (!hasReply(responseMessage)) return;
       await saveMessage(db(), conversation.id, responseMessage);

@@ -59,7 +59,7 @@ body {
 
 /* Line breaks set with care: display lines balance across their measure,
    running text avoids a single word stranded on its last line. */
-.opening-title, .opening-line, .session-goal, .session-question, h1, h2 { text-wrap: balance; }
+.opening-title, .opening-line, h1, h2 { text-wrap: balance; }
 .msg p, .companion-reply p { text-wrap: pretty; }
 
 ::selection { background: var(--brass-soft); color: var(--ink); }
@@ -1012,42 +1012,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 }
 .btn-ghost:hover { background: var(--paper-deep); }
 
-/* ---------- Focus Together: the session, pinned above the composer ----------
-   A ruled strip on the paper (what · first step · elapsed of planned · End),
-   and above it, only when it's time, the check-in as a small plate. Neither
-   counts down; the number is minutes in, not minutes left. */
-.session-bar {
-  flex: none;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 14px 6px 12px;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-}
-.session-goal { font-family: var(--font-display); font-size: 24px; line-height: 1.2; color: var(--ink); margin-top: 6px; }
-.session-step { font-size: 16px; line-height: 1.4; color: var(--ink-soft); margin-top: 4px; }
-.session-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-bottom: 2px; }
-.session-side .tool-link:disabled { opacity: 0.45; cursor: default; }
-.session-checkin {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
-  margin: 0 0 12px;
-  padding: 16px 20px;
-  background: var(--card);
-  border: 1px solid var(--rule-strong);
-  border-radius: 6px;
-  box-shadow: var(--shadow);
-  animation: bubble-in 160ms ease-out;
-}
-.session-question { font-family: var(--font-display); font-size: 22px; line-height: 1.3; color: var(--ink); margin-right: auto; }
-.session-checkin .chip:disabled { opacity: 0.5; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
-  .session-checkin, .chat-now > .msg, .circle.is-done svg path { animation: none; }
+  .chat-now > .msg, .circle.is-done svg path { animation: none; }
 }
 
 /* ---------- Ledger: what Lumi did, under her reply ---------- */
@@ -1124,8 +1090,6 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   .opening-head { margin-bottom: 28px; }
   .opening-title { font-size: 30px; }
   .opening-line { font-size: 22px; }
-  .session-goal { font-size: 20px; }
-  .session-question { font-size: 19px; }
 }
 
 /* ---------- Home: the room ----------
@@ -1134,7 +1098,7 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
    renders one fixed layer (`.home-scene`) behind the shell and the rest is
    the room's light on the same tokens: `.shell:has(.home-scene)` re-maps the
    palette to parchment on dark wood, so every class (labels, rules, chips,
-   the composer, the session bar) keeps its shape and takes the new light.
+   the composer) keeps its shape and takes the new light.
    Only Home (Today has its own painting, below; the rest stay ivory). The greeting is the exception
    inside the exception: it hangs on the wall as a parchment scroll, so its
    tokens go back to ink on paper. Nothing new for the user to keep. */
@@ -1329,9 +1293,6 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 .shell:has(.home-scene) .composer-dock { background: none; }
 .shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
 .shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
-.shell:has(.home-scene) .session-checkin {
-  backdrop-filter: blur(12px);
-}
 @media (max-width: 767px) {
   .shell:has(.home-scene) .opening { padding: 16px 18px 18px; }
   .shell:has(.home-scene) .opening-head { margin-bottom: 18px; }
@@ -1432,7 +1393,27 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 .today-now-title { font-size: 34px; line-height: 1.12; }
 .today-now .chip { font-size: 15px; padding: 9px 18px; }
-.today-now .btn-primary { font-size: 19px; padding: 10px 22px; }
+/* Everything the card does happens on it: Lumi's line after a Not this, the
+   pause while the path is re-cut, and Break it down's steps to pick from. */
+.today-now-note { margin-top: 8px; font-size: 18px; line-height: 1.35; color: var(--ink-soft); }
+.today-now-working { font-size: 20px; line-height: 1.3; color: var(--ink-mute); }
+.today-steps { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.today-step {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  text-align: left;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.today-step:hover { background: var(--paper-deep); border-color: var(--rule-strong); }
+.today-step:disabled { opacity: 0.5; cursor: default; }
+.today-trouble { margin-top: 10px; font-size: 15px; font-style: italic; color: var(--ink-mute); }
 
 /* The rest of the path, further off: paper the garden shows through, smaller
    type, no rules between rows, and the closing line as its last word. */
