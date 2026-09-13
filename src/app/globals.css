@@ -1535,10 +1535,6 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   inset: -5px;
   pointer-events: none;
   background:
-    linear-gradient(var(--c), var(--c)) left top / 24px 3px no-repeat,
-    linear-gradient(var(--c), var(--c)) left top / 3px 24px no-repeat,
-    linear-gradient(var(--c), var(--c)) right top / 24px 3px no-repeat,
-    linear-gradient(var(--c), var(--c)) right top / 3px 24px no-repeat,
     linear-gradient(var(--c), var(--c)) left bottom / 24px 3px no-repeat,
     linear-gradient(var(--c), var(--c)) left bottom / 3px 24px no-repeat,
     linear-gradient(var(--c), var(--c)) right bottom / 24px 3px no-repeat,
@@ -1547,6 +1543,20 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
 .lists-corner { position: absolute; bottom: 14px; color: var(--brass); opacity: 0.75; pointer-events: none; }
 .lists-corner-bl { left: 14px; }
 .lists-corner-br { right: 14px; }
+/* The top edge is the greeting scroll's rod from Home (Chanté, 2026-09-13): a bar
+   of dark wood past both sides, a little heavier for the larger sheet. */
+.lists-sheet::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -12px;
+  right: -12px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #8d6538, #55391c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
 @keyframes lists-fade { from { opacity: 0; } }
 @keyframes lists-rise { from { opacity: 0; transform: translateY(8px); } }
 
@@ -1785,6 +1795,7 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   .lists-add { padding: 9px 16px; font-size: 17px; }
   .lists-tabs { gap: 8px; padding: 12px 0; background: linear-gradient(to right, var(--rule-strong), transparent) bottom / 100% 1px no-repeat; }
   .lists-body::before, .lists-body::after, .lists-body-mark, .lists-corner { display: none; }
+  .lists-sheet::after { top: 0; left: 0; right: 0; height: 8px; border-radius: 0; } /* the rod along the top of a full-width sheet */
   .lists-tab { padding: 7px 14px; font-size: 16px; }
   .lists-tab-quick { display: inline-flex; }
   .lists-body { grid-template-columns: minmax(0, 1fr); }
