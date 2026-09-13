@@ -7,7 +7,7 @@
  * is not forgetting. Lexical on purpose — no embeddings until words stop being
  * enough. Pure. See docs/architecture.md → The understanding layer → Retrieval.
  */
-import type { MemoryNote } from "@/db/schema";
+import type { MemoryNote, ThreadNote } from "@/db/schema";
 import { contentWords } from "@/core/words";
 
 export const MEMORY_BUDGET = 12;
@@ -52,9 +52,15 @@ export function termWeights(signals: TurnSignals): Map<string, number> {
   return weights;
 }
 
-function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string, number>): number {
+/** How much a text shares with what a turn is about: the weights of its content words, summed. The one lexical score beliefs, threads and notes are ranked by. */
+export function overlapScore(text: string, weights: ReadonlyMap<string, number>): number {
   let score = 0;
-  for (const w of contentWords(b.content)) score += weights.get(w) ?? 0;
+  for (const w of contentWords(text)) score += weights.get(w) ?? 0;
+  return score;
+}
+
+function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string, number>): number {
+  let score = overlapScore(b.content, weights);
   // "what do you know about my projects / preferences" names the kind, not the content.
   for (const w of contentWords(b.kind.replace("_", " "))) score += weights.has(w) ? 1 : 0;
   return score;
@@ -114,6 +120,11 @@ export function asQuoted(content: string): string {
 /** Whose word a belief rests on, as Lumi reads it in the context and in tool results. */
 export function heldAs(source: MemoryNote["source"]): "their word" | "your guess" | "from a session" {
   return source === "user_said" ? "their word" : source === "reflection" ? "from a session" : "your guess";
+}
+
+/** Whose word a Library note rests on, as Lumi reads it in the context and in tool results. */
+export function noteHeldAs(source: ThreadNote["source"]): "their word" | "your reading" {
+  return source === "user_said" ? "their word" : "your reading";
 }
 
 /** `recall_memory`: every active belief, faded ones included, ranked against what she's looking for. */

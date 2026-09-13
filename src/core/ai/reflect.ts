@@ -16,12 +16,12 @@ import { users, type BeliefKind, type FocusSession, type MemoryNote, type User }
 import { ensureMainConversation, loadRecentMessages } from "@/core/domain/conversations";
 import { appendEvent, claimReflection, listEventsSince, reflectedOn } from "@/core/domain/events";
 import { applyBeliefOps, listActiveBeliefs, MAX_OPS_PER_RUN, type BeliefOp } from "@/core/domain/memory";
+import { BELIEF_KINDS } from "@/core/domain/memory-rules";
 import { getSession } from "@/core/domain/sessions";
 import { describeGap, dayPart } from "@/core/time";
 import { contentWords, normalizeText } from "@/core/words";
 import { chatModel, effortOptions } from "./model";
 
-const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
 const MAX_MODEL_CONFIDENCE = 0.6;
 const MIN_MODEL_CONFIDENCE = 0.05;
 const NOTE_MAX = 200;
@@ -36,7 +36,7 @@ export const REFLECTION_TAIL_MS = 5 * 60_000;
 const RawOpSchema = z.object({
   op: z.enum(["create", "confirm", "contradict", "revise"]),
   id: z.string().optional().describe("For confirm / contradict / revise: the belief id from the list"),
-  kind: z.enum(KINDS).optional().describe("For create"),
+  kind: z.enum(BELIEF_KINDS).optional().describe("For create"),
   content: z.string().optional().describe("For create / revise: one sentence, present tense, about what works — never about who they are"),
   confidence: z.number().optional().describe(`For create, ${MIN_MODEL_CONFIDENCE}–${MAX_MODEL_CONFIDENCE}. Modest: one session is thin evidence`),
   note: z.string().optional().describe("For contradict: what went against it, in a few words"),

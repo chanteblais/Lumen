@@ -15,12 +15,12 @@ import { dismissLead, keepLead } from "@/core/domain/leads";
 import { createThread, fileNote, forgetNote, forgetThread, getOwnedThread, listCurrentNotes, listNoteHistory, listThreads, NOTE_KINDS, shelfPath, shelveThread, whyNotShelve } from "@/core/domain/library";
 import { applyBeliefOps, confidenceWord, listActiveBeliefs } from "@/core/domain/memory";
 import { matchNotes, rankThreads } from "./library-select";
-import { findTheirWords, MAX_INFERRED_CONFIDENCE, type Heard } from "@/core/domain/memory-rules";
+import { BELIEF_KINDS, findTheirWords, MAX_INFERRED_CONFIDENCE, type Heard } from "@/core/domain/memory-rules";
 import { dueAtFromModel } from "@/core/due-date";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { endFocusSession, startFocusSession, toSessionView } from "@/core/domain/sessions";
 import { MAIL_ON, type EmailReader } from "@/core/email/types";
-import { heldAs, rankForRecall } from "./memory-select";
+import { heldAs, noteHeldAs, rankForRecall } from "./memory-select";
 import type { Recut } from "./today-plan";
 
 export type ToolContext = {
@@ -45,7 +45,6 @@ export type ToolContext = {
   userWords?: Heard[];
 };
 
-const KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const;
 const EFFORT = ["tiny", "small", "medium", "large"] as const;
 
 function safe<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
@@ -237,7 +236,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
       description:
         "Hold onto something durable about the user — only what will still matter next week: a fact, a project, a preference about how you should be, a strategy that helps them start, a pattern you've noticed, or an anti-pattern. source=user_said when they told you, with their_words: their exact words, copied from their message (checked; without a match it's held as your guess). source=lumi_inferred when you noticed it. Never passwords, codes, keys or ID numbers. Returns already_held when you knew it, and similar beliefs it may update — correct_belief or revise_belief those rather than keeping two.",
       inputSchema: z.object({
-        kind: z.enum(KINDS),
+        kind: z.enum(BELIEF_KINDS),
         content: z.string().min(3).max(240).describe("One sentence, present tense"),
         source: z.enum(["user_said", "lumi_inferred"]),
         their_words: z.string().max(300).optional().describe("For user_said: their exact words, copied from their message"),
@@ -349,7 +348,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             in: shelfPath(held, thread.id).map((t) => t.title),
             holds: held.filter((t) => t.parentId === thread.id).map((t) => ({ id: t.id, title: t.title })),
             summary: thread.summary,
-            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading", when: n.createdAt.toISOString().slice(0, 10) })),
+            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: noteHeldAs(n.source), when: n.createdAt.toISOString().slice(0, 10) })),
             earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: n.createdAt.toISOString().slice(0, 10) })),
           };
         }),
@@ -366,7 +365,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
             threads: rankThreads(held, input.query, notes)
               .slice(0, 3)
               .map((t) => ({ id: t.id, title: t.title, in: shelfPath(held, t.id).map((p) => p.title), summary: t.summary })),
-            notes: matchNotes(notes, input.query).map((n) => ({ id: n.id, thread_id: n.threadId, thread: titles.get(n.threadId), kind: n.kind, content: n.content, held_as: n.source === "user_said" ? "their word" : "your reading" })),
+            notes: matchNotes(notes, input.query).map((n) => ({ id: n.id, thread_id: n.threadId, thread: titles.get(n.threadId), kind: n.kind, content: n.content, held_as: noteHeldAs(n.source) })),
           };
         }),
     }),
@@ -401,7 +400,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           );
           if ("skipped" in r) return r.skipped === "already_held" ? { already_held: true, id: r.existing?.id } : { error: whyNot(r.skipped) };
           const thread = await getOwnedThread(db, userId, threadId);
-          return { id: r.note.id, thread_id: threadId, thread: thread?.title, content: r.note.content, held_as: heard ? "their word" : "your reading", ...(r.replaced ? { replaced: r.replaced.id } : {}) };
+          return { id: r.note.id, thread_id: threadId, thread: thread?.title, content: r.note.content, held_as: noteHeldAs(r.note.source), ...(r.replaced ? { replaced: r.replaced.id } : {}) };
         }),
     }),
 

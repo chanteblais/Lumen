@@ -46,6 +46,7 @@ import {
 } from "@/core/domain/library";
 import { cleanContent, findTheirWords, isNearDuplicate, screenMemory, type Heard } from "@/core/domain/memory-rules";
 import { namedIn, rankThreads } from "./library-select";
+import { localFormat } from "./format";
 import { chatModel, effortOptions } from "./model";
 
 /** A sitting this long is consolidated in parts, keeping its last few messages for the next part. */
@@ -177,7 +178,7 @@ export type ConsolidationInputs = {
 
 /** The inputs block the model sees. */
 export function describeBatch(i: ConsolidationInputs): string {
-  const when = new Intl.DateTimeFormat("en-CA", { timeZone: i.timezone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  const when = localFormat(i.timezone, "stamp");
   const lines = ["## The conversation (oldest first)"];
   for (const m of i.batch) {
     if (!m.text) continue;

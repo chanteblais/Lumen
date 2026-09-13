@@ -6,8 +6,11 @@
  * understanding layer.
  */
 import { createHash } from "node:crypto";
-import type { BeliefSource } from "@/db/schema";
+import type { BeliefKind, BeliefSource } from "@/db/schema";
 import { contentWords, normalizeText } from "@/core/words";
+
+/** Every kind of belief, in the order the tools' and reflection's schemas list them (that order is part of the cached prefix). */
+export const BELIEF_KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const satisfies readonly BeliefKind[];
 
 export const CONTENT_MIN = 3;
 export const CONTENT_MAX = 240;

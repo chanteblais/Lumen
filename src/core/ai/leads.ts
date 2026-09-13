@@ -8,6 +8,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { dueAtFromModel } from "@/core/due-date";
 import type { EmailMessage } from "@/core/email/types";
+import { localFormat } from "./format";
 import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
 import { PERSONA } from "./persona";
 import { stripCounts } from "./plan";
@@ -116,7 +117,7 @@ function norm(s: string): string {
 }
 
 function describeMail(inputs: LeadInputs): string {
-  const when = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(d);
+  const when = (d: Date) => localFormat(inputs.timezone, "stamp").format(d);
   const lines = [
     "## Inputs",
     `- Person: ${inputs.displayName}. Now: ${when(inputs.now)} (${inputs.timezone}).`,
