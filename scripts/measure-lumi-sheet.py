@@ -46,6 +46,29 @@ def segs(on, minlen):
 
 src, paper, d = load(SRC, ((5, 25), (5, 25)))
 print('sheet', src.shape[1], 'x', src.shape[0], ' ground', paper.astype(int).tolist())
+
+
+def ruled(frac):
+    """A ruled line runs most of the sheet and is thin, with plain ground 4px either side. The thinness matters: a
+    ground that darkens toward an edge makes whole rows differ, and painting those over cut the figures in half."""
+    i = np.arange(len(frac))
+    lo, hi = frac[np.clip(i - 4, 0, len(frac) - 1)], frac[np.clip(i + 4, 0, len(frac) - 1)]
+    return np.where((frac > 0.85) & (lo < 0.5) & (hi < 0.5))[0]
+
+
+def unrule(src, paper, d):
+    """Paint over lines the generator ruled between the cells (5 of 8 grid candidates on 2026-09-13), which would
+    join a row's figures into one."""
+    on = d > 30
+    xs, ys = ruled(on.mean(axis=0)), ruled(on.mean(axis=1))
+    for x in xs: src[:, max(0, x - 1):x + 2] = paper
+    for y in ys: src[max(0, y - 1):y + 2] = paper
+    return len(xs) + len(ys)
+
+
+if unrule(src, paper, d):
+    d = np.abs(src - paper).sum(axis=2)
+    print('ruled lines painted over (the generator drew lines between the cells)')
 rows = segs((d > 60).sum(axis=1) > 3, 60)
 frames, frame_row = [], []
 for r, (y0, y1) in enumerate(rows):
