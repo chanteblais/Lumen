@@ -6,6 +6,30 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (3) — a smoother first load: the pool opens whole, paintings start with the HTML (`fix/first-load-smoother`, worktree, port 3006)
+
+Chanté asked what would make the first load feel smoother and chose: warm the database connections, load the paintings sooner with a fade, trim the fonts.
+
+### Verified
+- **Warm pool.** A fresh pool, a first query and then nine parallel reads (Today's fan-out), three runs each from Vancouver: none warmed, the nine took ~490–550ms (they each opened a connection); 6 warmed, no better (~470–530ms, the rest still connected); all 10 warmed, ~90ms. The first query takes ~50–100ms longer while all ten open. Net ~0.3–0.4s off a cold first load.
+- **Idle connections survive the pooler.** Three connections held idle 6 minutes answered in 68ms with no reconnect.
+- **Paintings start with the HTML.** Before: Today's painting started ~400ms after the HTML finished, once the stylesheet had loaded. After: a preload link in the head and the `img` in the page; it started at 968ms against the HTML's 980ms. Home, Today and the Library each render the image, its preload and the fade script.
+- **Fade only when not already loaded.** A cached painting is marked `data-instant` and shows at once (no fade on navigation); a cache-busted one was marked shown on load without `data-instant` and took the 450ms transition. No hydration warnings in the console.
+- `npm run check` passes.
+
+### Known and deliberate
+- **Fonts unchanged.** Both are variable fonts: the ten declared weights are four files (one per family and style), preloaded and done within ~25ms of the HTML. Trimming weights would save nothing.
+- **The painting shows after 3s regardless**, should the inline script not run.
+- **Screenshots from the automation tab can be stale** (see `dev-hygiene.md` → Traps): Today looked like a flat brown room in two captures while the painting was loaded, shown and at opacity 1; a style change forced a fresh frame and the painting was there.
+
+### Open
+- The fade on a truly first visit (empty browser cache) wasn't watched live; its path was exercised with a cache-busted image.
+
+### Highest-value manual tests
+- In a private window, sign in and open Today: the garden's colour first, the painting fading in over it, and no pop.
+- Move between Home, Today and the Library: each painting appears at once, with no fade.
+- After 10+ minutes away, open Today: noticeably less wait than before.
+
 ## Sweep 2026-09-13 (2) — page load: fewer round trips, and fresh on Back and on return (`fix/page-load-round-trips`, worktree, port 3006)
 
 Chanté chose fewer waits over loading screens, "but make sure we reload when anything changes".
