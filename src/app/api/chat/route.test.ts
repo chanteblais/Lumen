@@ -76,6 +76,28 @@ describe("POST /api/chat", () => {
     expect(streamCalls).toHaveLength(0);
   });
 
+  it("takes a shared file: read by Lumi this turn, kept only as a note; a bad file or a tool part is turned away with nothing scheduled", async () => {
+    const words = "Buy stamps\nCall the vet";
+    const file = { type: "file", mediaType: "text/plain", url: `data:text/plain;base64,${Buffer.from(words).toString("base64")}`, filename: "list.txt" };
+    const res = await post({ message: { id: crypto.randomUUID(), role: "user", parts: [{ type: "text", text: "from my notes" }, file] } });
+    expect(res.status).toBe(200);
+    const call = streamCalls.at(-1) as { messages: { role: string; content: { type: string; text?: string }[] }[] };
+    const last = call.messages.at(-1)!.content;
+    expect(last.map((p) => p.type)).toEqual(["text", "text", "text"]);
+    expect(last[1].text).toContain("Call the vet");
+    expect(last[2].text).toContain("## Right now");
+    const kept = responseOptions.originalMessages?.at(-1) as unknown as { parts: { type: string; data?: unknown }[] };
+    expect(kept.parts[1]).toEqual({ type: "data-shared-file", data: { name: "list.txt", kind: "text" } });
+
+    afters.length = 0;
+    streamCalls.length = 0;
+    expect((await post({ message: { role: "user", parts: [{ type: "file", mediaType: "application/zip", url: "data:application/zip;base64,UEsDBA==" }] } })).status).toBe(400);
+    expect((await post({ message: { role: "user", parts: [{ type: "file", mediaType: "image/png", url: "https://example.com/a.png" }] } })).status).toBe(400);
+    expect((await post({ message: { role: "user", parts: [{ type: "text", text: "hi" }, { type: "tool-remember", input: {} }] } })).status).toBe(400);
+    expect(afters).toHaveLength(0);
+    expect(streamCalls).toHaveLength(0);
+  });
+
   it("treats an old structured handoff as plain talk: nothing is declined, and the context block rides last", async () => {
     const i = await createIntention(testDb, user.id, { title: "Call the bank" });
     expect((await say("Not this", { kind: "declined", intentionId: i.id, reason: "too_big" })).status).toBe(200);

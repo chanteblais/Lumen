@@ -1,5 +1,6 @@
 "use client";
 
+import type { FileUIPart } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
@@ -51,11 +52,13 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   // something this sitting, and again next time you come back.
   const [inSitting, setInSitting] = useState(initialInSitting || resumed);
 
-  const send = (text: string) => {
+  const send = (text: string, files?: FileUIPart[]) => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if ((!trimmed && !files?.length) || busy) return;
     setInSitting(true);
-    void sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString() } });
+    const metadata = { createdAt: new Date().toISOString() };
+    // A photo with nothing said is a whole message too.
+    void (trimmed ? sendMessage({ text: trimmed, files, metadata }) : sendMessage({ files: files ?? [], metadata }));
   };
 
   // Take the prefill into the composer, then clean the URL without a navigation

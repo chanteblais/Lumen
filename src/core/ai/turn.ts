@@ -31,17 +31,25 @@ const Metadata = z.object({
   reason: z.string().max(200).optional(),
 });
 
+const TextPart = z.object({ type: z.literal("text"), text: z.string().max(MAX_MESSAGE_CHARS) });
+/**
+ * A file shared from Home's composer (`core/shared-files.ts`): here only its shape, with a ceiling a
+ * little above the largest body a function takes; its kind, that it's inline and its size are
+ * `sharedFilesProblem`'s, which the route runs before anything else happens.
+ */
+const FilePart = z.object({ type: z.literal("file"), mediaType: z.string().max(100), url: z.string().max(6_000_000), filename: z.string().max(300).optional() });
+
 const IncomingMessage = z
   .object({
     id: z.string().max(100).optional(),
     role: z.literal("user"),
-    // Text only: the clients send nothing else, and nothing else is stored or shown to the model.
-    parts: z.array(z.object({ type: z.literal("text"), text: z.string().max(MAX_MESSAGE_CHARS) })).min(1).max(MAX_PARTS),
+    // Text and shared files only: the clients send nothing else, and nothing else is stored or shown to the model.
+    parts: z.array(z.discriminatedUnion("type", [TextPart, FilePart])).min(1).max(MAX_PARTS),
     metadata: Metadata.nullish(),
   })
   .refine((m) => {
-    const chars = m.parts.reduce((n, p) => n + p.text.length, 0);
-    return chars > 0 && chars <= MAX_MESSAGE_CHARS;
+    const chars = m.parts.reduce((n, p) => n + (p.type === "text" ? p.text.length : 0), 0);
+    return chars <= MAX_MESSAGE_CHARS && (chars > 0 || m.parts.some((p) => p.type === "file"));
   });
 
 const ChatBody = z.object({ message: IncomingMessage });
@@ -54,12 +62,14 @@ export function parseChatBody(raw: unknown): IncomingMessage | undefined {
   return r.success ? r.data.message : undefined;
 }
 
-/** The message as stored: its id if it's a uuid, text parts only, and the server's time — client metadata can't move it. */
+/** The message as received: its id if it's a uuid, its text and file parts with nothing extra, and the server's time — client metadata can't move it. */
 export function userMessageFrom(incoming: IncomingMessage, now: Date, newId: () => string): CoherenceUIMessage {
   return {
     id: isUuid(incoming.id) ? incoming.id : newId(),
     role: "user",
-    parts: incoming.parts.map((p) => ({ type: "text" as const, text: p.text })),
+    parts: incoming.parts.map((p) =>
+      p.type === "text" ? { type: "text" as const, text: p.text } : { type: "file" as const, mediaType: p.mediaType, url: p.url, ...(p.filename !== undefined ? { filename: p.filename } : {}) },
+    ),
     metadata: { ...(incoming.metadata ?? {}), createdAt: now.toISOString() },
   };
 }

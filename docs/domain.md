@@ -34,7 +34,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | id | uuid pk | client-generated (AI SDK) or server |
 | conversation_id | fk | index `(conversation_id, created_at)` |
 | role | text | `user | assistant | system` |
-| parts | jsonb | AI SDK `UIMessage.parts` — text, tool-call, tool-result. Message *metadata* (`kind: declined | start_intention | break_down | session_event`, ids, reason/response) travels with the request and is acted on by the route; it is **not** persisted — the events table holds what happened, and a reloaded transcript shows the visible text only |
+| parts | jsonb | AI SDK `UIMessage.parts` — text, tool-call, tool-result, and `data-shared-file` (`{ name, kind }`), the note kept in place of a file shared with a message; the file itself is never stored (`core/shared-files.ts`, 2026-09-13). Message *metadata* (`kind: declined | start_intention | break_down | session_event`, ids, reason/response) travels with the request and is acted on by the route; it is **not** persisted — the events table holds what happened, and a reloaded transcript shows the visible text only |
 | format_version | int | `1`; bump on shape changes |
 | created_at | timestamptz | |
 

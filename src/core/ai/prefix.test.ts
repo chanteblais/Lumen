@@ -12,10 +12,11 @@ import { asSchema } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "@/db/client";
 
-// Moved with the merge of main (today-in-place: focus sessions and Start with Lumi out of the persona and tools; the brief's places line).
+// Moved with the merges of main: today-in-place (focus sessions and Start with Lumi out of the persona and tools; the
+// brief's places line), then chat-files (the persona's line on a shared file).
 const EXPECTED = {
-  persona: { mailOff: "f6e40ef5f956603c73c4e4a140b9592f19eef9c5880748473b8ef8292c221136", mailOn: "064e626473dcceb3ceb14b7c4daafb13daf0a82b5e5672b2a82bd61b1a341c71" },
-  prefix: { mailOff: "deac9fc3e7f06f033c21fdb5c654eec1567a403454e7554f6299f2b7cbada750", mailOn: "7ff1e0da6f6feeb4a591dc9a9815698db695e045711cfa1ee1663d6342086d5e" },
+  persona: { mailOff: "54f86534e3ffad0e584baa6e6d17565c1b662809164d8c46fc0d9608bf6f94ca", mailOn: "a665efe622406ec79d4955948033f6c5a716ca71df5e16948de70fd4a124b1b7" },
+  prefix: { mailOff: "7a06900d21b7c239d1898ced076b715732c89b45450eb0e990f58a7cd8b71216", mailOn: "759576c06fdbaa0279406dd85820b7856f558b4d488f012f4abc611f51ccd75c" },
 };
 
 async function hashes(mailOn: boolean) {

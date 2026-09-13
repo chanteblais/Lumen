@@ -12,6 +12,14 @@ describe("parseChatBody", () => {
     expect(m?.parts).toEqual([text("hi")]);
   });
 
+  it("takes a shared file as the composer sends it, with or without words", () => {
+    const file = { type: "file", mediaType: "image/png", url: "data:image/png;base64,iVBORw0KGgo=", filename: "note.png" };
+    expect(parseChatBody({ message: { role: "user", parts: [text("what's this?"), file] } })?.parts).toEqual([text("what's this?"), file]);
+    expect(parseChatBody({ message: { role: "user", parts: [file] } })?.parts).toEqual([file]);
+    const m = userMessageFrom(parseChatBody({ message: { role: "user", parts: [{ ...file, providerMetadata: { x: 1 } }] } })!, new Date(), () => ID);
+    expect(m.parts).toEqual([file]);
+  });
+
   it("refuses anything else: no message, another role, a non-text part, nothing said, too much said", () => {
     for (const body of [
       undefined,
@@ -19,6 +27,8 @@ describe("parseChatBody", () => {
       {},
       { message: { role: "assistant", parts: [text("hi")] } },
       { message: { role: "user", parts: [{ type: "tool-remember", input: {} }] } },
+      { message: { role: "user", parts: [text("hi"), { type: "data-shared-file", data: { name: "x", kind: "text" } }] } },
+      { message: { role: "user", parts: [{ type: "file", url: "data:text/plain,hi" }] } },
       { message: { role: "user", parts: [] } },
       { message: { role: "user", parts: [text("")] } },
       { message: { role: "user", parts: [text("x".repeat(20_001))] } },

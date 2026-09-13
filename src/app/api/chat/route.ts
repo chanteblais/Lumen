@@ -20,6 +20,7 @@ import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
 import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
+import { noteSharedFiles, readSharedFiles, sharedFileNoteText, sharedFilesProblem } from "@/core/shared-files";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
@@ -38,6 +39,11 @@ export async function POST(req: Request) {
   const { user, previous } = await requireVisit();
   const incoming = parseChatBody(await req.json().catch(() => undefined));
   if (!incoming) return Response.json({ error: "message required" }, { status: 400 });
+  const userMessage = userMessageFrom(incoming, new Date(), randomUUID);
+  // Files shared with the message (Home's composer): each inline, a kind Lumi reads, within the limits.
+  // The composer holds to the same limits, so this only turns away what didn't come from it.
+  const filesProblem = sharedFilesProblem(userMessage.parts);
+  if (filesProblem) return Response.json({ error: `files ${filesProblem}` }, { status: filesProblem === "too_large" ? 413 : 400 });
 
   // Off the response, once the reply has streamed, reading what the turn changed:
   // today's path primed or re-cut (a capacity report, letting things go on the way
@@ -48,7 +54,6 @@ export async function POST(req: Request) {
   after(() => (needsPrime(turn) ? primeTodaysPlan(db(), user, turn.recut) : undefined));
   after(() => consolidateAfter(db(), user, { passes: 1 }));
 
-  const userMessage = userMessageFrom(incoming, new Date(), randomUUID);
   const conversation = await ensureMainConversation(db(), user.id);
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
@@ -63,10 +68,12 @@ export async function POST(req: Request) {
     // Never throws: the turn carries on without the Library if it can't be read.
     loadLibraryOrNothing(db(), user.id),
   ]);
-  await saveMessage(db(), conversation.id, userMessage);
+  // Kept with a note in each shared file's place; the files themselves reach Lumi on this turn only (below).
+  const kept = noteSharedFiles(userMessage);
+  await saveMessage(db(), conversation.id, kept);
   // A window whose start moves in steps, so the history's prefix stays cached for several turns (core/ai/prompt.ts).
   const resent = history.some((m) => m.id === userMessage.id);
-  const all = stableWindow([...history.filter((m) => m.id !== userMessage.id), userMessage], total + (resent ? 0 : 1));
+  const all = stableWindow([...history.filter((m) => m.id !== userMessage.id), kept], total + (resent ? 0 : 1));
   turn.hadPlan = Boolean(snap.plan);
   turn.firstItemsDue = needsFirstItems(snap, user.timezone);
 
@@ -114,7 +121,15 @@ export async function POST(req: Request) {
     // The persona (and the tools) are the cached prefix; the conversation follows, and the context block,
     // which changes every turn, rides last on the newest user message so the history before it caches too.
     instructions: [{ role: "system", content: PERSONA, providerOptions: cachedPrefixOptions }],
-    messages: withContext(await convertToModelMessages(all, { tools, ignoreIncompleteToolCalls: true }), context),
+    // This turn's files as she reads them (a text file as its words); earlier ones are notes, read as shared and not kept.
+    messages: withContext(
+      await convertToModelMessages([...all.slice(0, -1), readSharedFiles(userMessage)], {
+        tools,
+        ignoreIncompleteToolCalls: true,
+        convertDataPart: sharedFileNoteText,
+      }),
+      context,
+    ),
     providerOptions: chatProviderOptions,
     onEnd: ({ totalUsage, steps }) => {
       if (process.env.NODE_ENV !== "production") {
