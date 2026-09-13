@@ -9,7 +9,7 @@ import { events, type Event } from "@/db/schema";
 /** Who made a change: the user on a page (Today, Lists), or Lumi through a chat tool. */
 export type ActionSource = "app" | "chat";
 
-export type EventInput = {
+type EventInput = {
   userId: string;
   type: string;
   subjectType?: "intention" | "session" | "note" | "user" | "lead" | "thread" | "episode" | "priority";
@@ -63,7 +63,7 @@ export async function latestEvent(db: Db, userId: string, type: string): Promise
   return row;
 }
 
-export const REFLECTION_CLAIMED = "reflection.claimed";
+const REFLECTION_CLAIMED = "reflection.claimed";
 
 /**
  * Has reflection claimed or run over this subject (a session)? Keeps the

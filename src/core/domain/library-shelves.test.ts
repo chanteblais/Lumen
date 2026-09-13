@@ -16,8 +16,8 @@ describe("buildShelves", () => {
     ];
     const { sections, loose } = buildShelves(held);
     expect(sections).toHaveLength(1);
-    expect(sections[0].thread.id).toBe("coherence");
-    expect(sections[0].shelves.map((s) => [s.shelf?.id ?? null, s.books.map((b) => b.id)])).toEqual([
+    expect(sections[0]!.thread.id).toBe("coherence");
+    expect(sections[0]!.shelves.map((s) => [s.shelf?.id ?? null, s.books.map((b) => b.id)])).toEqual([
       [null, ["onboarding"]],
       ["memory", ["identity", "lineage"]],
     ]);

@@ -33,10 +33,10 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `272cc5cd788b` |
+| `docs/philosophy/lumi.md` | `b55ef793ca66` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `bfe24b714eb3` |
+| `docs/living/decisions.md` | `2403632faece` |
 | `PROJECT-CANON.md` | `ca7b2161c6fb` |
 <!-- sources:end -->
 
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`chore/strictness`, code review E6): `lumi.md` §§5–6 and *Coherence remembers; Lumi understands* now say she sees roughly the last 30 to 40 messages, and the product decisions gain *Lumi sees roughly the last 30 to 40 messages*. The brief never states the window, so its text is unchanged. Re-stamped.
 - **2026-09-13 · reviewed, nothing for Lumi** (fourth merge of `main` into `fix/ai-and-routes`): the product decisions hold both *Their word has to be theirs…* and *Plan with Lumi is scrapped; what they say matters this week is remembered*, each reviewed on its own branch; nothing new between them. Re-stamped; `brief.ts` is main's.
 - **2026-09-13 · reviewed, nothing for Lumi** (third merge of `main` into `fix/ai-and-routes`): the product decisions hold both *Their word has to be theirs…* and *When something feels too big, Lumi asks before she hands over a step*, each reviewed on its own branch; nothing new between them. Re-stamped; `brief.ts` is main's.
 - **2026-09-13 · reviewed, nothing for Lumi** (second merge of `main` into `fix/ai-and-routes`): the product decisions hold both *Their word has to be theirs…* and *Files shared with Lumi are read, not kept*, each reviewed on its own branch; nothing new between them. Re-stamped; `brief.ts` is main's.

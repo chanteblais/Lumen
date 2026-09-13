@@ -13,12 +13,12 @@ import type { CSSProperties } from "react";
  * (globals.css → Library: sections on the bookcases), so a percentage of the
  * stage is a fraction of the painting.
  */
-export const PAINTING = { w: 1536, h: 1024 } as const;
+const PAINTING = { w: 1536, h: 1024 } as const;
 
 type Pt = readonly [x: number, y: number];
 type Rect = { u: number; v: number; w: number; h: number };
 
-export type BookcaseSlot = {
+type BookcaseSlot = {
   id: "collection_01" | "collection_02" | "collection_03";
   face: { tl: Pt; tr: Pt; bl: Pt };
   /** The manifest's `plaque.panel`: what warms on hover. */

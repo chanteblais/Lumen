@@ -6,13 +6,13 @@
  */
 
 /** The places in the nav (`components/shell/Sidebar.tsx`). */
-export type Place = "home" | "today" | "library" | "lists" | "insights" | "settings";
+type Place = "home" | "today" | "library" | "lists" | "insights" | "settings";
 
 /** Which way in: Home's composer, the companion's speech bubble, or the Lists sheet's Add task line (`HeldChatSlot`). */
-export type Via = "home" | "bubble" | "lists-add";
+type Via = "home" | "bubble" | "lists-add";
 
 /** Inside the Library: a thread's shelves, a thread open as a book, or the loose threads on the table. */
-export type LibraryDetail = "thread" | "book" | "table";
+type LibraryDetail = "thread" | "book" | "table";
 
 export type Where = { place: Place; via: Via; detail?: LibraryDetail };
 
@@ -20,7 +20,7 @@ const VIAS: readonly Via[] = ["home", "bubble", "lists-add"];
 
 /** The place a path belongs to, or undefined for a path that isn't one of them. */
 export function placeFromPath(path: string): Pick<Where, "place" | "detail"> | undefined {
-  const parts = path.split(/[?#]/)[0].split("/").filter(Boolean);
+  const parts = (path.split(/[?#]/)[0] ?? "").split("/").filter(Boolean);
   if (parts.length === 0) return { place: "home" };
   const [head, ...rest] = parts;
   switch (head) {

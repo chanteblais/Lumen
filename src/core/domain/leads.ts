@@ -8,15 +8,16 @@ import { type Db } from "@/db/client";
 import { leads, type Intention, type Lead, type LeadSource } from "@/db/schema";
 import { appendEvent, appendEvents, latestEvent, type ActionSource } from "./events";
 import { createIntention, getIntention } from "./intentions";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
-export const EMAIL_SCAN_EVENT = "email.scanned";
+const EMAIL_SCAN_EVENT = "email.scanned";
 /** A look through the mail is fresh for this long; the page doesn't look again sooner. */
 export const SCAN_FRESH_MS = 30 * 60_000;
 /** How far back the first look goes. */
 export const FIRST_LOOK_MS = 7 * 86_400_000;
 
-export type NewLead = {
+type NewLead = {
   source?: LeadSource;
   sourceRef: string;
   title: string;
@@ -29,7 +30,7 @@ export type NewLead = {
 };
 
 /** A lead's title as stored: trimmed, inner whitespace collapsed. The unique index (`leads_user_ref_title_idx`) compares it lower-cased. */
-export function leadTitle(s: string): string {
+function leadTitle(s: string): string {
   return s.trim().replace(/\s+/g, " ");
 }
 
@@ -89,7 +90,7 @@ export async function knownSourceRefs(db: Db, userId: string, refs: string[]): P
   return new Set(rows.map((r) => r.ref));
 }
 
-export async function getLead(db: Db, userId: string, id: string): Promise<Lead | undefined> {
+async function getLead(db: Db, userId: string, id: string): Promise<Lead | undefined> {
   const [row] = await db.select().from(leads).where(and(eq(leads.id, id), eq(leads.userId, userId))).limit(1);
   return row;
 }
@@ -118,7 +119,7 @@ export async function keepLead(db: Db, userId: string, id: string, via: ActionSo
       list: claimed.list,
       dueAt: claimed.dueAt,
     });
-    const [lead] = await tx.update(leads).set({ intentionId: intention.id }).where(eq(leads.id, id)).returning();
+    const lead = returnedRow(await tx.update(leads).set({ intentionId: intention.id }).where(eq(leads.id, id)).returning(), "keepLead");
     await appendEvent(tx, { userId, type: "lead.kept", subjectType: "lead", subjectId: id, payload: { via, intention_id: intention.id } });
     return { lead, intention };
   });

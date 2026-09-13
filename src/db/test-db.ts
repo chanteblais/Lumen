@@ -50,5 +50,6 @@ export async function createTestUser(db: Db, name = "Test"): Promise<User> {
     .insert(users)
     .values({ clerkUserId: `test_${name}_${++made}`, displayName: name })
     .returning();
+  if (!row) throw new Error("createTestUser: the insert returned no row");
   return row;
 }

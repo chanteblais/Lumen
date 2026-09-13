@@ -28,7 +28,7 @@ describe("startFocusSession", () => {
     const [a, b] = await Promise.all([startFocusSession(db, u.id, input("Edit chapter 3"), at("10:00")), startFocusSession(db, u.id, input("Answer the email"), at("10:00"))]);
     const open = await openFor(u.id);
     expect(open).toHaveLength(1);
-    expect([a.session.id, b.session.id]).toContain(open[0].id);
+    expect([a.session.id, b.session.id]).toContain(open[0]!.id);
   });
 
   it("closes the running one as stopped early and hands it back; one left open too long closes as abandoned", async () => {
@@ -41,7 +41,7 @@ describe("startFocusSession", () => {
     const third = await startFocusSession(db, u.id, input("Tidy the desk"), at("12:30"));
     expect(third.replaced).toBeUndefined();
     const [closed] = await db.select().from(focusSessions).where(eq(focusSessions.id, second.session.id));
-    expect(closed.outcome).toBe("abandoned");
+    expect(closed!.outcome).toBe("abandoned");
     expect((await openFor(u.id)).map((s) => s.id)).toEqual([third.session.id]);
   });
 });

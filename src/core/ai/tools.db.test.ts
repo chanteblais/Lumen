@@ -116,6 +116,6 @@ describe("refusals", () => {
     const r = await call(toolsFor(u).remember, { kind: "pattern", content: "Writes best before noon.", source: "lumi_inferred", confidence: 0.95 });
     expect(r).toMatchObject({ held_as: "your guess" });
     const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, String(r.id)));
-    expect(row.confidence).toBeLessThanOrEqual(0.6);
+    expect(row!.confidence).toBeLessThanOrEqual(0.6);
   });
 });

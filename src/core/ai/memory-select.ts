@@ -11,12 +11,12 @@ import type { MemoryNote, ThreadNote } from "@/db/schema";
 import { contentWords } from "@/core/words";
 
 export const MEMORY_BUDGET = 12;
-export const STANDING_PREFERENCES = 5;
-export const STANDING_STRATEGIES = 3;
-export const RECENT_FILL = 3;
-export const FADE_AFTER_DAYS = 60;
+const STANDING_PREFERENCES = 5;
+const STANDING_STRATEGIES = 3;
+const RECENT_FILL = 3;
+const FADE_AFTER_DAYS = 60;
 /** One word from the message clears it; words from earlier turns need company. */
-export const MIN_RELEVANCE = 2;
+const MIN_RELEVANCE = 2;
 
 const WEIGHT = { message: 3, focus: 2, recent: 1 } as const;
 
@@ -69,7 +69,7 @@ function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string,
 const freshness = (b: SelectableBelief) => Math.max(b.createdAt.getTime(), b.lastConfirmedAt?.getTime() ?? 0);
 
 /** A guess (not their word) below "fairly sure" that nothing has confirmed for 60 days. Derived at read time, never stored. */
-export function isFaded(b: SelectableBelief, now: Date): boolean {
+function isFaded(b: SelectableBelief, now: Date): boolean {
   if (b.source === "user_said" || b.confidence >= 0.5) return false;
   return now.getTime() - freshness(b) > FADE_AFTER_DAYS * 86_400_000;
 }

@@ -19,7 +19,7 @@ export async function readHeld(userId: string): Promise<Thread[] | null> {
   }
 }
 
-export type ThreadPlace = { thread: Thread; held: Thread[] };
+type ThreadPlace = { thread: Thread; held: Thread[] };
 
 /** The thread with everything held around it; "missing" when it isn't theirs (or isn't a thread id); null when it can't be read. */
 export async function readThread(userId: string, id: string): Promise<ThreadPlace | "missing" | null> {

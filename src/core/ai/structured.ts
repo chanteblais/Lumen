@@ -12,7 +12,7 @@ import type { z } from "zod";
 import { cachedPrefixOptions, chatModel, effortOptions, type CallKind, type Effort } from "./model";
 import { PERSONA } from "./persona";
 
-export type StructuredCall<T> = {
+type StructuredCall<T> = {
   /** The output's name, as the provider sees it ("day_plan"). */
   name: string;
   /** Which call this is: picks its own prompt cache key. */

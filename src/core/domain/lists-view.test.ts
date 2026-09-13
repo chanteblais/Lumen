@@ -38,7 +38,7 @@ describe("buildListsView", () => {
     expect(by.soon).toMatchObject({ due: "Sep 16", dueSoon: true });
     expect(by.later).toMatchObject({ due: "Sep 25", dueSoon: false });
     expect(by["gone by"]).toMatchObject({ due: "Sep 10", dueToday: false, dueSoon: false });
-    expect(by["no date"].due).toBeNull();
+    expect(by["no date"]!.due).toBeNull();
     expect(JSON.stringify(view)).not.toMatch(/overdue/i);
   });
 

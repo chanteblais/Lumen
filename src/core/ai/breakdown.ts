@@ -9,7 +9,7 @@ import { z } from "zod";
 import type { Intention, MemoryNote } from "@/db/schema";
 import { proposeStructured } from "./structured";
 
-export type BreakdownInputs = Pick<Intention, "title" | "note" | "nextAction" | "estimateMinutes"> & {
+type BreakdownInputs = Pick<Intention, "title" | "note" | "nextAction" | "estimateMinutes"> & {
   /** The steps they found still too big: go smaller than these. */
   smallerThan?: string[];
   beliefs: MemoryNote[];

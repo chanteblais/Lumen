@@ -205,7 +205,12 @@ export function buildContextBlock(input: ContextInput): string {
       for (const n of o.notes) lines.push(`- ${n.id} · ${n.kind} · "${asQuoted(n.content)}" · ${noteHeldAs(n.source)} · ${day.format(n.createdAt)}`);
     }
     if (library?.index.length) {
-      const held = library.index.map((x) => `${asQuoted(x.thread.title)} (${x.thread.id}${x.shelf.length ? `, in ${asQuoted(x.shelf[x.shelf.length - 1])}` : ""}${x.resting ? ", resting" : ""})`).join(" · ");
+      const held = library.index
+        .map((x) => {
+          const shelf = x.shelf.at(-1);
+          return `${asQuoted(x.thread.title)} (${x.thread.id}${shelf !== undefined ? `, in ${asQuoted(shelf)}` : ""}${x.resting ? ", resting" : ""})`;
+        })
+        .join(" · ");
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }
@@ -214,7 +219,7 @@ export function buildContextBlock(input: ContextInput): string {
 }
 
 /** Where they are as they speak, in Lumi's terms: the page, what's in front of them there, and which way in. */
-export function describeWhere(w: Where): string {
+function describeWhere(w: Where): string {
   const library = { thread: "the Library, looking at a thread's shelves", book: "the Library, reading a thread as a book", table: "the Library, at the loose threads on the table" };
   const page = {
     home: "Home",
@@ -234,7 +239,7 @@ export function describeWhere(w: Where): string {
 }
 
 /** One change in Lumi's terms: "they" did it on a page, "you" did it through a tool. */
-export function describeActivity(a: ActivityItem): string {
+function describeActivity(a: ActivityItem): string {
   const t = `"${a.title}"`;
   const onPage = a.via === "app";
   switch (a.type) {

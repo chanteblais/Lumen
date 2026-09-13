@@ -56,6 +56,12 @@ describe("parseDueDate", () => {
       expect(parseDueDate(s, today)).toBeNull();
     }
   });
+  it("reads a word only from its own tables, never Object.prototype's", () => {
+    // `"constructor" in WEEKDAYS` was true, so these threw a RangeError (a 500 from the Lists date field).
+    for (const s of ["constructor", "this constructor", "in constructor days", "constructor 5", "5 constructor"]) {
+      expect(parseDueDate(s, today)).toBeNull();
+    }
+  });
 });
 
 describe("day-only due dates", () => {

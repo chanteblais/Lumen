@@ -44,7 +44,7 @@ describe("recutAfterDecline", () => {
     expect(build).toHaveBeenCalledTimes(1);
     expect(build.mock.calls[0]).toEqual([expect.objectContaining({ keep: { intentionId: "c", firstStep: "Open the thread." } })]);
     expect(saved).toHaveLength(2);
-    expect(saved[1].note).toBe("Something smaller, then.");
+    expect(saved[1]!.note).toBe("Something smaller, then.");
   });
 
   it("doesn't overwrite a path that moved while the model was thinking", async () => {

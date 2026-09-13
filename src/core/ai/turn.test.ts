@@ -75,8 +75,8 @@ describe("what the turn reads", () => {
     const msgs = [0, 1, 2].map((i) => ({ id: `m${i}`, role: "user", parts: [text(`said ${i}`)] }) as CoherenceUIMessage);
     const open = [{ id: ID, title: "Edit chapter 3" }] as Intention[];
     const plan = { dayLine: "", rightNow: { intentionId: ID, firstStep: "Open the doc" }, afterThat: [], later: [], restCanWait: false };
-    expect(turnSignalsFor(msgs[2], msgs, { plan, openIntentions: open })).toEqual({ message: "said 2", recent: ["said 0", "said 1"], focus: ["Edit chapter 3"] });
-    expect(turnSignalsFor(msgs[2], msgs, { plan: undefined, openIntentions: open }).focus).toEqual([undefined]);
+    expect(turnSignalsFor(msgs[2]!, msgs, { plan, openIntentions: open })).toEqual({ message: "said 2", recent: ["said 0", "said 1"], focus: ["Edit chapter 3"] });
+    expect(turnSignalsFor(msgs[2]!, msgs, { plan: undefined, openIntentions: open }).focus).toEqual([undefined]);
   });
 
   it("builds the context input: no last-seen on the first ever turn, and no mail section while mail is off", () => {

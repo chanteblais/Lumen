@@ -5,7 +5,7 @@
  */
 import type { z } from "zod";
 
-export type Parsed<T> = { data: T; error?: undefined } | { data?: undefined; error: Response };
+type Parsed<T> = { data: T; error?: undefined } | { data?: undefined; error: Response };
 
 export async function readBody<T>(req: Request, schema: z.ZodType<T>, message: string): Promise<Parsed<T>> {
   const raw: unknown = await req.json().catch(() => undefined);

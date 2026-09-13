@@ -8,11 +8,12 @@ import { intentions, type EffortHint, type Event, type Intention, type Intention
 import { isDayOnly } from "@/core/due-date";
 import { localDate } from "@/core/time";
 import { appendEvent, type ActionSource } from "./events";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
-export const STALE_AFTER_MS = 14 * 86_400_000;
+const STALE_AFTER_MS = 14 * 86_400_000;
 
-export type CreateIntentionInput = {
+type CreateIntentionInput = {
   title: string;
   nextAction?: string | null;
   note?: string | null;
@@ -23,11 +24,11 @@ export type CreateIntentionInput = {
   sourceMessageId?: string | null;
 };
 
-export type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
+type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
 
 export async function createIntention(db: Db, userId: string, input: CreateIntentionInput): Promise<Intention> {
   return atomic(db, async (tx) => {
-    const [row] = await tx
+    const inserted = await tx
       .insert(intentions)
       .values({
         userId,
@@ -41,6 +42,7 @@ export async function createIntention(db: Db, userId: string, input: CreateInten
         sourceMessageId: input.sourceMessageId ?? null,
       })
       .returning();
+    const row = returnedRow(inserted, "createIntention");
     await appendEvent(tx, { userId, type: "intention.created", subjectType: "intention", subjectId: row.id, payload: { list: row.list, estimate: row.estimateMinutes } });
     return row;
   });
@@ -80,11 +82,14 @@ export async function updateIntention(db: Db, userId: string, id: string, patch:
     const set = intentionChanges(current, patch);
     const changed = Object.keys(set);
     if (changed.length === 0) return { row: current, changed };
-    const [row] = await tx
-      .update(intentions)
-      .set({ ...set, lastTouchedAt: new Date() })
-      .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
-      .returning();
+    const row = returnedRow(
+      await tx
+        .update(intentions)
+        .set({ ...set, lastTouchedAt: new Date() })
+        .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
+        .returning(),
+      "updateIntention",
+    );
     await appendEvent(tx, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: changed, via } });
     return { row, changed };
   });
@@ -147,7 +152,7 @@ export async function declineIntention(db: Db, userId: string, id: string, reaso
   });
 }
 
-export type Decline = { intentionId: string; reason: string | null; at: Date };
+type Decline = { intentionId: string; reason: string | null; at: Date };
 export const DECLINE_EVENT_TYPE = "intention.declined";
 
 /** Pure: today's declines from recent events (newest first). Feeds the plan (never Right now again today) and the context block. */
