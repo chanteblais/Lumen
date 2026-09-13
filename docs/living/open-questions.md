@@ -18,7 +18,7 @@ Related: [Study](../product/focus-study.md).
 
 ## 3. How does the broad Library become navigable?
 
-**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques, redrawn on the served painting (v2), with eight questions for Chanté (slot count, the alcove, projection, painted books, naming, Lumi's scale, the data model, the stage). It remains a proposal, not approved interaction design.
+**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today, and since 2026-09-13 are browsed in the Lists sheet from the nav ([decision](decisions.md#2026-09-13--lists-is-in-the-nav-again-as-a-sheet-over-the-page-youre-on)) — whether that sheet later folds into the Library's navigation is part of this question. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques, redrawn on the served painting (v2), with eight questions for Chanté (slot count, the alcove, projection, painted books, naming, Lumi's scale, the data model, the stage). It remains a proposal, not approved interaction design.
 
 Related: [Library](../product/lists-library.md).
 
@@ -90,7 +90,7 @@ Related: [Approved decision](decisions.md#2026-09-13--approved-documentation-rec
 
 ## 15. Which names does the user see?
 
-**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library / Insights / Settings is the current navigation. Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
+**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library, then Lists / Insights, then Settings is the current navigation — rooms, tools, utility, each group set apart (Lists added 2026-09-13 as a sheet over the page, not a rename of the Library). Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
 
 Related: [Spaces](../product/spaces.md).
 

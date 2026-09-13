@@ -51,7 +51,7 @@ The [Spaces document](docs/product/spaces.md) defines cognitive modes over one e
 |---|---|---|---|
 | [Home](docs/product/home.md) | What is happening; what do I need? | Arrive, talk, reflect and return without compulsory task creation | `/`, conversation and focus sessions in the painted room |
 | [Today / Garden](docs/product/today-garden.md) | What deserves attention today? | Trustworthy containment and negotiated attention | `/today`, the existing path; see [as-built spec](docs/today.md) |
-| [Library](docs/product/lists-library.md) | What am I carrying, and where does it belong? | Browse and retrieve active context, relationships and history | `/library`, painted room without a list view; lists still feed Lumi and Today |
+| [Library](docs/product/lists-library.md) | What am I carrying, and where does it belong? | Browse and retrieve active context, relationships and history | `/library`, painted room without a list view; the lists are browsed in **Lists**, a sheet from the nav over the page you're on (`/lists`), and still feed Lumi and Today |
 | [Focus / Study](docs/product/focus-study.md) | What are we doing now? | Narrow attention and offer accompaniment | Not a separate place yet; sessions run on Home |
 
 These questions summarize roles, not mandated interface copy. “Where have I been?” remains a Library use, not its whole purpose. The current Library navigation label remains deliberate; other labels, Insights placement and concrete spatial interactions remain open. Settings is a utility.

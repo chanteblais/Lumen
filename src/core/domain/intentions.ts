@@ -47,7 +47,7 @@ export async function getIntention(db: Db, userId: string, id: string): Promise<
   return row;
 }
 
-export async function updateIntention(db: Db, userId: string, id: string, patch: IntentionPatch): Promise<Intention | undefined> {
+export async function updateIntention(db: Db, userId: string, id: string, patch: IntentionPatch, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const set: Partial<typeof intentions.$inferInsert> = { lastTouchedAt: new Date() };
   if (patch.title !== undefined) set.title = patch.title.trim();
   if (patch.nextAction !== undefined) set.nextAction = patch.nextAction?.trim() || null;
@@ -57,7 +57,7 @@ export async function updateIntention(db: Db, userId: string, id: string, patch:
   if (patch.effortHint !== undefined) set.effortHint = patch.effortHint;
   if (patch.dueAt !== undefined) set.dueAt = patch.dueAt;
   const [row] = await db.update(intentions).set(set).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).returning();
-  if (row) await appendEvent(db, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: Object.keys(patch) } });
+  if (row) await appendEvent(db, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: Object.keys(patch), via } });
   return row;
 }
 
@@ -84,14 +84,14 @@ export async function reopenIntention(db: Db, userId: string, id: string, via: A
   return row;
 }
 
-export async function dropIntention(db: Db, userId: string, id: string, reason?: string): Promise<Intention | undefined> {
+export async function dropIntention(db: Db, userId: string, id: string, reason?: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const now = new Date();
   const [row] = await db
     .update(intentions)
     .set({ status: "dropped", droppedAt: now, lastTouchedAt: now })
     .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
     .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.dropped", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
+  if (row) await appendEvent(db, { userId, type: "intention.dropped", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null, via } });
   return row;
 }
 
