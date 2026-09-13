@@ -6,6 +6,30 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (10) — the whole app on a phone (`fix/greeting-mobile-drag`, `chore/dev-test-user`, `fix/mobile-pass`)
+
+Chanté: "Lumi's opening chat message drags left/right on mobile", then "could you do a mobile pass on the whole app?" Mobile Safari on the iOS Simulator (iPhone 17, 402pt wide), signed out for the public pages and as the local test user (`COHERENCE_DEV_USER=1`, `src/lib/dev-user.ts`) for the rest: Home before and after a message, Today empty and with a path, the Lists sheet (tabs, a date, the ⋯ menu), the Library, Settings, sign-in, sign-up and privacy. Each signed-in page was measured by a temporary probe (not committed) that logged to the dev server through Next's browser-log forwarding: every element scrolling sideways, the child causing it (found by hiding children one at a time and re-measuring), and every tap target under 44pt.
+
+### Fixed
+- **Home's greeting dragged sideways.** The scroll's rods reach 9px past the parchment, so `.chat-scroll` was wider than its box (1078 vs 1069px, measured in Chrome) and a finger panned it. The scroll now sits 9px in from each side of the column (`margin-inline: 9px`). In Safari a swipe doesn't move it, and the probe reads none on a fresh open and with a conversation.
+- **Today dragged 2px sideways.** The feathered shadow behind Lumi's words reaches 22px past them and a phone's page has 20px of padding, so `.main` was 404px wide in a 402px screen. On phones the shadow reaches 20px. In Safari the probe reads none on the empty page and with a path, capacity question and slip, and a swipe leaves every line where it was.
+
+### Known and deliberate
+- The Lists tab strip (`.lists-tabs`) scrolls sideways on purpose (+519px on a phone, with the quick views joined to the tabs).
+- The probe reports the Library's `h1.sr-only` as overflowing: it is the screen-reader heading, clipped, not scrollable.
+- As the test user the header shows *Sign in · Sign up* (there's no Clerk session), so its 15px-tall links are not what a signed-in user sees.
+
+### Open
+- Tap targets under 44pt in the core loop and four smaller phone findings: `ux-review-log.md` → Review 1 (proposed).
+- Not covered: the on-screen keyboard (the Simulator used the Mac's keyboard, so only the accessory bar showed: the composer and the Lists date field with the keyboard up are unchecked); the Library with sections, shelves and books (a new user has none, and filing waits on consolidation); Settings → What Lumi knows with beliefs to edit or forget; Today's *Break it down* steps and *Not this* on a phone; a real device.
+
+### Highest-value manual tests
+- On a phone, on Home and Today: drag sideways with a finger. Nothing moves.
+- On a phone, open Lists, tap *Add date* and type with the on-screen keyboard up: the field stays in view.
+- On a phone, write to Lumi with the on-screen keyboard up: the composer and the newest line stay visible.
+
+---
+
 ## Sweep 2026-09-13 (9) — the code review (`docs/code-review-2026-09-13`, `chore/hygiene`, `fix/data-integrity`, `fix/companion-chat`, `fix/ai-and-routes`, `chore/strictness`)
 
 Chanté: "review this project and see if anything needs to be refactored or can otherwise be improved", then "document everything and fix it". Every finding has an id and a status in `docs/code-review-2026-09-13.md`. The review doc landed first (3010037), then `chore/hygiene` (24d00d0), `fix/data-integrity` (7301a16), `fix/companion-chat` (e25489c), `fix/ai-and-routes` (90421dc) and `chore/strictness`. Every row is now `fixed` or `decided`.
