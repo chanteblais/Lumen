@@ -196,7 +196,8 @@ describe("consolidation", () => {
     } finally {
       await logged.close();
     }
-  });
+    // Its own database, migrated in the test: the same budget as the file's beforeAll (5s timed out under the full suite).
+  }, 60_000);
 
   it("backs off a stretch that keeps failing, and a null proposal is a failure, not an empty stretch", async () => {
     const u = await createTestUser(db, "Fen");

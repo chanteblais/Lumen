@@ -341,7 +341,8 @@ async function runScenario(scenario, { brief, now, dry }) {
       ? []
       : [
           ...(await scenario.checks({ db, user, calls, ids })),
-          // Every scenario: a turn with no text at all may render as an empty bubble in the app.
+          // Every scenario: a turn with no text at all. The app saves and shows nothing for it (core/ai/reply.ts);
+          // it's flagged so the grader can tell silence that fits (during a session) from silence that doesn't.
           { kind: "flag", label: `a reply with no text${silent.length ? ` (turn ${silent.join(", ")})` : ""}`, ok: silent.length === 0 },
         ];
     return { id: scenario.id, brief, turns, checks };
