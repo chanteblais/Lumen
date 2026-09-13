@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "status": "proposal, awaiting Chanté's approval (2026-09-13). Nothing here is canonical until approved; close-up assets are not generated. Measured on the long-table painting (now art/archived/scene_mockups/library-background-long-table.png); the Library now serves art/scenery/library/background.png (same architecture, a small reading circle on a wide rug instead of the long table), so the central table, its occluders and the anchors and routes around it are stale until redrawn.",
+  "version": 2,
+  "status": "proposal, awaiting Chanté's approval. Nothing here is canonical until approved; close-up assets are not generated. v1 (2026-09-13) was measured on the long-table painting (art/archived/scene_mockups/library-background-long-table.png); v2 (2026-09-13) redraws it on art/scenery/library/background.png, the painting the Library serves. The architecture is unchanged between the two (a pixel diff shows no change above the floor except the alcove's furniture and the window bay's seat), so slots, plaques, rows and close-up frames carry over; the reading circle, the floor anchors, the routes, the depth scale, the window bay and the chrome (the rail nav) are new.",
   "about": "The Library's camera-view manifest. Stable spatial IDs name physical places only; what a slot holds for a user (a Collection's name, a Thread Group's name) is data stored elsewhere, never here. The annotated maps in spatial-map/ are drawn from this file by scripts/draw-library-map.py, so edit the numbers here and redraw.",
 
   "coordinates": {
@@ -10,21 +10,36 @@
   },
 
   "source": {
-    "asset": "art/archived/scene_mockups/library-background-long-table.png",
+    "asset": "art/scenery/library/background.png",
+    "served_as": "public/library-room.webp",
     "size_px": [1536, 1024],
-    "note": "The painting this geometry was measured on (the maps are drawn over it). The canonical painting is now art/scenery/library/background.png, library_wide's asset; redraw against it before approval.",
-    "aspect_ratio": "3:2"
+    "aspect_ratio": "3:2",
+    "note": "The painting this geometry is measured on and the maps are drawn over."
+  },
+
+  "chrome": {
+    "note": "What the app's shell lays over the painting (2026-09-13, after art/mockups/rail-nav.png). The painting is fixed behind the whole window, rail included, cover-fit.",
+    "rail_px": 74,
+    "rail_note": "10px inset + the 64px painted rail; the page's grid reserves this column on every desktop window.",
+    "parchment_px": 270,
+    "parchment_note": "The names' parchment floats out to 270px (the rail, a 4px gap, 192px) while hovered, focused or pinned. Pinned, it stays; it never moves the page.",
+    "top_cluster_px": { "w": 320, "h": 88, "note": "The clock and account controls with their 240px rule, top right. Estimated from .main's padding and the TopBar; it no longer spans the page." },
+    "phone_px": 767,
+    "phone_note": "Below 768px the rail is 48px and Lumi is hidden; the spatial layer needs a non-spatial layout there (lists-library §74, spaces §35)."
   },
 
   "lumi": {
     "rendered_height_px": 150,
-    "height_at_home": 0.156,
-    "height_note": "150px on screen at a 1440x900 window is about 0.156 of the painting's height, standing at `home`.",
+    "figure_height_px": 128,
+    "sprite": { "asset": "public/lumi-idle.webp", "cell": [160, 208], "figure_bbox": [19, 26, 142, 204], "mirrored": true },
+    "height_at_home": 0.133,
+    "height_note": "The companion's box is 150px tall; the drawing inside its 160x208 cell is 178 of 208 rows, so she is about 128px on screen. At a 1440x900 window that is about 137 painting px, 0.133 of the painting's height, standing at `home`. (v1 used the box's 150px, about 17% too tall.)",
     "depth_scale": {
-      "rule": "linear in floor y between the two samples; below y_back, keep the slope",
-      "y_front": 0.879, "scale_front": 1.0,
-      "y_back": 0.70, "scale_back": 0.42,
-      "note": "Estimated from furniture (the stool and the floor cushion in front; the drawer cabinets and ladder-rung spacing at the back wall). To be checked with a still of Lumi placed at an approach anchor before any walking is drawn."
+      "rule": "perspective: scale = (floor_y - horizon_y) / (home_y - horizon_y)",
+      "horizon_y": 0.40,
+      "home_y": 0.869,
+      "at_back_wall": "about 0.60 at floor y 0.69 (the drawer cabinets' feet): about 82 painting px, 1.5 shelf rows",
+      "note": "v2 estimate, read by eye off the floor tiles' foreshortening (row spacing about 12px at y 0.72, about 32px at y 0.93, so the horizon is near y 0.40; an FFT of the floor was swamped by the sunlight stripes and settled nothing). It replaces v1's linear 0.42 at the back wall, read off the long table's furniture, which would make the alcove's armchair about four times the reading circle's. Cross-checks at this scale: the far doorway is about 3.6 of her, the ladder about 4.9, the alcove armchair about 1.35, the centre bay's drawer cabinet about 0.9. The reading circle's armchairs are about 0.6 of her: that furniture is painted at about half the scale of the alcove's armchair. Still an estimate: judge it on spatial-map/stills.png before any walking is drawn."
     }
   },
 
@@ -37,8 +52,8 @@
       "camera_scale": 1,
       "camera_offset": [0, 0],
       "aspect_ratio": "3:2",
-      "viewport_safe_zone": { "x": 0.20, "y": 0.13, "w": 0.69, "h": 0.60, "note": "Stays visible and clear of the 272px sidebar and the top bar at every desktop window from 1280x800 to 1920x1080 under today's cover fit. Every collection slot sits inside it; expansions may not." },
-      "visible_landmarks": ["stove", "window_left", "window_seat", "ladder", "chandelier", "gallery", "telescope_window", "stair", "moon_banner", "reading_alcove", "doorway_right", "central_table", "rug", "floor_cushion", "stool"],
+      "viewport_safe_zone": { "x": 0.15, "y": 0.08, "w": 0.75, "h": 0.84, "note": "Visible beside the folded rail at every desktop window from 1100x900 to 1920x1080 under today's cover fit (the rail hides x < 0.147 at 1100x900; the crop hides x > 0.907 there, y < 0.078 and y > 0.922 at 16:9). Every collection slot sits inside it. A pinned parchment hides more: x < 0.19 at 1440x900 and x < 0.293 at 1100x900 (half of collection_01). The top-right cluster reaches y 0.145 but only right of x 0.84, clear of every plaque." },
+      "visible_landmarks": ["stove", "window_left", "window_sofa", "ladder", "chandelier", "gallery", "telescope_window", "stair", "moon_banner", "reading_alcove", "doorway_right", "reading_circle", "reading_table", "rug"],
       "content_safe_zones": ["collection_01.plaque.text_safe", "collection_02.plaque.text_safe", "collection_03.plaque.text_safe", "collection_04.plaque.text_safe"],
       "interactive_regions": ["collection_01", "collection_02", "collection_03", "collection_04", "central_table"],
       "lumi_entry_anchor": "home",
@@ -80,12 +95,12 @@
       "camera_offset": [0.34, 0.16],
       "aspect_ratio": "2:3",
       "readable_viewport": { "entry_band": { "y": 0.17, "h": 0.24 }, "pan": "vertical", "rows_visible": "2-3", "note": "The reference close-up (shelf-zoom.png) is almost exactly this bay at this scale: the same row width to row height ratio (about 3.6)." },
-      "visible_landmarks": ["sconce_a_b", "sconce_b_c", "botanical_prints", "table foreground: candle, flowers, armillary sphere (blurred, bottom edge)"],
+      "visible_landmarks": ["sconce_a_b", "sconce_b_c", "botanical_prints", "the drawer cabinet down to the floor (the reading circle's flowers just below the frame)"],
       "content_safe_zones": ["collection_02.plaque.text_safe", "thread group plaques: the top 30% of each row, left 55%"],
       "interactive_regions": ["collection_02.thread_group_01", "collection_02.thread_group_02", "collection_02.thread_group_03", "collection_02.thread_group_04", "collection_02.thread_group_05"],
-      "lumi_entry_anchor": "collection_02.cabinet_top",
-      "lumi_exit_anchor": "collection_02.cabinet_top",
-      "lumi_interaction_anchors": ["collection_02.thread_group_NN.stand"],
+      "lumi_entry_anchor": "collection_02.approach",
+      "lumi_exit_anchor": "collection_02.approach",
+      "lumi_interaction_anchors": ["collection_02.cabinet_top", "collection_02.thread_group_NN.stand"],
       "child_views": ["library_table"],
       "transition": { "enter": "scale_to_frame", "back": "pull_out_to_parent" },
       "status": "planned"
@@ -122,7 +137,7 @@
       "camera_offset": [0.558, 0.22],
       "aspect_ratio": "2:3",
       "readable_viewport": { "entry_band": { "y": 0.24, "h": 0.46 }, "pan": "none", "rows_visible": "n/a", "note": "An alcove, not a bookcase: its Thread Groups are surfaces (the inner bookcase, the side table, the window sill), so the whole frame is one view." },
-      "visible_landmarks": ["reading_alcove window", "armchair", "floor lamp", "side table", "round rug", "hanging planter", "botanical_prints", "sconce_c_d"],
+      "visible_landmarks": ["reading_alcove window", "alcove_armchair", "floor lamp", "side table with candles", "round rug", "hanging planter", "botanical_prints", "sconce_c_d"],
       "content_safe_zones": ["collection_04.plaque.text_safe"],
       "interactive_regions": ["collection_04.thread_group_01", "collection_04.thread_group_02", "collection_04.thread_group_03"],
       "lumi_entry_anchor": "collection_04.approach",
@@ -137,11 +152,11 @@
       "parent_view": "library_wide",
       "asset": null,
       "candidate_asset": "art/scenery/library/book-template.png",
-      "target_region": { "x": 0.26, "y": 0.54, "w": 0.44, "h": 0.44 },
+      "target_region": { "x": 0.265, "y": 0.56, "w": 0.44, "h": 0.44 },
       "camera_scale": 2.27,
-      "camera_offset": [0.26, 0.54],
+      "camera_offset": [0.265, 0.56],
       "aspect_ratio": "3:2",
-      "visible_landmarks": ["central_table", "collection_02 (blurred behind)", "reading_alcove window (blurred, right)"],
+      "visible_landmarks": ["reading_table", "armchair_left", "armchair_right", "collection_02's drawer cabinet behind", "the alcove's side table at the right edge"],
       "content_safe_zones": ["the open book's pages and side panels (book-template.png)"],
       "interactive_regions": ["the living Thread"],
       "lumi_entry_anchor": "table_place",
@@ -150,7 +165,7 @@
       "child_views": [],
       "back_to": "the originating view: the Thread Group's close-up at that row, or library_wide when opened from search, a link or Lumi",
       "transition": { "enter": "crossfade_via_table", "back": "pull_out_to_origin" },
-      "status": "planned; the candidate asset's background is to be checked against the room"
+      "status": "planned; book-template.png's desk was a match for the long table, not for the low round table the room now has, so the table view needs its own look"
     }
   ],
 
@@ -187,24 +202,24 @@
         { "id": "collection_01.thread_group_04", "bounds": { "x": 0.215, "y": 0.47, "w": 0.12, "h": 0.065 }, "readable_volumes": "4-5", "note": "the ladder crosses the right third" },
         { "id": "collection_01.thread_group_05", "bounds": { "x": 0.215, "y": 0.54, "w": 0.12, "h": 0.058 }, "readable_volumes": "4-5", "note": "the ladder crosses the right third" }
       ],
-      "ladder": [[0.298, 0.285], [0.325, 0.285], [0.37, 0.70], [0.335, 0.70]],
+      "ladder": [[0.298, 0.285], [0.325, 0.285], [0.365, 0.695], [0.33, 0.695]],
       "lumi": {
-        "approach": { "at": [0.235, 0.715], "visible": true },
-        "ladder_foot": { "at": [0.345, 0.702], "visible": "partly: the table's back edge covers her lower half" },
-        "ladder_top": { "at": [0.312, 0.325], "floor_y": 0.70, "visible": true },
+        "approach": { "at": [0.273, 0.711], "visible": true },
+        "ladder_foot": { "at": [0.342, 0.705], "visible": true },
+        "ladder_top": { "at": [0.312, 0.325], "floor_y": 0.695, "visible": true },
         "exit": "approach"
       },
-      "occluders": ["central_table back-left corner"],
+      "occluders": [],
       "fill_order": 3
     },
     {
       "id": "collection_02",
       "kind": "collection",
       "view": "collection_02_closeup",
-      "place": "The centre bookcase: the tall arched bay behind the reading table, the most books in the room.",
+      "place": "The centre bookcase: the tall arched bay behind the reading circle, the most books in the room.",
       "why": "The room's focal point and the densest shelving; the best-lit, most legible slot and the one most like the reference close-up. A first Collection belongs here.",
-      "hit_region": { "x": 0.375, "y": 0.18, "w": 0.17, "h": 0.44 },
-      "landmarks": ["plaque with star", "five book rows", "botanical frames among the books", "glowing lantern (row 3)", "trailing vines on both sides", "sconce_a_b", "sconce_b_c"],
+      "hit_region": { "x": 0.375, "y": 0.18, "w": 0.17, "h": 0.49 },
+      "landmarks": ["plaque with star", "five book rows", "botanical frames among the books", "glowing lantern (row 3)", "trailing vines on both sides", "sconce_a_b", "sconce_b_c", "drawer cabinet"],
       "plaque": {
         "panel": { "x": 0.395, "y": 0.19, "w": 0.132, "h": 0.09 },
         "ornament": [0.46, 0.215],
@@ -221,12 +236,11 @@
         { "id": "collection_02.thread_group_05", "bounds": { "x": 0.39, "y": 0.535, "w": 0.14, "h": 0.06 }, "readable_volumes": "7-8" }
       ],
       "lumi": {
-        "approach": { "at": [0.46, 0.685], "visible": false, "note": "Behind the table: nothing between the table's back edge and the drawers is visible from the wide view." },
-        "last_visible": { "at": [0.72, 0.705], "visible": true, "note": "table_back_right; from here she passes behind the table" },
-        "cabinet_top": { "at": [0.395, 0.597], "floor_y": 0.67, "visible": "partly: candle and flowers in front" },
+        "approach": { "at": [0.459, 0.687], "visible": true, "note": "In view since the long table went: open floor in front of the drawers, above the flowers' tops." },
+        "cabinet_top": { "at": [0.395, 0.597], "floor_y": 0.669, "visible": true },
         "exit": "approach"
       },
-      "occluders": ["central_table: candle, flower vase, armillary sphere over the drawers"],
+      "occluders": [],
       "fill_order": 1
     },
     {
@@ -234,8 +248,8 @@
       "kind": "collection",
       "view": "collection_03_closeup",
       "place": "The stair bookcase: the narrow arched bay on the right, tucked under the staircase, left of the far doorway.",
-      "why": "The second clear floor-level bookcase, with its own plaque and open floor in front: the one Lumi can walk all the way to in view.",
-      "hit_region": { "x": 0.775, "y": 0.25, "w": 0.115, "h": 0.45 },
+      "why": "The second clear floor-level bookcase, with its own plaque and open floor in front, the nearest to Lumi's spot today.",
+      "hit_region": { "x": 0.775, "y": 0.25, "w": 0.115, "h": 0.46 },
       "landmarks": ["plaque with star", "brass clock (row 1)", "globe (row 3)", "table lamp (row 4)", "stair stringer above", "diamond plaque to the right", "runner rug"],
       "plaque": {
         "panel": { "x": 0.79, "y": 0.265, "w": 0.085, "h": 0.07 },
@@ -252,8 +266,8 @@
         { "id": "collection_03.thread_group_04", "bounds": { "x": 0.79, "y": 0.54, "w": 0.082, "h": 0.06 }, "readable_volumes": "4-5" }
       ],
       "lumi": {
-        "approach": { "at": [0.83, 0.718], "visible": true },
-        "drawer_step": { "at": [0.83, 0.655], "floor_y": 0.70, "visible": true, "note": "a pulled-out bottom drawer as her step onto the cabinet: composited, not painted" },
+        "approach": { "at": [0.830, 0.721], "visible": true },
+        "drawer_step": { "at": [0.83, 0.655], "floor_y": 0.706, "visible": true, "note": "a pulled-out bottom drawer as her step onto the cabinet: composited, not painted" },
         "exit": "approach"
       },
       "occluders": [],
@@ -264,10 +278,10 @@
       "kind": "collection",
       "conditional": true,
       "view": "collection_04_closeup",
-      "place": "The reading alcove: the arched opening under the gallery, with a window, an armchair, a floor lamp, a side table and a round rug.",
-      "why": "It has its own plaque and is the room's most distinct place, but it has almost no shelving: one narrow bookcase seen edge-on. Proposed as a Collection for material that lives on surfaces (papers on the side table, a book on the armchair), or as the first expansion instead.",
-      "hit_region": { "x": 0.585, "y": 0.24, "w": 0.16, "h": 0.43 },
-      "landmarks": ["plaque with star", "arched window with pines", "armchair and cushion", "floor lamp", "side table", "round rug", "hanging planter"],
+      "place": "The reading alcove: the arched opening under the gallery, with a window, an armchair, a floor lamp, a side table with candles and a round rug.",
+      "why": "It has its own plaque and is the room's most distinct place, but it has almost no shelving: one narrow bookcase seen edge-on. Proposed as a Collection for material that lives on surfaces (papers on the side table, a book on the armchair), or as an expansion instead.",
+      "hit_region": { "x": 0.585, "y": 0.24, "w": 0.16, "h": 0.45 },
+      "landmarks": ["plaque with star", "arched window with pines", "alcove_armchair and cushion", "floor lamp", "side table with candles", "round rug", "hanging planter"],
       "plaque": {
         "panel": { "x": 0.605, "y": 0.255, "w": 0.12, "h": 0.08 },
         "ornament": [0.665, 0.27],
@@ -277,17 +291,17 @@
       },
       "thread_groups": [
         { "id": "collection_04.thread_group_01", "bounds": { "x": 0.605, "y": 0.43, "w": 0.027, "h": 0.20 }, "readable_volumes": "2-4", "note": "the inner bookcase, edge-on: readable only if the close-up turns toward it, which risks inventing its face" },
-        { "id": "collection_04.thread_group_02", "bounds": { "x": 0.675, "y": 0.555, "w": 0.04, "h": 0.07 }, "readable_volumes": "1-3 loose papers or folios" },
-        { "id": "collection_04.thread_group_03", "bounds": { "x": 0.655, "y": 0.53, "w": 0.075, "h": 0.03 }, "readable_volumes": "2-3 on the sill" }
+        { "id": "collection_04.thread_group_02", "bounds": { "x": 0.674, "y": 0.598, "w": 0.031, "h": 0.05 }, "readable_volumes": "1-3 loose papers or folios on the side table" },
+        { "id": "collection_04.thread_group_03", "bounds": { "x": 0.651, "y": 0.555, "w": 0.078, "h": 0.022 }, "readable_volumes": "2-3 on the sill" }
       ],
       "lumi": {
-        "approach": { "at": [0.655, 0.662], "visible": true },
-        "armchair_sit": { "at": [0.645, 0.60], "floor_y": 0.655, "visible": true },
-        "side_table": { "at": [0.695, 0.625], "floor_y": 0.655, "visible": true },
+        "approach": { "at": [0.651, 0.688], "visible": true },
+        "armchair_sit": { "at": [0.635, 0.613], "floor_y": 0.654, "visible": true },
+        "side_table": { "at": [0.689, 0.604], "floor_y": 0.651, "visible": true },
         "exit": "approach"
       },
       "occluders": ["plant pot at the alcove's right jamb"],
-      "concerns": ["Few readable Threads without inventing shelving.", "Its natural role, a place to sit and read, may matter more than holding a Collection."],
+      "concerns": ["Few readable Threads without inventing shelving.", "Its natural role, a place to sit and read, may matter more than holding a Collection.", "Its armchair is painted at about twice the scale of the reading circle's armchairs."],
       "fill_order": 4
     },
     {
@@ -298,8 +312,8 @@
       "region": { "x": 0.575, "y": 0.07, "w": 0.21, "h": 0.145 },
       "label_anchor": [0.68, 0.212],
       "landmarks": ["balustrade", "telescope window", "stair", "chandelier (left)"],
-      "lumi": { "landing": { "at": [0.76, 0.205], "scale": 0.30, "visible": "behind the balusters" } },
-      "concerns": ["No plaque.", "Under the top bar and its dark veil on wide windows.", "Its books sit behind the balusters, so a readable close-up needs a camera on the gallery looking at a wall the painting shows as plants and a lamp."]
+      "lumi": { "landing": { "at": [0.76, 0.205], "scale": 0.40, "visible": "behind the balusters" } },
+      "concerns": ["No plaque.", "At 16:9 its top edge is cropped (y < 0.078) and the dark top of the veil lies over it.", "Its books sit behind the balusters, so a readable close-up needs a camera on the gallery looking at a wall the painting shows as plants and a lamp."]
     },
     {
       "id": "expansion_02",
@@ -309,59 +323,68 @@
       "region": { "x": 0.905, "y": 0.37, "w": 0.095, "h": 0.36 },
       "plaque": { "panel": { "x": 0.905, "y": 0.31, "w": 0.04, "h": 0.10 }, "label_anchor": [0.925, 0.36], "note": "a small diamond: an icon or a very short word" },
       "landmarks": ["diamond plaque", "shelves and a lantern through the arch", "stair newel", "runner rug"],
-      "lumi": { "threshold": { "at": [0.955, 0.72], "visible": true } },
-      "concerns": ["Cropped away on windows narrower than 3:2 (at 1100x900 everything right of x 0.907 is off-screen)."]
+      "lumi": { "threshold": { "at": [0.94, 0.715], "visible": "partly: the foreground plant on the right is in front of her lower half" } },
+      "concerns": ["Cropped away on windows narrower than 3:2 (at 1100x900 everything right of x 0.907 is off-screen).", "Walking there passes behind the right foreground plant, which would need its own cut-out drawn over her."]
     },
     {
       "id": "expansion_03",
       "kind": "expansion",
-      "place": "The window bay far left: the arched window with hanging planters, the cushioned window seat and the book cubbies under it.",
-      "why": "It carries a plaque, so the painting treats it as a named place; the cubbies under the seat could hold a small, young Collection.",
+      "place": "The window bay far left: the arched window with hanging planters, and under it a green sofa with cushions, a crescent throw and a small table with a lantern.",
+      "why": "It carries a plaque, so the painting treats it as a named place. Since the rail nav it is in view on most desktop windows. The reading-circle repaint replaced the book cubbies under the seat with a sofa, so like the alcove it is a place to sit, not to shelve.",
       "region": { "x": 0.04, "y": 0.14, "w": 0.16, "h": 0.60 },
       "plaque": { "panel": { "x": 0.058, "y": 0.165, "w": 0.087, "h": 0.095 }, "label_anchor": [0.10, 0.22] },
-      "landmarks": ["plaque with star", "arched window with mountains", "window seat", "hanging planters", "stove to its left"],
-      "concerns": ["Behind the 272px sidebar on every desktop window today, so it cannot be a slot unless the Library's sidebar changes."]
+      "landmarks": ["plaque with star", "arched window with mountains", "window_sofa", "hanging planters", "stove to its left"],
+      "lumi": {
+        "approach": { "at": [0.215, 0.757], "visible": true },
+        "sofa_sit": { "at": [0.130, 0.684], "floor_y": 0.742, "visible": true }
+      },
+      "concerns": ["No shelving left: its Thread Groups would be the sill and the sofa, like the alcove's.", "The folded rail hides x < 0.147 at 1100x900 (most of the bay) but only x < 0.051 at 1440x900; a pinned parchment covers the whole bay on every desktop window."]
     }
   ],
 
   "not_reserved": [
-    { "place": "The high shelves along the upper storey above the ladder and centre bays", "region": { "x": 0.19, "y": 0.0, "w": 0.39, "h": 0.13 }, "why": "Under the top bar and the chandelier. A possible quiet archival layer later (spaces §15), not a slot." },
+    { "place": "The high shelves along the upper storey above the ladder and centre bays", "region": { "x": 0.19, "y": 0.0, "w": 0.39, "h": 0.13 }, "why": "Cropped at 16:9 and under the chandelier. A possible quiet archival layer later (lists-library §19, §38), not a slot." },
     { "place": "The wall between the centre bay and the alcove", "region": { "x": 0.548, "y": 0.39, "w": 0.035, "h": 0.25 }, "why": "Two framed prints and a plant: kept as breathing room between slots." }
   ],
 
   "anchors": {
-    "home": { "at": [0.456, 0.879], "note": "Lumi's spot today (painting px 700, 900), on the rug in front of the table" },
-    "cushion_sit": { "at": [0.31, 0.855] },
-    "table_place": { "at": [0.52, 0.748], "note": "where she sets a volume down; the table front is about her height" },
-    "front_left": { "at": [0.30, 0.935], "note": "in front of the floor cushion; cropped at 16:9 (visible to y 0.922)" },
-    "aisle_left": { "at": [0.215, 0.785] },
-    "front_right": { "at": [0.60, 0.965], "note": "in front of the stool; cropped at 16:9" },
-    "aisle_right": { "at": [0.775, 0.795] },
-    "table_back_right": { "at": [0.72, 0.705] },
-    "table_back_left": { "at": [0.265, 0.705], "visible": "partly" }
+    "home": { "at": [0.775, 0.869], "note": "Lumi's spot today (painting px 1190, 890): open floor right of the reading circle, on the rug's corner" },
+    "aisle_right": { "at": [0.736, 0.762], "note": "open floor between the circle's right armchair and the alcove" },
+    "aisle_centre": { "at": [0.495, 0.695], "note": "in front of the centre bay's drawers, above the flowers' tops (at y 0.72 or lower the flowers would be in front of her feet)" },
+    "aisle_left": { "at": [0.280, 0.728], "note": "in front of the ladder bay's drawers" },
+    "front_left": { "at": [0.280, 0.884], "note": "left of the circle, beside the little stool" },
+    "cushion_sit": { "at": [0.387, 0.872], "note": "on the big floor cushion" },
+    "table_place": { "at": [0.485, 0.767], "note": "behind the round table, where she sets a volume down. Needs `reading_table_items` drawn over her: no spot in front of the table is clear of the cushion and the poufs." }
   },
 
+  "occluders": [
+    { "id": "reading_table_items", "region": { "x": 0.41, "y": 0.705, "w": 0.15, "h": 0.165 }, "note": "The round table and what stands on it (candle, flowers, books, cup, armillary sphere): a cut-out drawn over Lumi when she is at table_place." },
+    { "id": "foreground_plant_right", "region": { "x": 0.85, "y": 0.68, "w": 0.15, "h": 0.32 }, "note": "Out of focus in front of the room; only matters for expansion_02." }
+  ],
+
   "routes": [
-    { "id": "home_to_collection_01", "points": ["home", "front_left", "aisle_left", "collection_01.approach", "collection_01.ladder_foot"] },
-    { "id": "home_to_collection_02", "points": ["home", "front_right", "aisle_right", "table_back_right", "collection_02.approach"], "hidden_from": "table_back_right" },
-    { "id": "home_to_collection_03", "points": ["home", "front_right", "aisle_right", "collection_03.approach"] },
-    { "id": "home_to_collection_04", "points": ["home", "front_right", "aisle_right", "table_back_right", "collection_04.approach"] },
-    { "id": "home_to_cushion", "points": ["home", "cushion_sit"] },
-    { "id": "home_to_expansion_02", "points": ["home", "front_right", "aisle_right", "expansion_02.threshold"] }
+    { "id": "home_to_collection_01", "points": ["home", "aisle_right", "aisle_centre", "aisle_left", "collection_01.approach", "collection_01.ladder_foot"] },
+    { "id": "home_to_collection_02", "points": ["home", "aisle_right", "collection_02.approach"] },
+    { "id": "home_to_collection_03", "points": ["home", "collection_03.approach"] },
+    { "id": "home_to_collection_04", "points": ["home", "aisle_right", "collection_04.approach"] },
+    { "id": "home_to_table", "points": ["home", "aisle_right", "table_place"] },
+    { "id": "home_to_cushion", "points": ["home", "aisle_right", "aisle_centre", "aisle_left", "front_left", "cushion_sit"], "note": "round the back of the circle: in front of it her feet would be cropped at 16:9 and she would cross the poufs" },
+    { "id": "home_to_expansion_02", "points": ["home", "collection_03.approach", "expansion_02.threshold"] },
+    { "id": "home_to_expansion_03", "points": ["home", "aisle_right", "aisle_centre", "aisle_left", "expansion_03.approach", "expansion_03.sofa_sit"] }
   ],
 
   "central_table": {
     "id": "central_table",
-    "place": "The long reading table on the rug: working context, what we're thinking about now.",
-    "region": { "x": 0.26, "y": 0.62, "w": 0.44, "h": 0.32 },
-    "note": "Interactive in the wide view (a recently active Thread can rest here). It covers the lower drawers of the centre bay, so its hit region wins below y 0.62."
+    "place": "The low round table at the heart of the reading circle: working context, what we're thinking about now.",
+    "region": { "x": 0.41, "y": 0.705, "w": 0.15, "h": 0.165 },
+    "note": "Interactive in the wide view (a recently active Thread can rest here). Small now: about 225 painting px wide, room for one or two volumes, which suits 'a small number of recently active Threads'. Nothing of any slot is behind it."
   },
 
   "landmarks": {
     "stove": { "x": 0.0, "y": 0.0, "w": 0.05, "h": 0.76 },
     "window_left": { "x": 0.04, "y": 0.26, "w": 0.16, "h": 0.32 },
-    "window_seat": { "x": 0.05, "y": 0.56, "w": 0.15, "h": 0.18 },
-    "ladder": { "x": 0.298, "y": 0.285, "w": 0.072, "h": 0.415 },
+    "window_sofa": { "x": 0.068, "y": 0.605, "w": 0.13, "h": 0.137 },
+    "ladder": { "x": 0.298, "y": 0.285, "w": 0.067, "h": 0.41 },
     "sconce_left": { "x": 0.185, "y": 0.33, "w": 0.02, "h": 0.07 },
     "sconce_a_b": { "x": 0.352, "y": 0.32, "w": 0.02, "h": 0.07 },
     "sconce_b_c": { "x": 0.54, "y": 0.34, "w": 0.02, "h": 0.07 },
@@ -372,13 +395,19 @@
     "telescope_window": { "x": 0.73, "y": 0.0, "w": 0.12, "h": 0.13 },
     "stair": { "x": 0.78, "y": 0.08, "w": 0.22, "h": 0.35 },
     "moon_banner": { "x": 0.925, "y": 0.03, "w": 0.05, "h": 0.19 },
-    "reading_alcove": { "x": 0.585, "y": 0.24, "w": 0.16, "h": 0.43 },
+    "reading_alcove": { "x": 0.585, "y": 0.24, "w": 0.16, "h": 0.45 },
+    "alcove_armchair": { "x": 0.607, "y": 0.559, "w": 0.062, "h": 0.098 },
     "doorway_right": { "x": 0.905, "y": 0.37, "w": 0.095, "h": 0.36 },
-    "central_table": { "x": 0.26, "y": 0.69, "w": 0.44, "h": 0.25 },
-    "rug": { "x": 0.10, "y": 0.76, "w": 0.77, "h": 0.24 },
-    "floor_cushion": { "x": 0.23, "y": 0.81, "w": 0.16, "h": 0.09 },
-    "stool": { "x": 0.62, "y": 0.80, "w": 0.10, "h": 0.15 },
-    "foreground_plant_left": { "x": 0.0, "y": 0.78, "w": 0.21, "h": 0.22 },
+    "reading_circle": { "x": 0.295, "y": 0.705, "w": 0.385, "h": 0.21 },
+    "reading_table": { "x": 0.41, "y": 0.705, "w": 0.15, "h": 0.165 },
+    "armchair_left": { "x": 0.326, "y": 0.754, "w": 0.065, "h": 0.083 },
+    "armchair_right": { "x": 0.584, "y": 0.767, "w": 0.075, "h": 0.093 },
+    "stool_left": { "x": 0.297, "y": 0.806, "w": 0.041, "h": 0.046 },
+    "floor_cushion": { "x": 0.345, "y": 0.837, "w": 0.085, "h": 0.054 },
+    "pouf_green": { "x": 0.452, "y": 0.861, "w": 0.078, "h": 0.052 },
+    "pouf_cream": { "x": 0.524, "y": 0.840, "w": 0.066, "h": 0.054 },
+    "rug": { "x": 0.14, "y": 0.75, "w": 0.68, "h": 0.25 },
+    "foreground_books_left": { "x": 0.0, "y": 0.78, "w": 0.21, "h": 0.22 },
     "foreground_plant_right": { "x": 0.85, "y": 0.68, "w": 0.15, "h": 0.32 }
   }
 }
