@@ -20,7 +20,7 @@ import { serially } from "./serial";
 export type TodaysPlan = { snap: Snapshot; plan: DayPlanJson };
 
 /** Why an existing plan is cut again. The rest of `PlanReason` is code-derived (new_day, first_items, advanced). */
-export type RecutReason = "capacity" | "declined" | "reentry" | "asked";
+export type RecutReason = "capacity" | "declined" | "reentry" | "asked" | "priority";
 
 /** A re-cut with what shaped it: `asked` carries the ask from chat (and Lumi's pick, so Today matches her reply). */
 export type Recut = { reason: RecutReason; ask?: PlanAsk };
@@ -163,6 +163,7 @@ export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk,
     capacity: snap.capacity,
     openIntentions: snap.openIntentions,
     beliefs: snap.beliefs,
+    priorities: snap.priorities,
     declined: snap.declinedToday,
     // The gap this sitting began after, not the seconds since the last request.
     lastSeenAt: snap.sitting ? visitBeforeSitting(snap.sitting) : user.lastSeenAt,

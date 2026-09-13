@@ -14,10 +14,10 @@ import type { Db } from "@/db/client";
 
 // Moved with the merges of main: today-in-place (focus sessions and Start with Lumi out of the persona and tools; the
 // brief's places line), then chat-files (the persona's line on a shared file), then lumi-environment (the map of the
-// app, "too big" asks first).
+// app, "too big" asks first), then priorities (the persona's priorities line; hold_priority and let_go_priority).
 const EXPECTED = {
-  persona: { mailOff: "e8ead01578dfcd98831e589290b79d4aa4ecfc14887bc4aa07f7ccea1152a4c5", mailOn: "4a615e951edc705a364f714f808b6f67d0deca3e39ee155d18dc8ad71a94b08f" },
-  prefix: { mailOff: "dda31f89b6a51e74cebcdf554d84aab3d5203d7b428bf4b5e83699b57f31ba7f", mailOn: "0a3423b8bf23dde64f754575ecc7213a098ec2d641f43765088190a681523b93" },
+  persona: { mailOff: "e7a261a4d3b73ae44ac5795ab573e41fbd926990f4eaac78dddd2b254f1e5a05", mailOn: "48431b4dfbdfdc286cdcb10abcd5f330bd0b5c91288ac5fadb7e3f1d68e51321" },
+  prefix: { mailOff: "bc6254831a9943bcf2d6a50f9721b0f824df39eeb9a62fe50de2daef474ad155", mailOn: "d0551e8b14ffb846b5f2658eef44b0f50feadd6fcea092428f232f9b0bf66fbe" },
 };
 
 async function hashes(mailOn: boolean) {

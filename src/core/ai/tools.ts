@@ -17,6 +17,8 @@ import { matchNotes, rankThreads } from "./library-select";
 import { BELIEF_KINDS, findTheirWords, MAX_INFERRED_CONFIDENCE, type Heard } from "@/core/domain/memory-rules";
 import { dueAtFromModel } from "@/core/due-date";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
+import { holdPriority, letGoPriority, PRIORITY_WHEN } from "@/core/domain/priorities";
+import { localDate } from "@/core/time";
 import { MAIL_ON, type EmailReader } from "@/core/email/types";
 import { heldAs, noteHeldAs, rankForRecall } from "./memory-select";
 import type { Recut } from "./today-plan";
@@ -403,6 +405,36 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
           if (input.note_id) return (await forgetNote(db, userId, input.note_id)).length ? { ok: true, forgot: "note" } : { error: whyNot("not found") };
           if (input.thread_id) return (await forgetThread(db, userId, input.thread_id)) ? { ok: true, forgot: "thread" } : { error: whyNot("not found") };
           return { error: "note_id or thread_id" };
+        }),
+    }),
+
+    hold_priority: tool({
+      description:
+        "Hold what the user says matters more than the rest — 'the paper is the big one this week', 'family comes first for a while'. Only their word, never your own ranking (Today's path holds that). when: this_week, next_week (on a weekend they often mean the coming week — ask only if it's unclear), or for_a_while. intention_id if it names an open intention. replaces: the id of the one in What they said matters that this changes. Today re-cuts after your reply; don't narrate it.",
+      inputSchema: z.object({
+        content: z.string().min(3).max(200).describe("One sentence, close to their words"),
+        when: z.enum(PRIORITY_WHEN),
+        intention_id: z.string().uuid().optional(),
+        replaces: z.string().uuid().optional(),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await holdPriority(db, userId, { content: input.content, when: input.when, intentionId: input.intention_id, replacesId: input.replaces }, localDate(new Date(), timezone));
+          if ("error" in row) return row;
+          onPlanChange?.({ reason: "priority" });
+          return { id: row.id, scope: row.scope, week_of: row.weekOf };
+        }),
+    }),
+
+    let_go_priority: tool({
+      description: "Something they said mattered doesn't any more, or not like that (id from What they said matters). Kept as history, gone from attention. Today re-cuts after your reply.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await letGoPriority(db, userId, input.id);
+          if (!row) return { error: "not found" };
+          onPlanChange?.({ reason: "priority" });
+          return { id: row.id, let_go: true };
         }),
     }),
 

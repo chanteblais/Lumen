@@ -1,12 +1,13 @@
 import { declineLabel } from "@/core/declines";
 import { isDayOnly } from "@/core/due-date";
-import { dayPart, describeGap, gapBucket } from "@/core/time";
+import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
+import { describeScope } from "@/core/domain/priorities";
 import { isReentry, type Sitting } from "@/core/domain/users";
 import type { Where } from "@/core/places";
-import type { DayPlanJson, Episode, Intention, Lead, MemoryNote, Thread, ThreadNote } from "@/db/schema";
+import type { DayPlanJson, Episode, Intention, Lead, MemoryNote, Priority, Thread, ThreadNote } from "@/db/schema";
 import type { LibraryView } from "./library-select";
 import { capacityPhrase, localFormat } from "./format";
 import { asQuoted, heldAs, noteHeldAs } from "./memory-select";
@@ -44,6 +45,8 @@ export type ContextInput = {
   mailScan?: { at: Date } | null;
   /** What Lumi noticed in the mail that might need doing — unconfirmed. */
   leads?: Lead[];
+  /** What they said matters, holding now or said for a week ahead (`listCurrentPriorities`). */
+  priorities?: Priority[];
 };
 
 const MAX_INTENTIONS = 25;
@@ -97,6 +100,20 @@ export function buildContextBlock(input: ContextInput): string {
   if (input.plan) {
     const rn = input.plan.rightNow ? open.find((i) => i.id === input.plan!.rightNow!.intentionId) : undefined;
     lines.push(`- Today's path: ${rn ? `right now → "${rn.title}"` : "nothing queued"}; ${input.plan.afterThat.length} after that. Day line: "${input.plan.dayLine}"`);
+  }
+
+  const priorities = input.priorities ?? [];
+  if (priorities.length) {
+    const today = localDate(now, input.timezone);
+    lines.push(
+      "",
+      "## What they said matters (id · when · in their words · the intention it names)",
+      "Their word, kept apart from your own ordering. Today's path already weighs it. A real deadline can still come first — then say so. When it changes, hold_priority with replaces; when it stops mattering like that, let_go_priority.",
+    );
+    for (const p of priorities) {
+      const named = p.intentionId ? open.find((i) => i.id === p.intentionId) : undefined;
+      lines.push(`- ${p.id} · ${describeScope(p, today)} · "${p.content}" · ${named ? `${named.id} "${named.title}"` : "—"}`);
+    }
   }
 
   const declined = new Map((input.declinedToday ?? []).map((d) => [d.intentionId, declineLabel(d.reason) ?? d.reason] as const));

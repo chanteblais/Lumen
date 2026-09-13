@@ -66,7 +66,9 @@ Related: [AI & Information Architecture](../product/ai-and-information-architect
 
 ## 11. How are stated priorities represented over time?
 
-**Status: Semantics settled; representation open.** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. Decide representation, expiry and supersession of scoped priority signals. No universal priority score is implied.
+**Status: Semantics settled; representation first cut (2026-09-13, `feat/priorities`).** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. No universal priority score is implied.
+
+First cut ([decision](decisions.md)): a stated priority is a row of its own — the user's words, an optional intention, a scope of *a week* (this or next) or *for a while* — kept apart from beliefs and the day plan, and it comes only from what they say to Lumi. Expiry is derived (a week's priority stops holding when the week ends); supersession retires the old row as history. A Today-only ask stays `reshape_today` and writes no priority. Still open: whether priorities should attach to Threads once they exist, whether *for a while* needs a gentle re-check after long quiet, how Lumi shows what she's holding (question 12), and whether Library or direct manipulation can express one.
 
 Related: [Shared terminology](../product/shared-model.md#priority-and-temporal-scope).
 

@@ -18,6 +18,21 @@
 **Principle.** AI & IA §57 (explicit information ≠ inference), §61 (can we understand where consequential information came from?).
 **Replaces.** The eight-character quote rule of Lumi's memory (engineering log, *Lumi's memory: their word checked in code*).
 
+## 2026-09-13 · Plan with Lumi is scrapped; what they say matters this week is remembered
+
+**Decision.** There is no Plan with Lumi on Today. When someone tells Lumi what matters more than the rest — this week, next week, or for a while — she holds it as a **stated priority**, and Today's path weighs it until the week ends or they say otherwise. A real deadline today can still come first, and Lumi says so.
+**Rationale.** Chanté: "Let's actually scrap plan with lumi", then "Keep priorities". Earlier, on the proposal, she said Lumi "should absolutely remember" what matters this week. *(Claude's reading:)* priorities need nothing on the page: they come from what's said, so they fit a Today that stands on its own (`today-garden.md` §143).
+**Implications.**
+- User-expressed priority is kept apart from Lumi's recommendation and from urgency (`shared-model.md` → Priority and temporal scope). It has a scope — this week, next week, for a while — and never an invented date; a week's priority stops holding on its own, with nothing to clear.
+- Nothing asks the user to set, rank or review priorities, and nothing shows or counts them. Changing or dropping one is saying so. How Lumi shows what she's holding stays open question 12.
+- *Today does its own organising* (below) stands whole: nothing on Today sends you to Home. The rejection of a Replan button stands too.
+- Settles part of open question 11: representation, expiry and supersession.
+
+**Principle.** V§4 and EP§1 (the system does the organising), V§5 and EP§5 (Lumi proposes; the user corrects), EP§3 (show less than you know).
+**Replaces.** Makes final "Plan with Lumi is not being built" in *Today does its own organising, and focus sessions are set aside for now* (below).
+
+---
+
 ## 2026-09-13 · When something feels too big, Lumi asks before she hands over a step
 
 **Decision.** Told in words that something feels too big, Lumi asks one short question about what makes it big (all of it, one part, or just today) before offering anything, then answers that: a smaller piece, a different thing, or letting it wait.

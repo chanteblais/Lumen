@@ -6,9 +6,10 @@ import { z } from "zod";
 import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
+import { describeScope, holdsOn } from "@/core/domain/priorities";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
-import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
+import type { DayPlanJson, Intention, MemoryNote, Priority } from "@/db/schema";
 import { capacityPhrase, localFormat } from "./format";
 import { proposeStructured } from "./structured";
 
@@ -20,6 +21,8 @@ export type PlanInputs = {
   capacity?: CapacityReport;
   openIntentions: Intention[];
   beliefs: MemoryNote[];
+  /** What they said matters (their word, scoped). Only those holding today reach the planner. */
+  priorities?: Priority[];
   /** "Not this" today, newest first. Reason is a key from core/declines.ts, free text, or null. */
   declined?: { intentionId: string; reason?: string | null }[];
   lastSeenAt?: Date;
@@ -51,6 +54,7 @@ You are choosing a path through the day for the person, from their open intentio
 - The dayLine names what is time-sensitive and says what can wait. Never a count ("you have eight things"). Never guilt. Never inspirational.
 - firstStep is a physical action ("Open the doc and read the last paragraph"), never "work on X".
 - Anything they declined today ("not this") is never rightNow again today. Read the reason: too big → something smaller now; the declined thing may sit in afterThat only if a tinier way in exists. Too tired → the easiest win, and a shorter path. Don't know how → something clearer now; the unclear one waits. Don't feel like it, or just nope → a different thing, no comment, and leave the declined one off the path. Something else is more important → the likely candidate, if one is obvious.
+- What they said matters (their word) outranks your default order: put it on the path, early. Something time-sensitive today still goes first, and then the dayLine can say so in a few words ("The paper's the big one this week, but the form is due today."). A priority held for a while is a lean, not a rule that fills every day.
 - If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
 - Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
@@ -177,6 +181,14 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
   if (inputs.keep) {
     const kept = candidates.find((c) => c.id === inputs.keep!.intentionId);
     if (kept) lines.push("", "## Right now is already chosen", `- "${kept.title}" is on the card now. Keep it there; choose After that and the dayLine around it.`);
+  }
+  const holding = (inputs.priorities ?? []).filter((p) => holdsOn(p, inputs.localDate));
+  if (holding.length) {
+    lines.push("", "## What they said matters (their word)");
+    for (const p of holding.slice(0, 8)) {
+      const named = p.intentionId ? inputs.openIntentions.find((i) => i.id === p.intentionId) : undefined;
+      lines.push(`- ${describeScope(p, inputs.localDate)}: "${p.content}"${named ? ` → ${named.id} · "${named.title}"` : ""}`);
+    }
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");
   if (strategies.length) {

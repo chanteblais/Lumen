@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createIntention } from "@/core/domain/intentions";
 import { savePlan } from "@/core/domain/plans";
+import { holdPriority } from "@/core/domain/priorities";
 import { localDate } from "@/core/time";
 import type { Db } from "@/db/client";
 import { events, type User } from "@/db/schema";
@@ -74,6 +75,17 @@ describe("POST /api/chat", () => {
     }
     expect(afters).toHaveLength(0);
     expect(streamCalls).toHaveLength(0);
+  });
+
+  it("carries what they said matters in the trailing context block, never in the cached prefix", async () => {
+    const held = await holdPriority(testDb, user.id, { content: "The grant report is the big one this week.", when: "this_week" }, localDate(new Date(), user.timezone));
+    expect(held).not.toHaveProperty("error");
+    await say("what should I do first?");
+    const call = streamCalls.at(-1) as { instructions: unknown[]; messages: { content: { text?: string }[] }[] };
+    const block = call.messages.at(-1)!.content.at(-1)!.text!;
+    expect(block).toContain("## What they said matters");
+    expect(block).toContain("The grant report is the big one this week.");
+    expect(JSON.stringify(call.instructions)).not.toContain("The grant report");
   });
 
   it("says where they are in the context block, which rides last — never in the cached prefix; a malformed where is a 400", async () => {

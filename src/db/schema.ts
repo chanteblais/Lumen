@@ -1,6 +1,6 @@
 /**
  * Coherence schema — the domain model as code. See docs/domain.md for the prose.
- * Eight tables. Everything is keyed by users.id (internal UUID), never by the
+ * Nine tables. Everything is keyed by users.id (internal UUID), never by the
  * auth provider's id. Derived judgements (stale, avoided, gap, today's
  * capacity) are computed at read time and never stored.
  */
@@ -283,7 +283,7 @@ export type DayPlanJson = {
   note?: string;
 };
 /** Why a plan row exists. `reentry`: re-cut after the coming-back pass let things go. */
-export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "reentry" | "asked" | "advanced" | "first_step";
+export type PlanReason = "new_day" | "first_items" | "capacity" | "declined" | "reentry" | "asked" | "priority" | "advanced" | "first_step";
 
 export const dayPlans = pgTable(
   "day_plans",
@@ -297,6 +297,39 @@ export const dayPlans = pgTable(
     generatedAt: ts("generated_at").notNull().defaultNow(),
   },
   (t) => [index("day_plans_user_date_idx").on(t.userId, t.localDate, t.generatedAt)],
+);
+
+/* ----------------------------------------------------------- priorities */
+
+/**
+ * What the user said matters, in words close to theirs, over the scope they gave:
+ * a week (`week_of` = that week's Monday, local) or for a while (no end). Only ever
+ * their word — Lumi's own ordering is the day plan and is never stored here.
+ * Whether one still holds is derived at read time (`core/domain/priorities.ts`):
+ * a week's priorities simply stop holding when the week ends, with nothing to clear.
+ * See docs/domain.md → priorities.
+ */
+export type PriorityScope = "week" | "while";
+export type PriorityRetiredReason = "let_go" | "superseded";
+
+export const priorities = pgTable(
+  "priorities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** "The paper matters most this week." One sentence. */
+    content: text("content").notNull(),
+    /** The open intention it names, if it names one. */
+    intentionId: uuid("intention_id").references(() => intentions.id, { onDelete: "set null" }),
+    scope: text("scope").$type<PriorityScope>().notNull(),
+    /** For scope `week`: the local Monday (YYYY-MM-DD) of the week they meant. */
+    weekOf: text("week_of"),
+    supersedesId: uuid("supersedes_id"),
+    retiredAt: ts("retired_at"),
+    retiredReason: text("retired_reason").$type<PriorityRetiredReason>(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("priorities_user_active_idx").on(t.userId, t.retiredAt)],
 );
 
 /* ---------------------------------------------------------------- leads */
@@ -371,3 +404,4 @@ export type MemoryNote = typeof memoryNotes.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type DayPlanRow = typeof dayPlans.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
+export type Priority = typeof priorities.$inferSelect;
