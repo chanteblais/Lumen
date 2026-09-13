@@ -10,6 +10,8 @@ Append-only. One entry per decision that changes `architecture.md`, `domain.md` 
 
   **Replaces** nothing; records why the review's suggestions were not taken.
 
+- **2026-09-13 · The pool still warms all ten connections on a cold instance.** Code review A15 asked whether a one-query route should open ten. Kept: the warm-up is what took Today's parallel reads from ~510 ms to ~90 ms (measured from Vancouver), warming six saved nothing, and an instance is reused across requests, so the next page on it gets the benefit. Ten idle connections per instance sit well inside the pooler's limit at V1 scale. The dev half of A15 is fixed: the pool lives on `globalThis`, so HMR no longer opens another pool on every re-evaluation. Revisit when instances multiply (many users) or the pooler's connection count shows pressure.
+
 - **2026-09-13 · The Library's categories and threads show only in a hidden debug mode.** Chanté: "a debug mode button somewhere hidden that, when turned on, shows the categories and threads as parchment over the rooms". She chose debug-only over keeping the plaques, and five taps on the wordmark over a shortcut or a dev-only chip.
   - **The switch:** `Sidebar` counts taps on the wordmark within 2 s. The first still navigates Home and the rest `preventDefault`. The fifth toggles the cookie `coherence_debug` and reloads the page. A `router.refresh()` was lost behind the first tap's navigation to Home in the click-through.
   - **The overlay:** a server component, `LibraryDebug`, placed by the room pages (Home, Today, the Library), reads the cookie and the threads and renders the parchment. It isn't in the root layout, because the layout has no user without redirecting on the public pages.

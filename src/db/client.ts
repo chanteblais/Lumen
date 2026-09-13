@@ -25,7 +25,13 @@ import * as schema from "./schema";
 
 export type Db = ReturnType<typeof connect>;
 
-let instance: Db | undefined;
+/**
+ * The pool lives on `globalThis`, not in a module variable: in dev every HMR
+ * re-evaluation of this module would otherwise open another pool of 10, each
+ * held idle for thirty minutes against the pooler's connection limit. In
+ * production the module is evaluated once per instance, so it changes nothing.
+ */
+const holder = globalThis as typeof globalThis & { __coherencePool?: Db };
 
 function create() {
   const url = process.env.DATABASE_URL;
@@ -52,6 +58,10 @@ export function connect(url: string, { warmUp = true } = {}) {
  * connect. Warmed, those nine took ~90ms instead of ~510ms (measured from
  * Vancouver, 2026-09-13); warming only 6 saved nothing, since the rest still
  * connected. A failure only means connections open on demand, as before.
+ * Kept on every cold instance, even one whose first request is a one-query
+ * route (code review A15, decided 2026-09-13): the next request on that
+ * instance is usually a page, instances are reused across requests, and ten
+ * idle connections sit well inside the pooler's limit at V1 scale.
  */
 function warm(client: postgres.Sql, connections: number) {
   Promise.all(Array.from({ length: connections }, () => client`select 1`)).catch(() => {});
@@ -105,5 +115,5 @@ async function within(tx: postgres.TransactionSql, fn: Work, open: string, done:
 }
 
 export function db(): Db {
-  return (instance ??= create());
+  return (holder.__coherencePool ??= create());
 }

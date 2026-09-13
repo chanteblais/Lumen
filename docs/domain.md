@@ -66,7 +66,7 @@ Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **inte
 | check_in_minutes | int | copied from preferences at start |
 | started_at | timestamptz | |
 | ended_at | timestamptz null | |
-| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early`, and the unique partial index `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL` (`0006`) holds it when two starts race. Built M5 (2026-09-12), no migration — the table was in `0000` |
+| outcome | text null | `completed | stopped_early | abandoned` (abandoned = closed by a later visit, no end signal). One session runs at a time: starting another closes the open one as `stopped_early` (or as `abandoned`, if it was already past its threshold and not yet swept), and the unique partial index `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL` (`0006`) holds it when two starts race. Built M5 (2026-09-12), no migration — the table was in `0000` |
 
 ### `memory_notes` — beliefs with evidence
 | column | type | notes |
@@ -177,7 +177,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | view | rule |
 |---|---|
 | `staleIntentions` | `status = open AND last_touched_at < now − 14d` |
-| `todayCapacityState` | latest `capacity.reported` within the user's local day, plus whether a `capacity.asked {skipped}` exists today — Today's prompt shows only when neither does (`core/domain/capacity.ts`) |
+| `capacityState` | latest `capacity.reported` within the user's local day, plus whether a `capacity.asked {skipped}` exists today — Today's prompt shows only when neither does (`capacityStateFromEvents` in `core/domain/capacity.ts`, over the snapshot's one read of today's events) |
 | `declinedToday` | today's `intention.declined` events, newest first, with reasons — never Right now again today; flagged in the context block (`core/domain/intentions.ts`) |
 | `visitGap` | `now − users.last_seen_at`, bucketed for prose |
 | `currentSitting` | the newest `app.opened` event: when this visit began and the gap it began after (`core/domain/users.ts`). A gap ≥ 7 days makes the sitting a *re-entry*: the greeting offers the coming-back pass, the context block says so on every turn of the visit (not just the first), and letting things go re-cuts the plan |

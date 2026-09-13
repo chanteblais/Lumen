@@ -7,7 +7,7 @@
 import { type Db } from "@/db/client";
 import type { Event } from "@/db/schema";
 import { localDate } from "@/core/time";
-import { appendEvent, listEventsSince, TODAY_BOUND_MS } from "./events";
+import { appendEvent } from "./events";
 
 export type CapacityLevel = "low" | "normal" | "high";
 export type CapacityFlag = "overwhelmed" | "scattered" | "tired" | "focused";
@@ -52,15 +52,6 @@ export function capacityStateFromEvents(rows: Pick<Event, "type" | "payload" | "
     }
   }
   return { report, skipped };
-}
-
-export async function todayCapacityState(db: Db, userId: string, timeZone: string, now: Date = new Date()): Promise<CapacityState> {
-  const rows = await listEventsSince(db, userId, CAPACITY_EVENT_TYPES, new Date(now.getTime() - TODAY_BOUND_MS), 10);
-  return capacityStateFromEvents(rows, timeZone, now);
-}
-
-export async function todayCapacity(db: Db, userId: string, timeZone: string, now: Date = new Date()): Promise<CapacityReport | undefined> {
-  return (await todayCapacityState(db, userId, timeZone, now)).report;
 }
 
 /**
