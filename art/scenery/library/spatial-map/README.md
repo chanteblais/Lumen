@@ -101,8 +101,8 @@ Anchors and routes are in the manifest and drawn on `lumi.png`:
    - A name is a label built into the furniture, not a motto, so rule 4 would say "Lumi's voice, a label, or nothing".
    - The fill order puts a first Collection on the centre plaque (21 characters).
 6. **Lumi about 1.6× the new armchairs: is the furniture or Lumi the right size?** Against the doorways, the drawers and the alcove's armchair she is consistent; the reading circle's furniture is painted at about half scale. *Recommendation:* Lumi stays; if either changes, the circle's furniture grows. Judge on `stills.png`, and on the review port before anything walks.
-7. **The data model: confirm before any UI.** No Threads exist yet (open question 22), and since 2026-09-13 the lists show nowhere. *Proposal to confirm or correct:*
-   - Threads are life-model objects.
+7. **The data model: confirm before any UI.** *Update 2026-09-13: the first bullet is confirmed and built — Threads exist as life-model objects (`threads`, `thread_notes`, filled from conversation; `docs/living/decisions.md` → Recent conversation lives on). The presentation bullets below still wait for your answer, and no presentation schema exists.* *Proposal to confirm or correct:*
+   - Threads are life-model objects. **Confirmed and built.**
    - Collections and Thread Groups are Lumi's presentation of them, each with a stored name and where the name came from.
    - A Thread has one shelf position (its Thread Group) and any number of cross-links.
    - Which slot a Collection occupies is its own record, apart from the spatial IDs in this manifest.
