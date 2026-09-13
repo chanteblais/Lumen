@@ -3,7 +3,7 @@
 Source art, never served. Three folders:
 
 - `lumi/` — Lumi's source drawings, the sheets her sprites are cut from. Kept in the repo so the cut can be redone.
-- `scenery/` — the painted rooms. `scenery/home-background.png` is the room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room). `scenery/today-mockup.png` is a mockup for Today, not served.
+- `scenery/` — the painted rooms. `scenery/home-background.png` is the room behind Home (not a sheet — served as `public/home-room.webp`, 1536×1024 at quality 84; `docs/design-system.md` → Home: the room). Regenerate after a repaint with `python3 -c "from PIL import Image; Image.open('art/scenery/home-background.png').convert('RGB').save('public/home-room.webp','WEBP',quality=84,method=6)"` (repainted 2026-09-12 to give Lumi more floor to wander). `scenery/today-mockup.png` is a mockup for Today, not served.
 - `archived/` — the earlier character (Rali) and the scene mockups; nothing here is cut or served. The scripts still read `archived/rali-slow-idle.png` as the height reference (`scripts/measure-lumi-sheet.py` → `REF`).
 
 | Sheet | What it is | Used by |
