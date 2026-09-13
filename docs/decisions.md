@@ -5,7 +5,7 @@ Append-only. One entry per decision that changes `architecture.md`, `domain.md` 
 **Product decisions** (what the product is and why, and the constraints they put on future work) live in [`living/decisions.md`](living/decisions.md), the canon's log. An entry here that changes how the product behaves gets a short entry there too.
 
 - **2026-09-13 · The Library's categories and threads show only in a hidden debug mode.** Chanté: "a debug mode button somewhere hidden that, when turned on, shows the categories and threads as parchment over the rooms". She chose debug-only over keeping the plaques, and five taps on the wordmark over a shortcut or a dev-only chip.
-  - **The switch:** `Sidebar` counts taps on the wordmark within 2 s. The first still navigates Home and the rest `preventDefault`. The fifth toggles the cookie `coherence_debug` and calls `router.refresh()`.
+  - **The switch:** `Sidebar` counts taps on the wordmark within 2 s. The first still navigates Home and the rest `preventDefault`. The fifth toggles the cookie `coherence_debug` and reloads the page. A `router.refresh()` was lost behind the first tap's navigation to Home in the click-through.
   - **The overlay:** a server component, `LibraryDebug`, placed by the room pages (Home, Today, the Library), reads the cookie and the threads and renders the parchment. It isn't in the root layout, because the layout has no user without redirecting on the public pages.
   - **The Library page** reads the cookie too, and renders the bookcase names and the table slip only when it's on. `/library/[id]`, `/library/[id]/book` and `/library/table` still answer by URL.
 

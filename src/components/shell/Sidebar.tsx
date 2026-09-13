@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useRef, useState, type MouseEvent } from "react";
 import { Diamond, Flourish, Sparkle } from "@/components/ui/Ornament";
 import { isPublicPath } from "@/lib/public-paths";
@@ -46,7 +46,6 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
   const [mode, setMode] = useState<NavMode>(modeAtLoad);
   const [resting, setResting] = useState(false);
   const ref = useRef<HTMLElement>(null);
-  const router = useRouter();
   const taps = useRef<number[]>([]);
 
   /** Five quick taps on the wordmark turn debug mode on or off (debug-mode.ts). The first tap still goes Home; the rest of a run stay put. */
@@ -58,7 +57,8 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
     taps.current = [];
     const on = !document.cookie.split("; ").includes(`${DEBUG_COOKIE}=1`);
     document.cookie = on ? `${DEBUG_COOKIE}=1; Path=/; Max-Age=31536000; SameSite=Lax` : `${DEBUG_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
-    router.refresh();
+    // A full load, not router.refresh(): the first tap's navigation to Home can still be loading, and a refresh behind it is lost.
+    window.location.reload();
   }
 
   function remember(next: NavMode) {
