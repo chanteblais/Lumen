@@ -24,8 +24,8 @@ const garamond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  // The tab reads like a running head: "Today · Lumen". Home is just "Lumen".
-  title: { default: "Lumen", template: "%s · Lumen" },
+  // The tab reads like a running head: "Today · Coherence". Home is just "Coherence".
+  title: { default: "Coherence", template: "%s · Coherence" },
   description: "A quieter way forward.",
 };
 

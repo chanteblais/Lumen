@@ -1,4 +1,4 @@
-# Lumen — Domain Model (V1)
+# Coherence — Domain Model (V1)
 
 Eight tables. Everything keyed by `user_id`. Vocabulary is deliberate: an **intention** is something the user meant to do — it may be vague, it has no status beyond open/done/dropped, and its most important field is `next_action`.
 

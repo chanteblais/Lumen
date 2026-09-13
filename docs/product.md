@@ -1,6 +1,6 @@
-# Lumen — Product Brief (condensed)
+# Coherence — Product Brief (condensed)
 
-Lumen is an AI companion for **task initiation, momentum, re-entry and body doubling** — not a task manager.
+Coherence is an AI companion for **task initiation, momentum, re-entry and body doubling** — not a task manager.
 
 ## The one question
 Every design and implementation decision is checked against:
@@ -10,7 +10,7 @@ Every design and implementation decision is checked against:
 That question overrides conventional productivity-app assumptions. Corollary: *you don't have to be productive enough to use your productivity system.* The system maintains the user's context; the user does not maintain the system.
 
 ## Core experience (V1)
-- Opening Lumen is a **soft landing**: a greeting and somewhere to begin. No overdue counts, charts, scores, streaks or dashboards.
+- Opening Coherence is a **soft landing**: a greeting and somewhere to begin. No overdue counts, charts, scores, streaks or dashboards.
 - The primary interface is a **conversation** with Lumi. The user talks or types; Lumi responds conversationally and acts on the user's behalf behind the scenes.
 - Everything else lives **behind navigation** (Today, Library, Settings). The landing page stays sparse.
 

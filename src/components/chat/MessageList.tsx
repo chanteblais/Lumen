@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { LumenUIMessage } from "@/core/domain/conversations";
+import type { CoherenceUIMessage } from "@/core/domain/conversations";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
 
 type Props = {
-  messages: LumenUIMessage[];
+  messages: CoherenceUIMessage[];
   /** How many messages were there when the page opened; the greeting card sits after them. */
   cardAt: number;
   /** The greeting card — rendered at `cardAt`, between the earlier conversation and this visit. */
@@ -78,7 +78,7 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
   );
 }
 
-function render(messages: LumenUIMessage[]): React.ReactNode[] {
+function render(messages: CoherenceUIMessage[]): React.ReactNode[] {
   const items: React.ReactNode[] = [];
   let prevAt: Date | undefined;
   for (const m of messages) {

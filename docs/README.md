@@ -1,4 +1,4 @@
-# Lumen — Design Docs
+# Coherence — Design Docs
 
 | Doc | What's in it |
 |---|---|
@@ -25,6 +25,6 @@
 
 ## Project direction
 
-Lumen is a **companion, not a task manager**. Every doc above answers to one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* When a proposed feature would add a status to keep current, a list to groom, a rating to give, or a setting to choose, it goes in the [EF-Burden Log](ef-burden-log.md) first and gets built only if it survives the question.
+Coherence is a **companion, not a task manager**. Every doc above answers to one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* When a proposed feature would add a status to keep current, a list to groom, a rating to give, or a setting to choose, it goes in the [EF-Burden Log](ef-burden-log.md) first and gets built only if it survives the question.
 
 The understanding layer (how Lumi learns what helps this particular user) is the product's centre of gravity — see [architecture.md](architecture.md) → *The understanding layer*. Store facts and events; derive judgements; never ask the user to maintain memory.

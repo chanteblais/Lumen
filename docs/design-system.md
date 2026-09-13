@@ -53,7 +53,7 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 | Cormorant Garamond | 400 / 500 / 600 + italics | Google Fonts via `next/font` | `--font-cormorant` → `.font-display` |
 | EB Garamond | 400 / 500 + italics | Google Fonts via `next/font` | `--font-garamond` → `.font-body` (default on `body`) |
 
-- **Display** (Cormorant): the wordmark (56px), the greeting's title line (38px) and second line (26px, `--ink-soft`), the composer input (24px), italic asides ("Progress lives here.").
+- **Display** (Cormorant): the wordmark (48px — sized so *Coherence* fits the sidebar's ~200px column with air; 32px in the mobile top strip, so the nav keeps its room), the greeting's title line (38px) and second line (26px, `--ink-soft`), the composer input (24px), italic asides ("Progress lives here.").
 - **Body** (EB Garamond, 17px/1.45): everything else, including nav names (19px) and chips (16px).
 - **Labels** (`.label`): EB Garamond 11px, uppercase, `letter-spacing: 0.24em`, `--ink-soft`, lining tabular figures. `.label-mute` for the quieter variant. Every kicker, date, and tagline in the interface is a `.label`.
 - **Marginal notes** (`.pill`): the list and the estimate beside a title (*Personal · ~5 min*), set as tracked small caps in the mute ink like a source noted in the margin — no box, no fill (the boxed grey pill read as a SaaS tag, 2026-09-12). Two in a row are parted by a middle dot (`.pill + .pill::before`).
@@ -62,7 +62,7 @@ The sidebar becomes a translucent wood panel (`rgba(24,16,10,.6)`, 16px blur); t
 
 Heading defaults: none imposed. Headings are display-font lines set per surface; there is no `h1` style to fight.
 
-**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Lumen*, *Lists · Lumen*; Home is just *Lumen*.
+**Running heads:** every page but Chat opens with the same running head — its name as a `.label` kicker with a `Divider` beneath — and Today and Insights then set Lumi's 48px portrait as a `.medallion` beside the display-serif opening line, the way the greeting does on Chat. The browser tab reads the same way (`layout.tsx` title template): *Today · Coherence*, *Lists · Coherence*; Home is just *Coherence*.
 
 ---
 

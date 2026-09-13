@@ -1,4 +1,4 @@
-# Lumen — V1 Implementation Plan
+# Coherence — V1 Implementation Plan
 
 Small milestones, each shippable to Vercel. Every milestone ends with the question: **did this reduce executive-function burden or add to it?** Estimates assume AI-assisted sessions.
 

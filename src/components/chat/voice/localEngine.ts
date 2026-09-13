@@ -18,14 +18,14 @@ const MAX_SECONDS = 5 * 60;
 const MIN_SECONDS = 0.4;
 
 const WORKLET_SRC = `
-class LumenPcm extends AudioWorkletProcessor {
+class CoherencePcm extends AudioWorkletProcessor {
   process(inputs) {
     const ch = inputs[0] && inputs[0][0];
     if (ch && ch.length) this.port.postMessage(ch.slice(0));
     return true;
   }
 }
-registerProcessor("lumen-pcm", LumenPcm);
+registerProcessor("coherence-pcm", CoherencePcm);
 `;
 
 export function localEngineAvailable(): boolean {
@@ -188,7 +188,7 @@ export function createLocalEngine(): VoiceEngine {
     } finally {
       URL.revokeObjectURL(url);
     }
-    const node = new AudioWorkletNode(ac, "lumen-pcm");
+    const node = new AudioWorkletNode(ac, "coherence-pcm");
     const ratio = ac.sampleRate / SAMPLE_RATE;
     node.port.onmessage = ({ data }: MessageEvent<Float32Array>) => {
       if (length >= SAMPLE_RATE * MAX_SECONDS) return;

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const COOKIE = "lumen_tz";
+const COOKIE = "coherence_tz";
 
 /**
  * Tells the server the browser's IANA timezone via a cookie. Renders nothing.

@@ -1,4 +1,4 @@
-# Lumen — Architecture
+# Coherence — Architecture
 
 Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; after that, changes go through `decisions.md`.
 
@@ -18,7 +18,7 @@ Status: **proposed 2026-09-11, pre-scaffold.** Revise freely until M2 lands; aft
 | Hosting | **Vercel** (Hobby) + Supabase free tier | Streaming works under Fluid Compute; set `export const maxDuration = 60` on the chat route. Both free until real users. |
 | Tests | **Vitest** on `src/core` only | Pure logic (staleness, context assembly, tool handlers against a test DB). No UI tests in V1. |
 
-Env (`.env.local`): `ANTHROPIC_API_KEY`, `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`. Mail adds no env: the Google credentials live in the Clerk dashboard (Google social connection → custom credentials + `https://www.googleapis.com/auth/gmail.readonly`). **Which Clerk app:** the keys must be the **Lumen** application's — development `grown-bluejay-5063.clerk.accounts.dev` (`ins_3JDaO9fk…`) for localhost, production `clerk.burlyman.ca` for Vercel only (live keys refuse any other origin). An older **rali** application still exists on the account (`related-manatee-268`); its keys sat in `.env.local` until 2026-09-12 and sent every Google request through Clerk's shared client, which Google blocks for Gmail. `clerk apps list` shows the mapping; `clerk env pull --app app_3JDaO5zSlUJQOliFTKcnnM43y5l --instance dev` writes the right test keys. Switching instances changes `clerk_user_id`, so the `users` row has to be re-keyed once (done that day) or the app starts empty.
+Env (`.env.local`): `ANTHROPIC_API_KEY`, `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`. Mail adds no env: the Google credentials live in the Clerk dashboard (Google social connection → custom credentials + `https://www.googleapis.com/auth/gmail.readonly`). **Which Clerk app:** the keys must be the **Lumen** application's (the Clerk app still carries the product's old name) — development `grown-bluejay-5063.clerk.accounts.dev` (`ins_3JDaO9fk…`) for localhost, production `clerk.burlyman.ca` for Vercel only (live keys refuse any other origin). An older **rali** application still exists on the account (`related-manatee-268`); its keys sat in `.env.local` until 2026-09-12 and sent every Google request through Clerk's shared client, which Google blocks for Gmail. `clerk apps list` shows the mapping; `clerk env pull --app app_3JDaO5zSlUJQOliFTKcnnM43y5l --instance dev` writes the right test keys. Switching instances changes `clerk_user_id`, so the `users` row has to be re-keyed once (done that day) or the app starts empty.
 
 ## 2. How the AI layer touches application state
 
@@ -149,7 +149,7 @@ One continuous `main` conversation per user (Lumi is a person you keep talking t
 
 ## 4. Repository layout
 ```
-lumen/
+lumen/                            the repo folder, still named for the product's old name (Coherence since 2026-09-12)
 ├── CLAUDE.md                     session brief (short; points here)
 ├── art/                          Lumi's source drawings (animation sheets); public/ sprites are cut from these
 ├── docs/
@@ -242,7 +242,7 @@ Planned: `GET/DELETE /api/beliefs` (M6).
 - `db()` (`src/db/client.ts`) is a lazy singleton over `postgres` with `prepare: false` (Supabase transaction pooler, port 6543) and a small pool that keeps idle connections for five minutes — opening one costs ~0.5s against ~70ms per warm query (Vancouver → us-east-2), so a pause between page views must not cold-start the pool. Import only from server code.
 - Domain functions in `src/core/domain/*` take the `Db` as their first argument (no module-level client) so they're testable against a scratch database and liftable into a worker.
 - Every write goes through a domain function that also calls `appendEvent` — never `db().insert(...)` from a route or component.
-- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` (local session-cookie check) around it and returns the internal `User` row; the Clerk profile (`currentUser()`, a network call) is fetched only when the row has to be created, so it never sits on the request path. Timezone arrives via the `lumen_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit and writes `app.opened {gap_seconds}` when the gap was ≥ 30 min; every page (Chat, Today, Lists) and every chat turn calls it (M4), so `last_seen_at` is always the last request and the newest `app.opened` is always the start of the current sitting.
+- `ensureUser()` (`core/domain/users.ts`) is the only place a Clerk id enters the data layer; `src/lib/auth.ts` → `requireUser()` wraps Clerk's `auth()` (local session-cookie check) around it and returns the internal `User` row; the Clerk profile (`currentUser()`, a network call) is fetched only when the row has to be created, so it never sits on the request path. Timezone arrives via the `coherence_tz` cookie (`components/shell/TimezoneCapture.tsx`) and is kept current on every request. `recordVisit(user)` → `touchLastSeen` returns the previous visit and writes `app.opened {gap_seconds}` when the gap was ≥ 30 min; every page (Chat, Today, Lists) and every chat turn calls it (M4), so `last_seen_at` is always the last request and the newest `app.opened` is always the start of the current sitting.
 - **The sitting, not the last request, carries the gap.** `loadSnapshot` includes `currentSitting` (newest `app.opened`). The greeting on Chat, the context block and the planner all read the gap the sitting began after, so "came back after two weeks" survives navigating Today → Chat and the fifth turn of the visit, and disappears once they've said something this sitting (greeting) or the next sitting begins (context). The route's `lastSeenAt` (previous request) still drives "same sitting" / "last here: 3 hours ago".
 
 ## 9. Mail and leads (2026-09-12)

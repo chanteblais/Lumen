@@ -1,4 +1,4 @@
-# Lumen Design Philosophy
+# Coherence Design Philosophy
 
 *v0.1 — DRAFT · 2026-09-11 · distilled from the brief and the two mockups (`mockups/`). Not yet validated against Chanté's reactions the way Glåüm's is (that doc passed a blind sort). Treat as a working hypothesis; promote to v1.0 after a naming/falsification pass.*
 
@@ -6,7 +6,7 @@
 
 ## 1. The book and the machine
 
-Lumen is **an old book that somehow contains an extremely modern AI**. Both halves are canon:
+Coherence is **an old book that somehow contains an extremely modern AI**. Both halves are canon:
 
 - **The book:** ivory paper, fine rules, engraved restraint, serif type, negative space. Slowness as a virtue. Nothing shouts.
 - **The machine:** streaming text, instant state, tools that act. Precision. Nothing lags.
