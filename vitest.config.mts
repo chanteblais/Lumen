@@ -3,10 +3,11 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts"],
+    // scripts/: the repo scripts' own parsers (e.g. the route-auth audit).
+    include: ["src/**/*.test.ts", "scripts/**/*.test.mjs"],
     environment: "node",
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "src") },
+    alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
 });
