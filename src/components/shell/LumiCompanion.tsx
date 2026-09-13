@@ -141,9 +141,7 @@ export function LumiCompanion() {
         const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
         last = choices[Math.floor(Math.random() * choices.length)];
         pending = last;
-      }, between(20000, 45000));
-      timers.push(nextVariation);
-    };
+      });
 
     // Arriving: away long enough, and she waves.
     const arrive = () => {

@@ -542,9 +542,6 @@ body::after {
   mix-blend-mode: multiply;
   opacity: var(--lumi-light-a, 0);
 }
-/* On hover she lifts 3px; her shadows stay on the ground and shrink a little. */
-.companion-btn:hover .companion-shadow { transform: translate(-50%, calc(-50% + 3px)) scale(0.9); opacity: 0.8; }
-.companion-btn:hover .companion-cast { transform: translateY(3px) skewX(calc(var(--lumi-cast-lean, 40deg) * -1)) scaleY(calc(var(--lumi-cast-length, 0.45) * -1)); }
 /* The rooms' light. Today: low sun through the windows at the back left, long
    shadows falling toward the front right over cream flagstones. The Library:
    light from the windows on the left, shadows reaching right along terracotta

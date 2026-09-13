@@ -23,10 +23,7 @@ import type { CSSProperties } from "react";
  *   body, `public/lumi-idle.webp` (`scripts/cut-lumi-idle.py`), is kept beside
  *   it for now (hands-free is settled, 2026-09-13).
  *
- * A loop is an order over one row's cells (`LUMI_LOOP_ROW`, `LUMI_LOOP_CELLS`),
- * so one row could play several ways; every loop starts at the rest cell and
- * ends at or next to it. A new state is a new cell or a new order, never a new
- * component.
+ * A new state is a new cell in one of these lists, never a new component.
  */
 export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
 export const LUMI_EYES = ["open", "half", "closed"] as const;
@@ -36,22 +33,13 @@ export const LUMI_IDLE_FRAMES = 27;
 
 export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
-export type LumiRow = (typeof LUMI_ROWS)[number];
 export type LumiLoop = (typeof LUMI_LOOPS)[number];
 
 const run = (n: number) => Array.from({ length: n }, (_, i) => i);
-const hold = (cell: number, n: number) => Array.from({ length: n }, () => cell);
-
-/** The row each loop plays over. */
-export const LUMI_LOOP_ROW: Record<LumiLoop, LumiRow> = {
-  breath: "breath",
-  wave: "wave",
-  glance: "glance",
-};
-
 /**
  * Each loop as the order its row's cells play in. A cell may play more than
- * once; shorter rows leave the sheet's trailing columns empty.
+ * once (the retired foot loop replayed its glance in reverse); shorter loops
+ * leave the sheet's trailing columns empty.
  */
 export const LUMI_LOOP_CELLS: Record<LumiLoop, readonly number[]> = {
   breath: run(9),
@@ -70,7 +58,7 @@ export const LUMI_LOOP_EYES: Record<LumiLoop, readonly LumiEyes[]> = {
   hands: ["open"],
   pickup: ["open"],
 };
-const eyeRows = (rows: readonly LumiRow[]) => rows.reduce((n, row) => n + LUMI_ROW_EYES[row].length, 0);
+const eyeRows = (loops: readonly LumiLoop[]) => loops.reduce((n, loop) => n + LUMI_LOOP_EYES[loop].length, 0);
 
 const SHEETS = {
   head: { src: "/lumi-heads.png", cols: LUMI_EXPRESSIONS.length, rows: 1, w: 176, h: 176 },
@@ -81,14 +69,11 @@ export type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };
 
 export const headCell = (expression: LumiExpression): LumiCell => ({ sheet: "head", col: LUMI_EXPRESSIONS.indexOf(expression), row: 0 });
 /** One frame of a loop (0 to `LUMI_LOOP_FRAMES[loop] - 1`) with the given eye state. */
-export const idleCell = (loop: LumiLoop, frame: number, eyes: LumiEyes): LumiCell => {
-  const row = LUMI_LOOP_ROW[loop];
-  return {
-    sheet: "body",
-    col: LUMI_LOOP_CELLS[loop][frame],
-    row: eyeRows(LUMI_ROWS.slice(0, LUMI_ROWS.indexOf(row))) + Math.max(0, LUMI_ROW_EYES[row].indexOf(eyes)),
-  };
-};
+export const idleCell = (loop: LumiLoop, frame: number, eyes: LumiEyes): LumiCell => ({
+  sheet: "body",
+  col: LUMI_LOOP_CELLS[loop][frame],
+  row: eyeRows(LUMI_LOOPS.slice(0, LUMI_LOOPS.indexOf(loop))) + Math.max(0, LUMI_LOOP_EYES[loop].indexOf(eyes)),
+});
 
 /** Rendered size of a cell drawn at `height` px. */
 export function cellSize(sheet: keyof typeof SHEETS, height: number) {
