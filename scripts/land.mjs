@@ -18,16 +18,12 @@
 // It never touches a working tree. `npm run check`, the click-through and the
 // docs audit come before it; pushing comes after, on approval.
 
-import { execFileSync } from "node:child_process";
+import { attempt, exec } from "./lib.mjs";
 
-const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
-const tryGit = (...args) => {
-  try {
-    return { ok: true, out: git(...args) };
-  } catch (error) {
-    return { ok: false, out: `${error.stdout ?? ""}${error.stderr ?? ""}`.trim() };
-  }
-};
+// exec: trimmed stdout, throws on failure (stderr echoed, as execFileSync does by default).
+// attempt: the same run as { ok, out } — never throws.
+const git = (...args) => exec("git", args);
+const tryGit = (...args) => attempt("git", args);
 const fail = (lines) => {
   console.error(["✗ land: " + lines[0], ...lines.slice(1).map((l) => "  " + l)].join("\n"));
   process.exit(1);

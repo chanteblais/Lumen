@@ -5,19 +5,21 @@
 // Turbopack or Clerk error. When a trap in that doc can be caught cheaply, add
 // the check here, and say in its message what to run.
 //
-// Failures exit 1. Notes print and carry on. Env checks are skipped in CI.
+// Failures exit 1. Notes print and carry on. Env and git-config checks are skipped in CI.
 
-import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, lstatSync, readFileSync, renameSync, rmSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { attempt, ROOT } from './lib.mjs'
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '')
 const EVENT = process.env.npm_lifecycle_event ?? ''
 const failures = []
 const notes = []
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'))
+const gitOut = (...args) => {
+  const r = attempt('git', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
+  return r.ok ? r.out : undefined
+}
 
 // 1. node_modules: present, a real directory, and matching the lockfile.
 //    A merge that adds or bumps a package leaves the old install behind, and
@@ -87,6 +89,29 @@ if (!process.env.CI) {
   }
 }
 
+// 4. core.hooksPath must be relative (.githooks), so each checkout runs its own
+//    branch's hooks. An absolute path makes every worktree run whatever the
+//    checkout it names has out; it read absolute again on 2026-09-13 after the
+//    trap row called it fixed. The config is shared by every worktree, so one
+//    check covers them all. Skipped in CI (no hooks run there).
+if (!process.env.CI) {
+  const hooksPath = gitOut('config', '--get', 'core.hooksPath')
+  if (hooksPath && (isAbsolute(hooksPath) || hooksPath.startsWith('~'))) {
+    failures.push(`core.hooksPath is absolute (${hooksPath}), so every worktree runs that checkout's copy of the hooks, not its own branch's.\n  Fix: git config core.hooksPath .githooks`)
+  } else if (!hooksPath) {
+    notes.push("core.hooksPath isn't set, so the commit guards (.githooks/pre-commit) don't run — Fix: git config core.hooksPath .githooks")
+  }
+}
+
+// 5. Node: .nvmrc holds the major CI runs. Another major locally is a note, not
+//    a failure — CI is the check that counts (docs/dev-hygiene.md → Traps: Vercel's
+//    project setting says 24.x).
+if (existsSync(join(ROOT, '.nvmrc'))) {
+  const want = readFileSync(join(ROOT, '.nvmrc'), 'utf8').trim().replace(/^v/, '').split('.')[0]
+  const have = process.versions.node.split('.')[0]
+  if (want && want !== have) notes.push(`Node ${process.versions.node} here, .nvmrc says ${want} (what CI runs) — nvm use, or expect CI to see what this checkout doesn't`)
+}
+
 for (const n of notes) console.log(`preflight: ${n}`)
 if (failures.length) {
   console.error("✗ preflight failed — this checkout isn't ready (docs/dev-hygiene.md → Traps):")
@@ -95,27 +120,57 @@ if (failures.length) {
 }
 console.log('preflight: installs match the lockfile, generated types current — ok')
 
-/** Top-level packages whose installed version differs from the lockfile's, in `dir`'s node_modules. */
+/**
+ * How `dir`'s node_modules differs from its package-lock.json. Direct
+ * dependencies are read from their installed package.json; every other entry
+ * (nested and transitive) from npm's hidden lockfile, node_modules/.package-lock.json,
+ * which records what the last install put there. An entry the lockfile marks
+ * optional may be absent (another platform's binary). Names a few, then counts.
+ */
 function driftOf(dir) {
   const lock = readJson(join(dir, 'package-lock.json'))
   const pkg = readJson(join(dir, 'package.json'))
+  const direct = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })
   const drift = []
-  for (const name of Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })) {
+  for (const name of direct) {
     const want = lock.packages?.[`node_modules/${name}`]?.version
     const manifest = join(dir, 'node_modules', name, 'package.json')
     const have = existsSync(manifest) ? readJson(manifest).version : undefined
     if (!have) drift.push(`${name}: not installed`)
     else if (want && have !== want) drift.push(`${name}: ${have} installed, the lockfile wants ${want}`)
   }
+
+  const hidden = join(dir, 'node_modules', '.package-lock.json')
+  if (!existsSync(hidden)) {
+    drift.push("node_modules/.package-lock.json is missing, so nested packages can't be checked (not an npm install, or an interrupted one)")
+    return drift
+  }
+  const installed = readJson(hidden).packages ?? {}
+  const skip = new Set(direct.map((name) => `node_modules/${name}`))
+  const nested = []
+  for (const [key, want] of Object.entries(lock.packages ?? {})) {
+    if (!key.startsWith('node_modules/') || skip.has(key) || want.link) continue
+    const name = key.replace(/^node_modules\//, '')
+    const have = installed[key]
+    if (!have) {
+      if (!want.optional && !want.devOptional) nested.push(`${name}: not installed`)
+    } else if (want.version && have.version && have.version !== want.version) {
+      nested.push(`${name}: ${have.version} installed, the lockfile wants ${want.version}`)
+    }
+  }
+  const SHOW = 5
+  drift.push(...nested.slice(0, SHOW))
+  if (nested.length > SHOW) drift.push(`…and ${nested.length - SHOW} more nested package(s)`)
   return drift
 }
 
 /**
  * Clones node_modules from another checkout of this repo whose package-lock.json is
- * byte-identical and whose install matches it. Copy-on-write (APFS): one clonefile(2)
- * of the whole tree (~1 s), else `cp -cR` (~10 s), into a temp name renamed into place,
- * so an interrupted clone never leaves a half node_modules. Returns a note, or
- * undefined when there's no source or the filesystem can't clone (then: npm ci).
+ * byte-identical and whose install matches it (driftOf, nested packages included).
+ * Copy-on-write (APFS): one clonefile(2) of the whole tree (~1 s), else `cp -cR`
+ * (~10 s), into a temp name renamed into place, so an interrupted clone never leaves
+ * a half node_modules. Returns a note, or undefined when there's no source or the
+ * filesystem can't clone (then: npm ci).
  */
 function cloneInstall() {
   if (!existsSync(join(ROOT, 'package-lock.json'))) return undefined
@@ -136,8 +191,8 @@ function cloneInstall() {
   const started = Date.now()
   for (const [how, cmd, args] of [['clonefile', 'python3', ['-c', clonefile, from, tmp]], ['cp -cR', 'cp', ['-cR', from, tmp]]]) {
     rmSync(tmp, { recursive: true, force: true })
+    if (!attempt(cmd, args, { stdio: 'ignore' }).ok) continue
     try {
-      execFileSync(cmd, args, { stdio: 'ignore' })
       renameSync(tmp, nm)
     } catch {
       continue
@@ -150,14 +205,10 @@ function cloneInstall() {
 
 /** Every checkout of this repo (the shared one first), from `git worktree list`. */
 function checkouts() {
-  try {
-    return execFileSync('git', ['worktree', 'list', '--porcelain'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n')
-      .filter((line) => line.startsWith('worktree '))
-      .map((line) => line.slice('worktree '.length))
-  } catch {
-    return []
-  }
+  return (gitOut('worktree', 'list', '--porcelain') ?? '')
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => line.slice('worktree '.length))
 }
 
 /** KEY=value lines. With `values`, a Map of key → value; without, the Set of keys (uncommented lines only). */
@@ -171,10 +222,6 @@ function keys(text, values) {
 }
 
 function mainCheckout() {
-  try {
-    const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-    return dirname(common)
-  } catch {
-    return undefined
-  }
+  const common = gitOut('rev-parse', '--path-format=absolute', '--git-common-dir')
+  return common ? dirname(common) : undefined
 }

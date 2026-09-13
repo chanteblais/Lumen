@@ -97,18 +97,18 @@ Domain, database, migrations, reflection and consolidation.
 
 | id | finding | where | status |
 |---|---|---|---|
-| D1 ✓ | **`core.hooksPath` was absolute again** (the trap row said fixed). Reset to `.githooks` in the repo config on 2026-09-13; still needs a preflight guard so it can't regress silently. | `.git/config`, `scripts/preflight.mjs` | open |
+| D1 ✓ | **`core.hooksPath` was absolute again** (the trap row said fixed). Reset to `.githooks` in the repo config on 2026-09-13; still needs a preflight guard so it can't regress silently. | `.git/config`, `scripts/preflight.mjs` | fixed — preflight fails on an absolute path (skipped in CI) |
 | D2 | **The route-auth audit can pass vacuously:** `.pathname` breaks on a path with a space (exits 0, "no API routes"); only `route.ts` under `src/app/api` is walked; one regex over the whole file lets a comment or one gated handler cover every export. | `scripts/check-route-auth.mjs:12, 32, 38, 48` | open |
 | D3 | **No security headers** and `x-powered-by` on. | `next.config.ts` | open |
 | D4 | **No startup env validation** — a missing Clerk or OpenAI key shows up at the first request. | `db/client.ts`, `core/ai/model.ts:16` | open |
 | D5 | **`npm audit`: 4 highs, all via `@huggingface/transformers`** (adm-zip via onnxruntime-node, sharp); ~340 MB of installs. Imported only by the voice worker, loaded on the first voice tap. | `chat/voice/whisper.worker.ts:2` | open |
-| D6 | **Preflight compares top-level packages only**, so a nested-only lockfile change goes unnoticed and a stale install gets cloned. | `scripts/preflight.mjs:99-127` | open |
-| D7 | **Script duplication:** three git exec wrappers, three repo-root computations; `check-css-prefixes.mjs` also uses `.pathname`. | `scripts/*.mjs` | open |
+| D6 | **Preflight compares top-level packages only**, so a nested-only lockfile change goes unnoticed and a stale install gets cloned. | `scripts/preflight.mjs:99-127` | fixed — nested entries checked via npm's hidden lockfile, for clones too |
+| D7 | **Script duplication:** three git exec wrappers, three repo-root computations; `check-css-prefixes.mjs` also uses `.pathname`. | `scripts/*.mjs` | fixed — `scripts/lib.mjs`; census output identical |
 | D8 | **`vitest.config.mts` uses `__dirname`** (a warning on every run). | `vitest.config.mts:10` | open |
 | D9 | **README is stale:** `npm install` not `npm ci`; `check` described as tsc + eslint + vitest; points at a 12-line `docs/product.md` stub. | `README.md` | open |
 | D10 | **`CLAUDE.md` never references `AGENTS.md`**, so Next's "read the bundled docs" rule never reaches Claude. | `CLAUDE.md` | open |
 | D11 | **The Clerk boundary list omits `src/proxy.ts`** (a required import). | `CLAUDE.md`, `src/lib/auth.ts` header | open |
-| D12 | **Node isn't pinned** (dev-hygiene backlog #3; CI pins 22, `@types/node` is 22). | `package.json`, `.nvmrc` | open |
+| D12 | **Node isn't pinned** (dev-hygiene backlog #3; CI pins 22, `@types/node` is 22). | `package.json`, `.nvmrc` | fixed — `.nvmrc` 22 + preflight note; no `engines`: Vercel runs 24.x (dev-hygiene backlog #3) |
 | D13 | **`zod` patch 4.6.2 → 4.6.4** within range. | `package.json` | fixed — `^4.6.4`, lockfile zod-only; other checkouts `npm ci` after merging (preflight says so) |
 
 ## E — Strictness and sweep (`chore/strictness`)
