@@ -80,7 +80,7 @@ Branches belong to the *checkout*, not the session. Two sessions in one director
 
 ## Commit guards (pre-commit hook)
 
-A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). The path is **relative** (since 2026-09-13; it was the shared checkout's absolute path), so every checkout — the shared one and each worktree — runs its own branch's copy: a hook changed on a branch is live in that branch's checkout at once, and in the others as they merge `main`. Keep it relative; an absolute path makes every worktree run whatever the shared checkout has out. It enforces:
+A versioned hook at `.githooks/pre-commit` (active via `core.hooksPath = .githooks`; a **fresh clone** must run `git config core.hooksPath .githooks` once). The path is **relative** (since 2026-09-13; it was the shared checkout's absolute path), so every checkout — the shared one and each worktree — runs its own branch's copy: a hook changed on a branch is live in that branch's checkout at once, and in the others as they merge `main`. Keep it relative; an absolute path makes every worktree run whatever the shared checkout has out — it went absolute again once on 2026-09-13, so the preflight now fails on an absolute value and names the fix (`dev-hygiene.md` → Guards). It enforces:
 
 1. **No `.claude/` bookkeeping in commits** (only `launch.json` is allowed; the rest is gitignored too).
 2. **No direct commits to `main`.** The crossed-session tripwire — a session that thinks it's in Glåüm or All Hands lands here and stops loudly. Emergencies only: `COHERENCE_ALLOW_MAIN=1 git commit …`.
