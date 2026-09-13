@@ -4,14 +4,14 @@
 
 **The standing goal:** Chanté wants many animations. Every animation session leaves the pipeline faster than it found it — at least one move from the *Efficiency backlog* lands, or a new one is added with a reason it beats the ones above it. Measure the cost of each animation in the *Ledger* so the trend is visible.
 
-**What it is not:** the how-the-cut-works reference. That lives in `art/README.md` (prompt recipe, what the cut corrects), `docs/design-system.md` → *Lumi sprites* / *Lumi companion* (what ships), and `docs/decisions.md` (why). This doc is the *process*: order of work, gates, touch points, costs, and what to fix next.
+**What it is not:** the how-the-cut-works reference. That lives in `art/README.md` (prompt recipe, what the cut corrects), `docs/design-system.md` → *Lumi sprites* / *Lumi companion* (what ships), and `docs/decisions.md` (why). This doc is the *process*: order of work, gates, touch points, costs, and what to fix next. **Where the art is heading and why** — the invariants of the character, the book-or-world tension, the ladder of animation tiers, what Lumi's motion means and the bets under test — is `docs/art-direction.md`; read its §4 and §8 before briefing an animation, since the cheapest tier that can carry a movement beats the fastest pipeline for a costlier one.
 
 ---
 
 ## Session start (≤ 3 minutes)
 
 1. `ls art/lumi/` — any sheet not in the `art/README.md` table is new and uncut (`art/scenery/` is the painted rooms, `art/archived/` the earlier character's sheets). Sheets marked *retired with the character* are the earlier Lumi (before the lantern, 2026-09-12): reference for technique, never cut again. A sheet that carries a title, numbers or notes is cropped to its rows of cells before measuring, or the text counts as figures.
-2. Read the *Ledger* (last two rows) and the top three of the *Efficiency backlog*. Decide which backlog move this session will land — the top one unless the animation at hand needs another first.
+2. Read the *Ledger* (last two rows) and the top three of the *Efficiency backlog*, and the *Bets under test* in `docs/art-direction.md` §8 — work that tests an open bet is worth more than work that tests none. Decide which backlog move this session will land — the top one unless the animation at hand needs another first.
 3. `python3 -c "import numpy, scipy, PIL"` — the scripts need all three (2.5 / 1.18 / 12.2 on 2026-09-12, `/usr/local/bin/python3`).
 4. Port check (`lsof -nP -iTCP:3005 -sTCP:LISTEN -t`, then `lsof -a -p $PID -d cwd`) before starting a review server; the rules are in `CLAUDE.md`.
 5. Branch: `ux/lumi-<movement>` for the animation; the backlog move rides on the same branch if it is what the animation needed, else its own `chore/lumi-<move>`.
@@ -23,7 +23,7 @@
 Seven stages. The cost of the first two animations sat almost entirely in stages 2 and 6 (bad sheets, and review rounds spent discovering what a number would have shown). Push every problem left: reject at *measure*, never at *review*.
 
 ### 1 · Brief (2 min, before any generation)
-Write down, in the ledger row you open for this animation: the movement in one line, which part moves and which parts hold, where it plays (a variation on the breath loop · a reaction · a state), the frame budget (twelve or more in-betweens per motion; 120 ms a frame for a quick gesture, 320–560 ms for a slow one), and how it starts and ends (at or next to the breath rest frame, always — loops hand over there).
+Write down, in the ledger row you open for this animation: the movement in one line, which part moves and which parts hold, where it plays (a variation on the breath loop · a reaction · a state), the frame budget (twelve or more in-betweens per motion; 120 ms a frame for a quick gesture, 320–560 ms for a slow one), and how it starts and ends (at or next to the breath rest frame, always — loops hand over there). Name its **tier** on the ladder in `docs/art-direction.md` §4; if a cheaper tier can carry the movement (light, synthesised from one drawing, layered), brief that tier instead of a generated sheet.
 
 ### 2 · Generate (Chanté does this; give her the prompt ready to paste)
 ChatGPT image generation, with `art/lumi/lumi-lantern-idle.png` attached as the pose and style reference (its frame 1 is the rest pose; say the lantern holds unless it is the moving part). The recipe that worked is in `art/README.md`; the template below is that recipe as a fill-in prompt. **Save the exact prompt used** as `art/prompts/<sheet>.md` next to the sheet (backlog #5) so the next one is a copy, not a rewrite.
@@ -139,11 +139,13 @@ Everything the generator gets wrong and the cut already corrects is in the READM
 1. Fill or update the ledger row: sheets, rounds, wall clock from `git log`, what cost the most, what it taught and where that is now written.
 2. Move the landed backlog item to *Landed* with what it actually saved; re-rank the rest; add any new move with a one-line reason for its rank.
 3. Fix anything in this doc that turned out wrong (a gate threshold, a stage's time, a touch point). Delete what did not help.
-4. Append one line to the *Change log* below.
-5. This doc is a doc: it goes in the same commit as the animation, and the docs audit before merge checks it like any other.
+4. Open `docs/art-direction.md`: name the tier the animation used in its ledger row, move any bet it tested (§8), add a §1 row for any new sheet or mockup, and add a line to that doc's change log.
+5. Append one line to the *Change log* below.
+6. This doc is a doc: it goes in the same commit as the animation, and the docs audit before merge checks it like any other.
 
 ## Change log
 
+- 2026-09-12 — Linked to `docs/art-direction.md`, the evolving art direction and animation strategy: read its tiers and bets at session start, name the tier in the brief, move a bet at session end. No animation cut.
 - 2026-09-12 — `art/` split into `lumi/` (her sheets), `scenery/` (the rooms) and `archived/` (the earlier character, renamed `rali-*`); the cut and measure scripts, the README table and every doc path follow. No animation cut.
 - 2026-09-12 — The lantern character: the ledger's third row; backlog #2 (preview) landed and the list renumbered; a pose-sheet row in the gates; stage 2 and 4 rewritten for the new sheet and the one-cell cut; the crop-before-measure note.
 - 2026-09-12 — Created after the playful-foot work: baseline ledger (two animations), the gates as numbers, the seven-stage path, the first ranked backlog. Prompt template reconstructed from the recipe, not verbatim.
