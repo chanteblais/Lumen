@@ -13,7 +13,7 @@ const NAV = [
   { href: "/today", label: "Today", Icon: SunIcon },
   { href: "/library", label: "Library", Icon: BookIcon },
   { href: "/insights", label: "Insights", Icon: SprigIcon },
-  { href: "/settings", label: "Settings", Icon: GearIcon },
+  { href: "/settings", label: "Settings", Icon: GearIcon, utility: true }, // a utility, not a space: set a little apart
 ] as const;
 
 /** Where the rail and its parchment are (the CSS breakpoint); below it, the nav is a bar along the bottom with the names on it. */
@@ -113,13 +113,15 @@ export function Sidebar({ modeAtLoad }: { modeAtLoad: NavMode }) {
         </div>
 
         <nav className="nav-list" aria-label="Primary">
-          {NAV.map(({ href, label, Icon }) => {
+          {NAV.map((place) => {
+            const { href, label, Icon } = place;
+            const utility = "utility" in place;
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className="nav-item"
+                className={utility ? "nav-item nav-utility" : "nav-item"}
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
               >
