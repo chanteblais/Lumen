@@ -10,7 +10,7 @@ import type { User } from "@/db/schema";
 import { ensureUser, touchLastSeen, updateTimezone } from "@/core/domain/users";
 
 /** Cookie set by <TimezoneCapture /> with the browser's IANA timezone. */
-export const TIMEZONE_COOKIE = "lumen_tz";
+export const TIMEZONE_COOKIE = "coherence_tz";
 
 /**
  * The signed-in user's internal row, or a redirect to sign-in.

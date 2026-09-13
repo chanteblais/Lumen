@@ -17,8 +17,8 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div>
-        <Link href="/" className="font-display block text-[56px] leading-none tracking-tight text-ink">
-          Lumen
+        <Link href="/" className="font-display block text-[32px] md:text-[48px] leading-none tracking-tight text-ink">
+          Coherence
         </Link>
         <p className="label tagline mt-5 leading-[1.7]">
           A quieter

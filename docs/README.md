@@ -1,4 +1,4 @@
-# Lumen — Design Docs
+# Coherence — Design Docs
 
 | Doc | What's in it |
 |---|---|
@@ -12,6 +12,7 @@
 | [Design System](design-system.md) | Tokens, typography, CSS classes, component patterns |
 | [Design Philosophy](design-philosophy.md) | What the interface *is* and *is never*; how personality enters the app (draft — validate against Chanté's reactions) |
 | [Animation Pipeline](animation-pipeline.md) | **Claude's working doc for Lumi's animations** — read first in any animation session, updated at its end: session-start checklist, the measure gates (reject a sheet by numbers), the seven-stage path, touch points, the cost ledger per animation, the ranked efficiency backlog. The *how* of the cut stays in `art/README.md` |
+| [Art Direction](art-direction.md) | **The evolving art direction and animation strategy** (draft): where the art has been, what holds across every drawing of Lumi, the book-or-world tension and the rules a painted world must keep, the ladder of animation tiers, what Lumi's motion means, companion vs resident, character consistency, the bets under test and the open questions |
 | [Branching](branching.md) | Branch rules, the docs audit before every merge and push, parallel sessions, dev servers and ports, commit guards, Claude-session guardrails |
 | [EF-Burden Log](ef-burden-log.md) | **Standing ledger:** every place the app asks the user to maintain, decide, rate or tidy something. The dogfood ledger for the one question |
 | [Voice Eval Log](voice-eval-log.md) | Scripted scenarios run against Lumi's persona, what was off, what changed in the prompt |
@@ -24,6 +25,6 @@
 
 ## Project direction
 
-Lumen is a **companion, not a task manager**. Every doc above answers to one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* When a proposed feature would add a status to keep current, a list to groom, a rating to give, or a setting to choose, it goes in the [EF-Burden Log](ef-burden-log.md) first and gets built only if it survives the question.
+Coherence is a **companion, not a task manager**. Every doc above answers to one question: *does this reduce the user's executive-function burden, or accidentally create more of it?* When a proposed feature would add a status to keep current, a list to groom, a rating to give, or a setting to choose, it goes in the [EF-Burden Log](ef-burden-log.md) first and gets built only if it survives the question.
 
 The understanding layer (how Lumi learns what helps this particular user) is the product's centre of gravity — see [architecture.md](architecture.md) → *The understanding layer*. Store facts and events; derive judgements; never ask the user to maintain memory.

@@ -287,4 +287,4 @@ function summarize(r: Awaited<ReturnType<typeof applyBeliefOps>>) {
   return r.applied.length ? { ok: true } : { error: r.skipped[0]?.why ?? "skipped" };
 }
 
-export type LumenTools = ReturnType<typeof buildTools>;
+export type CoherenceTools = ReturnType<typeof buildTools>;

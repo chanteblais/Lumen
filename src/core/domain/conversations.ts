@@ -11,8 +11,8 @@ import { conversations, messages, type MessageRole } from "@/db/schema";
  * `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down);
  * `kind: "session_event"` with `sessionId`/`response` is a tap on the session bar or a check-in.
  */
-export type LumenMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
-export type LumenUIMessage = UIMessage<LumenMessageMetadata>;
+export type CoherenceMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
+export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;
 
@@ -26,7 +26,7 @@ export async function ensureMainConversation(db: Db, userId: string) {
 }
 
 /** Most recent `limit` messages, oldest first, as UIMessages with createdAt metadata. */
-export async function loadRecentMessages(db: Db, conversationId: string, limit = MESSAGE_WINDOW): Promise<LumenUIMessage[]> {
+export async function loadRecentMessages(db: Db, conversationId: string, limit = MESSAGE_WINDOW): Promise<CoherenceUIMessage[]> {
   const rows = await db
     .select()
     .from(messages)
@@ -36,13 +36,13 @@ export async function loadRecentMessages(db: Db, conversationId: string, limit =
   return rows.reverse().map((r) => ({
     id: r.id,
     role: r.role,
-    parts: r.parts as LumenUIMessage["parts"],
+    parts: r.parts as CoherenceUIMessage["parts"],
     metadata: { createdAt: r.createdAt.toISOString() },
   }));
 }
 
 /** Insert-or-replace by id (the same message can be finalised after streaming). */
-export async function saveMessage(db: Db, conversationId: string, m: LumenUIMessage): Promise<void> {
+export async function saveMessage(db: Db, conversationId: string, m: CoherenceUIMessage): Promise<void> {
   await db
     .insert(messages)
     .values({ id: m.id, conversationId, role: m.role as MessageRole, parts: m.parts })
@@ -64,7 +64,7 @@ export async function messageCount(db: Db, conversationId: string): Promise<numb
 export const SITTING_GAP_MS = 30 * 60_000;
 
 /** True when the newest message is from this sitting — quick starts hide, the greeting compacts. */
-export function isInSitting(messages: LumenUIMessage[], now = Date.now()): boolean {
+export function isInSitting(messages: CoherenceUIMessage[], now = Date.now()): boolean {
   const last = messages[messages.length - 1];
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;
