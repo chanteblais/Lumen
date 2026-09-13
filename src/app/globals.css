@@ -1493,20 +1493,26 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    screen than anything she covers). The spot is in
    the painting's own pixels (--lumi-x/y), mapped through the cover fit (one
    painting pixel is --px on screen), so she stays on the same flagstone as
-   the window resizes. Only where that spot is clear of the nav and the
-   panel; elsewhere she keeps her corner. Standing this high, the bubble
-   usually opens beside her (CompanionBubble measures the room). */
+   the window resizes. Her height is in the painting's pixels too (--lumi-h,
+   2026-09-13), so she keeps her size against the room: at a fixed 150px she
+   was half again as big on a small window as on a large one. The feet
+   offsets (58px and 14px of her 150px box) scale with her. Only where that
+   spot is clear of the nav and the panel; elsewhere she keeps her corner, at
+   150px. Standing this high, the bubble usually opens beside her
+   (CompanionBubble measures the room). */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
     --px: max(calc(100vw / 1536), calc(100vh / 1024));
-    --lumi-right: calc(50vw - (var(--lumi-x) - var(--scene-cx, 768)) * var(--px) - 58px);
-    --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
+    --lumi-right: calc(50vw - (var(--lumi-x) - var(--scene-cx, 768)) * var(--px) - var(--lumi-h) * 58 / 150);
+    --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - var(--lumi-h) * 14 / 150);
   }
-  body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  /* the Library has its own fit (--library-px, --scene-cx): see Library: the reading room */
-  body:has(.library-scene) { --px: var(--library-px); --lumi-x: 1085; --lumi-y: 755; }
+  /* 160 painting px is the 150px she was at 1440×900 */
+  body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; --lumi-h: calc(160 * var(--px)); }
+  /* the Library has its own fit (--library-px, --scene-cx): see Library: the reading room.
+     134 painting px is her 150px at 1440×900 (Chanté, 2026-09-13: "try 134") */
+  body:has(.library-scene) { --px: var(--library-px); --lumi-x: 1085; --lumi-y: 755; --lumi-h: calc(134 * var(--px)); }
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
-  body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
+  body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + var(--lumi-h) + 20px); }
 }
 
 @media (max-width: 767px) {

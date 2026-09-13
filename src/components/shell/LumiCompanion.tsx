@@ -6,6 +6,16 @@ import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_LOOP_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
 const HEIGHT = 150;
+/**
+ * Her size as CSS: 150px in the corner; a room that stands her in its painting
+ * sets `--lumi-h` in its own pixels (globals.css → Today: the garden), so she
+ * keeps her size against its furniture at any window. The sprite's picture and
+ * her shadows are in percentages of the box, so only the box needs it.
+ */
+const SIZE = {
+  height: `var(--lumi-h, ${HEIGHT}px)`,
+  width: `calc(var(--lumi-h, ${HEIGHT}px) * ${cellSize("body", 1).width})`,
+} satisfies CSSProperties;
 /** Time per frame of each loop. */
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
@@ -295,22 +305,23 @@ function LumiFigure({ ref, outOfSight }: { ref: Ref<LumiFigureHandle>; outOfSigh
   const stack = key(shown.prev) === key(shown.cur) ? [shown.cur] : [shown.prev, shown.cur];
 
   return (
-    <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(shown.cur.loop, shown.prev.loop)}ms` } as CSSProperties} aria-hidden>
+    <span className="companion-figure" style={{ ...SIZE, "--fade": `${fadeMs(shown.cur.loop, shown.prev.loop)}ms` } as CSSProperties} aria-hidden>
       {/* Her shadow is drawn here, not in the sprite, so it takes the ground she stands on: a
           cast shadow (her current frame's silhouette laid on the floor, away from the room's
           light) and a contact shadow under her feet. */}
-      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, "open")} height={HEIGHT} mask className="companion-cast" />
+      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, "open")} height={HEIGHT} style={SIZE} mask className="companion-cast" />
       <span className="companion-shadow" />
       {stack.map((p, i) => (
         <LumiSprite
           key={key(p)}
           cell={idleCell(p.loop, p.frame, shownEyes)}
           height={HEIGHT}
+          style={SIZE}
           className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
         />
       ))}
       {/* The room's light on her: a colour multiplied over her silhouette (none on the paper). */}
-      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, shownEyes)} height={HEIGHT} mask className="companion-light" />
+      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, shownEyes)} height={HEIGHT} style={SIZE} mask className="companion-light" />
     </span>
   );
 }
