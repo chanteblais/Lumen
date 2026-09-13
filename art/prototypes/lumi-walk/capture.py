@@ -2,6 +2,7 @@
 
     python3 art/prototypes/lumi-walk/capture.py [--start 2.5] [--step 0.0833] [--count 48] [--cols 6]
                                                 [--zoom 4] [--cell 420x340] [--size 120] [--plan] [--name walk]
+                                                [--turn morph|swap]
 
 The page's `?grid=` mode steps the tour from t = 0 at a fixed 1/60 s, renders one follow-camera cell per
 frame and lays them out in one canvas; one screenshot holds them all (no animation clock, so the frozen
@@ -52,7 +53,8 @@ if '--page' in sys.argv:
     print('wrote', os.path.relpath(shot, HERE))
     sys.exit(0)
 grid_png = os.path.join(out_dir, f'{name}-grid.png')
-query = f'grid={start},{step},{count},{cols}&cell={cw}x{ch}&zoom={zoom}&size={size}' + ('&plan=1' if '--plan' in sys.argv else '')
+query = (f'grid={start},{step},{count},{cols}&cell={cw}x{ch}&zoom={zoom}&size={size}'
+         + ('&plan=1' if '--plan' in sys.argv else '') + f'&turn={arg("--turn", "morph")}')
 url = 'file://' + os.path.join(HERE, 'index.html') + '?' + query
 cmd = [CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
        f'--window-size={cw * cols},{ch * rows}', '--virtual-time-budget=15000', f'--screenshot={grid_png}', url]

@@ -111,8 +111,8 @@
       <div class="row">
         <span class="label">Turn</span>
         <div class="seg" id="turnstyle" role="group" aria-label="How a turn changes drawing">
-          <button type="button" data-v="swap" aria-pressed="true">Swap</button>
-          <button type="button" data-v="blend">Blend</button>
+          <button type="button" data-v="swap">Swap</button>
+          <button type="button" data-v="morph" aria-pressed="true">Morph</button>
         </div>
       </div>
       <div class="row">
@@ -139,8 +139,8 @@
     <div class="notes">
       <h2>What to look at</h2>
       <ul>
-        <li>A corner of a quarter turn or less, she rounds on the move, changing drawing every sixteenth of a turn. A sharper one, she stops, her hood leans toward the new way, and she steps round.</li>
-        <li><b>Turn:</b> Swap changes drawing on a small squash; Blend fades the new drawing in over 70 ms. Which reads smoother, and does Blend ghost?</li>
+        <li>A corner of a quarter turn or less, she rounds on the move, turning through the drawings between. A sharper one, she stops, her hood leans toward the new way, and she steps round.</li>
+        <li><b>Turn:</b> Morph (the default) treats her facing as a place on the ring rather than a drawing: between two drawings it warps each of them row by row until her two edges and the feature between them — the face, or the sun on her hood — land in the same place, then crossfades. Swap is the old behaviour, a hard change of drawing every sixteenth of a turn. Does the morph read as one figure rotating, and does anything tear, ghost or balloon?</li>
         <li>She faces the way she walks. Turn on the floor plan: a red arrow at her feet marks where her face points (measured on each drawing), a white one where she is walking.</li>
         <li>Her legs run from under the cloak to her boots every step.</li>
       </ul>
@@ -154,6 +154,7 @@
   'use strict';
 
   var RIG = /*RIG*/null;
+  var MORPH = /*MORPH*/null;
   var ROOM = /*ROOM*/null;
   var PARTS = /*PARTS*/null;
   var ROOM_SRC = '__ROOM_URI__';
@@ -182,14 +183,14 @@
     stopDist: 18,     // she slows over this distance before a corner she has to stop at
     accel: 0.3,       // seconds to reach full pace
     arc: 16,          // a corner of a quarter turn or less is rounded with this radius, so she turns on the move
-    turnStep: 0.11,   // standing, each sixteenth of a turn: the drawing changes part-way through, a boot steps every two
-    turnEase: 1.35,   // the first and last change of a standing turn take this much longer, the middle ones a little less
-    turnLead: 0.08,   // her hood leans toward the new way this long before the first change
-    turnSettle: 0.1,  // after the last change, before she walks on
+    turnStep: 0.11,   // standing, each sixteenth of a turn; a boot steps round every two
+    turnEase: 1.35,   // the first and last sixteenth of a standing turn take this much longer, the middle ones a little less
+    turnLead: 0.08,   // her hood leans toward the new way this long before she starts to turn
+    turnSettle: 0.1,  // after the turn, before she walks on
+    round: 0.15,      // rounding a corner on the move: how long a sixteenth of a turn takes
     lead: 1.3,        // how far the hood leans into a turn, px
-    trail: 26,        // how hard the hem swings out behind a change of drawing
-    pulse: 0.14,      // the small squash that carries each change of drawing
-    blend: 0.07,      // Turn: Blend — the new drawing fades in over the old this long
+    trail: 26,        // how hard the hem swings out behind each sixteenth crossed
+    pulse: 0.14,      // Turn: Swap — the small squash that carries each change of drawing (Morph has no pop to hide)
     breath: 1.3,      // px at the hood top, resting
     breathS: 3.2,
     clearance: 24,    // how far her feet keep from a footprint: her cloak's half-width, so her body never enters the furniture
@@ -291,6 +292,49 @@
     return best;
   }
   function ringDist(a, b) { var d = ((b - a) % N_DIRS + N_DIRS) % N_DIRS; return d > N_DIRS / 2 ? d - N_DIRS : d; }
+
+  // ---- the morph: what in one drawing is the same thing as what in the next ----------------------------------------
+  // morph.py measured, for every row of each drawn facing, three x knots — the silhouette's left edge, one feature
+  // inside her (the face, or the sun on the back of her hood), the right edge. Here they are resampled onto one shared
+  // ladder of NK heights and put in her own units: x as a share of her height either side of the midpoint between her
+  // feet, y from the hood top (-1) to the feet line (0). Two drawings can then be read at the same height and lerped,
+  // whatever their pixel sizes. A mirrored facing negates x and swaps left and right, so the seven mirrored ones need
+  // no data of their own.
+  var NK = 256;
+  var MORPHN = {};
+  Object.keys(RIG).forEach(function (f) {
+    var m = MORPH && MORPH[f], R = RIG[f];
+    if (!m) { MORPHN[f] = null; return; }
+    var L = new Float32Array(NK), F = new Float32Array(NK), Rt = new Float32Array(NK);
+    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2, n = m.rows.length;
+    for (var i = 0; i < NK; i++) {
+      var row = R.feet + (-1 + i / (NK - 1)) * R.height - m.row0;
+      var a = clamp(Math.floor(row), 0, n - 1), b = clamp(a + 1, 0, n - 1), t = clamp(row - a, 0, 1);
+      var ra = m.rows[a], rb = m.rows[b];
+      L[i] = (ra[0] + (rb[0] - ra[0]) * t - rootX) / R.height;
+      F[i] = (ra[1] + (rb[1] - ra[1]) * t - rootX) / R.height;
+      Rt[i] = (ra[2] + (rb[2] - ra[2]) * t - rootX) / R.height;
+    }
+    MORPHN[f] = { L: L, F: F, R: Rt, kind: m.kind };
+  });
+  var CAN_MORPH = Object.keys(RIG).every(function (f) { return !!MORPHN[f]; });
+
+  // Her legs and feet in the same units, per ring position, ordered left to right *on the page* — so slot 0 is her
+  // screen-left foot in every facing. Four of the sixteen pairs of neighbours order their two legs the other way round
+  // (the drawing's own order is far foot first, and mirroring reverses it); ordering by where they land on the page
+  // instead lets a morph pair leg with leg, and keeps the stepping foot the same foot across a change of drawing.
+  var FIGN = DIRS.map(function (d) {
+    var R = RIG[d.img], ms = d.mirror ? -1 : 1, h = R.height;
+    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2;
+    var nx = function (x) { return ms * (x - rootX) / h; }, ny = function (y) { return (y - R.feet) / h; };
+    var legs = (R.legs || []).map(function (L, i) {
+      return { i: i, hip: [nx(L.hip[0]), ny(L.hip[1])], ankle: [nx(L.ankle[0]), ny(L.ankle[1])],
+        width: L.width / h, colour: L.colour, contact: [nx(R.contact[i][0]), ny(R.contact[i][1])] };
+    });
+    legs.sort(function (p, q) { return p.contact[0] - q.contact[0]; });
+    return { ms: ms, legs: legs, kind: MORPHN[d.img] ? MORPHN[d.img].kind : 'front' };
+  });
+  function lerp(a, b, t) { return a + (b - a) * t; }
 
   // ---- paths on the ground grid: eight directions, few turns, rounded corners -------------------------------------
   var gridCache = { key: '' };
@@ -404,23 +448,53 @@
   }
 
   // ---- state ----------------------------------------------------------------------------------------------
-  var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: true, blend: params.get('blend') === '1' };
+  var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: true,
+    morph: params.get('turn') !== 'swap' && CAN_MORPH };
   function sizeMul() { return ui.size / 120; }
   var random = rng(7);
   var S;
   function resetSim() {
     var start = ROOM.tour[0].at;
     S = {
-      x: start[0], y: start[1], dirIdx: 2, prevDir: null, blendT: 0,
+      x: start[0], y: start[1], p: 2, praw: 2, dirIdx: 2, spinTo: null,
       path: [], leg: 0, legRest: ROOM.tour[0].rest, hold: ROOM.tour[0].rest, waiting: true,
       r: 0, phi: 0, L: T.speed * T.step,
-      turnQueue: [], turnT: 0, turnP: 0, turnSwapped: false, turnIndex: 0, turnTotal: 0, turnDur: T.turnStep, turnSide: 0,
+      turnActive: false, turnT: 0, turnFrom: 2, turnTo: 2, turnEl: 0, turnDur: T.turnStep,
+      turnP: 0, turnIndex: 0, turnTotal: 0, turnSide: 0,
       turnLean: 0, swing: 0, swingV: 0, stepFoot: 0, stepP: 0,
       pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]], snapped: 0,
       feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, nextBlink: 1.2, blinks: [], cam: null
     };
   }
-  function turning() { return S.turnQueue.length > 0 || S.turnT > 0; }
+  function turning() { return S.turnActive || S.turnT > 0; }
+  function rounding() { return S.spinTo !== null; }
+  // Her facing is a place on the ring, not a drawing: p runs 0..16 and a turn slides it. S.dirIdx is still the drawing
+  // nearest to it, and everything that reads a facing — the paths, the audit, the floor plan, the readout — still
+  // reads that. praw is p before it is wrapped, so a turn that crosses 0 keeps its direction.
+  function setP(raw) {
+    var was = S.dirIdx;
+    S.praw = raw;
+    S.p = ((raw % N_DIRS) + N_DIRS) % N_DIRS;
+    S.dirIdx = ((Math.round(S.p) % N_DIRS) + N_DIRS) % N_DIRS;
+    if (S.dirIdx !== was) crossed(was, S.dirIdx);
+  }
+  // A sixteenth crossed: the hem swings out behind it, and with Turn: Swap — where the drawing really does change here,
+  // with nothing in between — a small squash carries the change.
+  function crossed(from, to) {
+    if (reduced) return;
+    var side = Math.sign(DIRS[to].v.x - DIRS[from].v.x) || Math.sign(ringDist(from, to));
+    S.swingV -= side * T.trail * sizeMul();
+    if (!ui.morph) S.pulse = T.pulse;
+  }
+  function aimIdx() { return rounding() ? ((Math.round(S.spinTo) % N_DIRS) + N_DIRS) % N_DIRS : S.dirIdx; }
+  // The direction on the page a ring position walks in — the ring's own maths, but for a p between two facings, so
+  // that rounding a corner she can walk the way she is half-turned rather than pivoting on the spot.
+  function dirVecAt(p) {
+    var phi = p * Math.PI / (N_DIRS / 2);
+    var q = fromUV((Math.cos(phi) - Math.sin(phi)) * Math.SQRT1_2, (Math.cos(phi) + Math.sin(phi)) * Math.SQRT1_2);
+    var l = Math.hypot(q.x, q.y) || 1;
+    return { x: q.x / l, y: q.y / l };
+  }
 
   function startWalk(path, rest) { S.path = path; S.legRest = rest; }
   // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it.
@@ -437,29 +511,30 @@
     startWalk(roundCorners({ x: S.x, y: S.y }, pts), rest);
   }
   function turnDur(i, n) { return T.turnStep * (n === 1 || i === 0 || i === n - 1 ? T.turnEase : 0.9); }
-  // Change drawing: a small squash carries it, the hem swings out behind the turn, and with Turn: Blend the new drawing
-  // fades in over the old.
-  function changeFacing(to) {
-    if (to === S.dirIdx) return;
-    var a = DIRS[S.dirIdx].v, b = DIRS[to].v, side = Math.sign(b.x - a.x) || Math.sign(ringDist(S.dirIdx, to));
-    if (ui.blend && !reduced) { S.prevDir = S.dirIdx; S.blendT = T.blend; }
-    S.dirIdx = to;
-    S.pulse = T.pulse;
-    S.swingV -= side * T.trail * sizeMul();
-  }
+  // Turning on the spot: p slides the whole way on one ease, so there is no pause at a drawing and no pop to hide. The
+  // pace is the old one — the sixteenths still cost turnStep each, the first and last longer — but it is spent as one
+  // movement rather than a queue of swaps.
   function beginTurn(to) {
-    // from a walk the boots settle first; from standing she starts at once. Either way the hood leans in before the
-    // first change of drawing.
+    // from a walk the boots settle first; from standing she starts at once. Either way the hood leans in before she
+    // starts to turn.
     var fromWalk = Math.abs(S.feet[0][0]) + Math.abs(S.feet[1][0]) + S.feet[0][1] + S.feet[1][1] > 1;
     S.r = 0;
     S.settleFrom = S.feet.map(function (f) { return f.slice(); });
     S.settle = fromWalk ? 0.24 : 0;
-    var d = ringDist(S.dirIdx, to), sgn = d > 0 ? 1 : -1;
-    S.turnQueue = [];
-    for (var k = 1; k <= Math.abs(d); k++) S.turnQueue.push(((S.dirIdx + sgn * k) % N_DIRS + N_DIRS) % N_DIRS);
-    S.turnSide = Math.sign(DIRS[to].v.x - DIRS[S.dirIdx].v.x) || sgn;
+    S.spinTo = null;
+    var delta = ringDist(S.p, to), n = Math.max(1, Math.round(Math.abs(delta)));
+    S.turnSide = Math.sign(DIRS[to].v.x - DIRS[S.dirIdx].v.x) || Math.sign(delta) || 1;
+    S.turnFrom = S.praw; S.turnTo = S.praw + delta; S.turnEl = 0;
+    S.turnDur = 0;
+    for (var i = 0; i < n; i++) S.turnDur += turnDur(i, n);
     S.turnT = (fromWalk ? 0.24 : 0) + T.turnLead;
-    S.turnP = 0; S.turnSwapped = false; S.turnIndex = 0; S.turnTotal = S.turnQueue.length; S.turnDur = turnDur(0, S.turnTotal);
+    S.turnActive = true; S.turnP = 0; S.turnIndex = 0; S.turnTotal = n;
+  }
+  // Rounding a corner on the move: no swap, p just runs on to the next sixteenth over T.round.
+  function beginRound(to) {
+    var delta = ringDist(S.p, to);
+    if (!delta) return;
+    S.spinTo = S.praw + delta;
   }
   function footOffsets(phi, L, liftPx) {
     var out = [];
@@ -482,22 +557,29 @@
     }
     S.blinks = S.blinks.filter(function (b) { return S.time - b < 0.6; });
     if (S.pulse > 0) S.pulse = Math.max(0, S.pulse - dt);
-    if (S.blendT > 0) S.blendT = Math.max(0, S.blendT - dt);
     S.swingV += (-70 * S.swing - 7 * S.swingV) * dt;
     S.swing += S.swingV * dt;
     S.turnLean += ((turning() ? S.turnSide : 0) - S.turnLean) * Math.min(1, dt * 10);
 
+    if (rounding()) {
+      // a corner rounded on the move: p runs on toward the next sixteenth while she keeps walking. A sixteenth takes
+      // T.round; if the corner turns out to be two, the pace rises to match, so her facing never falls behind the
+      // curve she is walking (which the audit would read as walking sideways).
+      var togo = S.spinTo - S.praw, mv = Math.min(Math.abs(togo), dt * Math.max(1, Math.abs(togo)) / T.round);
+      setP(S.praw + mv * Math.sign(togo));
+      if (Math.abs(S.spinTo - S.praw) < 1e-4) { setP(S.spinTo); S.spinTo = null; }
+    }
     if (turning()) {
       if (S.turnT > 0) S.turnT -= dt;
-      else if (S.turnQueue.length) {
-        // a sixteenth of a turn at a time; the drawing changes part-way through, a boot steps round every two
-        S.turnP += dt / S.turnDur;
-        if (!S.turnSwapped && S.turnP >= 0.4) { changeFacing(S.turnQueue[0]); S.turnSwapped = true; }
-        if (S.turnP >= 1) {
-          S.turnQueue.shift(); S.turnIndex++; S.turnP = 0; S.turnSwapped = false;
-          if (S.turnQueue.length) S.turnDur = turnDur(S.turnIndex, S.turnTotal);
-          else S.turnT = T.turnSettle;
-        }
+      else if (S.turnActive) {
+        S.turnEl += dt;
+        var u = clamp(S.turnEl / S.turnDur, 0, 1);
+        setP(S.turnFrom + (S.turnTo - S.turnFrom) * smooth(u));
+        // a boot steps round every two sixteenths; the count follows p rather than a queue
+        var done = Math.abs(S.praw - S.turnFrom);
+        S.turnIndex = Math.min(Math.floor(done), S.turnTotal - 1);
+        S.turnP = clamp(done - S.turnIndex, 0, 1);
+        if (u >= 1) { setP(S.turnTo); S.turnActive = false; S.turnT = T.turnSettle; }
       }
     } else if (S.path.length) {
       var tgt = S.path[0], dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
@@ -509,11 +591,22 @@
           S.settle = 0.24; S.r = 0; S.hold = S.legRest; S.waiting = true;
         }
       } else {
-        var want = dirFor({ x: dx, y: dy }, S.dirIdx), dd = ringDist(S.dirIdx, want);
+        var want = dirFor({ x: dx, y: dy }, S.dirIdx), dd = ringDist(aimIdx(), want);
         if (dd !== 0) {
-          if (reduced) S.dirIdx = want;
-          else if (Math.abs(dd) === 1 && S.r > 0.3) changeFacing(want);   // a sixteenth of a turn on the move: rounding a corner
+          if (reduced) setP(want);
+          else if (Math.abs(dd) === 1 && S.r > 0.3) beginRound(want);    // a sixteenth of a turn on the move: rounding a corner
           else if (d > 6 || S.r <= 0.3) { beginTurn(want); return; }     // stop, lean in, step round
+        }
+        // A turn that takes time has to start before the corner, not at it: begin rounding half a turn-step early, so
+        // she is halfway round as the heading changes rather than a whole sixteenth behind it. (A swap could wait for
+        // the corner because it cost nothing; a morph cannot.)
+        if (!rounding() && !reduced && S.path.length > 1 && S.r > 0.3) {
+          var nx2 = S.path[1].x - tgt.x, ny2 = S.path[1].y - tgt.y;
+          if (Math.hypot(nx2, ny2) > 0.5) {
+            var nDir = dirFor({ x: nx2, y: ny2 }, S.dirIdx);
+            var spd0 = T.speed * m * DIRS[S.dirIdx].fore / UV_PX * S.r;
+            if (Math.abs(ringDist(S.dirIdx, nDir)) === 1 && spd0 > 0 && d / spd0 <= T.round / 2) beginRound(nDir);
+          }
         }
         // slow for the next corner she has to stop at (more than a sixteenth of a turn from one stretch to the next)
         var remain = d, prevPt = tgt, prevDir = S.dirIdx;
@@ -530,7 +623,16 @@
         var rTarget = Math.max(0.14, Math.min(1, Math.sqrt(remain / (T.stopDist * m))));
         S.r = S.r < rTarget ? Math.min(rTarget, S.r + dt / T.accel) : rTarget;
         var move = Math.min(d, speed * S.r * dt);
-        S.x += dx / d * move; S.y += dy / d * move;
+        // rounding a corner she walks the way she is facing, which is between two drawings — so the corner is an arc
+        // she actually walks rather than a pivot, and she is never carried sideways while her facing catches up
+        var ux = dx / d, uy = dy / d;
+        if (rounding() && !reduced && move < d - 1e-6) {
+          // halfway between the two: enough of an arc that she is never carried far off her facing, not so much that
+          // she leaves the path she is walking
+          var fv = dirVecAt(S.p), bx = (fv.x + ux) / 2, by = (fv.y + uy) / 2, bl = Math.hypot(bx, by);
+          if (bl > 1e-6) { ux = bx / bl; uy = by / bl; }
+        }
+        S.x += ux * move; S.y += uy * move;
         S.phi = frac(S.phi + move / (2 * S.L));
       }
     } else if (S.waiting) {
@@ -550,7 +652,7 @@
       S.feet = S.settleFrom.map(function (f) {
         return [f[0] * (1 - e), Math.max(f[1] * (1 - e), Math.abs(f[0]) > 2 ? Math.sin(Math.PI * e) * T.lift * m * 0.6 : 0)];
       });
-    } else if (S.turnQueue.length && S.turnT <= 0) {
+    } else if (S.turnActive && S.turnT <= 0) {
       var lastOdd = S.turnTotal % 2 === 1 && S.turnIndex === S.turnTotal - 1;
       S.stepFoot = Math.floor(S.turnIndex / 2) % 2;
       S.stepP = lastOdd ? S.turnP : ((S.turnIndex % 2) + S.turnP) / 2;
@@ -568,7 +670,14 @@
 
   // ---- the pieces, scaled to the screen -------------------------------------------------------------------
   var images = {}, prepared = { key: '' };
-  function target() { return { fig: document.createElement('canvas'), body: document.createElement('canvas'), image: null }; }
+  function target() {
+    // six scratch columns per target: this drawing's own knots, and the knots the morph sends them to, both in the
+    // prepared drawing's own pixels. Allocated once — a turn touches them every frame.
+    var k = {};
+    ['sL', 'sF', 'sR', 'dL', 'dF', 'dR'].forEach(function (n) { k[n] = new Float32Array(NK); });
+    k.on = false;
+    return { fig: document.createElement('canvas'), body: document.createElement('canvas'), image: null, k: k };
+  }
   var CUR = target(), PREV = target();
   function prepare(D) {
     var key = ui.size + '@' + D.toFixed(3);
@@ -595,7 +704,7 @@
       var sx = w / R.size[0], sy = h / R.size[1];
       prepared[f] = {
         R: R, w: w, h: h, sc: sc, sx: sx, sy: sy, layers: layers, pre: pre,
-        rootX: (R.contact[0][0] + R.contact[1][0]) / 2 * sx, feet: R.feet * sy, height: R.height * sy,
+        rootX: (R.contact[0][0] + R.contact[1][0]) / 2 * sx, feet: R.feet * sy, height: R.height * sy, hx: R.height * sx,
         chin: R.chin * sy, neck: R.neck * sy, hem: R.hem * sy, contact: R.contact.map(function (c) { return [c[0] * sx, c[1] * sy]; }),
         Yd: new Float64Array(h + 1)
       };
@@ -603,11 +712,16 @@
     return prepared;
   }
 
-  function warp(P, out, W, H, mapY, xoff, sxScale, padX, padT) {
+  // Draw P into `out`, row by row: the vertical remap mapY, a per-row x offset xoff and a uniform x scale about her
+  // root — and, when `kn` is given, before all of that a piecewise-linear remap of the row through three knots, so her
+  // left edge, her feature and her right edge land where the morph wants them. Every row still comes from one row of
+  // the source, so the mesh cannot tear however far the knots move.
+  function warp(P, out, W, H, mapY, xoff, sxScale, padX, padT, kn) {
     var data = out.data, src = P.pre, sw = P.w, sh = P.h, Yd = P.Yd, rootS = P.rootX;
     data.fill(0);
     for (var j = 0; j <= sh; j++) Yd[j] = padT + mapY(j);
     var j0 = 0, inv = 1 / sxScale;
+    var kScale = kn ? (NK - 1) / P.height : 0, kBase = kn ? (NK - 1) * (1 - P.feet / P.height) : 0;
     var y0 = Math.max(0, Math.floor(Yd[0])), y1 = Math.min(H - 1, Math.ceil(Yd[sh]));
     for (var yd = y0; yd <= y1; yd++) {
       var c = yd + 0.5;
@@ -617,11 +731,23 @@
       var ys = j0 + (span > 1e-6 ? (c - Yd[j0]) / span : 0);
       var syv = ys - 0.5, yi = Math.floor(syv), fy = syv - yi, yA = yi < 0 ? 0 : yi, yB = yi + 1 >= sh ? sh - 1 : yi + 1;
       var xo = xoff(ys);
-      var xs0 = padX + rootS - rootS * sxScale + xo, xs1 = padX + rootS + (sw - rootS) * sxScale + xo;
+      var sL = 0, sF = 0, sR = 0, dL = 0, dF = 0, dR = 0, mLo = 1, mHi = 1, lo0 = 0, hi0 = sw;
+      if (kn) {
+        var g = clamp(kBase + ys * kScale, 0, NK - 1), gi = g | 0, gt = g - gi, gj = gi + 1 >= NK ? NK - 1 : gi + 1;
+        sL = kn.sL[gi] + (kn.sL[gj] - kn.sL[gi]) * gt; dL = kn.dL[gi] + (kn.dL[gj] - kn.dL[gi]) * gt;
+        sF = kn.sF[gi] + (kn.sF[gj] - kn.sF[gi]) * gt; dF = kn.dF[gi] + (kn.dF[gj] - kn.dF[gi]) * gt;
+        sR = kn.sR[gi] + (kn.sR[gj] - kn.sR[gi]) * gt; dR = kn.dR[gi] + (kn.dR[gj] - kn.dR[gi]) * gt;
+        mLo = Math.max(1e-3, (dF - dL) / Math.max(0.05, sF - sL));   // the two pieces' slopes, source -> morphed
+        mHi = Math.max(1e-3, (dR - dF) / Math.max(0.05, sR - sF));
+        lo0 = dL + (0 - sL) * mLo;                      // where the whole row's ends land, so nothing is clipped
+        hi0 = dF + (sw - sF) * mHi;
+      }
+      var xs0 = padX + rootS + (lo0 - rootS) * sxScale + xo, xs1 = padX + rootS + (hi0 - rootS) * sxScale + xo;
       var xa = Math.max(0, Math.floor(xs0)), xb = Math.min(W - 1, Math.ceil(xs1));
       var rowA = yA * sw, rowB = yB * sw, o = yd * W * 4;
       for (var xd = xa; xd <= xb; xd++) {
-        var sxv = rootS + (xd + 0.5 - padX - rootS - xo) * inv - 0.5;
+        var xm = rootS + (xd + 0.5 - padX - rootS - xo) * inv;
+        var sxv = (kn ? (xm <= dF ? sL + (xm - dL) / mLo : sF + (xm - dF) / mHi) : xm) - 0.5;
         if (sxv < -0.5 || sxv > sw - 0.5) continue;
         var xi = Math.floor(sxv), fx = sxv - xi, xA = xi < 0 ? 0 : xi, xB = xi + 1 >= sw ? sw - 1 : xi + 1;
         var w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
@@ -652,9 +778,53 @@
     return reduced ? 0 : a;
   }
 
-  // Draw her, facing ring position dirIdx, into a target's canvas; returns where it goes, in painting px.
-  function drawFigure(D, dirIdx, tg) {
+  // Fill a target's six knot columns for one drawing of a morph: this drawing's own three knots, and the three the
+  // morph is sending them to (the lerp of A's and B's, read at the same height). Both in this drawing's own pixels.
+  var KO = new Float64Array(6);
+  function fillKnots(tg, P, dirIdx, mix) {
+    var A = MORPHN[DIRS[mix.a].img], B = MORPHN[DIRS[mix.b].img], own = MORPHN[DIRS[dirIdx].img];
+    if (!A || !B || !own) return null;
+    var msA = DIRS[mix.a].mirror ? -1 : 1, msB = DIRS[mix.b].mirror ? -1 : 1, ms = DIRS[dirIdx].mirror ? -1 : 1;
+    // the face and the sun are opposite sides of her: where two neighbours measured different sides — side-on against
+    // the first view from behind — the feature is no evidence, and the morph falls back to the two edges alone
+    var pair = FIGN[mix.a].kind === FIGN[mix.b].kind;
+    var t = mix.t, k = tg.k, root = P.rootX, hx = P.hx;
+    for (var i = 0; i < NK; i++) {
+      var aL = msA > 0 ? A.L[i] : -A.R[i], aR = msA > 0 ? A.R[i] : -A.L[i];
+      var bL = msB > 0 ? B.L[i] : -B.R[i], bR = msB > 0 ? B.R[i] : -B.L[i];
+      var oL = ms > 0 ? own.L[i] : -own.R[i], oR = ms > 0 ? own.R[i] : -own.L[i];
+      var aF = pair ? msA * A.F[i] : (aL + aR) / 2, bF = pair ? msB * B.F[i] : (bL + bR) / 2;
+      var oF = pair ? ms * own.F[i] : (oL + oR) / 2;
+      var dL = aL + (bL - aL) * t, dF = aF + (bF - aF) * t, dR = aR + (bR - aR) * t;
+      if (ms > 0) {
+        k.sL[i] = root + oL * hx; k.sF[i] = root + oF * hx; k.sR[i] = root + oR * hx;
+        k.dL[i] = root + dL * hx; k.dF[i] = root + dF * hx; k.dR[i] = root + dR * hx;
+      } else {
+        k.sL[i] = root - oR * hx; k.sF[i] = root - oF * hx; k.sR[i] = root - oL * hx;
+        k.dL[i] = root - dR * hx; k.dF[i] = root - dF * hx; k.dR[i] = root - dL * hx;
+      }
+    }
+    return k;
+  }
+  // Where a source x on row ys ends up once the morph has moved it (the warp's map, forwards) — for the blink, which
+  // is drawn on the canvas rather than warped into it.
+  function morphX(kn, P, sx, ys) {
+    if (!kn) return sx;
+    var g = clamp((NK - 1) * (1 + (ys - P.feet) / P.height), 0, NK - 1), i = g | 0, t = g - i, j = i + 1 >= NK ? NK - 1 : i + 1;
+    for (var c = 0, names = ['sL', 'sF', 'sR', 'dL', 'dF', 'dR']; c < 6; c++) {
+      var col = kn[names[c]];
+      KO[c] = col[i] + (col[j] - col[i]) * t;
+    }
+    return sx <= KO[1] ? KO[3] + (sx - KO[0]) * (KO[4] - KO[3]) / Math.max(0.05, KO[1] - KO[0])
+                       : KO[4] + (sx - KO[1]) * (KO[5] - KO[4]) / Math.max(0.05, KO[2] - KO[1]);
+  }
+
+  // Draw her, facing ring position dirIdx, into a target's canvas; returns where it goes, in painting px. With `mix`
+  // — { a, b, t }, the two drawings a turn is between and how far — this drawing is warped onto the shared, lerped
+  // knots, and its legs, boots and feet are put where the lerp says, so the two halves of the morph coincide.
+  function drawFigure(D, dirIdx, tg, mix) {
     var prep = prepare(D), dir = DIRS[dirIdx], P = prep[dir.img], m = sizeMul(), ms = dir.mirror ? -1 : 1;
+    var kn = mix ? fillKnots(tg, P, dirIdx, mix) : null;
     var padX = Math.ceil(P.w * 0.22), padT = Math.ceil(P.h * 0.08), padB = Math.ceil(P.h * 0.05);
     var W = P.w + 2 * padX, H = P.h + padT + padB;
     if (tg.fig.width !== W || tg.fig.height !== H) { tg.fig.width = W; tg.fig.height = H; }
@@ -691,7 +861,7 @@
       return sway * 0.6 + (roll + lean) * h + head * wHead(j) + hem * wHem(j);
     };
     var sxScale = (1 + squash * 0.7) * (1 - 0.06 * pa);
-    warp(P, tg.image, W, H, mapY, xoff, sxScale, padX, padT);
+    warp(P, tg.image, W, H, mapY, xoff, sxScale, padX, padT, kn);
     bctx.putImageData(tg.image, 0, 0);
 
     // blinks: her own black drawn down over each eye, wide enough to take the painted rim and glow
@@ -699,7 +869,8 @@
     if (R.eyes && a > 0.01) {
       bctx.fillStyle = 'rgb(' + R.faceBlack.join(',') + ')';
       R.eyes.forEach(function (e) {
-        var ys = e.cy * P.sy, cy = padT + mapY(ys), cx = padX + P.rootX + (e.cx * P.sx - P.rootX) * sxScale + xoff(ys);
+        var ys = e.cy * P.sy, cy = padT + mapY(ys);
+        var cx = padX + P.rootX + (morphX(kn, P, e.cx * P.sx, ys) - P.rootX) * sxScale + xoff(ys);
         var rx = e.rx * P.sx * 1.7, ry = e.ry * P.sy * syAll * 1.4;
         bctx.save();
         bctx.beginPath();
@@ -713,31 +884,65 @@
     var fctx = tg.fig.getContext('2d');
     fctx.clearRect(0, 0, W, H);
     var dl = { x: dir.mirror ? -dir.v.x : dir.v.x, y: dir.v.y };
-    var feet = [0, 1].map(function (k) {
-      var s = S.feet[k][0] * D, l = S.feet[k][1] * D, y = dl.y * s - l;
+    // her legs in her own units, slot 0 her screen-left foot. A morph puts both drawings' legs, boots and ground
+    // contacts at the lerp of the two, so the two halves lie on top of each other instead of ghosting apart.
+    var Xn = function (n) { return P.rootX + ms * n * P.hx; }, Yn = function (n) { return P.feet + n * P.height; };
+    var mine = FIGN[dirIdx].legs;
+    var feet = mine.map(function (own, j) {
+      var a = mix ? FIGN[mix.a].legs[j] : own, b = mix ? FIGN[mix.b].legs[j] : own, u = mix ? mix.t : 0;
+      var tgt = {
+        hip: [lerp(a.hip[0], b.hip[0], u), lerp(a.hip[1], b.hip[1], u)],
+        ankle: [lerp(a.ankle[0], b.ankle[0], u), lerp(a.ankle[1], b.ankle[1], u)],
+        contactY: lerp(a.contact[1], b.contact[1], u), width: lerp(a.width, b.width, u),
+        colour: [Math.round(lerp(a.colour[0], b.colour[0], u)), Math.round(lerp(a.colour[1], b.colour[1], u)),
+          Math.round(lerp(a.colour[2], b.colour[2], u))]
+      };
+      var s = S.feet[j][0] * D, l = S.feet[j][1] * D, y = dl.y * s - l;
       // a boot may tuck up toward the hem but never vanish under it
-      if (R.legs) y = Math.max(y, -Math.max(0, (R.legs[k].ankle[1] - R.hem) * P.sy - 0.015 * P.height));
-      return { k: k, x: dl.x * s, y: y, ground: P.contact[k][1] + dl.y * s };
+      var leg = R.legs && R.legs[own.i];
+      if (leg) y = Math.max(y, -Math.max(0, (leg.ankle[1] - R.hem) * P.sy - 0.015 * P.height));
+      var ax = Xn(tgt.ankle[0]) + dl.x * s, ay = Yn(tgt.ankle[1]) + y;
+      return { i: own.i, tgt: tgt, ax: ax, ay: ay, dx: ax - Xn(own.ankle[0]), dy: ay - Yn(own.ankle[1]),
+        ground: Yn(tgt.contactY) + dl.y * s };
     });
     // legs first: from a hip under the cloak (moving with the body) to the ankle (moving with the boot), every frame
     if (R.legs) {
       fctx.lineCap = 'round';
-      R.legs.forEach(function (leg, k) {
-        var hy = leg.hip[1] * P.sy, hx = padX + P.rootX + (leg.hip[0] * P.sx - P.rootX) * sxScale + xoff(hy);
-        var ax = padX + leg.ankle[0] * P.sx + feet[k].x, ay = padT + leg.ankle[1] * P.sy + feet[k].y;
-        fctx.strokeStyle = 'rgb(' + leg.colour.join(',') + ')';
-        fctx.lineWidth = leg.width * P.sx;
+      feet.forEach(function (f) {
+        var hy = Yn(f.tgt.hip[1]), hx = padX + P.rootX + (Xn(f.tgt.hip[0]) - P.rootX) * sxScale + xoff(hy);
+        fctx.strokeStyle = 'rgb(' + f.tgt.colour.join(',') + ')';
+        fctx.lineWidth = f.tgt.width * P.hx;
         fctx.beginPath();
         fctx.moveTo(hx, padT + mapY(hy));
-        fctx.lineTo(ax, ay);
+        fctx.lineTo(padX + f.ax, padT + f.ay);
         fctx.stroke();
       });
     }
     feet.slice().sort(function (p, q) { return p.ground - q.ground; }).forEach(function (f) {
-      fctx.drawImage(P.layers['foot-' + f.k], padX + f.x, padT + f.y);
+      fctx.drawImage(P.layers['foot-' + f.i], padX + f.dx, padT + f.dy);
     });
     fctx.drawImage(tg.body, 0, 0);
     return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D, mirror: dir.mirror, canvas: tg.fig };
+  }
+
+  // Where she is between two drawings: null when she is on one (or with Turn: Swap, where she always is), otherwise
+  // the two drawings the morph is between and how far along.
+  // Where the drawing on screen actually faces. With Turn: Morph, part-way through a turn she is genuinely between two
+  // drawings, so the audit and the floor plan's red arrow read the facing between them; with Swap she is always on one.
+  function faceNow() {
+    var q = (ui.morph && !reduced) ? S.p : S.dirIdx, a = Math.floor(q), t = q - a;
+    var A = DIRS[a % N_DIRS].face;
+    if (t < 1e-4) return A;
+    var B = DIRS[(a + 1) % N_DIRS].face;
+    var x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t, l = Math.hypot(x, y) || 1;
+    return { x: x / l, y: y / l };
+  }
+
+  function morphMix() {
+    if (!ui.morph || reduced) return null;
+    var a = Math.floor(S.p), t = S.p - a;
+    if (t < 0.004 || t > 0.996) return null;
+    return { a: a % N_DIRS, b: (a + 1) % N_DIRS, t: t };
   }
 
   // ---- the scene ----------------------------------------------------------------------------------------------
@@ -772,7 +977,14 @@
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(images.room, 0, 0, PW, PH);
 
-    var fig = drawFigure(D, S.dirIdx, CUR), m = sizeMul(), H = ROOM.lumi.height * m;
+    // Between two drawings: A and B both warped onto the same knots. The nearer of the two goes down whole and the
+    // other over it at its share, which is a straight lerp where they overlap — and since the morph has already put
+    // their edges in the same place, that is almost everywhere. Drawing the nearer one solid keeps the odd pixel
+    // where only one of them has paint from showing as a half-transparent fringe; at t = ½ the two orders agree, so
+    // the swap of order is invisible.
+    var mix = morphMix(), m = sizeMul(), H = ROOM.lumi.height * m;
+    var under = mix && mix.t > 0.5 ? mix.b : mix ? mix.a : S.dirIdx;
+    var fig = drawFigure(D, under, CUR, mix);
     // her shadow: a soft contact shadow, a little toward the right (the window light comes from the left)
     ctx.save();
     ctx.translate(S.x + 3 * m, S.y + 1);
@@ -787,14 +999,11 @@
     ctx.fill();
     ctx.restore();
 
-    if (S.blendT > 0 && S.prevDir !== null) {
-      // Turn: Blend — the old drawing underneath, the new one fading in over it
-      place(ctx, drawFigure(D, S.prevDir, PREV));
-      ctx.globalAlpha = 1 - S.blendT / T.blend;
-      place(ctx, fig);
+    place(ctx, fig);
+    if (mix) {
+      ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
+      place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
       ctx.globalAlpha = 1;
-    } else {
-      place(ctx, fig);
     }
 
     // furniture she is behind, cut from the painting and laid back over her
@@ -836,7 +1045,7 @@
         ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(S.x + v.x * len, S.y + v.y * len); ctx.stroke();
         ctx.beginPath(); ctx.arc(S.x + v.x * len, S.y + v.y * len, 3.5 / D, 0, 2 * Math.PI); ctx.fillStyle = colour; ctx.fill();
       };
-      arrow(DIRS[S.dirIdx].face, 'rgba(230, 60, 70, 0.95)', 34 * m);
+      arrow(faceNow(), 'rgba(230, 60, 70, 0.95)', 34 * m);
       if (S.path.length) {
         var nx = S.path[0].x - S.x, ny = S.path[0].y - S.y, nl = Math.hypot(nx, ny);
         if (nl > 0.5) arrow({ x: nx / nl, y: ny / nl }, 'rgba(255, 250, 235, 0.95)', 26 * m);
@@ -877,17 +1086,17 @@
     DIRS.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
     function run(frames) {
       for (var i = 0; i < frames; i++) {
-        var x0 = S.x, y0 = S.y, d0 = S.dirIdx, r0 = S.r, inTurn = turning(), snap0 = S.snapped;
+        var x0 = S.x, y0 = S.y, d0 = S.dirIdx, r0 = S.r, inTurn = turning(), onTheMove = rounding(), snap0 = S.snapped;
         step(dt);
         if (S.dirIdx !== d0) {
           if (inTurn) log.stepTurns++;
-          else if (r0 > 0.3) log.walkingTurns++;
+          else if (onTheMove || r0 > 0.3) log.walkingTurns++;   // a corner being rounded is a turn on the move
           else log.standingFlips++;
         }
         if (S.snapped !== snap0) { log.snappedPx += S.snapped - snap0; continue; }
         var mx = S.x - x0, my = S.y - y0, len = Math.hypot(mx, my);
         if (len < 1e-6) continue;
-        var v = DIRS[S.dirIdx].face, ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
+        var v = faceNow(), ang = Math.acos(clamp((mx * v.x + my * v.y) / len, -1, 1)) * 180 / Math.PI;
         log.walkedPx += len;
         if (ang > 25) log.sidewaysPx += len;
         if (ang > log.worstDeg) { log.worstDeg = ang; log.worstAt = { x: Math.round(S.x), y: Math.round(S.y), facing: DIRS[S.dirIdx].id, t: +S.time.toFixed(2) }; }
@@ -924,9 +1133,10 @@
     for (var i = 0; i < g[2]; i++) {
       simulateTo(g[0] + i * g[1]);
       var nx = S.path.length ? S.path[0].x - S.x : 0, ny = S.path.length ? S.path[0].y - S.y : 0, nl = Math.hypot(nx, ny) || 1;
-      var f = DIRS[S.dirIdx].face;
-      rows.push({ t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), dir: DIRS[S.dirIdx].id, img: DIRS[S.dirIdx].img, face: [+f.x.toFixed(2), +f.y.toFixed(2)],
-        heading: S.path.length ? [+(nx / nl).toFixed(2), +(ny / nl).toFixed(2)] : null, state: turning() ? 'turning' : S.path.length ? 'walking' : 'resting', r: +S.r.toFixed(2) });
+      var f = faceNow();
+      rows.push({ t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), dir: DIRS[S.dirIdx].id, p: +S.p.toFixed(2), img: DIRS[S.dirIdx].img, face: [+f.x.toFixed(2), +f.y.toFixed(2)],
+        heading: S.path.length ? [+(nx / nl).toFixed(2), +(ny / nl).toFixed(2)] : null,
+        state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting', r: +S.r.toFixed(2) });
     }
     var pre = document.createElement('pre');
     pre.id = 'audit';
@@ -993,10 +1203,10 @@
       });
     }
     group('pace', function (v) { ui.pace = parseFloat(v); });
-    group('turnstyle', function (v) { ui.blend = v === 'blend'; });
+    group('turnstyle', function (v) { ui.morph = v === 'morph' && CAN_MORPH; });
     group('size', function (v) { ui.size = parseInt(v, 10); });
     group('view', function (v) { ui.view = v; S.cam = null; });
-    press(document.getElementById('turnstyle'), ui.blend ? 'blend' : 'swap');
+    press(document.getElementById('turnstyle'), ui.morph ? 'morph' : 'swap');
     var planEl = document.getElementById('plan');
     planEl.checked = ui.plan;
     planEl.addEventListener('change', function () { ui.plan = planEl.checked; });
@@ -1011,7 +1221,7 @@
       hint.textContent = '';
       setTour(false);
       if (reduced) {
-        S.dirIdx = dirFor({ x: p.x - S.x, y: p.y - S.y }, S.dirIdx);
+        setP(dirFor({ x: p.x - S.x, y: p.y - S.y }, S.dirIdx));
         S.x = p.x; S.y = p.y; S.path = [];
         return;
       }
