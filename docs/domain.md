@@ -170,6 +170,7 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
 | `email.scanned` | `{ through, read, suggested }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead` |
+| `reflection.claimed` | `{}` (2026-09-13, code review A4) — written before reflection does any work on a session (the subject), on conflict do nothing against `events_reflection_claim_idx`; only the caller whose row came back reflects |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
 
 ## Derived (never stored)
