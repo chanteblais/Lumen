@@ -2,6 +2,9 @@
   "name": "coherence",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "predev": "node scripts/preflight.mjs",
     "dev": "next dev",

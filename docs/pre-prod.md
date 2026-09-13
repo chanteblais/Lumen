@@ -13,6 +13,7 @@ Things to sort before anyone but Chanté uses Coherence.
 ## Database (Supabase / Drizzle)
 - [x] `0000_initial_schema` applied (2026-09-11). Keep the ledger in `docs/domain.md` → Migrations Reference current for every later migration.
 - [x] Pooler connection string (port 6543, transaction mode) in `DATABASE_URL` on Vercel (2026-09-12); `prepare: false` in the driver config.
+- [x] Node 22 in production (2026-09-13, Chanté): `"engines": { "node": "22.x" }` in `package.json` overrides the Vercel project's *Node.js Version* (24.x), so deploys run the major CI, `.nvmrc` and `@types/node` use. Moving to 24 is one change to all four.
 - [x] Functions in the database's region: `cle1` (Cleveland) for Supabase us-east-2, set in `vercel.json` (2026-09-13; was `iad1`). If the database ever moves, move this with it.
 - [ ] Backups enabled.
 
