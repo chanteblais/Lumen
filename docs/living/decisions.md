@@ -9,14 +9,25 @@
 ## 2026-09-13 · On a phone, the nav is a bar along the bottom with its names showing
 
 **Decision.** Below 768px the rail becomes a bar along the bottom of the screen: the five icons, each with its name under it, the place you're in marked with a star. Nothing opens, pins or locks there.
-**Rationale.** Chanté's ask, from her phone: move the nav to the bottom. *(Claude's reading: a phone has no hover, so the names were a tap on the compass star away; with the bar's width there is room for them, and showing them removes that tap. This sits beside her desktop preference for icons with expandable names rather than against it — to confirm with her.)*
+**Rationale.** Chanté's ask, from her phone: move the nav to the bottom. *(Claude's reading: a phone has no hover, so the names were a tap on the compass star away; with the bar's width there is room for them, and showing them removes that tap. This sits beside her desktop preference for icons with expandable names rather than against it.)* Chanté approved the bar with the names on it on review.
 **Implications.**
 - The rule stands: an icon's name is always reachable. On a phone it is simply always visible.
 - Pin and lock are desktop behaviours only; nothing on a phone depends on them.
 - The page and the composer stop above the bar; nothing is drawn under it.
 
 **Principle.** V§14, `spaces.md` §35 (mobile preserves the hierarchy, not the literal layout), §36.
-**Replaces.** The phone trial in the entry below.
+**Replaces.** The phone trial in *The nav is icons, with the names a hover away*, below.
+
+## 2026-09-13 · Lumi is hands-free most of the time
+
+**Decision.** Lumi's usual state is holding nothing. The lantern stops being part of her and becomes one of the things in her world she can pick up and set down, like a book or a cup.
+**Rationale.** Chanté: "Lumi will be hands free often." *(Claude's reading, from the direction that started the work: handling things in her surroundings makes her a resident of the places rather than an emblem carrying a fixed prop.)*
+**Implications.**
+- Her movements are drawn from the hands-free rest pose (`art-direction.md` §4a); objects she holds are what she picked up, and the Library's retrieval (carrying a Thread to the table) builds on it.
+- Her warmth rests on her glowing eyes when nothing lights her hands (`art-direction.md` §2).
+- The lantern body stays served beside the hands-free one for now; whether and when it is retired is an implementation choice (`docs/decisions.md`).
+**Principle.** Lumi inhabits her world (spaces §19, §29); presence, not performance.
+**Replaces.** The lantern carried at all times (the lantern character, 2026-09-12); the hands-free proposal of the same day.
 
 ## 2026-09-13 · The nav is icons, with the names a hover away
 
