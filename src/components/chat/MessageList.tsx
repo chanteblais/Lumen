@@ -33,13 +33,19 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
   const fresh = messages.length <= cardAt && !thinking && !error;
   // While fresh, the part below the card is padded to fill the scroll region,
   // so the card can sit at the top with quiet paper beneath it and the earlier
-  // conversation out of view above. Measured, because the region is a flex child.
+  // conversation out of view above. Measured, because the region is a flex child;
+  // re-measured whenever the card changes height (Home's scroll rolling up), so
+  // the page keeps its length and the card stays where it hangs.
   const [room, setRoom] = useState(0);
   useLayoutEffect(() => {
     const cardEl = cardRef.current;
     const region = cardEl?.closest<HTMLElement>(".chat-scroll");
     if (!fresh || !cardEl || !region) return setRoom(0);
-    setRoom(Math.max(0, region.clientHeight - cardEl.offsetHeight - 48));
+    const measure = () => setRoom(Math.max(0, region.clientHeight - cardEl.offsetHeight - 48));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(cardEl);
+    return () => observer.disconnect();
   }, [fresh]);
   useEffect(() => {
     if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });

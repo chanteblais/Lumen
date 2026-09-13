@@ -806,7 +806,7 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 .shell:has(.home-scene) .opening-line { margin-top: 8px; }
 .shell:has(.home-scene) .opening .quick-starts { margin-top: 20px; }
 .shell:has(.home-scene) .opening::before,
-.shell:has(.home-scene) .opening::after {
+.shell:has(.home-scene) .opening-rod {
   content: "";
   position: absolute;
   left: -9px;
@@ -817,9 +817,67 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 .shell:has(.home-scene) .opening::before { top: -6px; }
-.shell:has(.home-scene) .opening::after { bottom: -6px; }
 .shell:has(.home-scene) .opening.is-compact { padding: 16px 28px 18px; }
 .shell:has(.home-scene) .opening.is-compact .opening-head { margin-bottom: 18px; }
+
+/* The bottom rod is the scroll's one control: tap it and the scroll rolls up
+   to its title line between the rods; tap again to unroll. For this page open
+   only — nothing is kept. The sheet folds away (rows 1fr → 0fr) as the title
+   band opens, over ~420ms; under reduced motion it simply changes. */
+.opening-rod, .opening-rolled { display: none; }
+.shell:has(.home-scene) .opening {
+  transition: padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shell:has(.home-scene) .opening-roll {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shell:has(.home-scene) .opening-sheet {
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px; /* room for the chips' focus ring inside the fold */
+  margin: -6px;
+  transition: opacity 260ms ease;
+}
+.shell:has(.home-scene) .opening.is-rolled { padding-top: 12px; padding-bottom: 14px; }
+.shell:has(.home-scene) .opening.is-rolled .opening-roll { grid-template-rows: 0fr; }
+.shell:has(.home-scene) .opening.is-rolled .opening-sheet { opacity: 0; }
+.shell:has(.home-scene) .opening-rolled {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: max-height 420ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease;
+}
+.shell:has(.home-scene) .opening.is-rolled .opening-rolled {
+  max-height: 2em;
+  opacity: 1;
+  transition: max-height 420ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease 160ms;
+}
+.shell:has(.home-scene) .opening-rod {
+  display: block;
+  bottom: -6px;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  cursor: pointer;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+/* A taller target than the 10px rod it looks like. */
+.shell:has(.home-scene) .opening-rod::after { content: ""; position: absolute; inset: -9px 0; }
+.shell:has(.home-scene) .opening-rod:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.shell:has(.home-scene) .opening-rod:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .shell:has(.home-scene) :is(.opening, .opening-roll, .opening-sheet, .opening-rolled, .opening-rod) { transition: none; }
+}
 .shell:has(.home-scene) .chip:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 .shell:has(.home-scene) .icon-btn:where(.opening *):hover { background: rgba(43, 34, 22, 0.13); }
 
