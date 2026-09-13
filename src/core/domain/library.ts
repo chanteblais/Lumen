@@ -200,7 +200,7 @@ export type Skip = { skipped: string };
 export async function createThread(
   db: Db,
   userId: string,
-  /** `theirWord`: Lumi makes it because they asked, in words the code found in their messages — recorded, but it never lifts the forgotten check. */
+  /** `theirWord`: Lumi makes it because they asked, in words the code found in their messages — their ask brings back even what they once had her forget. */
   input: { title: string; aliases?: string[]; summary?: string | null; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
@@ -215,7 +215,8 @@ async function insertThread(db: Db, userId: string, title: string, input: { alia
   const held = await listThreads(db, userId);
   const same = findThreadByName(held, title) ?? (input.aliases ?? []).map((a) => findThreadByName(held, a)).find(Boolean);
   if (same) return { thread: same, existed: true };
-  if (actor !== "user" && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
+  // Only their own (checked) word brings back a forgotten thread; an inference or a consolidation run never does.
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
   const summary = input.summary ? cleanSummary(input.summary) : null;
   const [row] = await db
     .insert(threads)
@@ -228,7 +229,8 @@ async function insertThread(db: Db, userId: string, title: string, input: { alia
 export async function fileNote(
   db: Db,
   userId: string,
-  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  /** `theirWord`: filed because they asked, in words the code found in their messages — lifts the forgotten check, as for a thread. */
+  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -244,7 +246,7 @@ async function insertNote(
   db: Db,
   userId: string,
   content: string,
-  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date,
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -253,7 +255,7 @@ async function insertNote(
   const current = await listCurrentNotes(db, userId, [thread.id]);
   const same = current.find((n) => isNearDuplicate(n.content, content));
   if (same) return { skipped: "already_held", existing: same };
-  if (actor !== "user" && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
   const replaced = input.supersedes ? current.find((n) => n.id === input.supersedes) : undefined;
   if (input.supersedes && !replaced) return { skipped: "supersedes a note that isn't current on this thread" };
   const [note] = await db
@@ -267,7 +269,7 @@ async function insertNote(
     type: "library.noted",
     subjectType: "thread",
     subjectId: thread.id,
-    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor },
+    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor, ...(input.theirWord ? { their_word: true } : {}) },
     occurredAt: now,
   });
   return { note, replaced };

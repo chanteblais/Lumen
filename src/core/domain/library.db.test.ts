@@ -325,6 +325,32 @@ describe("the Library in conversation", () => {
     expect(await listCurrentNotes(db, u.id, [threadId])).toEqual([]);
   });
 
+  it("their checked word brings back a forgotten thread and note; a fragment or an inference can't (B4)", async () => {
+    const u = await createTestUser(db, "Rey");
+    const start = "start a thread for the Lisbon trip, we fly out on the 3rd of April";
+    const made = await call(toolsFor(u, said(start)).add_to_library, { new_thread: "Lisbon trip", kind: "detail", content: "They fly out on the 3rd of April.", their_words: start });
+    const forget = said("forget the Lisbon trip thread entirely");
+    expect(await call(toolsFor(u, forget).forget_from_library, { thread_id: made.thread_id, their_words: forget.text })).toMatchObject({ ok: true });
+
+    // A fragment lifted from a longer message is not their word: the forgotten thread stays gone.
+    const again = "honestly I keep thinking about the Lisbon trip and whether we should still go";
+    const fragment = await call(toolsFor(u, said(again)).add_to_library, { new_thread: "Lisbon trip", kind: "idea", content: "They may still go to Lisbon.", their_words: "the Lisbon trip" });
+    expect(String(fragment.error)).toMatch(/their word/);
+
+    // Their checked word brings the thread back.
+    const ask = said("start a thread for the Lisbon trip again, we're going after all");
+    const back = await call(toolsFor(u, ask).add_to_library, { new_thread: "Lisbon trip", kind: "decision", content: "They are going to Lisbon after all.", their_words: ask.text });
+    expect(back).toMatchObject({ thread: "Lisbon trip", held_as: "their word" });
+
+    // A forgotten note, filed without their words or on a fragment, is refused; on their words it comes back.
+    const inferred = await call(toolsFor(u, said("ok")).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April." });
+    expect(String(inferred.error)).toMatch(/forget/);
+    const flight = "we fly out on the 3rd of April, keep that";
+    const lifted = await call(toolsFor(u, said(flight)).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April.", their_words: "the 3rd of" });
+    expect(String(lifted.error)).toMatch(/forget/);
+    expect(await call(toolsFor(u, said(flight)).add_to_library, { thread_id: back.thread_id, kind: "detail", content: "They fly out on the 3rd of April.", their_words: flight })).toMatchObject({ held_as: "their word" });
+  });
+
   it("forgets a whole thread on their word", async () => {
     const u = await createTestUser(db, "Yas");
     const added = await call(toolsFor(u, said("start a thread for the Lisbon trip, we're going in April")).add_to_library, { new_thread: "Lisbon trip", kind: "detail", content: "The Lisbon trip is in April.", their_words: "we're going in April" });

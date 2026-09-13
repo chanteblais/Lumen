@@ -394,7 +394,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           if (!threadId) {
             if (!input.new_thread) return { error: "thread_id, or new_thread when they asked for one" };
             if (!heard) return { error: "a new thread goes on their word — their_words must be copied from what they said" };
-            // Their word rides as a flag and the note's source; the actor stays Lumi, so the forgotten check always runs.
+            // Their word rides as a flag and the note's source; the actor stays Lumi. Checked words lift the forgotten check; anything else meets it.
             const made = await createThread(db, userId, { title: input.new_thread, theirWord: true }, "lumi");
             if ("skipped" in made) return { error: whyNot(made.skipped) };
             threadId = made.thread.id;
@@ -402,7 +402,7 @@ export function buildTools({ db, userId, timezone, preferences, reentry = false,
           const r = await fileNote(
             db,
             userId,
-            { threadId, kind: input.kind, content: input.content, source: heard ? "user_said" : "lumi_inferred", sourceMessageId: (heard ?? userWords.at(-1))?.messageId, supersedes: input.supersedes },
+            { threadId, kind: input.kind, content: input.content, source: heard ? "user_said" : "lumi_inferred", sourceMessageId: (heard ?? userWords.at(-1))?.messageId, supersedes: input.supersedes, theirWord: Boolean(heard) },
             "lumi",
           );
           if ("skipped" in r) return r.skipped === "already_held" ? { already_held: true, id: r.existing?.id } : { error: whyNot(r.skipped) };
