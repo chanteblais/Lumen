@@ -8,7 +8,6 @@
  * user never sees it and never rates anything. See docs/architecture.md → The
  * understanding layer.
  */
-import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db/client";
@@ -20,7 +19,7 @@ import { BELIEF_KINDS } from "@/core/domain/memory-rules";
 import { getSession } from "@/core/domain/sessions";
 import { describeGap, dayPart } from "@/core/time";
 import { contentWords, normalizeText } from "@/core/words";
-import { chatModel, effortOptions } from "./model";
+import { proposeStructured } from "./structured";
 
 const MAX_MODEL_CONFIDENCE = 0.6;
 const MIN_MODEL_CONFIDENCE = 0.05;
@@ -188,17 +187,16 @@ type Deps = {
 };
 
 async function proposeWithModel(inputs: SessionReflectionInputs): Promise<RawOp[]> {
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: REFLECTION_RULES },
-      { role: "system", content: describeSession(inputs) },
-    ],
+  const r = await proposeStructured({
+    name: "reflection",
+    kind: "reflect",
+    rules: REFLECTION_RULES,
+    inputs: describeSession(inputs),
     prompt: "Propose the belief operations this session justifies. Return only the structured list.",
-    output: Output.object({ schema: ReflectionSchema, name: "reflection" }),
-    providerOptions: effortOptions("low"),
+    schema: ReflectionSchema,
+    effort: "low",
   });
-  return r.output?.ops ?? [];
+  return r?.ops ?? [];
 }
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };

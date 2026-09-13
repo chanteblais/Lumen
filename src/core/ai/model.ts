@@ -23,25 +23,32 @@ export function chatModel() {
 
 export type Effort = "low" | "medium";
 
+/** Every kind of model call. Each has its own prompt cache key: their prefixes differ, so sharing one key only crowds the cache. */
+export type CallKind = "chat" | "plan" | "leads" | "consolidate" | "reflect";
+
+/** `lumi-chat`, `lumi-plan`, … — OpenAI routes requests with the same key to the same cache. */
+export function promptCacheKey(kind: CallKind): string {
+  return `lumi-${kind}`;
+}
+
 /**
  * OpenAI request options every call shares. `store: false` keeps conversations
  * and mail out of OpenAI's stored responses; the encrypted reasoning comes back
  * instead so a multi-step tool loop can carry it between steps. Schemas are not
  * strict: tool and output schemas have optional fields, which strict mode refuses
- * — code guards the output anyway. The cache key groups requests that share the persona prefix.
+ * — code guards the output anyway.
  */
 const OPENAI_BASE = {
   store: false,
   include: ["reasoning.encrypted_content"] as string[],
   strictJsonSchema: false,
-  promptCacheKey: "lumi-persona",
 };
 
-/** Request-level options for a structured background call (plan, leads, reflection). */
-export function effortOptions(effort: Effort) {
+/** Request-level options for a structured background call (plan, leads, consolidation, reflection). */
+export function effortOptions(effort: Effort, kind: Exclude<CallKind, "chat">) {
   return {
     anthropic: { effort },
-    openai: { ...OPENAI_BASE, reasoningEffort: effort },
+    openai: { ...OPENAI_BASE, promptCacheKey: promptCacheKey(kind), reasoningEffort: effort },
   } as const;
 }
 
@@ -53,7 +60,7 @@ export const chatProviderOptions = {
     // Server-side refusal fallbacks: route by category, no model list to maintain.
     fallbacks: "default",
   },
-  openai: { ...OPENAI_BASE, reasoningEffort: "low" },
+  openai: { ...OPENAI_BASE, promptCacheKey: promptCacheKey("chat"), reasoningEffort: "low" },
 } as const;
 
 /** Marks a system message as the cached prefix. OpenAI caches long prefixes on its own. */

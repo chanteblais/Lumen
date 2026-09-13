@@ -4,14 +4,12 @@
  * shape as the day plan and belief ops: model proposes, code decides.
  * Mail text goes to the model for this one call and is never stored.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import { dueAtFromModel } from "@/core/due-date";
 import type { EmailMessage } from "@/core/email/types";
 import { localFormat } from "./format";
-import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
-import { PERSONA } from "./persona";
 import { stripCounts } from "./plan";
+import { proposeStructured } from "./structured";
 
 export type LeadInputs = {
   displayName: string;
@@ -63,18 +61,17 @@ const MIN_CONFIDENCE = 0.5;
 
 export async function inferLeads(inputs: LeadInputs): Promise<LeadDraft[]> {
   if (inputs.messages.length === 0) return [];
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: LEAD_RULES },
-      { role: "system", content: describeMail(inputs) },
-    ],
+  const raw = await proposeStructured({
+    name: "mail_leads",
+    kind: "leads",
+    persona: true,
+    rules: LEAD_RULES,
+    inputs: describeMail(inputs),
     prompt: "Look through the mail and return only the structured leads.",
-    output: Output.object({ schema: LeadsSchema, name: "mail_leads" }),
-    providerOptions: effortOptions("low"),
+    schema: LeadsSchema,
+    effort: "low",
   });
-  return clampLeads(r.output?.leads ?? [], inputs.messages, inputs.lists, [...inputs.openTitles, ...inputs.handledTitles], inputs.timezone);
+  return clampLeads(raw?.leads ?? [], inputs.messages, inputs.lists, [...inputs.openTitles, ...inputs.handledTitles], inputs.timezone);
 }
 
 /** Pure guardrails over whatever the model returned. A bare day is 00:00 that day in `timezone`. Tested. */

@@ -12,7 +12,6 @@
  * the stretch waits 10 minutes, then an hour, then six. The user never sees it
  * happen and never tidies anything. See docs/architecture.md → The Library.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Db } from "@/db/client";
 import type { Thread, ThreadNote, ThreadNoteKind, User } from "@/db/schema";
@@ -47,7 +46,7 @@ import {
 import { cleanContent, findTheirWords, isNearDuplicate, screenMemory, type Heard } from "@/core/domain/memory-rules";
 import { namedIn, rankThreads } from "./library-select";
 import { localFormat } from "./format";
-import { chatModel, effortOptions } from "./model";
+import { proposeStructured } from "./structured";
 
 /** A sitting this long is consolidated in parts, keeping its last few messages for the next part. */
 export const LONG_SITTING = 24;
@@ -337,18 +336,16 @@ type Deps = {
 };
 
 async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposal | null> {
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: CONSOLIDATION_RULES },
-      { role: "system", content: describeBatch(inputs) },
-    ],
+  // Null stays null: an empty stand-in here would move the watermark past the stretch with nothing kept.
+  return proposeStructured({
+    name: "consolidation",
+    kind: "consolidate",
+    rules: CONSOLIDATION_RULES,
+    inputs: describeBatch(inputs),
     prompt: "Propose what to keep from this conversation. Return only the structured result.",
-    output: Output.object({ schema: ProposalSchema, name: "consolidation" }),
-    providerOptions: effortOptions("low"),
+    schema: ProposalSchema,
+    effort: "low",
   });
-  // An empty stand-in here would move the watermark past the stretch with nothing kept.
-  return r.output ?? null;
 }
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };

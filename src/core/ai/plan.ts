@@ -2,7 +2,6 @@
  * The day plan: Lumi proposes a path through today; code guards it.
  * See docs/today.md → How the plan is built.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
@@ -10,8 +9,7 @@ import { dueOn, isStale } from "@/core/domain/intentions";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
 import { capacityPhrase, localFormat } from "./format";
-import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
-import { PERSONA } from "./persona";
+import { proposeStructured } from "./structured";
 
 export type PlanInputs = {
   displayName: string;
@@ -75,20 +73,19 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     return { dayLine: "Nothing left that you haven't set aside today. That's allowed.", rightNow: null, afterThat: [], later, restCanWait: false };
   }
 
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: PLANNER_RULES },
-      { role: "system", content: describeInputs(inputs, candidates, fixed) },
-    ],
+  const raw = await proposeStructured({
+    name: "day_plan",
+    kind: "plan",
+    persona: true,
+    rules: PLANNER_RULES,
+    inputs: describeInputs(inputs, candidates, fixed),
     prompt: "Choose today's path. Return only the structured plan.",
-    output: Output.object({ schema: PlanSchema, name: "day_plan" }),
-    providerOptions: effortOptions("medium"),
+    schema: PlanSchema,
+    effort: "medium",
   });
 
   const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;
-  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
+  return clampPlan(raw ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
 /**
