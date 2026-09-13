@@ -686,6 +686,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   min-height: 36px; /* one line at rest; grows with what you write, then scrolls */
   max-height: 168px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass-soft) transparent;
 }
 .companion-form textarea::placeholder { color: var(--ink-mute); }
 /* Its own small send, not the chat's `.send` (which came later in the file and
