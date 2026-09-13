@@ -38,7 +38,7 @@ Antique book × modern editorial interface. Tokens live in `src/app/globals.css`
 |---|---|---|
 | Paper | `#1a120c` | The dock's fade, the medallion gap, the fleuron's vein |
 | Paper deep | `rgba(241,230,207,.08)` | Chips, icon buttons, your lines' tint |
-| Card | `rgba(26,18,12,.72)` + `backdrop-filter: blur` | Lumi's plates, the composer, the check-in — dark glass |
+| Card | `rgba(26,18,12,.72)` + `backdrop-filter: blur` | Lumi's plates, the composer, the check-in — dark glass. Write `backdrop-filter` unprefixed and alone: the CSS pipeline adds `-webkit-` for Safari, and a hand-written `-webkit-` line after it makes lightningcss drop the unprefixed one (no blur in Chrome; `npm run check:css` catches it) |
 | Ink / soft / mute | `#f1e6cf` / `#d6c8aa` / `#a89a80` | Parchment type |
 | Brass / soft | `#d9ac5f` / `#f0d9a6` | The lamp's gold: ornaments, the send button, focus ring, thinking dots |
 | Rule / strong | parchment at .16 / .40 | Every hairline |

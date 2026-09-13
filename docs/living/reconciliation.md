@@ -225,3 +225,7 @@ Before the approved merge, main at `0ccb9b4` brought in the Library spatial map/
 The follow-on [V1 gap plan](v1-gap-plan.md) checks the canon against code and proposes the first three bounded implementation changes. It records new evidence without changing runtime behaviour.
 
 Integration verification: `npm run check` passed after main integration (type generation/TypeScript, ESLint, 17 test files / 89 tests, and five authenticated routes). The diff against the integrated main has no application, script, package or schema changes. Document coverage and links were rechecked. No UI click-through was needed for this documentation-only delta.
+
+Remote-main follow-up: `origin/main` at `7d49246` contained the already-published glass-blur fix and CSS-prefix check, absent from local main. These were integrated without changing their implementation. Both the spatial-map script and CSS audit remain documented, and both development-history entries are retained. The V1 gap findings concern unchanged session, memory and planner code.
+
+Final integration checks passed again, including all 89 tests, TypeScript, ESLint, route authentication and the newly integrated compiled-CSS prefix audit. Coverage and Markdown links still pass. Local merge only; publication of the combined unpublished changes is separate.
