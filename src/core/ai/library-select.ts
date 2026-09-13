@@ -67,6 +67,9 @@ export type LibraryView<T, N, E> = {
   episodes: E[];
 };
 
+/** Most recently discussed first, then by id — consolidation stamps one time on every thread it touches, and the order mustn't vary between turns. */
+const byRecency = (a: SelectableThread, b: SelectableThread) => b.lastDiscussedAt.getTime() - a.lastDiscussedAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+
 export function selectLibrary<T extends SelectableThread, N extends SelectableNote, E extends SelectableEpisode>(
   threads: T[],
   notes: N[],
@@ -80,10 +83,10 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
   const opened = threads
     .map((t) => ({ t, s: threadScore(t, byThread.get(t.id) ?? [], signals) }))
     .filter((x) => x.s >= OPEN_THRESHOLD)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .slice(0, MAX_OPEN);
   const openIds = new Set(opened.map((x) => x.t.id));
-  const rest = threads.filter((t) => !openIds.has(t.id)).sort((a, b) => b.lastDiscussedAt.getTime() - a.lastDiscussedAt.getTime());
+  const rest = threads.filter((t) => !openIds.has(t.id)).sort(byRecency);
 
   const since = opts.now.getTime() - EPISODE_DAYS * 86_400_000;
   const window = opts.windowStartsAt?.getTime();
@@ -108,7 +111,7 @@ export function rankThreads<T extends SelectableThread>(threads: T[], text: stri
   return threads
     .map((t) => ({ t, s: threadScore(t, notes.filter((n) => n.threadId === t.id), signals) }))
     .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .map((x) => x.t);
 }
 

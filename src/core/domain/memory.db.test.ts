@@ -13,7 +13,8 @@ import type { Db } from "@/db/client";
 import { events, memoryNotes, messages, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
 import { ensureMainConversation, loadRecentMessages, MESSAGE_WINDOW } from "./conversations";
-import type { Heard } from "./memory-rules";
+import { appendEvent } from "./events";
+import { contentKey, type Heard } from "./memory-rules";
 import { applyBeliefOps, listActiveBeliefs, loadBeliefsOrNothing } from "./memory";
 
 let db: Db;
@@ -229,6 +230,36 @@ describe("each user's memory is their own", () => {
 
     const [after] = await listActiveBeliefs(db, a.id);
     expect(after).toEqual(before);
+  });
+});
+
+describe("writes that race or chain", () => {
+  it("counts two confirmations arriving at once as two", async () => {
+    const u = await createTestUser(db, "Pim");
+    const [b] = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "strategy", content: "A ten-minute timer gets me going.", source: "lumi_inferred", confidence: 0.4 }], "lumi")).created;
+    await Promise.all([applyBeliefOps(db, u.id, [{ op: "confirm", id: b.id }], "reflection"), applyBeliefOps(db, u.id, [{ op: "confirm", id: b.id }], "lumi")]);
+    const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, b.id));
+    expect(row.evidenceFor).toBe(2);
+    expect(row.confidence).toBeCloseTo(0.6);
+  });
+
+  it("forgets every wording of a belief in a chain of three, from the middle", async () => {
+    const u = await createTestUser(db, "Quin");
+    const [v1] = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "fact", content: "Works from the library on Mondays.", source: "lumi_inferred" }], "lumi")).created;
+    const [v2] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v1.id, content: "Works from the library on Mondays and Fridays." }], "lumi")).created;
+    const [v3] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v2.id, content: "Works from the library every weekday." }], "lumi")).created;
+    const other = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "preference", content: "Likes short replies.", source: "lumi_inferred" }], "lumi")).created[0];
+    const r = await applyBeliefOps(db, u.id, [{ op: "delete", id: v2.id }], "user");
+    expect(r.deleted.sort()).toEqual([v1.id, v2.id, v3.id].sort());
+    expect((await allRows(u)).map((b) => b.id)).toEqual([other.id]);
+  });
+
+  it("won't infer what they made Lumi forget from the Library", async () => {
+    const u = await createTestUser(db, "Rex");
+    await appendEvent(db, { userId: u.id, type: "library.forgotten", subjectType: "thread", payload: { what: "note", versions: 1, keys: [contentKey("Plays the cello on Sundays.")], by: "user" } });
+    const r = await applyBeliefOps(db, u.id, [{ op: "create", kind: "fact", content: "Plays the cello on Sundays.", source: "lumi_inferred" }], "lumi");
+    expect(r.skipped[0]?.why).toBe("forgotten");
+    expect(await allRows(u)).toHaveLength(0);
   });
 });
 

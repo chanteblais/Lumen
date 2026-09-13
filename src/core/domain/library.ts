@@ -10,8 +10,10 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lte, or, sql }
 import { type Db } from "@/db/client";
 import { conversations, episodes, events, messages, threadNotes, threads, type Episode, type NoteSource, type Thread, type ThreadNote, type ThreadNoteKind } from "@/db/schema";
 import { normalizeText } from "@/core/words";
+import { chainIds } from "./chains";
 import { appendEvent } from "./events";
 import { cleanContent, contentKey, isNearDuplicate, screenMemory } from "./memory-rules";
+import { atomic } from "./tx";
 
 export const NOTE_MIN = 3;
 export const NOTE_MAX = 280;
@@ -137,8 +139,9 @@ export function buildShelves<T extends Pick<Thread, "id" | "parentId" | "created
 
 /* ------------------------------------------------------------- reads */
 
+/** Most recently discussed first; consolidation stamps one time on every thread it touches, so ties go by id and the order never varies between turns. */
 export async function listThreads(db: Db, userId: string, limit = THREAD_LIMIT): Promise<Thread[]> {
-  return db.select().from(threads).where(eq(threads.userId, userId)).orderBy(desc(threads.lastDiscussedAt)).limit(limit);
+  return db.select().from(threads).where(eq(threads.userId, userId)).orderBy(desc(threads.lastDiscussedAt), desc(threads.id)).limit(limit);
 }
 
 export async function getOwnedThread(db: Db, userId: string, id: string): Promise<Thread | undefined> {
@@ -204,6 +207,10 @@ export async function createThread(
   const title = cleanContent(input.title).slice(0, TITLE_MAX);
   if (nameKey(title).length < 2) return { skipped: "title" };
   if (screenMemory(title)) return { skipped: screenMemory(title)! };
+  return atomic(db, (tx) => insertThread(tx, userId, title, input, actor, now));
+}
+
+async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
   const held = await listThreads(db, userId);
   const same = findThreadByName(held, title) ?? (input.aliases ?? []).map((a) => findThreadByName(held, a)).find(Boolean);
   if (same) return { thread: same, existed: true };
@@ -224,12 +231,24 @@ export async function fileNote(
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
-  const thread = await getOwnedThread(db, userId, input.threadId);
-  if (!thread) return { skipped: "not found" };
   const content = cleanContent(input.content);
   if (content.length < NOTE_MIN || content.length > NOTE_MAX) return { skipped: "content length" };
   const screened = screenMemory(content);
   if (screened) return { skipped: screened };
+  return atomic(db, (tx) => insertNote(tx, userId, content, input, actor, now));
+}
+
+/** The note, the note it replaces, the thread's recency and the event — together or not at all. */
+async function insertNote(
+  db: Db,
+  userId: string,
+  content: string,
+  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  actor: LibraryActor,
+  now: Date,
+): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
+  const thread = await getOwnedThread(db, userId, input.threadId);
+  if (!thread) return { skipped: "not found" };
   const current = await listCurrentNotes(db, userId, [thread.id]);
   const same = current.find((n) => isNearDuplicate(n.content, content));
   if (same) return { skipped: "already_held", existing: same };
@@ -260,12 +279,18 @@ function cleanSummary(s: string): string | null {
 
 /** Rewrite a thread's quick summary. Null when it was refused. */
 export async function reviseSummary(db: Db, userId: string, threadId: string, text: string, actor: LibraryActor, now: Date = new Date()): Promise<string | null> {
-  const thread = await getOwnedThread(db, userId, threadId);
   const summary = cleanSummary(text);
-  if (!thread || !summary) return null;
-  await db.update(threads).set({ summary, summaryRevisedAt: now, lastDiscussedAt: now }).where(eq(threads.id, thread.id));
-  await appendEvent(db, { userId, type: "library.summary_revised", subjectType: "thread", subjectId: thread.id, payload: { by: actor }, occurredAt: now });
-  return summary;
+  if (!summary) return null;
+  return atomic(db, async (tx) => {
+    const [row] = await tx
+      .update(threads)
+      .set({ summary, summaryRevisedAt: now, lastDiscussedAt: now })
+      .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      .returning({ id: threads.id });
+    if (!row) return null;
+    await appendEvent(tx, { userId, type: "library.summary_revised", subjectType: "thread", subjectId: row.id, payload: { by: actor }, occurredAt: now });
+    return summary;
+  });
 }
 
 export async function addAliases(db: Db, userId: string, threadId: string, add: string[]): Promise<string[] | null> {
@@ -299,19 +324,21 @@ export async function shelveThread(
   parentId: string | null,
   actor: LibraryActor,
 ): Promise<{ thread: Thread } | Skip> {
-  const held = await db.select().from(threads).where(eq(threads.userId, userId));
-  const thread = held.find((t) => t.id === threadId);
-  const why = whyNotShelve(held, threadId, parentId);
-  if (!thread || why) return { skipped: why ?? "not found" };
-  if (thread.parentId === parentId) return { thread };
-  if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
-  const [row] = await db
-    .update(threads)
-    .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
-    .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
-    .returning();
-  await appendEvent(db, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
-  return { thread: row };
+  return atomic(db, async (tx) => {
+    const held = await tx.select().from(threads).where(eq(threads.userId, userId));
+    const thread = held.find((t) => t.id === threadId);
+    const why = whyNotShelve(held, threadId, parentId);
+    if (!thread || why) return { skipped: why ?? "not found" };
+    if (thread.parentId === parentId) return { thread };
+    if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
+    const [row] = await tx
+      .update(threads)
+      .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
+      .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
+      .returning();
+    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
+    return { thread: row };
+  });
 }
 
 /** Visits that touched this thread, newest first. */
@@ -332,53 +359,48 @@ export async function setEpisodeThreads(db: Db, episodeId: string, threadIds: st
 
 /** The user's forgetting of one note: it and every note it replaced or was replaced by, deleted. Ids removed. */
 export async function forgetNote(db: Db, userId: string, noteId: string): Promise<string[]> {
-  const [start] = await db.select().from(threadNotes).where(and(eq(threadNotes.id, noteId), eq(threadNotes.userId, userId))).limit(1);
-  if (!start) return [];
-  const found = new Map<string, ThreadNote>([[start.id, start]]);
-  let frontier = [start];
-  while (frontier.length) {
-    const ids = frontier.map((n) => n.id);
-    const forward = frontier.map((n) => n.supersededById).filter((id): id is string => Boolean(id) && !found.has(id!));
-    const rows = await db
+  return atomic(db, async (tx) => {
+    const versions = await tx
       .select()
       .from(threadNotes)
-      .where(and(eq(threadNotes.userId, userId), forward.length ? or(inArray(threadNotes.supersededById, ids), inArray(threadNotes.id, forward)) : inArray(threadNotes.supersededById, ids)));
-    frontier = rows.filter((r) => !found.has(r.id));
-    for (const r of frontier) found.set(r.id, r);
-  }
-  const versions = [...found.values()];
-  await db.delete(threadNotes).where(and(eq(threadNotes.userId, userId), inArray(threadNotes.id, versions.map((v) => v.id))));
-  await appendEvent(db, {
-    userId,
-    type: "library.forgotten",
-    subjectType: "thread",
-    subjectId: start.threadId,
-    payload: { what: "note", versions: versions.length, keys: [...new Set(versions.map((v) => contentKey(v.content)))], by: "user" },
+      .where(and(eq(threadNotes.userId, userId), sql`${threadNotes.id} in ${chainIds(threadNotes, threadNotes.supersededById, userId, noteId)}`));
+    const start = versions.find((v) => v.id === noteId);
+    if (!start) return [];
+    await tx.delete(threadNotes).where(and(eq(threadNotes.userId, userId), inArray(threadNotes.id, versions.map((v) => v.id))));
+    await appendEvent(tx, {
+      userId,
+      type: "library.forgotten",
+      subjectType: "thread",
+      subjectId: start.threadId,
+      payload: { what: "note", versions: versions.length, keys: [...new Set(versions.map((v) => contentKey(v.content)))], by: "user" },
+    });
+    return versions.map((v) => v.id);
   });
-  return versions.map((v) => v.id);
 }
 
 /** The user's forgetting of a whole thread: it, every note, and its id in episodes. The conversation is not touched. */
 export async function forgetThread(db: Db, userId: string, threadId: string): Promise<boolean> {
-  const thread = await getOwnedThread(db, userId, threadId);
-  if (!thread) return false;
-  const notes = await db.select({ content: threadNotes.content }).from(threadNotes).where(and(eq(threadNotes.userId, userId), eq(threadNotes.threadId, thread.id)));
-  await db.delete(threads).where(and(eq(threads.id, thread.id), eq(threads.userId, userId)));
-  await db
-    .update(episodes)
-    .set({ threadIds: sql`${episodes.threadIds} - ${thread.id}::text` })
-    .where(and(eq(episodes.userId, userId), sql`${episodes.threadIds} @> ${JSON.stringify([thread.id])}::jsonb`));
-  await appendEvent(db, {
-    userId,
-    type: "library.forgotten",
-    subjectType: "thread",
-    subjectId: thread.id,
-    payload: { what: "thread", notes: notes.length, keys: [...new Set([thread.title, ...notes.map((n) => n.content)].map(contentKey))], by: "user" },
+  return atomic(db, async (tx) => {
+    const thread = await getOwnedThread(tx, userId, threadId);
+    if (!thread) return false;
+    const notes = await tx.select({ content: threadNotes.content }).from(threadNotes).where(and(eq(threadNotes.userId, userId), eq(threadNotes.threadId, thread.id)));
+    await tx.delete(threads).where(and(eq(threads.id, thread.id), eq(threads.userId, userId)));
+    await tx
+      .update(episodes)
+      .set({ threadIds: sql`${episodes.threadIds} - ${thread.id}::text` })
+      .where(and(eq(episodes.userId, userId), sql`${episodes.threadIds} @> ${JSON.stringify([thread.id])}::jsonb`));
+    await appendEvent(tx, {
+      userId,
+      type: "library.forgotten",
+      subjectType: "thread",
+      subjectId: thread.id,
+      payload: { what: "thread", notes: notes.length, keys: [...new Set([thread.title, ...notes.map((n) => n.content)].map(contentKey))], by: "user" },
+    });
+    return true;
   });
-  return true;
 }
 
-/** Did the user make Lumi forget this — a Library note or thread, or a belief — before? */
+/** Did the user make Lumi forget this — a Library note or thread, or a belief — before? The one check, for beliefs and the Library alike. */
 export async function isForgotten(db: Db, userId: string, content: string): Promise<boolean> {
   const [row] = await db
     .select({ id: events.id })
