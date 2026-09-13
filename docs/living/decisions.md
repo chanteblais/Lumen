@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · Their word has to be theirs, and forgotten stays forgotten
+
+**Decision.** Lumi treats something as the person's own word only when what she quotes carries what they meant: a real phrase of theirs (three words that say something), or most of a short message ("forget that", "keep that for the book"). A couple of words lifted out of a longer message are her reading, not their word. And when she files something in the Library or starts a thread because they asked, anything they earlier asked her to forget is still refused.
+**Rationale.** From the code review (B4, 2026-09-13), not a new ask from Chanté. *(Claude's reading: "their word" is what lets a note outrank Lumi's guesses and lets a placement stand against later tidying. If two stray words can unlock it, explicit and inferred stop being distinguishable — the seam the AI & information architecture says to keep, §57 — and a forgotten thread could come back through a loose quote, which is worse for trust than asking once more.)*
+**Implications.**
+- More of what Lumi keeps from conversation is marked as her reading rather than their word; their corrections and forgetting still go through on a real quote.
+- A thread or note they had forgotten can't be recreated through Lumi, even on their words. Nothing to undo that exists yet; if it's ever needed, it's a deliberate page action, not a chat side effect.
+- Where they tell her a thread belongs still counts as their placement, which she and consolidation won't move.
+
+**Principle.** AI & IA §57 (explicit information ≠ inference), §61 (can we understand where consequential information came from?).
+**Replaces.** The eight-character quote rule of Lumi's memory (engineering log, *Lumi's memory: their word checked in code*).
+
 ## 2026-09-13 · Lumi may name time away when it helps someone get their bearings
 
 **Decision.** In conversation, Lumi may say how long someone has been away when that helps them orient, as in the model strategy's *"You disappeared for four days. We don't need to reconstruct the four days."* She never does it in a way that makes the absence feel like a debt. Counts of what's undone stay out, and so does any tally of what piled up. Pages show neither.

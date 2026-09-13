@@ -200,7 +200,8 @@ export type Skip = { skipped: string };
 export async function createThread(
   db: Db,
   userId: string,
-  input: { title: string; aliases?: string[]; summary?: string | null },
+  /** `theirWord`: Lumi makes it because they asked, in words the code found in their messages — recorded, but it never lifts the forgotten check. */
+  input: { title: string; aliases?: string[]; summary?: string | null; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ thread: Thread; existed: boolean } | Skip> {
@@ -210,7 +211,7 @@ export async function createThread(
   return atomic(db, (tx) => insertThread(tx, userId, title, input, actor, now));
 }
 
-async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
+async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null; theirWord?: boolean }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
   const held = await listThreads(db, userId);
   const same = findThreadByName(held, title) ?? (input.aliases ?? []).map((a) => findThreadByName(held, a)).find(Boolean);
   if (same) return { thread: same, existed: true };
@@ -220,7 +221,7 @@ async function insertThread(db: Db, userId: string, title: string, input: { alia
     .insert(threads)
     .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
     .returning();
-  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor }, occurredAt: now });
+  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor, ...(input.theirWord ? { their_word: true } : {}) }, occurredAt: now });
   return { thread: row, existed: false };
 }
 
@@ -316,6 +317,8 @@ export async function insertEpisode(
  * Put a thread under another (or take it off its shelf, `parentId` null).
  * Checks ownership and depth; Lumi and consolidation never move a thread the
  * user placed. Appends `library.shelved` with where it was and who moved it.
+ * `theirWord`: Lumi moves it because they said where it goes, in words the code
+ * found in their messages — their placement, which she won't later undo.
  */
 export async function shelveThread(
   db: Db,
@@ -323,20 +326,22 @@ export async function shelveThread(
   threadId: string,
   parentId: string | null,
   actor: LibraryActor,
+  opts: { theirWord?: boolean } = {},
 ): Promise<{ thread: Thread } | Skip> {
+  const theirs = actor === "user" || opts.theirWord === true;
   return atomic(db, async (tx) => {
     const held = await tx.select().from(threads).where(eq(threads.userId, userId));
     const thread = held.find((t) => t.id === threadId);
     const why = whyNotShelve(held, threadId, parentId);
     if (!thread || why) return { skipped: why ?? "not found" };
     if (thread.parentId === parentId) return { thread };
-    if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
+    if (!theirs && thread.shelvedBy === "user") return { skipped: "placed by them" };
     const [row] = await tx
       .update(threads)
-      .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
+      .set({ parentId, shelvedBy: parentId ? (theirs ? "user" : "lumi") : theirs ? "user" : null })
       .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
       .returning();
-    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
+    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor, ...(opts.theirWord ? { their_word: true } : {}) } });
     return { thread: row };
   });
 }

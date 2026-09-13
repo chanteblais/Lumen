@@ -372,7 +372,7 @@ describe("each user's Library is their own", () => {
   it("another user can't open, add to, find or forget a thread, and consolidation never shows them another's", async () => {
     const a = await createTestUser(db, "Ava");
     const b = await createTestUser(db, "Bo");
-    const held = await call(toolsFor(a, said("start a thread for my garden plan, raised beds")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "raised beds" });
+    const held = await call(toolsFor(a, said("start a thread for my garden plan, raised beds")).add_to_library, { new_thread: "Garden plan", kind: "decision", content: "The garden gets raised beds.", their_words: "a thread for my garden plan, raised beds" });
     const id = held.thread_id;
 
     const other = toolsFor(b, said("add to the garden plan and forget the garden plan"));

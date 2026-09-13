@@ -14,7 +14,7 @@ import type { Db } from "@/db/client";
 
 const EXPECTED = {
   persona: { mailOff: "2005c1b99a05153b051ec3686d8bc7b0a3dee5fc29701cfe8e59e46cd92da194", mailOn: "b70c5645f469e63b7730dddfa16fba6acc97aeefdf491c381af18995f754a1df" },
-  prefix: { mailOff: "397a1169610c14726e4e7bfa533628952001ea66bae5c725d40c47407c8100db", mailOn: "5170dada4ce4b112984ace289f8f59ccfb130023072fb71b4869ffdcf1e89248" },
+  prefix: { mailOff: "397a1169610c14726e4e7bfa533628952001ea66bae5c725d40c47407c8100db", mailOn: "b7e33635954b5b246a48d67c28ac835459202ba5a90cde1229ff37e608de9d0d" },
 };
 
 async function hashes(mailOn: boolean) {
