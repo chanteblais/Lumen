@@ -84,7 +84,7 @@ The phase spans (`WAVE_REST`, `WAVE_WAVES`, `WAVE_RISE`, `WAVE_FALL`; `GLANCE_EY
 
 ### 5 · Wire (5 min — every touch point, in order)
 1. `src/components/chat/LumiSprite.tsx` — `LUMI_LOOPS` (the name), `LUMI_LOOP_CELLS` (the play order over the row's cells; repeats and reversals are free — the pick-up is also the set-down), `LUMI_LOOP_EYES` (the eye rows it has), `LUMI_IDLE_FRAMES` if the row is the widest yet; the header comment's row map. `LUMI_LOOP_FRAMES` is derived.
-2. `src/components/shell/LumiCompanion.tsx` — `FRAME_MS` (with the one-line reason), then `VARIATIONS` if it plays as an idle variation, `REACTIONS` if it plays in answer to something (with its trigger; backlog #5), or `ACTIONS` if it is something she does with her world that nothing asks for yet (dev cue strip only). The dev cue strip picks the new loop up on its own.
+2. `src/components/shell/LumiCompanion.tsx` (the loop itself is `LumiFigure` in the same file, since 2026-09-13, so its frames re-render only her figure) — `FRAME_MS` (with the one-line reason), then `VARIATIONS` if it plays as an idle variation, `REACTIONS` if it plays in answer to something (with its trigger; backlog #5), or `ACTIONS` if it is something she does with her world that nothing asks for yet (dev cue strip only). The dev cue strip picks the new loop up on its own.
 3. Docs, same commit: `art/README.md` table row · `docs/design-system.md` → Lumi sprites (the row map) and Lumi companion (timing) · `docs/features.md` → *Lumi in the corner* (the one-line description of what she does) · `docs/decisions.md` if a rule moved.
 
 ### 6 · Verify, then review (this is where rounds are won or lost)
