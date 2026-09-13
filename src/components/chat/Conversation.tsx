@@ -71,7 +71,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
     [],
   );
 
-  const { messages, sendMessage, status, error } = useChat<CoherenceUIMessage>({
+  const { messages, sendMessage, stop, status, error } = useChat<CoherenceUIMessage>({
     id: conversationId,
     messages: initialMessages,
     transport,
@@ -131,7 +131,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
         />
       </div>
       {session && <SessionBar session={session} busy={busy} quietKey={messages.length} onEvent={sessionEvent} onGone={setGone} />}
-      <Composer onSend={send} busy={busy} initialValue={prefill} />
+      <Composer onSend={send} onStop={stop} busy={busy} initialValue={prefill} />
     </div>
   );
 }

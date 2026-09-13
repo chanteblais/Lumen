@@ -6,6 +6,25 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 — page load: the database pool and the function region (`fix/db-pool-stall`, worktree)
+
+Chanté: "the page loading is quite slow." Measured from her machine against the real pooler (scripts in the session scratchpad, not committed).
+
+### Fixed
+- **Queries over the pool size hung.** With every connection of a warm pool busy, `postgres` pipelines the next query onto a busy connection, and Supabase's transaction pooler (6543) never answers it. A warm pool of 5 given 6 parallel queries stalled in every trial with a 50ms query (75s+ when left), and in 3 of 4 with `select 1`; a cold pool (connections still opening) never stalled, and the session pooler (5432) never stalled. `max_pipeline: 1` still pipelines one query and still stalled. The snapshot (Today, and Home's background plan prime) sends 7 at once, and resolving a session 2 more. Now `max_pipeline: 0` and `max: 10`: 9 of 9 trials fine, including 16 queries on 10 connections and 14 chained sequences, the overflow waiting ~0.1–0.2s.
+- **Functions ran in `iad1` (Virginia), the database is in us-east-2 (Ohio).** `vercel.json` → `regions: ["cle1"]` (Cleveland), from the next production deploy.
+
+### Known and deliberate
+- A page still makes 2–4 queries one after another before it renders (`requireUser`, `recordVisit`, then the page's own). Parallelising them or moving the visit write off the response is proposed to Chanté, not done: the visit write feeds the sitting that Home and Today read.
+- Every page is rebuilt on every visit (`force-dynamic`, `staleTimes.dynamic` 0). Also proposed, not done.
+
+### Open
+- Lumi's sheet (`lumi-free.webp`, 866 KB) — Chanté is working on it.
+
+### Highest-value manual tests
+- Open Home, then Today straight away (Home's background prime and Today's snapshot overlap on the pool): Today shows its card without a long pause.
+- Leave the app for 5+ minutes, come back to Today: one slow first page (the pool reopens), then quick.
+
 ## Sweep 2026-09-12 (8) — M5 Focus Together + session reflection (`feat/m5-focus-together`, worktree, port 3007)
 
 ### Verified (live, against the real database; `check_in_minutes` set to 1 for the sweep and restored to 15 after; the sweep's sessions, their events, and the two beliefs it created were removed afterwards)

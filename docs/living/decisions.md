@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-09-13 · The lantern is Lumi's
+
+**Decision.** Lumi stays hands-free most of the time, but the lantern is hers, not one prop among many: she often picks it up, and often sets it down again. Beyond the lantern, she engages with and picks up many things in her world.
+**Rationale.** Chanté: "she should be hands free, but the lantern is hers, and she picks it up often. But also puts it down. Ultimately I would like lumi to engage with and pick up lots of things." *(Claude's reading: the lantern keeps its place in who she is, the warm light she carries, without tying up her hands; handling things is how she lives in the places.)*
+**Implications.**
+- She has two resting states, empty-handed and holding her lantern, each with its own quiet idle, and a movement between them each way.
+- Handling an object is ordinary for her, not a special effect, so making a new one has to be cheap (`animation-pipeline.md`).
+- Her small idle life may be moved by code (`art-direction.md` bet 2), but she is never fully still: breathing and a slow sway stay (Chanté: "still want some sway/breathing motion"; `design/motion-and-interaction.md` §12).
+- Where the lantern rests when she sets it down is open.
+**Principle.** Lumi inhabits her world (spaces §19, §29); a nearly invisible base idle and a shared rest pose (motion §12, §15).
+**Replaces.** Refines *Lumi is hands-free most of the time* (below), which called the lantern one of the things she picks up, "like a book or a cup".
+
+## 2026-09-13 · On a phone, the nav is a bar along the bottom with its names showing
+
+**Decision.** Below 768px the rail becomes a bar along the bottom of the screen: the five icons, each with its name under it, the place you're in marked with a star. Nothing opens, pins or locks there.
+**Rationale.** Chanté's ask, from her phone: move the nav to the bottom. *(Claude's reading: a phone has no hover, so the names were a tap on the compass star away; with the bar's width there is room for them, and showing them removes that tap. This sits beside her desktop preference for icons with expandable names rather than against it.)* Chanté approved the bar with the names on it on review.
+**Implications.**
+- The rule stands: an icon's name is always reachable. On a phone it is simply always visible.
+- Pin and lock are desktop behaviours only; nothing on a phone depends on them.
+- The page and the composer stop above the bar; nothing is drawn under it.
+
+**Principle.** V§14, `spaces.md` §35 (mobile preserves the hierarchy, not the literal layout), §36.
+**Replaces.** The phone trial in *The nav is icons, with the names a hover away*, below.
+
+## 2026-09-13 · Lumi is hands-free most of the time
+
+**Decision.** Lumi's usual state is holding nothing. The lantern stops being part of her and becomes one of the things in her world she can pick up and set down, like a book or a cup.
+**Rationale.** Chanté: "Lumi will be hands free often." *(Claude's reading, from the direction that started the work: handling things in her surroundings makes her a resident of the places rather than an emblem carrying a fixed prop.)*
+**Implications.**
+- Her movements are drawn from the hands-free rest pose (`art-direction.md` §4a); objects she holds are what she picked up, and the Library's retrieval (carrying a Thread to the table) builds on it.
+- Her warmth rests on her glowing eyes when nothing lights her hands (`art-direction.md` §2).
+- The lantern body stays served beside the hands-free one for now; whether and when it is retired is an implementation choice (`docs/decisions.md`).
+**Principle.** Lumi inhabits her world (spaces §19, §29); presence, not performance.
+**Replaces.** The lantern carried at all times (the lantern character, 2026-09-12); the hands-free proposal of the same day.
+
 ## 2026-09-13 · The nav is icons, with the names a hover away
 
 **Decision.** The places are icons on a narrow green rail that is always there; their names are on a parchment sheet that opens from the rail on hover, focus or tap, and can be pinned open. The rail marks where you are with a star.
@@ -14,7 +49,7 @@
 - Icons can carry meaning, but only where the name is always a hover, focus or tap away. An icon with no way to see its name is still out.
 - The names stay plain (`spaces.md` §3): *Home, Today, Library*, never place-names the user has to decode.
 - Pinning the sheet out (the rail's top half) and locking it in (the bottom half) are optional and undone the same way; nothing may depend on either.
-- Phones are a trial (the rail plus a tap on the compass star); to revisit.
+- Phones were a trial (the rail plus a tap on the compass star); superseded by the bottom bar (entry above).
 
 **Principle.** V§14, `spaces.md` §3 and §21.
 **Replaces.** The sidebar of plain names ([engineering log](../decisions.md), same date).

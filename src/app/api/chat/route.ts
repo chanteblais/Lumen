@@ -143,6 +143,9 @@ export async function POST(req: Request) {
     model: chatModel(),
     tools,
     stopWhen: stepCountIs(5),
+    // Stop (the send button while she talks) aborts the request: she stops writing and
+    // calls no further tools; onEnd keeps what she had said.
+    abortSignal: req.signal,
     instructions: [
       { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
       {

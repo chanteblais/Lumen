@@ -37,7 +37,7 @@
 
 ## Lumi
 
-She/her. **The relational and interpretive intelligence through which the user experiences Coherence**: interpretive companionship in service of agency, and a presence that makes it easier to begin and keep going (V§7). Not a nagging coach, a reminder system, a sycophantic friend, a faux therapist or an optimiser. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes, brass medallions and a lantern. She is on every page and lives in Home.
+She/her. **The relational and interpretive intelligence through which the user experiences Coherence**: interpretive companionship in service of agency, and a presence that makes it easier to begin and keep going (V§7). Not a nagging coach, a reminder system, a sycophantic friend, a faux therapist or an optimiser. Calm, warm, observant, concise, lightly playful, capable of gentle challenge. A small hooded figure with glowing eyes and brass medallions, hands-free most of the time; the lantern is hers, and she often picks it up and sets it down again, and she handles many other things in her world too ([decision](docs/living/decisions.md), 2026-09-13). She is on every page and lives in Home.
 
 > **Coherence remembers. Lumi understands.** The system maintains the shape of the user's life; Lumi helps the user perceive and navigate that shape.
 

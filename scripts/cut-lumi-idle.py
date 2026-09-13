@@ -1,4 +1,4 @@
-"""Cut Lumi's sprites from art/lumi/lumi-wave.png and art/lumi/lumi-lantern-idle.png.
+"""Cut Lumi's sprites from art/lumi/lumi-wave.png, art/lumi/lumi-foot-play.png and art/lumi/lumi-lantern-idle.png.
 
     python3 scripts/cut-lumi-idle.py [--debug <dir>]
 
@@ -44,9 +44,16 @@ cast and redrawn in the warm tone the cream sheets had, and the lantern's
 light on the ground — a warm blend of the ground and an orange light — is
 lifted off as a translucent warm glow, so on the paper she lights it a little.
 
-Output: public/lumi-idle.webp is 24 columns × 4 rows of 160×208 cells: breath
+The glance (2026-09-13) takes only the eyes of art/lumi/lumi-foot-play.png
+(generated from art/prompts/lumi-foot-play.md), another generation of the same
+drawing: three of its cells, aligned on the whole hood, the lantern side and
+the other boot, give their eyes to the wave's first cell — two steps down, then
+down. Everything else is `rest`, so it hands over like the wave. The sheet's
+boot scuffs were cut too and dropped on review (the glance section says why).
+
+Output: public/lumi-idle.webp is 24 columns × 5 rows of 160×208 cells: breath
 (nine cells) with open / half-shut / shut eyes in rows 0–2, the wave (24
-cells, eyes open) in row 3;
+cells, eyes open) in row 3, the glance (4 cells, eyes open) in row 4;
 public/lumi-heads.png is one row of six 176px squares, the hood 172px wide with
 its bottom on row 161 like the earlier cut.
 """
@@ -418,6 +425,52 @@ def monotone_lower(cells, order, start, lifting):
 print('lower cloak on the rise, px² from rest:', monotone_lower(wave, WAVE_RISE, rest, lifting=True))
 print('lower cloak on the fall, px² from rest:', monotone_lower(wave, WAVE_FALL, donor, lifting=False))
 
+# The glance (2026-09-13): her eyes lower to the ground, from art/lumi/lumi-foot-play.png (generated from
+# art/prompts/lumi-foot-play.md, approved by Chanté). Only the eyes are taken from it, onto the wave's first cell,
+# after aligning its cells on everything that holds; everything else is `rest`, so the glance hands over to the
+# breath and the wave without a swap. The sheet also lifts and scuffs a boot, and those cells were cut the same way —
+# only the boot pixels that differed from `rest`, feathered in — but that never erased the rest pose's boot, so the
+# moving boot grew out of it ("a foot's growing out of her foot", Chanté); dropped on review. A part that moves has
+# to leave where it was: the whole region from the source cell, not the difference.
+GLANCE_SRC = os.path.join(ROOT, 'art', 'lumi', 'lumi-foot-play.png')
+GLANCE_EYES = [2, 3, 5]              # the sheet's cells whose eyes the row takes: two steps down, then down (row 0)
+
+
+def eye_mask(cell):
+    """The two eyes: the largest holes in the dark face, above the chin. Not cut at `head_rows` — the eyes lowered
+    to the ground reach below it, and a mask cut there lost their bottom rows."""
+    filled, dark = face(cell)
+    holes = filled & ~dark
+    holes[FEET_Y - FIGURE_H + int(FIGURE_H * 0.53):] = False   # the chin, as the head cut places it
+    lab, k = ndi.label(holes)
+    if not k: return holes
+    sizes = ndi.sum(holes, lab, range(1, k + 1))
+    return np.isin(lab, [i + 1 for i in np.argsort(sizes)[::-1][:2]])
+
+
+def with_eyes(base, src):
+    """`base` with `src`'s eyes: both cells' eyes and the glow around them, inside `base`'s face, feathered. The
+    face is the same black in both, so where `base`'s eyes were, `src`'s face shows."""
+    filled, _ = face(base)
+    m = ndi.binary_dilation(eye_mask(base) | eye_mask(src), iterations=5) & ndi.binary_erosion(filled, iterations=2)
+    w = ndi.gaussian_filter(m.astype(float), 1.2)[:, :, None]
+    return straight(w * premul(src) + (1 - w) * premul(base))
+
+
+glance_sheet = Sheet(GLANCE_SRC, GROUND_BOX)
+glance_row = glance_sheet.rows()[0]
+glance_matted = [glance_sheet.matte(b) for b in glance_sheet.frames(*glance_row, COLS)]
+glance_scale = FIGURE_H / np.median([height(m) for _, m in glance_matted])
+print('glance row scale', round(float(glance_scale), 3))
+drawn = [scale(rgba, main, glance_scale) for rgba, main in (glance_matted[i] for i in GLANCE_EYES)]
+drawn = [place(rgba, main, W, H, FEET_Y, cx=hood_right(main) - anchor) for rgba, main in drawn]
+held_glance = np.zeros((H, W))
+held_glance[:head_rows] = 1          # the whole hood: it holds in this sheet, only the eyes move inside it
+held_glance[head_rows:, col0:] = 1   # the ribbon's right side, the lantern and the other boot
+glance_aligned = [align(c, rest, held_glance) for c in drawn]
+print('glance overlap with the rest cell on the held parts, after aligning:', [round(float(o), 3) for _, o in glance_aligned])
+glance = [rest] + [with_eyes(rest, c) for c, _ in glance_aligned]
+
 # The breath: the wave's first cell, stretched, so the two loops are one drawing.
 rises = [BREATH_RISE * (1 - np.cos(2 * np.pi * i / BREATH_FRAMES)) / 2 for i in range(BREATH_FRAMES)]
 print('breath rise per frame, px:', [round(r, 2) for r in rises])
@@ -425,10 +478,11 @@ KEEP = [None, 0.5, 0.2]   # open, half-shut, shut
 lids = lambda cell, keep: cell if keep is None else eyes_shut(cell, keep)
 # The wave keeps its eyes open: a blink during a 3 s gesture goes unseen, and its half-shut and shut
 # rows would have tripled the sheet (917 KB against 244 KB before the wave). LumiSprite's
-# LUMI_LOOP_EYES says which eye rows each loop has.
+# LUMI_ROW_EYES says which eye rows each row of drawings has; the foot play keeps its eyes open too.
 eye_rows = [
     [[breathe(lids(rest, keep), rise) for rise in rises] for keep in KEEP],
     [wave],
+    [glance],
 ]
 body = np.zeros((H * sum(len(rows) for rows in eye_rows), W * BODY_COLS, 4), dtype=np.uint8)
 for r, cells in enumerate(row for rows in eye_rows for row in rows):
