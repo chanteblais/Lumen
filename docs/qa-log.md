@@ -6,6 +6,30 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
+
+Chanté: "It's a big flash of white and things loading faster than others. It doesn't feel very smooth."
+
+### Fixed
+- **The white flash: Home streamed in behind the shell.** The server HTML put the sidebar, top bar and companion first, and the whole Home view (room, palette, chat) in a hidden `S:0` revealed by `$RC` at the very end of the document (byte 105,331 of 105,356), behind React's 300ms reveal throttle. The cause was a bare `<Suspense>` in `app/page.tsx` with the async `LibraryDebug` inside it. Until the reveal, the shell painted in the ivory palette (`.shell:has(.home-scene)` can't match while the scene sits outside the shell). Boundary removed: the HTML now has no `S:0` or `$RC`, and `.home-scene` comes before the companion. `next build` passes.
+- **The painting popped.** It faded in over a flat `#362e29`, while its average colour is `rgb(121 78 48)`. Each room's scene now carries a 24×16 copy of its painting (~220 bytes as a data URI in the stylesheet), so the first paint already has the room's colours and the fade brings it into focus. Today and the Library too.
+- **The clock slid 60px left when the account button arrived** (~1–2.7s, when Clerk loads). `.auth-slot` holds the 28px place; the button fades in. The clock fades in when set instead of popping.
+
+### Known and deliberate
+- The painting still fades (450ms) when it isn't cached, now from its blurred copy. Lumi's figure and the account avatar still wait for their images.
+- Dev is much slower than production here: hydration, Clerk's scripts and the account avatar land later on `localhost`. Judge smoothness on a preview or production deploy too.
+
+### Verified (live, port 3006, worktree on the branch)
+- The HTML shape: no `S:0` or `$RC`; room, chat and greeting inline. `npm run check` and `next build` pass.
+- Not verifiable from the automation tab: the paint sequence itself (hidden tab; dev-hygiene traps).
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- Hard-reload Home (Cmd-Shift-R) a few times: no ivory frame. The room is there from the start, soft, then sharp. The clock and account button don't move.
+- Same on Today and the Library: the painting comes into focus instead of popping.
+
 ## Sweep 2026-09-13 (5) — the old chat flashed on opening Home (`fix/home-opens-on-greeting`)
 
 Chanté: "When I first land on the home page, sometimes my old chat is there for a second and then it disappears."
