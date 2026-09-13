@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LeadsSection, Opener } from "@/components/insights/LeadsSection";
 import { Divider } from "@/components/ui/Ornament";
+import { MAIL_ON } from "@/core/email/types";
 import { INSIGHTS_LINES } from "@/core/insights";
 import { requireVisit } from "@/lib/auth";
 import { ConnectMail } from "@/lib/auth-mail";
@@ -13,9 +15,11 @@ export const metadata: Metadata = { title: "Insights" };
 /**
  * Insights: what Lumi noticed in the mail that might need doing, and one
  * question — do any of these still need doing? Not an inbox, not a feed.
+ * With mail switched off (`MAIL_ON`) there is nothing to show: it goes Home.
  * docs/features.md → Insights.
  */
 export default async function InsightsPage() {
+  if (!MAIL_ON) redirect("/");
   const { user } = await requireVisit();
   const access = await mailAccessFor(user);
 

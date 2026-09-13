@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { clampConsolidation, KEEP_TAIL, LONG_SITTING, MAX_BATCH, pickBatch, type BatchMessage, type RawProposal } from "./consolidate";
+import { NOTE_MAX, retryAfterFailures } from "@/core/domain/library";
+import { clampConsolidation, EPISODE_MAX, KEEP_TAIL, LONG_SITTING, MAX_BATCH, MAX_NOTES_PER_RUN, pickBatch, ProposalSchema, type BatchMessage, type RawProposal } from "./consolidate";
+
+describe("the proposal schema", () => {
+  it("accepts an over-long or over-full proposal, and the clamp cuts it down", () => {
+    const long = "The sisters keep writing letters they never send, and the book is built from them. ".repeat(20);
+    const raw = {
+      episode: { summary: long, left_off: long },
+      threads: Array.from({ length: 9 }, (_, i) => ({ ref: `new:t${i}`, title: `Thread ${i}`, aliases: [long] })),
+      notes: Array.from({ length: 30 }, (_, i) => ({ thread: "t1", kind: "idea" as const, content: `${i} ${long}`, source: "lumi_inferred" as const })),
+    };
+    const parsed = ProposalSchema.safeParse(raw);
+    expect(parsed.success).toBe(true);
+    const plan = clampConsolidation(parsed.data!, { threads: [{ id: "t1", title: "The book", aliases: [] }], notes: [], heard: [] });
+    expect(plan.episode!.summary.length).toBeLessThanOrEqual(EPISODE_MAX);
+    expect(plan.notes.length).toBeLessThanOrEqual(MAX_NOTES_PER_RUN);
+    expect(plan.notes.every((n) => n.content.length <= NOTE_MAX)).toBe(true);
+  });
+});
+
+describe("retryAfterFailures", () => {
+  const at = (iso: string) => new Date(iso);
+  it("waits ten minutes after one failure, an hour after two, six hours after three or more", () => {
+    expect(retryAfterFailures([])).toBeNull();
+    expect(retryAfterFailures([at("2026-09-11T12:00:00Z")])).toEqual(at("2026-09-11T12:10:00Z"));
+    expect(retryAfterFailures([at("2026-09-11T12:00:00Z"), at("2026-09-11T11:00:00Z")])).toEqual(at("2026-09-11T13:00:00Z"));
+    expect(retryAfterFailures([at("2026-09-11T12:00:00Z"), at("2026-09-11T11:00:00Z"), at("2026-09-11T10:00:00Z")])).toEqual(at("2026-09-11T18:00:00Z"));
+  });
+});
 
 const t0 = new Date("2026-09-12T19:00:00Z").getTime();
 const msg = (min: number, role = "user", text = "something worth saying"): BatchMessage => ({ id: `m${min}`, role, text, createdAt: new Date(t0 + min * 60_000) });

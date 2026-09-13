@@ -16,17 +16,20 @@ export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata>;
 
 export const MESSAGE_WINDOW = 30;
 
-/** The user's main conversation: the oldest, should a race on a first visit ever have made two (nothing in the schema prevents it). */
+/** The user's main conversation. One per user, held by the unique index `conversations_user_main_idx`. */
 const mainConversationOf = (userId: string) => and(eq(conversations.userId, userId), eq(conversations.kind, "main"));
 
+const findMain = (db: Db, userId: string) => db.query.conversations.findFirst({ where: mainConversationOf(userId), orderBy: asc(conversations.createdAt) });
+
+/** Find or create it. Two first visits racing: the second insert does nothing and reads the first's. */
 export async function ensureMainConversation(db: Db, userId: string) {
-  const existing = await db.query.conversations.findFirst({
-    where: mainConversationOf(userId),
-    orderBy: asc(conversations.createdAt),
-  });
+  const existing = await findMain(db, userId);
   if (existing) return existing;
-  const [created] = await db.insert(conversations).values({ userId, kind: "main" }).returning();
-  return created;
+  const [created] = await db.insert(conversations).values({ userId, kind: "main" }).onConflictDoNothing().returning();
+  if (created) return created;
+  const winner = await findMain(db, userId);
+  if (!winner) throw new Error("ensureMainConversation: the insert conflicted, but no main conversation was found");
+  return winner;
 }
 
 /** Most recent `limit` messages, oldest first, as UIMessages with createdAt metadata. */
@@ -66,18 +69,22 @@ function toUIMessages(rows: (typeof messages.$inferSelect)[]): CoherenceUIMessag
   }));
 }
 
-/** Insert-or-replace by id (the same message can be finalised after streaming). */
+/**
+ * Insert-or-replace by id (the same message can be finalised after streaming)
+ * — only within this conversation. An id already used in another one (a resent
+ * or forged id) is left alone and logged; it never overwrites that row.
+ */
 export async function saveMessage(db: Db, conversationId: string, m: CoherenceUIMessage): Promise<void> {
-  await db
+  const saved = await db
     .insert(messages)
     .values({ id: m.id, conversationId, role: m.role as MessageRole, parts: m.parts })
-    .onConflictDoUpdate({ target: messages.id, set: { parts: m.parts } });
+    .onConflictDoUpdate({ target: messages.id, set: { parts: m.parts }, setWhere: eq(messages.conversationId, conversationId) })
+    .returning({ id: messages.id });
+  if (!saved.length) {
+    console.warn(`[conversations] message ${m.id} belongs to another conversation; not saved`);
+    return;
+  }
   await db.update(conversations).set({ updatedAt: new Date() }).where(eq(conversations.id, conversationId));
-}
-
-export async function messageCount(db: Db, conversationId: string): Promise<number> {
-  const rows = await db.select({ id: messages.id }).from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.createdAt));
-  return rows.length;
 }
 
 /**

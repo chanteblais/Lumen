@@ -68,6 +68,51 @@ export function buildListsView(open: ListsSource[], done: ListsSource[], lists: 
   return { lists: names, open: openRows, done: done.map((i) => toRow(i, true)) };
 }
 
+/** What the sheet is showing: everything open, one list, Completed, or a quick view. It opens on "all" each time; nothing is remembered. */
+export type ListsShown = "all" | "done" | "today" | "soon" | `list:${string}`;
+
+/** The list a view is inside, or null when it shows more than one (its rows then carry their list's tag). */
+export function shownList(shown: ListsShown): string | null {
+  return shown.startsWith("list:") ? shown.slice("list:".length) : null;
+}
+
+/** The rows a view shows, narrowed by search: what's typed, in the title or the next step, any case. */
+export function shownRows(view: ListsView, shown: ListsShown, query: string): ListsRow[] {
+  const inList = shownList(shown);
+  const base =
+    shown === "done" ? view.done
+    : shown === "today" ? view.open.filter((r) => r.dueToday)
+    : shown === "soon" ? view.open.filter((r) => r.dueSoon)
+    : inList !== null ? view.open.filter((r) => r.list === inList)
+    : view.open;
+  const q = query.trim().toLowerCase();
+  return q ? base.filter((r) => r.title.toLowerCase().includes(q) || Boolean(r.nextAction?.toLowerCase().includes(q))) : base;
+}
+
+/** The heading over a view's rows. */
+export function shownHeading(shown: ListsShown): string {
+  if (shown === "all") return "All tasks";
+  if (shown === "done") return "Completed";
+  if (shown === "today") return "Today";
+  if (shown === "soon") return "Due soon";
+  return shownList(shown) ?? "";
+}
+
+/** The one plain line when a view has nothing to show. Never a count, never a nudge. */
+export function emptyLine(shown: ListsShown, query: string): string {
+  if (query.trim()) return "Nothing matches that.";
+  if (shown === "all") return "Nothing on your lists. Tell Lumi what’s on your mind and she’ll file it here.";
+  if (shown === "done") return "Nothing ticked off lately.";
+  if (shown === "today") return "Nothing has today’s date.";
+  if (shown === "soon") return "Nothing dated in the next week.";
+  return "Nothing filed here.";
+}
+
+/** A list tag's tint: the list's place among the user's lists, in four quiet tints (`data-tint` 0–3); none for Unsorted. */
+export function listTint(view: ListsView, list: string): string | undefined {
+  return list === UNSORTED ? undefined : String(view.lists.indexOf(list) % 4);
+}
+
 function dueLabel(at: Date, days: number, timeZone: string): string {
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
