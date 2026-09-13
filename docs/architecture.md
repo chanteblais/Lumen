@@ -227,7 +227,8 @@ lumen/                            the repo folder, still named for the product's
 │   │   ├── insights.ts           Insights copy (deterministic)
 │   │   └── time.ts               tz-aware today/gap helpers
 │   ├── db/                       schema.ts (the domain model as code) client.ts (lazy postgres-js + drizzle) migrations/ (drizzle-kit)
-│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · public-paths.ts (the pages a signed-out visitor may see: the proxy and the nav read it) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope)
+│   ├── lib/                      auth.ts (server boundary → ensureUser; googleAccessToken) · public-paths.ts (the pages a signed-out visitor may see: the proxy and the nav read it) · auth-ui.tsx (provider, auth controls) · auth-mail.tsx (Connect Google chip) · email.ts (mailAccessFor → EmailReader | not_connected | needs_scope) · env.ts (the server env schema: required keys, `LUMI_MODEL`'s format, Lumi's model key following it)
+│   ├── instrumentation.ts        register(): checks the server env once at startup (Node.js runtime) — throws in production naming missing keys, warns in dev
 │   ├── proxy.ts                  clerkMiddleware: protected-first, sign-in/up public
 │   └── styles/globals.css        tokens + paper texture
 ├── public/                       lumi-heads.png · lumi-free.webp (the hands-free body) · lumi-idle.webp (the lantern body, kept for now beside the hands-free one) — cut sprite sheets, never edited by hand

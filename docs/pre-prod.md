@@ -8,6 +8,7 @@ Things to sort before anyone but Chanté uses Coherence.
 - [ ] Swap development keys for production keys on Vercel (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`).
 - [ ] Sign-in page redirects are prop-driven (no deprecated `NEXT_PUBLIC_CLERK_AFTER_*` env vars).
 - [x] Keys and sign-in/up URL vars set on Vercel for **Production and Preview** (2026-09-12; still the dev `pk_test`/`sk_test` keys). Before this, Vercel held only Development-scoped keys, so every production request 500'd inside `clerkMiddleware` ("Missing publishableKey").
+- [ ] **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` has no Preview entry** (found 2026-09-13 with `vercel env ls`: Production and Development only; every other key, `OPENAI_API_KEY` included, covers Preview). A Preview deploy has no publishable key, so `clerkMiddleware` fails there, and since the startup env check it fails at startup naming the key. Chanté's call: add the Preview scope to the existing entry.
 
 ## Database (Supabase / Drizzle)
 - [x] `0000_initial_schema` applied (2026-09-11). Keep the ledger in `docs/domain.md` → Migrations Reference current for every later migration.
@@ -28,6 +29,7 @@ Things to sort before anyone but Chanté uses Coherence.
 ## Environment variables (Vercel)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` · `CLERK_SECRET_KEY` · `DATABASE_URL` · `OPENAI_API_KEY` (`ANTHROPIC_API_KEY` only for `LUMI_MODEL=anthropic:…`)
 - `NEXT_PUBLIC_CLERK_SIGN_IN_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_URL` · `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` (same values as `.env.local`; without them `auth.protect()` bounces to Clerk's hosted portal instead of `/sign-in`)
+- **Checked at startup** (2026-09-13): `src/instrumentation.ts` runs `validateServerEnv` (`src/lib/env.ts`) once per server instance, Node.js runtime only. With `NODE_ENV=production` (Production and Preview deploys alike) a missing required key — the four in the first bullet, with Lumi's model key following `LUMI_MODEL` — or a malformed `LUMI_MODEL` throws, naming the keys and never their values, so every request fails with *An error occurred while loading instrumentation hook: Server environment is incomplete — missing: …*. In dev it logs `[env] …` and carries on. `next build` doesn't run it. The sign-in/up URL keys are optional there.
 - Scope every variable to **Production and Preview**. A Development-only entry is invisible to deploys. Check with `vercel env ls --scope chante-s-projects1 --project lumen`; the app is `lumen` → https://lumen-nu-steel.vercel.app (the project keeps the old name until it's renamed; see below).
 
 ## Security headers (`next.config.ts`, 2026-09-13)
