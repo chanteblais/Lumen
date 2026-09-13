@@ -4,7 +4,7 @@
 
 **Who this is for:** Chanté and Claude, whenever the work changes what Lumi or a scene looks like or how Lumi moves — a new sheet, a painting, a mockup, a new kind of motion. Read §2, §3 and §8 before generating anything.
 
-**Where it sits:** `design-philosophy.md` is what the *interface* is. This doc is what the *art* is and where it is heading: what holds across every drawing, the tension between the book and the painted world, the ladder of animation costs, what Lumi's motion means, and the bets under test. `animation-pipeline.md` is how a drawing becomes motion once that is settled; `art/README.md` is how the cut works; `design-system.md` is what ships.
+**Where it sits:** `design-philosophy.md` is what the *interface* is; `spaces.md` is what the *places* are — the cognitive mode each painted space holds. This doc is what the *art* is and where it is heading: what holds across every drawing, the tension between the book and the painted world, the ladder of animation costs, what Lumi's motion means, and the bets under test. `animation-pipeline.md` is how a drawing becomes motion once that is settled; `art/README.md` is how the cut works; `design-system.md` is what ships.
 
 ---
 
@@ -128,7 +128,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 |---|---|---|---|---|---|
 | 1 | Expressions are eye shapes drawn in code, not cells cut from sheets | the void face; every expression sheet changes only the eyes (§2) | draw the six avatar expressions as shapes over the rest cell's face and compare them with the cut heads at 36–68px | at avatar size the drawn eyes read as stickers on a painting | open |
 | 2 | Frequent motion is layered (tier 2); drawn sheets only for signature moments | the ladder's costs and the drift (§4, §7) | one evening: split the rest cell into hood, face, eyes, lantern and body; animate a blink, a glance and a lantern sway; show it beside the current sprite on the review port | Chanté can tell it is a rig and it looks cheaper than the sprite | open |
-| 3 | The world responds to what happened, never to what didn't | §3; the one question | any care-loop or reward idea gets an `ef-burden-log.md` row first and one question: *does a bad week make the world sadder?* | a version that fades gently and still lowers burden in dogfooding | proposed |
+| 3 | The world responds to what happened, never to what didn't | §3; the one question | any care-loop or reward idea gets an `ef-burden-log.md` row first and one question: *does a bad week make the world sadder?* | a version that fades gently and still lowers burden in dogfooding | proposed — `spaces.md` §9 and §26–27 go further: growth follows continuity, not output, and completion-driven decoration is out (`spaces.md` §30, tension 2) |
 | 4 | Lumi is the companion everywhere and, one day, a resident on Home | §6 | a still placed at room scale on Home's floor | the room reads busier and the conversation loses the eye | open — a still tried on Today first (2026-09-12, §6) |
 | 5 | Every room Lumi can enter shares one projection | walking depends on it (§6) | — | — | **settled 2026-09-12: isometric** |
 | 6 | A focus session shows Lumi working alongside | body doubling made visible (§5) | a still of Lumi reading near the session bar, then a tier-1 page turn | it reads as a distraction during focus | open |
@@ -141,7 +141,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 **Still open:**
 
-1. **Is Lumi's World a feature?** The Coherence mockup has a *Lumi's World* nav item and card, "a cozy place to grow", beside notes on a reward system and plant care loops. Is the plan a place in the app that grows or changes as the user makes progress, or was it mood in the mockup? If it is a feature, §3's rules decide how it may work; if not, the painted rooms stay places Lumi lives, with nothing in them that tracks progress.
+1. **Is Lumi's World a feature?** The Coherence mockup has a *Lumi's World* nav item and card, "a cozy place to grow", beside notes on a reward system and plant care loops. Is the plan a place in the app that grows or changes as the user makes progress, or was it mood in the mockup? If it is a feature, §3's rules decide how it may work; if not, the painted rooms stay places Lumi lives, with nothing in them that tracks progress. *(2026-09-13: `spaces.md` §6 and §25–28 largely answer this — the spaces may change slowly with the relationship, are never tended, unlocked or awarded, and are never needed to use the app; there is no separate place called Lumi's World. Left open until Chanté closes it.)*
 2. **Try a puppet version of Lumi?** Today every movement is a set of whole drawings, one per frame, redrawn by the image generator, which draws her a little differently every time. The alternative cuts one drawing into pieces — hood, face, each eye, lantern, body — and lets code move the pieces: the eyes change shape, the lantern swings, the head tilts. The test is one throwaway evening, shown beside today's Lumi on the review server, to see whether it looks alive or like a cheap puppet. Isometric raises the stakes: walking needs four facings, so four sets of pieces instead of four drawn sheets for every movement. (Bet 2.)
 
 ## 10. How this doc evolves
@@ -153,5 +153,6 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 ## Change log
 
+- 2026-09-13 — v0.2, no bet moved: `docs/spaces.md` arrived (Chanté's spatial architecture). Where it sits names it; bet 3 notes that it is stricter about completions; §9 question 1 notes that it largely answers Lumi's World.
 - 2026-09-12 — v0.2: Chanté's answers — the product is Coherence, the medallions are canon, Lumi is she, rooms are isometric (bet 5 settled). §2 costume, §6 projection, §7 model sheet and §9 rewritten; the two open questions reworded plainly.
 - 2026-09-12 — v0.1: written after the lantern character, the Home room and the art reorganisation. Where the art has been, the invariants, the book-or-world tension with a proposed synthesis, the ladder of animation costs, motion principles and a behaviour map, companion and resident, character consistency, six bets, six questions.
