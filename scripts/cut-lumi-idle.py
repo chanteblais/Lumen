@@ -15,10 +15,13 @@ drawing, so a hand-over between loops never swaps drawings:
 - breath: the wave's first cell stretched up to 2px at the hood top with the
   feet held (cubic resample on premultiplied channels, anchored on the feet
   baseline), nine cells;
-- wave: the 24 cells, each row scaled so she stands FIGURE_H tall, placed so
-  the hood's right edge holds (the waving hand widens her on the left), then
-  settled onto the first cell on the right half of the head — whole pixels,
-  then a quarter pixel both ways;
+- wave: the 24 cells, each row scaled so she stands FIGURE_H tall, placed by
+  the hood's right edge (the waving hand widens her on the left), aligned on
+  the first cell over the parts that hold — the hood's right half, the lantern
+  side, the boots — within 6px both ways and then to a quarter pixel, and then
+  held: everything but the arm and the cloak it moves is the first cell's, so
+  the hood, eyes, lantern and boots never move (Chanté: "she jumps around a
+  little bit" — five cells had dropped 2–4px and the rest drifted a pixel);
 - blink: half-shut and shut eyes on every breath cell, drawn by bringing a lid
   down over her own eyes (neither sheet has a blink row) — the lid is the
   face's own black, the bottom of each eye stays as a thin bright lens. The
@@ -218,25 +221,6 @@ def shift(cell, dx, dy):
     return straight(np.dstack([ndi.shift(pre[:, :, i], (dy, dx), order=3, mode='constant') for i in range(4)]))
 
 
-def settle(cell, ref, col0, head_rows, reach=4, fine=1.0, step=0.25):
-    """Move `cell` so the right half of its head (rows above `head_rows`, columns from `col0`) best
-    overlaps `ref`'s: whole pixels sideways, then a quarter pixel both ways (a frame half a pixel off
-    its neighbour doubles the hood's edge under the crossfade). The right half only, because the
-    waving hand comes up beside the hood's left side. Returns the cell and the overlap reached."""
-    def region(alpha):
-        a = alpha.copy(); a[head_rows:] = 0; a[:, :col0] = 0
-        return a
-    iou = lambda s, r: np.minimum(s, r).sum() / np.maximum(s, r).sum()
-    r = region(ref[:, :, 3].astype(float) / 255)
-    a = cell[:, :, 3].astype(float) / 255
-    dx = max(range(-reach, reach + 1), key=lambda d: iou(region(np.roll(a, d, axis=1)), r))
-    a = np.roll(a, dx, axis=1)
-    steps = np.arange(-fine, fine + step / 2, step)
-    fx, fy = max(((fx, fy) for fx in steps for fy in steps), key=lambda p: iou(region(ndi.shift(a, (p[1], p[0]), order=1)), r))
-    best = iou(region(ndi.shift(a, (fy, fx), order=1)), r)
-    return shift(cell, dx + fx, fy), best
-
-
 def face(cell):
     """Mask of the dark face (holes filled, so the eyes are inside it) and of its dark pixels alone."""
     dark = (cell[:, :, :3].sum(axis=2) < 150) & (cell[:, :, 3] > 200)
@@ -318,9 +302,47 @@ rest = wave[0]
 head_rows = FEET_Y - FIGURE_H + int(FIGURE_H * HEAD_SHARE)
 hx = np.where((rest[:head_rows, :, 3] > 127).any(axis=0))[0]
 col0 = int((hx.min() + hx.max()) / 2)
-settled = [settle(c, rest, col0, head_rows) for c in wave[1:]]
-wave[1:] = [c for c, _ in settled]
-print('wave head overlap with the first cell after settling (right half):', [round(float(o), 3) for _, o in settled])
+rest_face, _ = face(rest)
+face_left = int(np.where(rest_face[:head_rows].any(axis=0))[0].min())
+
+
+def align(cell, ref, held, reach=6, fine=1.0, step=0.25):
+    """Move `cell` so its coverage best matches `ref`'s over `held` (weights on the parts that hold still):
+    whole pixels both ways within `reach`, then a quarter pixel. Placing by the matte's lowest row dropped
+    five cells 2–4px, feet and all, and settling on the head alone could not see it. Returns the cell and the overlap."""
+    r = ref[:, :, 3].astype(float) / 255 * held
+    score = lambda a: np.minimum(a * held, r).sum() / np.maximum(a * held, r).sum()
+    a = cell[:, :, 3].astype(float) / 255
+    dx, dy = max(((dx, dy) for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1)),
+                 key=lambda d: score(np.roll(np.roll(a, d[1], axis=0), d[0], axis=1)))
+    a = np.roll(np.roll(a, dy, axis=0), dx, axis=1)
+    steps = np.arange(-fine, fine + step / 2, step)
+    fx, fy = max(((fx, fy) for fx in steps for fy in steps), key=lambda p: score(ndi.shift(a, (p[1], p[0]), order=1)))
+    return shift(cell, dx + fx, dy + fy), score(ndi.shift(a, (fy, fx), order=1))
+
+
+def hold(cell, ref):
+    """An animation hold: everything but what moves comes from `ref`. What moves is where the cell differs from
+    `ref` in blobs, not lines (an opening drops the 1–2px outlines a redraw shifts), on her free side only — left of
+    the hood's centre, and in the head rows left of the face, so the eyes, the hood, the lantern and the boots are
+    `ref`'s in every frame — dilated a little and feathered, on premultiplied channels."""
+    pc, pr = premul(cell), premul(ref)
+    moving = np.abs(pc - pr).sum(axis=2) > 90
+    moving[:, col0:] = False
+    moving[:head_rows, face_left - 2:] = False
+    moving[FEET_Y - 8:] = False
+    moving = ndi.binary_fill_holes(ndi.binary_dilation(ndi.binary_opening(moving, iterations=2), iterations=3))
+    w = ndi.gaussian_filter(moving.astype(float), 1.5)[:, :, None]
+    return straight(w * pc + (1 - w) * pr)
+
+
+held = np.zeros((H, W))
+held[:head_rows, col0:] = 1        # the hood and face, right half
+held[head_rows:, col0:] = 1        # the ribbon's right side and the lantern
+held[FEET_Y - 10:, :] = 1          # the boots
+aligned = [align(c, rest, held) for c in wave[1:]]
+wave[1:] = [hold(c, rest) for c, _ in aligned]
+print('wave overlap with the first cell on the held parts, after aligning:', [round(float(o), 3) for _, o in aligned])
 
 # The breath: the wave's first cell, stretched, so the two loops are one drawing.
 rises = [BREATH_RISE * (1 - np.cos(2 * np.pi * i / BREATH_FRAMES)) / 2 for i in range(BREATH_FRAMES)]
