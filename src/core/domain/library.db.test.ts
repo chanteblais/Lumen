@@ -250,6 +250,29 @@ describe("consolidation", () => {
     expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(2);
   });
 
+  it("moves past stretches with nothing to keep and makes one model call a run by default (B18)", async () => {
+    const u = await createTestUser(db, "Oda");
+    await say(u, "2026-09-11T08:00:00Z", "assistant", "Still with it?");
+    await say(u, "2026-09-11T09:00:00Z", "user", "ok");
+    await say(u, "2026-09-11T10:00:00Z", "user", "Planning the garden: raised beds first, then a plum tree in the autumn.");
+    await say(u, "2026-09-11T10:01:00Z", "assistant", "Raised beds first.");
+    await say(u, "2026-09-11T12:00:00Z", "user", "Back again: the tax forms need doing before Friday, all three of them.");
+    await say(u, "2026-09-11T12:01:00Z", "assistant", "Before Friday, then.");
+    const propose = vi.fn(async (): Promise<RawProposal> => ({ episode: { summary: "You planned part of the day together." }, threads: [], notes: [] }));
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-11T15:00:00Z"), propose } });
+    expect(propose).toHaveBeenCalledTimes(1);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(1);
+    const lines = logged.mock.calls.map((c) => String(c[0]));
+    expect(lines.filter((l) => l.startsWith('[consolidate] {"status":"done"'))).toHaveLength(1);
+    expect(lines).toContain("[consolidate] moved past 2 messages with nothing to keep");
+    // The next trigger takes the next visit.
+    await consolidateAfter(db, u, { deps: { now: clock("2026-09-11T15:00:00Z"), propose } });
+    logged.mockRestore();
+    expect(propose).toHaveBeenCalledTimes(2);
+    expect(await db.select().from(episodes).where(eq(episodes.userId, u.id))).toHaveLength(2);
+  });
+
   it("waits while the visit is still going, and moves past a stretch with nothing in it", async () => {
     const u = await createTestUser(db, "Val");
     await say(u, "2026-09-12T10:00:00Z", "user", "hi");

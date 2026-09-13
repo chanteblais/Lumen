@@ -359,7 +359,8 @@ export type ConsolidationResult =
   | { status: "failed" }
   /** Another run claimed the stretch while this one's model call ran; everything this run wrote rolled back. */
   | { status: "lost" }
-  | { status: "done"; messages: number; episodeId: string | null; threadsCreated: number; notesFiled: number; summaries: number; shelved: number };
+  /** `empty`: nothing in the stretch worth a model call; the watermark just moved past it. */
+  | { status: "done"; messages: number; episodeId: string | null; threadsCreated: number; notesFiled: number; summaries: number; shelved: number; empty?: true };
 
 /** Thrown from inside the transaction when the watermark claim is lost, so every write before it rolls back. */
 class LostClaim extends Error {}
@@ -382,7 +383,7 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
 
   if (!heard.length || said < MIN_CHARS) {
     // "hi", a tap on a check-in: nothing to keep, the stretch is done.
-    return (await claimWatermark(db, conversation.id, from, through.id)) ? { status: "done", messages: batch.length, episodeId: null, threadsCreated: 0, notesFiled: 0, summaries: 0, shelved: 0 } : { status: "lost" };
+    return (await claimWatermark(db, conversation.id, from, through.id)) ? { status: "done", messages: batch.length, episodeId: null, threadsCreated: 0, notesFiled: 0, summaries: 0, shelved: 0, empty: true } : { status: "lost" };
   }
 
   const retryAt = await consolidationRetryAt(db, user.id, from, now);
@@ -489,24 +490,40 @@ async function applyPlan(
 
 const inflight = new Map<string, Promise<void>>();
 
+/** Stretches with nothing to keep that one run moves past before it stops, whatever `passes` says (each is a few queries, no model call). */
+export const MAX_EMPTY_PER_RUN = 20;
+
 /**
- * Fire-and-forget for `after()`: catch up on up to `passes` ready stretches
- * (three by default; a chat turn needs one), one run per user per process at a
- * time. Never throws.
+ * Fire-and-forget for `after()`: up to `passes` stretches that need a model call
+ * (one by default — Home and a chat turn each take one, so a backlog catches up a
+ * stretch per visit rather than several back to back), moving past any with
+ * nothing to keep on the way, one run per user per process at a time. Never
+ * throws. Dev log: one line per model pass, one for what was moved past.
  */
 export function consolidateAfter(db: Db, user: Pick<User, "id" | "timezone">, opts: { passes?: number; deps?: Partial<Deps> } = {}): Promise<void> {
   const running = inflight.get(user.id);
   if (running) return running;
+  const log = process.env.NODE_ENV !== "production";
   const run = (async () => {
+    let modelPasses = 0;
+    let empty = 0;
+    let moved = 0;
     try {
-      for (let i = 0; i < (opts.passes ?? 3); i++) {
+      while (modelPasses < (opts.passes ?? 1)) {
         const r = await consolidate(db, user, opts.deps);
-        if (process.env.NODE_ENV !== "production" && r.status !== "nothing") console.log(`[consolidate] ${JSON.stringify(r)}`);
+        if (r.status === "done" && r.empty) {
+          moved += r.messages;
+          if (++empty >= MAX_EMPTY_PER_RUN) break;
+          continue;
+        }
+        if (log && r.status !== "nothing") console.log(`[consolidate] ${JSON.stringify(r)}`);
         if (r.status !== "done") break;
+        modelPasses++;
       }
     } catch (e) {
       console.error("[consolidate] failed", e);
     } finally {
+      if (log && moved) console.log(`[consolidate] moved past ${moved} message${moved === 1 ? "" : "s"} with nothing to keep`);
       inflight.delete(user.id);
     }
   })();
