@@ -13,7 +13,8 @@
 //   - its HEAD is already on main (removing it loses no commit)
 //   - its ignored files are all disposable: node_modules, .next, build output, a .env.local identical to
 //     the shared checkout's, session bookkeeping — not sheet candidates, keys or anything unrecognised
-// Removal is plain `git worktree remove` (git refuses anything dirty on its own) and `git branch -d`.
+// Removal is plain `git worktree remove` (git refuses anything dirty on its own), then the branch goes with
+// `git branch -D` once its tip is proven on main — `-d` would judge against this checkout's HEAD instead.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -121,8 +122,11 @@ for (const t of trees) {
     console.log(`  kept  ${name} — git refused: ${removed.out}`);
     continue;
   }
+  // Not `git branch -d`: it judges "merged" against the HEAD of the checkout this runs from, and the parked
+  // shared checkout trails main, so it refused branches that had landed. Ancestry of the branch's tip in main
+  // is the proof; with its worktree gone nothing has it out to move it, so -D after the check loses nothing.
   const branchNote = t.branch
-    ? git("merge-base", "--is-ancestor", t.head, mainSha).ok && git("branch", "-d", t.branch).ok
+    ? git("merge-base", "--is-ancestor", `refs/heads/${t.branch}`, mainSha).ok && git("branch", "-D", t.branch).ok
       ? `, branch ${t.branch} deleted`
       : `, branch ${t.branch} kept`
     : "";
