@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "status": "proposal, awaiting Chanté's approval. Nothing here is canonical until approved; close-up assets are not generated. v3 (2026-09-13) is measured on art/scenery/library/background-iso.png, Chanté's isometric repaint of the room, which answers the map's question 3 (the Library shares the isometric projection of bet 5). It is a new measurement, not a camera view of the frontal painting v1 and v2 were drawn on: every coordinate changed. The slots, their numbering and the questions carry over.",
+  "status": "proposal, awaiting Chanté's approval. Nothing here is canonical until approved; close-up assets are not generated. v3 (2026-09-13) is measured on art/scenery/library/background.png, Chanté's isometric repaint of the room, which answers the map's question 3 (the Library shares the isometric projection of bet 5). It is a new measurement, not a camera view of the frontal painting v1 and v2 were drawn on: every coordinate changed. The slots, their numbering and the questions carry over.",
   "about": "The Library's camera-view manifest. Stable spatial IDs name physical places only; what a slot holds for a user (a Collection's name, a Thread Group's name) is data stored elsewhere, never here. The annotated maps in spatial-map/ are drawn from this file by scripts/draw-library-map.py, so edit the numbers here and redraw.",
   "coordinates": {
     "space": "library_wide",
@@ -9,7 +9,7 @@
     "closeup_projection": "A close-up's `frame` is a region in its slot's face coordinates (it may reach past 0..1 to take in the neighbours). With `rectify: affine` the frame is un-sheared into a 2:3 rectangle, and the side walls' foreshortening is undone by widening it by `projection.side_wall_widening`: in a parallel projection that is exact, so the rectified crop is the reference image for generating the close-up, not a guess at a new camera. The CSS camera move is the same affine map as a matrix() transform of the wide layer. Until a close-up is generated and measured, its geometry is the face geometry; measured close-up coordinates go under `measured` and take precedence."
   },
   "source": {
-    "asset": "art/scenery/library/background-iso.png",
+    "asset": "art/scenery/library/background.png",
     "served_as": "public/library-room.webp",
     "size_px": [
       1536,
@@ -17,7 +17,7 @@
     ],
     "aspect_ratio": "3:2",
     "ground": "#231912",
-    "note": "An isometric cutaway on a dark ground. The frontal painting v2 was measured on stays at art/scenery/library/background.png."
+    "note": "An isometric cutaway on a dark ground. The frontal painting v2 was measured on is archived as art/archived/scene_mockups/library-background-frontal.png."
   },
   "projection": {
     "kind": "parallel (isometric-like): no vanishing point, so an object is the same size anywhere on the floor",
@@ -749,7 +749,7 @@
     {
       "view_id": "library_wide",
       "parent_view": null,
-      "asset": "art/scenery/library/background-iso.png",
+      "asset": "art/scenery/library/background.png",
       "target_region": {
         "x": 0,
         "y": 0,
