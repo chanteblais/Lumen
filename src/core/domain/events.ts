@@ -6,7 +6,7 @@ import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { events, type Event } from "@/db/schema";
 
-/** Who made a change: the user on a page (Today, Library), or Lumi through a chat tool. */
+/** Who made a change: the user on a page (Today, Lists), or Lumi through a chat tool. */
 export type ActionSource = "app" | "chat";
 
 export type EventInput = {

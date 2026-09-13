@@ -47,18 +47,41 @@ export async function getIntention(db: Db, userId: string, id: string): Promise<
   return row;
 }
 
-export async function updateIntention(db: Db, userId: string, id: string, patch: IntentionPatch): Promise<Intention | undefined> {
-  const set: Partial<typeof intentions.$inferInsert> = { lastTouchedAt: new Date() };
-  if (patch.title !== undefined) set.title = patch.title.trim();
-  if (patch.nextAction !== undefined) set.nextAction = patch.nextAction?.trim() || null;
-  if (patch.note !== undefined) set.note = patch.note?.trim() || null;
-  if (patch.list !== undefined) set.list = patch.list?.trim() || null;
-  if (patch.estimateMinutes !== undefined) set.estimateMinutes = patch.estimateMinutes;
-  if (patch.effortHint !== undefined) set.effortHint = patch.effortHint;
-  if (patch.dueAt !== undefined) set.dueAt = patch.dueAt;
-  const [row] = await db.update(intentions).set(set).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).returning();
-  if (row) await appendEvent(db, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: Object.keys(patch) } });
-  return row;
+/**
+ * The columns a patch would actually change on this row, with the values it
+ * would set — the same trimming and empty-to-null as the write. Empty means
+ * the patch is a no-op: Lumi re-sending what a thing already says (she has
+ * been seen "finishing" a note she just made with the same fields) must not
+ * write, bump `last_touched_at`, or leave an `intention.updated` event that
+ * the ledger and the context block would then report as a change.
+ */
+export function intentionChanges(current: Intention, patch: IntentionPatch): Partial<typeof intentions.$inferInsert> {
+  const set: Partial<typeof intentions.$inferInsert> = {};
+  if (patch.title !== undefined && patch.title.trim() !== current.title) set.title = patch.title.trim();
+  if (patch.nextAction !== undefined && (patch.nextAction?.trim() || null) !== current.nextAction) set.nextAction = patch.nextAction?.trim() || null;
+  if (patch.note !== undefined && (patch.note?.trim() || null) !== current.note) set.note = patch.note?.trim() || null;
+  if (patch.list !== undefined && (patch.list?.trim() || null) !== current.list) set.list = patch.list?.trim() || null;
+  if (patch.estimateMinutes !== undefined && (patch.estimateMinutes ?? null) !== current.estimateMinutes) set.estimateMinutes = patch.estimateMinutes ?? null;
+  if (patch.effortHint !== undefined && (patch.effortHint ?? null) !== current.effortHint) set.effortHint = patch.effortHint ?? null;
+  if (patch.dueAt !== undefined && (patch.dueAt?.getTime() ?? null) !== (current.dueAt?.getTime() ?? null)) set.dueAt = patch.dueAt ?? null;
+  return set;
+}
+
+/** `changed` names the columns that moved; empty when the patch said nothing new (no write, no event). `via`: a page's move (`"app"`) or Lumi's tool. */
+export async function updateIntention(db: Db, userId: string, id: string, patch: IntentionPatch, via: ActionSource = "chat"): Promise<{ row: Intention; changed: string[] } | undefined> {
+  const current = await getIntention(db, userId, id);
+  if (!current) return undefined;
+  const set = intentionChanges(current, patch);
+  const changed = Object.keys(set);
+  if (changed.length === 0) return { row: current, changed };
+  const [row] = await db
+    .update(intentions)
+    .set({ ...set, lastTouchedAt: new Date() })
+    .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
+    .returning();
+  if (!row) return undefined;
+  await appendEvent(db, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: changed, via } });
+  return { row, changed };
 }
 
 /** `via` records whether the user ticked it on a page or Lumi did it in chat — the context block tells them apart. */
@@ -84,14 +107,14 @@ export async function reopenIntention(db: Db, userId: string, id: string, via: A
   return row;
 }
 
-export async function dropIntention(db: Db, userId: string, id: string, reason?: string): Promise<Intention | undefined> {
+export async function dropIntention(db: Db, userId: string, id: string, reason?: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const now = new Date();
   const [row] = await db
     .update(intentions)
     .set({ status: "dropped", droppedAt: now, lastTouchedAt: now })
     .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
     .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.dropped", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
+  if (row) await appendEvent(db, { userId, type: "intention.dropped", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null, via } });
   return row;
 }
 

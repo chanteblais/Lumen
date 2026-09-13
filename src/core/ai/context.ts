@@ -206,7 +206,7 @@ export function buildContextBlock(input: ContextInput): string {
     lines.push(
       "",
       "## Recent changes (newest first — when · what · id · where it stands now)",
-      "What changed lately, wherever it happened. Ticks and unticks on Today and in the Library are theirs and never appear in the transcript; \"the one I just checked off\" or \"what I just deleted\" is here — act on it, don't ask what it was. A tick that was a mistake: reopen_intention.",
+      "What changed lately, wherever it happened. Ticks, unticks, moves and letting go on Today and in Lists are theirs and never appear in the transcript; \"the one I just checked off\" or \"what I just deleted\" is here — act on it, don't ask what it was. A tick that was a mistake: reopen_intention.",
     );
     for (const a of input.recentActivity.slice(0, MAX_ACTIVITY)) {
       lines.push(`- ${describeGap(a.at, now)} · ${describeActivity(a)} · ${a.intentionId} · now ${a.status}`);
@@ -285,15 +285,17 @@ export function describeActivity(a: ActivityItem): string {
   const onPage = a.via === "app";
   switch (a.type) {
     case "intention.completed":
-      return onPage ? `they ticked ${t} done on Today or in the Library` : `you marked ${t} done`;
+      return onPage ? `they ticked ${t} done on Today or in Lists` : `you marked ${t} done`;
     case "intention.reopened":
-      return onPage ? `they unticked ${t} on Today or in the Library — open again` : `you put ${t} back`;
+      return onPage ? `they unticked ${t} on Today or in Lists — open again` : `you put ${t} back`;
     case "intention.dropped":
-      return `you let ${t} go`;
+      return onPage ? `they let ${t} go in Lists` : `you let ${t} go`;
     case "intention.created":
       return `you saved ${t}`;
-    case "intention.updated":
-      return `you changed ${t}${a.fields?.length ? ` (${a.fields.join(", ")})` : ""}`;
+    case "intention.updated": {
+      const fields = a.fields?.length ? ` (${a.fields.join(", ")})` : "";
+      return onPage ? `they moved ${t} in Lists${fields}` : `you changed ${t}${fields}`;
+    }
   }
 }
 

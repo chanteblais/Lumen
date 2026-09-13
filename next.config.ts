@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // Lists became the Library (2026-09-13); old links and bookmarks still land.
-  async redirects() {
-    return [{ source: "/lists", destination: "/library", permanent: true }];
-  },
-};
+// /lists redirected to /library from 2026-09-13 until Lists came back as its own sheet the same day.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

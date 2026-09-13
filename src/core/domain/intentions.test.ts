@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { declinesFromEvents } from "./intentions";
+import { declinesFromEvents, intentionChanges } from "./intentions";
 
 const now = new Date("2026-09-12T20:00:00Z"); // 1pm Vancouver
 const tz = "America/Vancouver";
@@ -12,5 +12,38 @@ describe("declinesFromEvents", () => {
       ["a", "too_big"],
       ["b", null],
     ]);
+  });
+});
+
+describe("intentionChanges", () => {
+  const row = {
+    id: "i1",
+    userId: "u",
+    title: "Call Kendra",
+    nextAction: "Open her contact and call",
+    note: null,
+    list: "Personal",
+    estimateMinutes: 15,
+    effortHint: "small",
+    dueAt: null,
+    status: "open",
+  } as unknown as Parameters<typeof intentionChanges>[0];
+
+  it("is empty when the patch re-sends what the row already says", () => {
+    expect(intentionChanges(row, { title: "Call Kendra ", nextAction: "Open her contact and call", note: "", list: "Personal", estimateMinutes: 15, effortHint: "small", dueAt: null })).toEqual({});
+  });
+
+  it("keeps only the columns that move, with the write's trimming and empty-to-null", () => {
+    expect(intentionChanges(row, { title: "Call Kendra", nextAction: "  ", list: "Work", dueAt: new Date("2026-09-20T17:00:00Z") })).toEqual({
+      nextAction: null,
+      list: "Work",
+      dueAt: new Date("2026-09-20T17:00:00Z"),
+    });
+  });
+
+  it("treats the same instant as no change and a different one as a change", () => {
+    const due = { ...row, dueAt: new Date("2026-09-20T17:00:00Z") } as typeof row;
+    expect(intentionChanges(due, { dueAt: new Date("2026-09-20T17:00:00.000Z") })).toEqual({});
+    expect(intentionChanges(due, { dueAt: null })).toEqual({ dueAt: null });
   });
 });
