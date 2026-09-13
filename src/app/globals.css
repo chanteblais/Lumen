@@ -631,7 +631,23 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   border-radius: 8px;
   box-shadow: var(--shadow);
   animation: bubble-in 160ms ease-out;
+  /* Never off the window: at most 560px, and no more than the room it opens
+     into, measured by the component (`--bubble-max`). A long reply scrolls
+     inside .companion-exchange. */
+  display: flex;
+  flex-direction: column;
+  max-height: var(--bubble-max, 560px);
 }
+/* Where she stands high in a painting there isn't room above her: the bubble
+   opens beside her, level with her hood, and grows down; the tail points at her. */
+.companion-bubble[data-side="right"],
+.companion-bubble[data-side="left"] { position: absolute; top: 0; margin-right: 0; }
+.companion-bubble[data-side="right"] { left: calc(100% + 14px); }
+.companion-bubble[data-side="left"] { right: calc(100% + 14px); }
+.companion-bubble[data-side="right"]::after,
+.companion-bubble[data-side="left"]::after { top: 34px; bottom: auto; border: 0; }
+.companion-bubble[data-side="right"]::after { right: auto; left: -7px; border-left: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule-strong); }
+.companion-bubble[data-side="left"]::after { right: -7px; border-right: 1px solid var(--rule-strong); border-top: 1px solid var(--rule-strong); }
 .companion-bubble::after {
   content: "";
   position: absolute;
@@ -652,6 +668,11 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   padding: 2px 6px 10px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--rule);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass-soft) transparent;
 }
 /* What you said, as a bubble of its own that slides in from the box — so the
    send visibly lands (the earlier muted one-liner read as nothing happening). */
@@ -671,7 +692,7 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 .companion-reply p { font-size: 17px; line-height: 1.5; color: var(--ink); }
 .companion-reply p + p { margin-top: 0.6em; }
 .companion-reply .ledger { margin-top: 8px; }
-.companion-form { display: flex; align-items: flex-end; gap: 10px; }
+.companion-form { flex: none; display: flex; align-items: flex-end; gap: 10px; }
 .companion-form textarea {
   flex: 1;
   resize: none;

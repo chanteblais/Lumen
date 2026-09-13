@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useVoiceInput } from "./useVoiceInput";
 
-type Props = { onSend?: (text: string) => void; busy?: boolean; initialValue?: string };
+type Props = { onSend?: (text: string) => void; onStop?: () => void; busy?: boolean; initialValue?: string };
 
 /** Join typed text and a transcript with one space, no leading space. */
 function join(base: string, spoken: string) {
@@ -14,7 +14,7 @@ function join(base: string, spoken: string) {
   return `${b} ${s}`;
 }
 
-export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
+export function Composer({ onSend, onStop, busy = false, initialValue = "" }: Props) {
   const [value, setValue] = useState(initialValue);
   const ref = useRef<HTMLTextAreaElement>(null);
   const baseRef = useRef("");
@@ -90,11 +90,19 @@ export function Composer({ onSend, busy = false, initialValue = "" }: Props) {
             }
           }}
         />
-        <button type="submit" className="send shrink-0" aria-label="Send" disabled={value.trim().length === 0 || busy}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 19V5M6 11l6-6 6 6" />
-          </svg>
-        </button>
+        {busy && onStop ? (
+          <button type="button" className="send shrink-0" aria-label="Stop Lumi" onClick={onStop}>
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+              <rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" />
+            </svg>
+          </button>
+        ) : (
+          <button type="submit" className="send shrink-0" aria-label="Send" disabled={value.trim().length === 0 || busy}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19V5M6 11l6-6 6 6" />
+            </svg>
+          </button>
+        )}
       </form>
 
       <div className="composer-foot mt-5 flex flex-wrap items-center justify-between gap-4 px-2">
