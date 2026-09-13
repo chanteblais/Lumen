@@ -37,6 +37,7 @@ The standing *docs-before-commit* sweep (`CLAUDE.md`) keeps each commit honest. 
    | a page or component (`src/app/**`, `src/components/**`) | `docs/features.md`; the page's spec where one exists (`docs/today.md`) |
    | anything visual — tokens, classes, ornaments, the companion | `docs/design-system.md`; `docs/design-philosophy.md` if a principle bent |
    | persona, tools, greeting, check-ins | `docs/architecture.md`; `docs/voice-eval-log.md` if a scenario was run |
+   | a canon source of Lumi's brief (listed in `docs/philosophy/lumi-brief.md`; `npm run check:brief` names it) | `docs/philosophy/lumi-brief.md`: does the change alter what Lumi should understand? Update the brief if so, then `npm run brief -- --reviewed` and a change-log line either way |
    | copy or a control that asks the user to set, keep, rate or confirm anything | `docs/ef-burden-log.md` (a row, with its verdict) |
    | a decision that moved | `docs/decisions.md` (append); if it changes how the product behaves or why, also `docs/living/decisions.md`, and the affected canonical doc from `PROJECT-CANON.md` |
    | behaviour that now differs from the canon | surface it to Chanté: code changes, doc changes, or a new entry in `docs/living/open-questions.md`; never silently |
