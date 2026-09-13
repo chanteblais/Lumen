@@ -19,6 +19,12 @@ query string, for these testing params:
   idle=0                                     no scheduled idle at all (cues still fire)
   tour=0                                     she never sets off, so a tilt or an expression can play out whole
 e.g. `--start 0 --step 0.25 --count 40 --zoom 9 --query 'cue=curious@0.3,glanceLeft@4.5&idle=0&tour=0' --name idle`.
+
+    python3 art/prototypes/lumi-walk/capture.py --audit        # facing against movement; prints the audit's JSON
+    python3 art/prototypes/lumi-walk/capture.py --occlusion    # the same walk; layers over her that the depth rule
+                                                               # puts behind her, and floor-coloured layer px over her
+    python3 art/prototypes/lumi-walk/capture.py --trace 0,0.5,40
+    python3 art/prototypes/lumi-walk/capture.py --page [WxH]
 """
 import os
 import subprocess
@@ -41,16 +47,18 @@ rows = (count + cols - 1) // cols
 out_dir = os.path.join(HERE, 'out')
 os.makedirs(out_dir, exist_ok=True)
 
-if '--audit' in sys.argv or '--trace' in sys.argv:
+if '--audit' in sys.argv or '--trace' in sys.argv or '--occlusion' in sys.argv:
     # the page's ?audit=1 mode (facing against movement, turns and flips, over the tour and 60 random clicks), or
-    # ?trace=start,step,count (her position, drawing, facing and heading at each sample)
+    # ?trace=start,step,count (her position, drawing, facing and heading at each sample), or ?occlusion=1 (the same
+    # walk as the audit, counting at sampled frames her pixels covered by a layer the depth rule puts behind her and
+    # floor-coloured layer pixels drawn over her; see the page's runOcclusion)
     # --audit --query 'around=905.2,905.5' adds every frame between those sim times to the audit's JSON, for a worst
     # case found among the random clicks, which --trace (the tour only) cannot reach
-    query = ('audit=1' if '--audit' in sys.argv else 'trace=' + arg('--trace', '0,1,10')) \
-        + (('&' + arg('--query', '').lstrip('?&')) if '--query' in sys.argv else '')
+    mode = 'audit=1' if '--audit' in sys.argv else 'occlusion=1' if '--occlusion' in sys.argv else 'trace=' + arg('--trace', '0,1,10')
+    query = mode + (('&' + arg('--query', '').lstrip('?&')) if '--query' in sys.argv else '')
     dom = subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--virtual-time-budget=120000', '--dump-dom',
                           'file://' + os.path.join(HERE, 'index.html') + '?' + query], check=True, capture_output=True,
-                         text=True, timeout=300).stdout
+                         text=True, timeout=600).stdout
     import re
     found = re.search(r'<pre id="audit">(.*?)</pre>', dom, re.S)
     print(found.group(1) if found else 'no audit in the page (did it throw?)')

@@ -183,6 +183,6 @@
     { "id": "log-basket", "footprint": [[480,300],[520,270],[590,300],[560,330]] }
   ],
 
-  "floor_note": "The floor her feet may stand on, ignoring furniture: room-home.json's walkable, pushed out where the plate shows more floor (up to the hearth, the wall base right of the stool, the stair's bottom step) and already inset from walls, rug-free edges and the floor's front edge by her cloak's reach. Walkable = this minus every footprint (extent where given) and blocker grown by her clearance.",
+  "floor_note": "The floor her feet may stand on, ignoring furniture: the walk test's first hand-traced floor (since retired), pushed out where the plate shows more floor (up to the hearth, the wall base right of the stool, the stair's bottom step) and already inset from walls, rug-free edges and the floor's front edge by her cloak's reach. Walkable = this minus every footprint (extent where given) and blocker grown by her clearance.",
   "floor": [[520,330],[740,330],[740,470],[1040,500],[1070,470],[1128,508],[1300,605],[1380,860],[1120,960],[853,945],[640,880],[460,790],[267,690],[480,573],[493,400]]
 }
