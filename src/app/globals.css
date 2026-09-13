@@ -1097,11 +1097,22 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
    Only Home (Today has its own painting, below; the rest stay ivory). The greeting is the exception
    inside the exception: it hangs on the wall as a parchment scroll, so its
    tokens go back to ink on paper. Nothing new for the user to keep. */
+/* Each room's painting is an image inside its scene (`RoomScene`), so it starts
+   loading with the HTML rather than after this stylesheet. Until it arrives the
+   scene's own colour shows and it fades in over it (450ms); one already loaded
+   shows at once (`data-instant`, set by the inline script in layout.tsx). Shown
+   after 3s regardless, should the script never run. The veil (`::after`) stays on top. */
+.scene-painting { object-fit: cover; object-position: center; opacity: 0; transition: opacity 450ms ease; }
+.scene-painting[data-shown] { opacity: 1; }
+.scene-painting[data-instant] { transition: none; }
+.scene-painting:not([data-shown]) { animation: scene-shown 0s 3s forwards; }
+@keyframes scene-shown { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .scene-painting { transition: none; } }
 .home-scene {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #362e29 url("/home-room.webp") center / cover no-repeat;
+  background: #362e29;
 }
 /* The room dims toward the spine and the floor so the text sits in the light:
    darkest along the left edge, lighter where the room shows, dark again behind
@@ -1294,7 +1305,7 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #6b5236 url("/today-room.webp") center / cover no-repeat;
+  background: #6b5236; /* the painting is an image inside (RoomScene; see .scene-painting) */
 }
 /* A warm veil, heaviest along the left and the top (where
    the clock sits on the painting), clear over the room. */
@@ -1438,7 +1449,7 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #5b4128 url("/library-room.webp") center / cover no-repeat;
+  background: #5b4128; /* the painting is an image inside (RoomScene; see .scene-painting) */
 }
 /* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */

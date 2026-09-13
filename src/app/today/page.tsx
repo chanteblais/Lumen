@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
+import { RoomScene } from "@/components/shell/RoomScene";
 import { PlanSection, planIsReady } from "@/components/today/PlanSection";
 import { Divider } from "@/components/ui/Ornament";
 import { dayPart } from "@/core/time";
@@ -34,7 +35,7 @@ export default async function TodayPage() {
       {/* Today is set in the garden (globals.css → Today: the garden): the painting fills the
           viewport behind the shell, and three things sit on it, each quieter than the last —
           Lumi's words set on the painting, the one Right now card, and a slip with the rest. */}
-      <div className="today-scene" aria-hidden />
+      <RoomScene room="today" />
       <header className="today-voice">
         <p className="label">Today</p>
         <div className="my-3">
