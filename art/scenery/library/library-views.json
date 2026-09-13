@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "proposal, awaiting Chanté's approval (2026-09-13). Nothing here is canonical until approved; close-up assets are not generated.",
+  "status": "proposal, awaiting Chanté's approval (2026-09-13). Nothing here is canonical until approved; close-up assets are not generated. Measured on background.png; the Library now serves background-small.png (same architecture, furniture at Lumi's scale), so the central table, its occluders and the anchors and routes around it are stale until redrawn.",
   "about": "The Library's camera-view manifest. Stable spatial IDs name physical places only; what a slot holds for a user (a Collection's name, a Thread Group's name) is data stored elsewhere, never here. The annotated maps in spatial-map/ are drawn from this file by scripts/draw-library-map.py, so edit the numbers here and redraw.",
 
   "coordinates": {
