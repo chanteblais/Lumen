@@ -16,7 +16,11 @@ Chanté chose fewer waits over loading screens, "but make sure we reload when an
 - **Back re-reads.** Library → Today by the nav link, then Back: the Library was shown and a fresh `/library?_rsc` request followed.
 - `npm run check`: types, lint, 89 tests, route-auth (accepts `requireVisit()`), CSS prefixes.
 
+### Fixed
+- **Today's card arrived a beat after the page** (Chanté, reviewing). Streamed timing: header at ~0.22s, the plan parts at ~0.52s, and React holds a placeholder swap at least 300ms (`FALLBACK_THROTTLE_MS`). The plan was already primed, so nothing needed to stream: Today now renders whole when `planIsReady`, and keeps Suspense (the dots) only while a path is being generated.
+
 ### Known and deliberate
+- **Today's first byte waits for the snapshot** (~0.3s here, a few ms beside the database) so the page can arrive in one piece; there is no loading screen, by Chanté's preference.
 - **No cookie or token copy of the user.** Folding the lookup into the visit write took the round trip away without keeping a copy that could go stale.
 - **Returning to a tab re-reads after a minute away, not every time.** Flicking between tabs doesn't cost a server render and a visit each time.
 - The first request ever still takes the old two-step path (create the row, then stamp it).
