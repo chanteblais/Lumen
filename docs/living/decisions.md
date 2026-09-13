@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-13 · Lists is called the Library, and for now it is only its room
+
+**Decision.** The nav item and page *Lists* are renamed **Library** (`/library`; `/lists` redirects), set in a painted reading room with Lumi standing in it. The list view came off the page the same day: nothing sits on the painting. The lists themselves are unchanged — Lumi files into them, Today draws its path from them, and her context reads them — but no page shows them; filing, ticking and correcting happen in conversation.
+**Rationale.** Chanté's asks, on review: the Library's painting arrived, the place name fits it, and the list panel over the room was not what she wanted there. *(Why the panel came off is Claude's reading; Chanté asked for it without giving a reason.)*
+**Implications.**
+- The first place name to reach the nav; *Today* stays *Today*. That answers question 15 for the Library only.
+- **Differs from the canon:** EP§18 says "full lists live in Lists rather than appearing everywhere", and EP§21 has the user reorder things in Lists. With no list view, full lists live nowhere the user can see. Raised with Chanté; until the Library shows what it holds, the conversation is the only way to see everything.
+- What the Library shows next is question 3; `art/mockups/book-mockup.png` and `book_layout-mockup.png` show a thread as an open book.
+
+**Principle.** V§14, EP§15, EP§18, EP§19.
+**Replaces.** *Lists*, a plain page with the tick ([engineering log](../decisions.md), same date).
+
 ## 2026-09-13 · Lumi waves when you arrive
 
 **Decision.** When the user arrives — the app opened, or its tab shown again, after thirty minutes or more away, or a first visit — Lumi waves once, a moment later, then goes back to breathing. It is her one drawn gesture, and a reaction, not an idle animation: it never plays on a schedule.

@@ -1,6 +1,6 @@
 /**
  * Keep today's persisted path honest when an intention leaves it, wherever
- * that happened (chat tool, Today, Lists). Code, not the model.
+ * that happened (chat tool, Today, Library). Code, not the model.
  */
 import { type Db } from "@/db/client";
 import type { User } from "@/db/schema";

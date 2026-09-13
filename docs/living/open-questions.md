@@ -20,7 +20,7 @@ The vision places Focus in the Study. EP§11 describes Lumi there: breathing, re
 
 **3. How does the Library hold *where have I been*?** *(2026-09-12; mostly answered by V§14, EP§14)*
 Lists lives in the Library ("organize and retrieve"), which "may expand because the user's life has accumulated more threads, knowledge, and history" (EP§14). Still open: how that record appears (finished things, sessions, what Lumi noticed and remembers) without becoming a report card, or visual richness becoming "a judgment of how productive the user has been" (EP§14).
-*Meanwhile:* Lists is a plain page. *Related:* questions 12 and 20.
+*Meanwhile:* the Library (renamed from Lists, 2026-09-13) is only its painted room; no page shows the lists ([decision](decisions.md)). *Related:* questions 12 and 20.
 
 **4. Where does Insights (the mail) belong?** *(2026-09-12)*
 Neither foundation document places it. Candidates: the Library (what arrived and is being held), the Garden (something that may need planting), or Home, through Lumi. It is already an inbox that needs no processing, so EP§1's worry doesn't apply.
@@ -32,7 +32,7 @@ The concepts are named (planting an intention, tending active work, letting some
 
 **15. Which names does the user see?** *(2026-09-12)*
 The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary.
-*Meanwhile:* Home · Today · Lists · Insights · Settings.
+*Meanwhile:* Home · Today · Library · Insights · Settings — *Library* is the first place name in the nav (Chanté, 2026-09-13); *Today* stays.
 
 ## Rewards and growth
 
@@ -130,6 +130,6 @@ The strategy wants Lumi to "move fluidly between practical and reflective conver
 
 **13. What survives of the book?** *(2026-09-12)*
 Ivory paper, serif type, fine rules, rationed ornaments and paper plates over paintings. In inhabited places, is the book the interface's language, or does it fade? EP§12 (empty space does work) holds either way.
-*Meanwhile:* the shipped UI is still the book; Lists, Insights and Settings are plain ivory.
+*Meanwhile:* the shipped UI is still the book; Insights and Settings are plain ivory, and the Library is its painting with nothing on it.
 
 **Art questions** (companion or resident, a layered "puppet" Lumi, the model sheet) are tracked in [`art-direction.md`](../art-direction.md) §6, §8 and §9, and not repeated here.

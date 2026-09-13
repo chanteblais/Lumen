@@ -101,7 +101,7 @@ export async function POST(req: Request) {
   }
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
-  // a tick on Lists a minute ago is in Lumi's context before she reads the message.
+  // a tick in the Library a minute ago is in Lumi's context before she reads the message.
   const [history, snap, recentActivity, leads, mailScan] = await Promise.all([
     loadRecentMessages(db(), conversation.id),
     loadSnapshot(db(), user),

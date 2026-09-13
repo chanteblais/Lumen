@@ -30,7 +30,7 @@ type Props = {
 export type Handoff = { text: string; kind: "start_intention" | "declined" | "break_down"; intentionId: string; reason?: DeclineReason };
 
 /**
- * What a link from Today/Lists turns into: a visible message plus metadata.
+ * What a link from Today/Library turns into: a visible message plus metadata.
  * `?decline=<id>&reason=<key>` carries one of the six quick answers; the
  * server records the decline and re-cuts the path. docs/today.md → Handoffs.
  */
@@ -56,7 +56,7 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   // Every page open is a fresh start: the greeting card sits after everything
   // that was there when the page opened, and what you say next goes below it.
   const [cardAt] = useState(initialMessages.length);
-  // A link from Today/Lists (?start=<id> …) becomes the first message of this sitting.
+  // A link from Today/Library (?start=<id> …) becomes the first message of this sitting.
   const initialHandoff = useMemo(() => handoffMessage(params, intentionTitles), [params, intentionTitles]);
   // Quick starts are for the moment of starting: shown until you've said
   // something this sitting, and again next time you come back.

@@ -51,7 +51,7 @@ Each place expresses a relationship to activity (V§14, EP§15) and answers one 
 |---|---|---|---|
 | **Home** | *Here I am.* | Arrive and inhabit: arriving, talking, reflecting, returning. Asks nothing of you | `/`, the painted room, the conversation. Also hosts focus sessions |
 | **Garden** (Today) | *What matters today?* | Tend: *what needs tending now?*, not *what remains incomplete?* Plant, tend, let rest, prune (V§15) | `/today`: the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens |
-| **Library** (Lists) | *Where have I been?* | Organise and retrieve what the system is holding; richer as history grows | `/lists`, plain, tick only. Insights (mail) has no place yet |
+| **Library** (was Lists) | *Where have I been?* | Organise and retrieve what the system is holding; richer as history grows | `/library` (the nav says *Library* since 2026-09-13; `/lists` redirects): the painted reading room with Lumi standing in it, **no list view for now** — the lists are still kept, feed Today and reach Lumi; filing and ticking happen in conversation ([decision](docs/living/decisions.md)). Insights (mail) has no place yet |
 | **Study** (Focus) | *What am I doing now?* | Attend: give attention to one thing | Not a place yet; sessions run on Home |
 
 The metaphor must clarify what the user can do, never obscure it (EP§15). Places grow with relationship, continuity and accumulated life, **not points** (V§14, EP§14). Settings is a utility, not a place.
