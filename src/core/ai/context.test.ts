@@ -114,4 +114,15 @@ describe("buildContextBlock", () => {
     expect(block).toContain("said: too big");
     expect(block).toMatch(/Grant report.*declined today \(too big\)/);
   });
+  it("says where they are and which way in, right under the time", () => {
+    const base = { displayName: "C", timezone: "UTC", now };
+    const today = buildContextBlock({ ...base, where: { place: "today", via: "bubble" } }).split("\n");
+    expect(today[3]).toBe("- Where they are: Today, with today's path in front of them, talking to you through the bubble — the page stays in view and your reply shows in a small bubble beside you.");
+    expect(buildContextBlock({ ...base, where: { place: "home", via: "home" } })).toContain("- Where they are: Home, talking to you in the conversation.");
+    expect(buildContextBlock({ ...base, where: { place: "lists", via: "lists-add" } })).toContain("through Lists' Add task line — they want it filed");
+    expect(buildContextBlock({ ...base, where: { place: "library", via: "bubble", detail: "book" } })).toContain("the Library, reading a thread as a book");
+  });
+  it("says nothing about where when the client didn't", () => {
+    expect(buildContextBlock({ displayName: "C", timezone: "UTC", now })).not.toContain("Where they are");
+  });
 });

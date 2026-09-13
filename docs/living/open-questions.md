@@ -150,7 +150,7 @@ Related: [Home](../product/home.md).
 
 ## 24. How does context selection evolve beyond one block?
 
-**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance.
+**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance. *(2026-09-13: each turn now says which page the user spoke from and which way in — the smallest form of space context, AI & IA §23 — but what the block selects doesn't change by space; this question stays open.)*
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 

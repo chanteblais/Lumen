@@ -102,7 +102,8 @@ Also from canon: not a motivational speaker (`product.md`), not a replacement fo
 
 **Today** *(current)*:
 - **Structured state:** intentions, lists, capacity, focus sessions, day plans, beliefs, leads, events, and the Library's threads, notes and episodes.
-- **A capped context block:** up to 25 intentions, 12 recent changes, 12 beliefs chosen for the turn (how they like her to be, what helps them start, what the conversation is about, the freshest projects; `recall_memory` finds the rest) and 8 leads; the Library threads the turn touches (≤ 2, each with its summary and ≤ 6 notes), an index of up to 12 others, and up to 3 recent visits that have left the transcript.
+- **A capped context block:** up to 25 intentions, 12 recent changes, 12 beliefs chosen for the turn (how they like her to be, what helps them start, what the conversation is about, the freshest projects; `recall_memory` finds the rest) and 8 leads; the Library threads the turn touches (≤ 2, each with its summary and ≤ 6 notes), an index of up to 12 others, and up to 3 recent visits that have left the transcript. One line says where they are as they speak: the page, and whether through Home, the bubble or Lists' Add task (2026-09-13).
+- **The app itself:** a short map of the places in her persona — what each is for, what the user can do there by hand, and what isn't built yet — so "how do I…" gets the one place and the one tap, or a plain *not yet* (2026-09-13).
 - **Conversation:** the last 30 messages. What came before lives on as recent memory: after each visit, consolidation writes a short episode and files what mattered under Library threads (2026-09-13).
 
 When a cap bites, the answer is a read tool or retrieval, not a bigger block. Lumi reads through the block and writes only through tools.

@@ -6,6 +6,30 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (7) — Lumi knows the app and where you are (`feat/lumi-environment`)
+
+Chanté: "I'd like Lumi to be aware of her environment and the app's functionality."
+
+### Fixed
+- **She didn't know which page a turn came from.** The bubble on Today sent the same request as Home's composer. Now each client's transport adds `where: { path, via }`; the dev log line reads `where=today/bubble`. Checked live on port 3005: on Today, tap Lumi, "what can I do on this page?" → *Today shows one thing to do now — currently "Take out compost."* / Start with Lumi, Break it down, Not this, Done / *You can also tell me "make today smaller"…* — no tools called, nothing written but the two messages.
+- **She didn't know what the app does or doesn't.** Eight single turns on `gpt-6-astra` (`voice-eval-log.md` → Run 7): Lists named for "where's all my stuff", a plain *not yet* for reminders, new lists and changing a name, with something close to do instead; no invented buttons.
+- `npm run check`: typecheck, lint, 43 files / 272 tests, route-auth, CSS prefixes and the brief all pass (the brief re-stamped after `lumi.md` §6 changed; its text unchanged).
+
+### Known and deliberate
+- The place isn't stored on the message: it describes the moment, and history doesn't need it. An old tab (a client from before this change) or a malformed body sends no place, and the context simply has no line.
+- She knows the page, not the screen: which tab of Lists is open, what's typed or scrolled isn't sent (`spaces.md` §31).
+- The map of the app lives in the cached persona, so it goes stale when a page changes: the docs audit's *a page or feature → features.md* step should now also ask whether *The app, and where they are* still reads true.
+
+### Open
+- Her Today reply ran three short paragraphs in the bubble; within the persona's shape, but the bubble is narrow. Watch for length there before tuning.
+- "I can't start." on Home went straight to the Right now instead of first telling unclear from can't-begin (Run 7, #8). Not caused by the place line; watch it.
+
+### Highest-value manual tests
+- On Today, tap Lumi: "this one feels too big" — she should take the Right now without asking which.
+- In Lists, Add task: "oat milk" — filed, a few words back.
+- On Home: "how do I change how long our sessions are?" — a plain *not yet*, and she settles a length with you instead.
+- In the Library bubble: "it's nice in here" — one light line, no scenery speech.
+
 ## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
 
 Chanté: "It's a big flash of white and things loading faster than others. It doesn't feel very smooth."

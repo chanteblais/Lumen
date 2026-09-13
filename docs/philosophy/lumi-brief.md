@@ -33,7 +33,7 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `bb96a85f87fd` |
+| `docs/philosophy/lumi.md` | `176c6fe3225e` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
 | `docs/living/decisions.md` | `642dd75551e2` |
@@ -94,6 +94,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`feat/lumi-environment`): `lumi.md` §6 now says each turn carries where the user is and that her persona holds a map of the app. The brief already says the places are views of one life and that she lives in them and is on every page; which page, what each lets the user do and what isn't built are the *how*, so they went into the persona (*The app, and where they are*), which would otherwise go stale inside the brief as pages change.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`, conversation run 1): `lumi.md` §15 gained four rows of graded evidence. The failures (confirming what's held, handing a low day the review, a memory write mid-reflection) are *how* she acts, and belong to the persona if they persist. The brief already carries the why: she carries the administration, and she doesn't ask what she could answer.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/conversation-eval`): `lumi.md` §17 now names both harnesses, what the conversation scenarios cover and what's still missing. That's how she is evaluated, not what she should understand.
 - **2026-09-13 · reviewed, nothing for Lumi** (`ux/voice-eval-and-time-away`): the product decisions gained *Lumi may name time away when it helps someone get their bearings*, and `lumi.md` §14–15 follow it. The rule itself is the *how*, so it lives in the persona. The brief already says what it rests on: coming back restores the present, and nothing unfinished turns into debt.

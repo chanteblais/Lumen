@@ -29,6 +29,7 @@ import { loadSnapshot } from "@/core/domain/snapshot";
 import { isReentry } from "@/core/domain/users";
 import { MAIL_ON } from "@/core/email/types";
 import { isSessionEventResponse } from "@/core/focus";
+import { parseWhere } from "@/core/places";
 import { db } from "@/db/client";
 import { requireVisit } from "@/lib/auth";
 import { lazyMailReader } from "@/lib/email";
@@ -65,8 +66,10 @@ export async function POST(req: Request) {
   // under Library threads, their summaries rewritten — off the response (core/ai/consolidate.ts).
   after(() => consolidateAfter(db(), user, { passes: 1 }));
 
-  const body = (await req.json()) as { message?: CoherenceUIMessage };
+  const body = (await req.json()) as { message?: CoherenceUIMessage; where?: unknown };
   const incoming = body.message;
+  // The page they spoke from and which way in (Home, the bubble, Lists' Add task); nowhere if it doesn't parse.
+  const where = parseWhere(body.where);
   if (!incoming || incoming.role !== "user" || !Array.isArray(incoming.parts)) {
     return Response.json({ error: "message required" }, { status: 400 });
   }
@@ -182,6 +185,7 @@ export async function POST(req: Request) {
         content: buildContextBlock({
           displayName: user.displayName,
           timezone: user.timezone,
+          where,
           // The row is created with last_seen_at = created_at, so equality means the first ever turn.
           lastSeenAt: previous.getTime() === user.createdAt.getTime() ? undefined : previous,
           sitting: snap.sitting,
@@ -214,7 +218,7 @@ export async function POST(req: Request) {
       if (process.env.NODE_ENV !== "production") {
         const d = totalUsage.inputTokenDetails;
         const calls = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
-        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
+        console.log(`[chat] tokens in=${totalUsage.inputTokens} out=${totalUsage.outputTokens} cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} steps=${steps.length} where=${where ? `${where.place}/${where.via}` : "-"} tools=${calls.join(",") || "-"}${recut ? ` recut=${recut.reason}` : ""}${sessionEventNow ? ` session_event=${sessionEventNow.response}` : ""}${startNow ? " start_intention" : ""}${endedSessionId ? " reflect=pending" : ""}`);
       }
     },
   });

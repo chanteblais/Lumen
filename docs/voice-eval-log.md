@@ -95,6 +95,24 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 7 — 2026-09-13 · the app and where they are (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:50pm Vancouver, last seen 3h ago, two open intentions, a path with "Email Priya" as Right now)
+After *The app, and where they are* joined the persona and the context block gained *Where they are* (`decisions.md`). Eight single turns from an ad-hoc script (the persona and context block as production, a `where` per turn, no tools), not added to `voice-eval.mjs`. Prefix ≈ 4,630 tokens (cache reads 4,629–4,653).
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Where | They said | Voice | Use | Lumi said |
+|---|---|---|---|---|---|
+| 1 | Home | "where do I see all my stuff?" | ✓ | ✓ | "Tap Lists in the navigation. It opens over this page, with your School, Work, Personal and Later tabs, plus search and Completed." |
+| 2 | Today, bubble | "this one feels too big" | ✓ | ✓ | "Just open the thread with Priya. No drafting yet." |
+| 3 | Today, bubble | "can you remind me at 3 to call the dentist?" | ✓ | ✓ | "I can't send reminders here. Set a phone alarm for 3 p.m. labelled "Call the dentist."" |
+| 4 | Home | "how do I make a new list for groceries?" | ✓ | ✓ | "Making new lists isn't available yet. For now, groceries can go in Personal. / Tell me what you need to buy and I'll add it there." |
+| 5 | Library, bubble | "where are my notes about the book?" | ✓ | ~ | "The Library doesn't show your saved notes yet — you reach them through me for now. / Which book are you looking for?" |
+| 6 | Settings, bubble | "how do I change my name?" | ✓ | ✓ | "You can't change your name in the app yet. What would you like me to call you?" |
+| 7 | Library, bubble | "it's cosy in here" | ✓ | ✓ | "It is. The shelves do a lot of the work." |
+| 8 | Home | "I can't start." | ✓ | ~ | "Open the email thread with Priya. No drafting yet — just get it on screen." |
+
+**Why:** 1–4 and 6 name the one place or say *not yet* plainly, with something close to do instead; none invents a button. 2 reads "this one" as the Right now without asking. 7 takes the room lightly, one line. 5 is ~ only because the script has no tools: with them, `search_library` should come before the question. 8 is ~: it goes straight to the Right now instead of first telling unclear from can't-begin (persona → Starting); the place line isn't involved (it's Home), and the path in context invites it — worth watching in run 5's scenario 1 conditions.
+
 ### Run 6 — 2026-09-13 · scenario 6 on OpenAI after *Lumi may name time away* (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~1:40pm Vancouver, last seen 3h ago)
 The persona and the re-entry context line now allow naming time away when it helps orient, never as debt (`decisions.md` → *Lumi may name time away*). Prefix 4,140 tokens, uncached on this single call. The persona on `main` has grown since run 5 (the Library section), so the difference isn't all this change.
 
