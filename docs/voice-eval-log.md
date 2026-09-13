@@ -117,6 +117,8 @@ After *The app, and where they are* joined the persona and the context block gai
 
 **Chanté's live test, then a fix.** Live, "this one feels too big" in the Today bubble got *Just go over to the compost container. You don't need to carry it out yet.* (the canon's smallest piece); Chanté: "She gave me instructions on how to do it", and she chose one question first (`living/decisions.md`). With that line in *What you're for* → Starting, scenario 2 again: *Is it the whole email to Priya, a particular part, or just too much for today?* — Voice ✓ · Use ✓ (one question, no step, her words for the three options).
 
+**After merging file sharing** (`feat/chat-files`; Home's line in the map names the paperclip, the bubble is words only): from the Today bubble, "can I send you a photo of my whiteboard?" → *Yes — head to Home and tap the paperclip in the message box to send it. Photos don't come through this bubble.* — Voice ✓ · Use ✓ (the one place and the one tap).
+
 ### Run 7 — 2026-09-13 · all nine on OpenAI after focus sessions were removed (`feat/today-in-place`; `gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:40pm Vancouver, last seen 3h ago)
 The persona lost *Focus Together*, *Not this* and the *Body double* quick start, *Company* now reads "be there: one short line, then quiet until they speak", and the brief's places line says there are no focus sessions and that Today's changes happen on its card. Prefix ~3,480 tokens, cached from the second call (run 6: 4,140 uncached, before this change and before `main`'s later persona edits). The script runs without tools, so nothing is saved in scenario 9.
 
