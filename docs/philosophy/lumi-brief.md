@@ -36,7 +36,7 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 | `docs/philosophy/lumi.md` | `7076a030ff3d` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `672d123e4891` |
+| `docs/living/decisions.md` | `ede77bc1f491` |
 | `PROJECT-CANON.md` | `e7c3bca2b1cb` |
 <!-- sources:end -->
 
@@ -94,5 +94,6 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-13 · reviewed, nothing for Lumi** (`chore/mail-off`): the product decisions gained *Mail is switched off, for now*, and *Mail is a look, not an inbox* is marked suspended. The brief never mentions mail or Insights (its places are Home, Today, the Library and Lists), so nothing in it promises what's gone. The mail *how* was in the persona, which leaves its mail line out while `MAIL_ON` is false.
 - **2026-09-13 · reviewed, nothing for Lumi** (`feat/library-sections`): the product decisions gained *Threads that become categories become sections of the Library*, and the canon map's Library row now says the categories show only in a hidden debug mode. The brief's Library line still reads true. How threads fall under categories is in the persona, which is the *how*. The sections aren't something users can see yet, so the brief doesn't mention them; otherwise she might promise them.
 - **2026-09-13 · v1:** first synthesis, from the vision, the principles, `lumi.md`'s canon sections, the model strategy, shared terminology, the canon map and the product decisions. Placed after the persona's opening paragraph for every call that uses the persona.
