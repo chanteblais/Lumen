@@ -50,7 +50,7 @@ Each place expresses a relationship to activity (V§14, EP§15) and answers one 
 | Place | Question | Relationship (EP§15) | In the app now |
 |---|---|---|---|
 | **Home** | *Here I am.* | Arrive and inhabit: arriving, talking, reflecting, returning. Asks nothing of you | `/`, the painted room, the conversation. Also hosts focus sessions |
-| **Garden** (Today) | *What matters today?* | Tend: *what needs tending now?*, not *what remains incomplete?* Plant, tend, let rest, prune (V§15) | `/today`, the path. The painting is on unmerged `ux/today-garden` |
+| **Garden** (Today) | *What matters today?* | Tend: *what needs tending now?*, not *what remains incomplete?* Plant, tend, let rest, prune (V§15) | `/today`: the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens |
 | **Library** (Lists) | *Where have I been?* | Organise and retrieve what the system is holding; richer as history grows | `/lists`, plain, tick only. Insights (mail) has no place yet |
 | **Study** (Focus) | *What am I doing now?* | Attend: give attention to one thing | Not a place yet; sessions run on Home |
 

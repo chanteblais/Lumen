@@ -9,19 +9,33 @@ import { RightNowActions } from "./RightNowActions";
 
 /**
  * Loads the persisted path — usually already primed in the background when
- * the app was opened (`primeTodaysPlan`); generated here only if not. Both
- * halves of the page call this; React's cache() makes it one computation per request.
+ * the app was opened (`primeTodaysPlan`); generated here only if not. Every
+ * part of the page calls this; React's cache() makes it one computation per request.
  */
 const getTodaysPlan = cache(async (user: User): Promise<{ snap: Snapshot; plan: DayPlanJson; byId: Map<string, Intention> }> => {
   const { snap, plan } = await ensureTodaysPlan(db(), user);
   return { snap, plan, byId: new Map(snap.openIntentions.map((i) => [i.id, i])) };
 });
 
-export async function PlanSection({ user, part }: { user: User; part: "dayline" | "path" }) {
+/** The list and the estimate as a marginal note (two parted by a middle dot). */
+function Note({ i }: { i: Intention }) {
+  if (!i.list && !i.estimateMinutes) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-3">
+      {i.list && <span className="pill">{i.list}</span>}
+      {i.estimateMinutes ? <span className="pill">~{i.estimateMinutes} min</span> : null}
+    </div>
+  );
+}
+
+export async function PlanSection({ user, part }: { user: User; part: "dayline" | "path" | "closing" }) {
   const { snap, plan, byId } = await getTodaysPlan(user);
 
   if (part === "dayline") {
-    return <p className="mt-2 font-display text-[20px] leading-[1.4] text-ink-soft sm:text-[22px]">{plan.dayLine}</p>;
+    return <p className="today-dayline mt-2 font-display text-ink-soft">{plan.dayLine}</p>;
+  }
+  if (part === "closing") {
+    return plan.restCanWait ? <p className="today-aside font-display italic">{plan.closingLine ?? "Everything else can wait."}</p> : null;
   }
 
   const rightNow = plan.rightNow ? byId.get(plan.rightNow.intentionId) : undefined;
@@ -31,22 +45,19 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
   const askCapacity = !snap.capacity && !snap.capacitySkipped && Boolean(rightNow || afterThat.length);
 
   return (
-    <div className="flex flex-col gap-8">
+    <>
       {askCapacity && <CapacityPrompt />}
 
-      <section className="card px-8 py-8 sm:px-10 sm:py-9" aria-label="Right now">
+      <section className="today-now" aria-label="Right now">
         <p className="label">Right now</p>
         {rightNow ? (
           <>
-            <div className="mt-5 flex items-start gap-5">
-              <CompleteCircle key={rightNow.id} id={rightNow.id} label={rightNow.title} size={34} />
+            <div className="mt-4 flex items-start gap-4">
+              <CompleteCircle key={rightNow.id} id={rightNow.id} label={rightNow.title} size={30} />
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[32px] leading-[1.15] text-ink sm:text-[40px]">{rightNow.title}</h2>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  {rightNow.list && <span className="pill">{rightNow.list}</span>}
-                  {rightNow.estimateMinutes && <span className="pill">~{rightNow.estimateMinutes} min</span>}
-                </div>
-                <p className="mt-5 text-[18px] leading-snug text-ink-soft">
+                <h2 className="today-now-title font-display text-ink">{rightNow.title}</h2>
+                <Note i={rightNow} />
+                <p className="mt-4 text-[17px] leading-snug text-ink-soft">
                   <span className="label mr-3">First</span>
                   {plan.rightNow!.firstStep}
                 </p>
@@ -55,23 +66,21 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
             <RightNowActions key={rightNow.id} id={rightNow.id} title={rightNow.title} />
           </>
         ) : (
-          <p className="mt-5 font-display text-[26px] text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
+          <p className="mt-4 font-display text-[22px] leading-[1.3] text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
         )}
       </section>
 
       {afterThat.length > 0 && (
-        <section aria-label="After that">
-          <div className="mb-3 flex items-baseline gap-4">
-            <p className="label">After that</p>
-            <div className="rule flex-1" />
-          </div>
-          <ul className="flex flex-col">
+        <section className="today-part" aria-label="After that">
+          <p className="label">After that</p>
+          <ul className="mt-1 flex flex-col">
             {afterThat.map((i) => (
               <li key={i.id} className="row">
                 <CompleteCircle id={i.id} label={i.title} />
-                <p className="min-w-0 flex-1 text-[18px] leading-snug text-ink">{i.title}</p>
-                {i.list && <span className="pill">{i.list}</span>}
-                {i.estimateMinutes && <span className="pill">~{i.estimateMinutes} min</span>}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[17px] leading-snug text-ink">{i.title}</p>
+                  <Note i={i} />
+                </div>
               </li>
             ))}
           </ul>
@@ -79,27 +88,20 @@ export async function PlanSection({ user, part }: { user: User; part: "dayline" 
       )}
 
       {later.length > 0 && (
-        <section aria-label="Later">
-          <div className="mb-3 flex items-baseline gap-4">
-            <p className="label">Later</p>
-            <div className="rule flex-1" />
-          </div>
-          <ul className="flex flex-col">
+        <section className="today-part" aria-label="Later">
+          <p className="label">Later</p>
+          <ul className="mt-1 flex flex-col">
             {later.map((i) => (
               <li key={i.id} className="row row-quiet">
                 <span className="w-[26px]" />
-                <p className="min-w-0 flex-1 text-[18px] text-ink-soft">{i.title}</p>
+                <p className="min-w-0 flex-1 text-[17px] text-ink-soft">{i.title}</p>
                 <span className="label label-mute">{fmtTime(i.dueAt!, user.timezone)}</span>
               </li>
             ))}
           </ul>
         </section>
       )}
-
-      {plan.restCanWait && (
-        <p className="font-display text-[20px] italic text-ink-mute">{plan.closingLine ?? "Everything else can wait."}</p>
-      )}
-    </div>
+    </>
   );
 }
 

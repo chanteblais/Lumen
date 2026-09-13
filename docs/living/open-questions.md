@@ -28,7 +28,7 @@ Neither foundation document places it. Candidates: the Library (what arrived and
 
 **5. What does tending look like in the Garden?** *(2026-09-12; partly answered by V§15, EP§15)*
 The concepts are named (planting an intention, tending active work, letting something rest, pruning what's no longer relevant), with the warning that users shouldn't have to "decipher an elaborate gardening simulation". Still open: which of these becomes a visible gesture, and where. Does *letting something rest* equal moving it to Later (EP§16)? Does pruning happen in the Garden or the Library? Is the path (Right now → After that → Later) the *tending active work* view?
-*Meanwhile:* the path, with the painting behind it (`ux/today-garden`, unmerged).
+*Meanwhile:* the path on one paper panel over the painted greenhouse, with Lumi standing in it on wide screens.
 
 **15. Which names does the user see?** *(2026-09-12)*
 The foundation pairs a function with a place: Today / Garden, Lists / Library, Focus / Study. EP§18 and §21 use the function names. In the nav, *Today* says what it's for and *Garden* says where you are. Both, one, or the place names once they are established? EP§19 warns against making users adopt Coherence's vocabulary.
