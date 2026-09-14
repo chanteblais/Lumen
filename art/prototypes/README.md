@@ -167,6 +167,48 @@ The zeros are not independent evidence: the trim uses the same classifier the co
 - (7) Anchors are proposals.
 - (8) API: 10 images logged at about $0.54, plus two requests that hung and were killed (possibly billed, about $0.22 more). The cleanup used no API calls.
 
+## `lumi-rig/` — one facing of Lumi fully rigged, bet 2 (parked)
+
+A test of whether a complete 2D rig can replace the drawn reach, grip and holding poses (Chanté, 2026-09-13: "Why don't we try rigging her completely?"). Built by an Opus subagent at sw, shown mirrored to se at Home's low table, on `ux/lumi-lantern-table`. **Parked after two rounds** (Chanté, 2026-09-13): holds stay drawn poses.
+
+- `parts.py` splits `art/lumi/lumi-iso-front.png` into parts and writes the meshes, bones and weights into `rig-sw.json`.
+  - **Parts:** hood and face, cloak and torso, the near wing, the far hand, the bow.
+  - **Hands:** the rest hand, plus an open hand and a fist cleaned from the drawn variants' hand pieces.
+  - **Borrowed:** boots and legs from the walk rig.
+  - **Hidden areas:** painted with OpenAI edits; the chosen fills are kept in `fills/`.
+  - **Sleeves:** three shapes cut from the drawn `front-reach`, `front-grip` and `sw-lantern`, in `parts/sleeve-*.png`.
+  - **Check:** at rest it recomposes to `sw-body.png` within 0.002 per channel.
+- `index.src.html` + `build.py` → `index.html`.
+  - **Rig:** linear-blend skinning, and a two-bone IK reaching a target.
+  - **Sleeve:** follows the arm bones, with the flat wing fading as the forearm lifts; a lean of up to 1.84 px at 120.
+  - **Borrowed:** the walk rig's breath, sway, blinks and eyes, plus the lantern and its light.
+  - **Options:** `?sleeve=reach|grip|auto` and `?lean=0`, and grid, check, export and compare modes.
+- `capture.py --all` writes grids, GIFs, `compare-*.png` against the drawn poses, `check.json`, `hands.json` and `sleeve-before-after.png`.
+
+Rebuild, from the repo root: `python3 art/prototypes/lumi-rig/parts.py && python3 art/prototypes/lumi-rig/build.py && python3 art/prototypes/lumi-rig/capture.py --all`. It reads `lumi-walk/parts/` and `rig-walk.json`, so run the walk's `split.py` first.
+
+**What it showed.**
+- **Exact where drawings drift.**
+  - Hood and boots: 0 px in round one; round two's lean moves them at most 1.84 px.
+  - Grip error 0; the lantern back on its anchor within 0.005 px; two hands in every still.
+- **Round one, a flat cloak wing as the sleeve.**
+  - At 120 px and 3× it looks like the drawn poses, because the tabletop and hood hide the arm.
+  - At 9× it's a floating hand with a sliver of sleeve.
+  - In open space the sleeve stood up like a cone or tore into white strands.
+- **Round two, sleeves cut from the drawings plus a lean.**
+  - Bare reaches at 82 and 100 px read as her arm, cuff and embroidery included; at 62 px it's passable.
+  - In the room at 9× little changed: the open hand's wrist reads as a dark wedge, and at the hold the lantern covers the sleeve where the drawn pose shows cloth.
+- **What it can't carry:**
+  - anything below the tabletop (at 0 and 40 px it falls short by 52 and 14 px; she'd have to bend);
+  - turning while holding (separate rigs per facing don't morph);
+  - a held pose with cloth showing beside the object.
+- **Cost.**
+  - Round one: about 58 min and $0.22.
+  - Round two: 19 min and $0.
+  - Per facing: 25–45 min plus two sleeve shapes (one likely generated). Tracing and tuning need judgement per facing.
+
+**Why it's parked:** where Lumi actually handles things, the drawn poses look better. The rig still needs drawn keys for low reaches, holds and turns, and each facing costs about an hour of judgement. Take it up again when a motion needs many reach heights in open space.
+
 ## `shadow-mock.py` — Lumi's shadows on the room paintings
 
 The before and after behind *Lumi's shadow is drawn by the page* (`docs/decisions.md`, 2026-09-13): the companion's CSS contact shadow, cast shadow and room light reproduced in numpy on the Today and Library paintings at her spots, beside the baked cream shadow they replaced. Reads the current `public/lumi-free.webp`; the *before* side needs a sheet with the baked shadow in `out/lumi-free-before.webp` (`git show 129c4fe:public/lumi-free.webp > art/prototypes/out/lumi-free-before.webp`). Writes `out/shadow-<room>.png`. Its numbers copy the room variables in `globals.css` by hand — change both.

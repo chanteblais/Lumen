@@ -1,0 +1,1343 @@
+<meta charset="utf-8">
+<title>Lumi rig</title>
+<style>
+  :root { --bg: #f4efe6; --ink: #2a2420; --muted: #7a6f66; --line: #d8cfc2; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1d1a17; --ink: #efe7dc; --muted: #a39a90; --line: #3a342e; } }
+  :root[data-theme="dark"] { --bg: #1d1a17; --ink: #efe7dc; --muted: #a39a90; --line: #3a342e; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; margin: 0; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { color: var(--muted); margin: 0 0 12px; max-width: 70ch; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  canvas.view { border: 1px solid var(--line); border-radius: 6px; max-width: 100%; }
+  button { font: inherit; padding: 4px 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 6px; cursor: pointer; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  body.grid { background: #000; }
+  body.grid main { display: none; }
+  #grid { display: block; }
+</style>
+<main>
+  <h1>Lumi rigged: one facing, the lantern at Home's low table</h1>
+  <p>The sw drawing split into parts (hood and face, cloak, the near wing as a sleeve, hands, the bow), with what each part hides painted in; meshes with linear-blend weights; a two-bone arm reaching by IK. No reach, grip or holding drawings: those poses are motion data. The drawn poses are in the side-by-side (<code>?compare=reach|grip|held</code>).</p>
+  <div class="row" style="margin-bottom:10px">
+    <button type="button" data-play="pickup" aria-pressed="true">Pick up and set down</button>
+    <button type="button" data-play="reach">Reach heights</button>
+  </div>
+  <div class="row">
+    <canvas class="view" id="whole" width="360" height="480"></canvas>
+    <canvas class="view" id="upper" width="540" height="520"></canvas>
+  </div>
+</main>
+<canvas id="grid" hidden></canvas>
+<pre id="audit" hidden></pre>
+<script>
+(function () {
+  'use strict';
+  var RIG = /*RIG*/null, DRAWN = /*DRAWN*/null, ROOM = /*ROOM*/null, STAGE = /*STAGE*/null, PARTS = /*PARTS*/null, SCENE = /*SCENE*/null;
+  var params = new URLSearchParams(location.search);
+  function num(name, d) { var v = parseFloat(params.get(name)); return isFinite(v) ? v : d; }
+
+  // ---- constants ----------------------------------------------------------------------------------------------------
+  var PW = ROOM.size[0], PH = ROOM.size[1], B = ROOM.iso.slope;
+  var Q = ROOM.lumi.height / RIG.height;              // page px per canvas px (120 / 440)
+  var ST = { x: STAGE.stand[0], y: STAGE.stand[1] };  // her feet, facing se (the sw drawing mirrored)
+  var LAN = ROOM.lantern, LK = LAN.scale;
+  var A = { x: STAGE.anchor[0], y: STAGE.anchor[1] }; // where the lantern stands (its base)
+  var SURF_H = STAGE.surfaceHeight;
+  var ROOTX = RIG.rootX, FEET = RIG.feet, HGT = RIG.height, TOP = RIG.top;
+  var PADL = 64, PADR = 20, PADT = 18, PADB = 8;      // canvas px round her canvas in the figure buffer (the raised hand)
+  // the walk rig's idle (lumi-walk index.src.html T and IDLE), page px
+  var BREATH = 1.3, BREATH_S = 3.2, SWAY = 0.6, SWAY_S = 4.2, GLANCE = 0.10, LENS = 0.14, EYE_COVER = 2.5;
+  var SWING = { w: 6.5, zeta: 0.5, gain: 0.5, max: 3 * Math.PI / 180 };   // the walk page's pendulum
+  // The sleeve hangs from the wrist in a frame at the hand that turns rigidly with the arm and on to straight down (HANG:
+  // once the upper arm has turned HANG[0] deg from rest the frame has turned HANG[1], its `along` axis pointing down the
+  // page). Turned that far the wing's broad side lands between the fist and her body, where the drawn hold has the sleeve,
+  // so no flip is needed; a rigid frame keeps the sleeve's area. FLIP (the first try: mirror the cloth across the arm,
+  // through edge-on, between these angles) is out of range, so off.
+  var FLIP = [400, 500];
+  var HANG = [85, 150];   // 168 (97 deg on the canvas) swung the cloth out past the lantern, away from her body
+  // Drawn sleeves (second round): the near sleeve as drawn raised, cut from the walk rig's variants, skinned along the
+  // upper arm and forearm from the pose each was drawn in (an IK solve to that drawing's grip). ?sleeve=reach (default,
+  // the clean front-reach cut) | grip | held | auto (reach while the hand is open, grip once it closes, held once lifted)
+  // | none (the first round's wing only). It shows as the forearm turns up from rest: none under SLEEVE_ON[0] degrees,
+  // whole past SLEEVE_ON[1]; the flat wing narrows toward the arm and fades as it comes.
+  var SLEEVE_MODE = params.get('sleeve') || 'reach';
+  var SLEEVE_ON = (params.get('son') || '10,40').split(',').map(Number);
+  // the body follows the reach: her upper body leans toward it, page px at the hood top (across, down), a shear from
+  // nothing at her feet, so every part moves together and nothing opens at the bow
+  var LEAN = params.get('lean') === '0' ? [0, 0] : [1.8, 0.4];   // ?lean=0 for comparing shapes without it
+  function leanOf(T) { return smooth(dist(T, H0) / 110); }
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+  function smooth(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+  function easeIO(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lp(p, q, t) { return { x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) }; }
+  function bez(a, c, b, u) { var v = 1 - u; return { x: v * v * a.x + 2 * v * u * c.x + u * u * b.x, y: v * v * a.y + 2 * v * u * c.y + u * u * b.y }; }
+  function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y); }
+  function deg(v) { return Math.atan2(v.y, v.x) * 180 / Math.PI; }
+  function wrap180(d) { d = ((d + 180) % 360 + 360) % 360 - 180; return d; }
+  function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  function toPage(c) { return { x: ST.x - (c.x - ROOTX) * Q, y: ST.y + (c.y - FEET) * Q }; }
+  function toCanvas(p) { return { x: ROOTX - (p.x - ST.x) / Q, y: FEET + (p.y - ST.y) / Q }; }
+  function baseFromGrip() { return { x: (LAN.base[0] - LAN.grip[0]) * LK, y: (LAN.base[1] - LAN.grip[1]) * LK }; }
+  var A_GRIP = { x: A.x - baseFromGrip().x, y: A.y - baseFromGrip().y };   // the finial's top, standing at A
+  var TABLE_EXTENT = ROOM.layers.filter(function (l) { return l.id === STAGE.surface; })[0].extent;
+  function inPoly(p, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  var ARM = RIG.arm;
+  var S0 = { x: ARM.shoulder[0], y: ARM.shoulder[1] }, E0 = { x: ARM.elbow[0], y: ARM.elbow[1] }, H0 = { x: ARM.grip[0], y: ARM.grip[1] };
+  var NECK = { x: RIG.bones.neck.pivot[0], y: RIG.bones.neck.pivot[1] };
+
+  // ---- the motion: where the hand's grip goes, in canvas px (motion data, not drawings) ------------------------------
+  var TGRIP = toCanvas(A_GRIP);
+  var LIFT = 4 / Q;                                   // lifted 4 page px off the tabletop
+  var LIFTP = { x: TGRIP.x, y: TGRIP.y - LIFT };
+  var SWL = DRAWN['sw-lantern'];                      // the drawn hold, for where across it sits (toBase onto sw)
+  var HOLD = { x: SWL.grip[0] * SWL.toBase.k + SWL.toBase.offset[0], y: TOP + 0.28 * HGT };
+  var PRE = { x: TGRIP.x + 6, y: TGRIP.y - 12 };      // just above the finial and toward her: the hand comes down onto it
+  var CTRL = { x: H0.x - 36, y: PRE.y + 72 };         // the reach swings out in front of her on its way up
+  var K = { reach: 0.8, pre: 2.1, at: 2.5, fist: 2.8, lift: 3.3, hold: 4.2, holdEnd: 7.2, unlift: 8.1, down: 8.6, open: 8.9,
+    back: 9.3, home: 10.6, end: 11.4 };
+  var BLINKS = [1.25, 5.3, 6.95, 7.33, 10.95];
+  var HEIGHTS = [0, 40, 62, 82, 100];
+  function seg(t, a, b) { return easeIO((t - a) / (b - a)); }
+  function armAt(t) {
+    var T;
+    if (t < K.reach) T = H0;
+    else if (t < K.pre) T = bez(H0, CTRL, PRE, seg(t, K.reach, K.pre));
+    else if (t < K.at) T = lp(PRE, TGRIP, seg(t, K.pre, K.at));
+    else if (t < K.fist) T = TGRIP;
+    else if (t < K.lift) T = lp(TGRIP, LIFTP, seg(t, K.fist, K.lift));
+    else if (t < K.hold) T = lp(LIFTP, HOLD, seg(t, K.lift, K.hold));
+    else if (t < K.holdEnd) T = HOLD;
+    else if (t < K.unlift) T = lp(HOLD, LIFTP, seg(t, K.holdEnd, K.unlift));
+    else if (t < K.down) T = lp(LIFTP, TGRIP, seg(t, K.unlift, K.down));
+    else if (t < K.open) T = TGRIP;
+    else if (t < K.back) T = lp(TGRIP, PRE, seg(t, K.open, K.back));
+    else if (t < K.home) T = bez(PRE, CTRL, H0, seg(t, K.back, K.home));
+    else T = H0;
+    var fist = t < K.at ? 0 : t < K.fist ? smooth((t - K.at) / (K.fist - K.at)) : t < K.down ? 1 : t < K.open ? 1 - smooth((t - K.down) / (K.open - K.down)) : 0;
+    var opened = t < K.home - 0.6 ? smooth((t - K.reach - 0.15) / 0.35) : 1 - smooth((t - (K.home - 0.6)) / 0.4);
+    var look = t < K.holdEnd ? smooth((t - K.reach) / 0.5) * (1 - smooth((t - K.hold - 0.5) / 0.5)) : smooth((t - K.holdEnd + 0.2) / 0.5) * (1 - smooth((t - K.home + 0.4) / 0.5));
+    var attached = t >= K.fist && t < K.down;
+    var carry = !attached ? 0 : t < K.hold ? smooth((t - K.fist) / (K.hold - K.fist)) : t < K.holdEnd ? 1 : 1 - smooth((t - K.holdEnd) / (K.down - K.holdEnd));
+    var damp = t >= K.unlift && t < K.down ? smooth((t - K.unlift) / (K.down - K.unlift)) : 0;
+    return { T: T, shapes: { rest: 1 - opened, open: opened * (1 - fist), fist: fist }, glance: -0.9 * look,
+      attached: attached, carry: carry, damp: damp };
+  }
+  function reachArm(i) {
+    var h = HEIGHTS[i], tgt = toCanvas({ x: A_GRIP.x, y: A.y + SURF_H - h });
+    return { T: tgt, shapes: { rest: 0, open: 1, fist: 0 }, glance: -0.9, attached: false, carry: 0, damp: 0, height: h };
+  }
+
+  // ---- idle and the root (breath about the feet, a slow sway from the feet) ----------------------------------------
+  // the side-by-side compares still poses: breath and sway moved the hood up to 1.3 px (12 px at 9x) between the times it
+  // renders, which swamped the differences it is there to measure (rig at rest against the drawing: 11 in the hood)
+  var FREEZE_IDLE = !!params.get('compare') || params.get('check') === 'compare';
+  function idleAt(t, blinks) {
+    if (FREEZE_IDLE) return { s: 1, sway: 0, blink: 0 };
+    var breathC =BREATH / Q * (1 - Math.cos(2 * Math.PI * t / BREATH_S)) / 2;
+    var blink = 0;
+    (blinks || BLINKS).forEach(function (b) {
+      var u = t - b, v = 0;
+      if (u < 0) return;
+      if (u < 0.09) v = smooth(u / 0.09); else if (u < 0.15) v = 1; else if (u < 0.28) v = 1 - smooth((u - 0.15) / 0.13);
+      blink = Math.max(blink, v);
+    });
+    return { s: 1 + breathC / HGT, sway: SWAY / Q * Math.sin(2 * Math.PI * t / SWAY_S + 0.9), blink: blink };
+  }
+  function rootOf(idle) {
+    var lx = idle.lx || 0, ly = idle.ly || 0;
+    return function (p) { var h = (FEET - p.y) / HGT; return { x: p.x + (idle.sway + lx) * h, y: FEET + (p.y - FEET) * idle.s + ly * h }; };
+  }
+
+  // ---- IK: two bones, the elbow on the pole's side, the upper arm's angle limited -----------------------------------
+  function solveIK(T, S0r, E0r, H0r, raiseShrug) {
+    var L1 = dist(S0r, E0r), L2 = dist(E0r, H0r);
+    var raise = raiseShrug ? smooth((S0r.y - T.y) / (ARM.L1 + ARM.L2)) : 0;
+    var S = { x: S0r.x + ARM.shrug[0] * raise, y: S0r.y + ARM.shrug[1] * raise };
+    var d = { x: T.x - S.x, y: T.y - S.y }, L = Math.hypot(d.x, d.y) || 1e-6, u = { x: d.x / L, y: d.y / L };
+    var maxR = (L1 + L2) * 0.99999, D = Math.min(L, maxR);
+    var a1 = Math.acos(clamp((L1 * L1 + D * D - L2 * L2) / (2 * L1 * D), -1, 1));
+    var phi = Math.atan2(u.y, u.x), pole = { x: ARM.pole[0], y: ARM.pole[1] };
+    var want = u.x * pole.y - u.y * pole.x;
+    var best = null;
+    [phi + a1, phi - a1].forEach(function (ang) {
+      var E = { x: S.x + L1 * Math.cos(ang), y: S.y + L1 * Math.sin(ang) };
+      var side = u.x * (E.y - S.y) - u.y * (E.x - S.x);
+      var score = (side * want >= 0 ? 1 : 0) + (best === null ? 0.5 : 0);
+      if (best === null || score > best.score) best = { E: E, score: score };
+    });
+    var E = best.E, th1 = deg({ x: E.x - S.x, y: E.y - S.y });
+    var lim = ARM.upperDeg, a = ((th1 - lim[0]) % 360 + 360) % 360 + lim[0];   // into [lim0, lim0 + 360)
+    var limited = false;
+    if (a > lim[1]) { a = (a - lim[1] < lim[0] + 360 - a) ? lim[1] : lim[0]; limited = true; }
+    if (limited) E = { x: S.x + L1 * Math.cos(a * Math.PI / 180), y: S.y + L1 * Math.sin(a * Math.PI / 180) };
+    var f = { x: T.x - E.x, y: T.y - E.y }, fl = Math.hypot(f.x, f.y) || 1e-6;
+    var th2 = deg(f);
+    // the elbow never folds tighter than elbowMin (the angle between the upper arm, back to the shoulder, and the forearm)
+    var back = deg({ x: S.x - E.x, y: S.y - E.y }), inner = Math.abs(wrap180(th2 - back));
+    if (inner < ARM.elbowMin) th2 = back + (wrap180(th2 - back) >= 0 ? 1 : -1) * ARM.elbowMin;
+    var G = { x: E.x + L2 * Math.cos(th2 * Math.PI / 180), y: E.y + L2 * Math.sin(th2 * Math.PI / 180) };
+    return { S: S, E: E, G: G, th1: deg({ x: E.x - S.x, y: E.y - S.y }), th2: th2, miss: dist(G, T), limited: limited,
+      th1b: deg({ x: E0r.x - S0r.x, y: E0r.y - S0r.y }), th2b: deg({ x: H0r.x - E0r.x, y: H0r.y - E0r.y }),
+      elbowAngle: Math.abs(wrap180(th2 - back)) };
+  }
+
+  // ---- affine bones ---------------------------------------------------------------------------------------------------
+  function rotAbout(p, dDeg, q) {
+    var th = dDeg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+    return [c, s, -s, c, q.x - c * p.x + s * p.y, q.y - s * p.x - c * p.y];
+  }
+  function apply(M, p) { return { x: M[0] * p.x + M[2] * p.y + M[4], y: M[1] * p.x + M[3] * p.y + M[5] }; }
+
+  // ---- the simulation (the pendulum and the cloak's spring), integrated at 1/240 s from t = 0 -----------------------
+  var SIM_DT = 1 / 240;
+  var sim = null;
+  function resetSim() { sim = { t: 0, theta: 0, thetaV: 0, hx: null, hv: 0, acc: 0, cx: 0, cy: 0, cvx: 0, cvy: 0 }; }
+  function armGeom(t, arm) {
+    var idle = Object.assign({}, idleAt(t));
+    var leanE = arm.leanE !== undefined ? arm.leanE : leanOf(arm.T);
+    var leanSign = arm.leanSign !== undefined ? arm.leanSign : (arm.T.x < ROOTX ? -1 : 1);
+    idle.lx = leanSign * LEAN[0] / Q * leanE; idle.ly = LEAN[1] / Q * leanE; idle.leanE = leanE;
+    var R = rootOf(idle), S0r = R(S0), E0r = R(E0), H0r = R(H0);
+    var pin = smooth(dist(arm.T, H0) / 6);
+    var T = { x: arm.T.x + (H0r.x - H0.x) * (1 - pin), y: arm.T.y + (H0r.y - H0.y) * (1 - pin) };
+    return { idle: idle, R: R, S0r: S0r, E0r: E0r, H0r: H0r, ik: solveIK(T, S0r, E0r, H0r, true), T: T };
+  }
+  function stepSim(dt, armFn) {
+    var t = sim.t + dt, arm = armFn(t), g = armGeom(t, arm);
+    // the cloak round the shoulder follows the shoulder's lift on a soft spring
+    var tx = g.ik.S.x - g.S0r.x, ty = g.ik.S.y - g.S0r.y, w = 14;
+    sim.cvx += (w * w * (tx - sim.cx) - 2 * w * sim.cvx) * dt; sim.cx += sim.cvx * dt;
+    sim.cvy += (w * w * (ty - sim.cy) - 2 * w * sim.cvy) * dt; sim.cy += sim.cvy * dt;
+    if (arm.attached) {
+      var hx = toPage(g.ik.G).x;
+      if (sim.hx === null) { sim.hx = hx; sim.hv = 0; sim.acc = 0; sim.theta = 0; sim.thetaV = 0; }
+      var v = (hx - sim.hx) / dt, a = (v - sim.hv) / dt;
+      sim.hx = hx; sim.hv = v;
+      sim.acc += (a - sim.acc) * Math.min(1, dt * 25);
+      sim.thetaV += (-SWING.w * SWING.w * Math.sin(sim.theta) - 2 * SWING.zeta * SWING.w * sim.thetaV + SWING.gain * sim.acc / 40) * dt;
+      sim.theta += sim.thetaV * dt;
+    } else { sim.hx = null; sim.theta = 0; sim.thetaV = 0; }
+    sim.t = t;
+  }
+  function simulateTo(t, armFn) {
+    if (!sim || t < sim.t - 1e-9) resetSim();
+    while (sim.t + SIM_DT <= t + 1e-9) stepSim(SIM_DT, armFn);
+  }
+
+  // ---- a pose: every bone and the idle at time t ---------------------------------------------------------------------
+  // rest: true is the arm down with no lean; 'lean' is the arm down with this frame's lean (to tell the lean from a change
+  // of shape in the checks)
+  function poseFrom(t, arm, rest) {
+    var restArm = rest === 'lean' ? { T: H0, leanE: leanOf(arm.T), leanSign: arm.T.x < ROOTX ? -1 : 1 } : { T: H0 };
+    var g = armGeom(t, rest ? restArm : arm), ik = g.ik;
+    var pose = { t: t, idle: g.idle, R: g.R, ik: ik, arm: arm, rest: !!rest };
+    pose.Mu = rotAbout(g.S0r, wrap180(ik.th1 - ik.th1b), ik.S);
+    pose.Mf = rotAbout(g.E0r, wrap180(ik.th2 - ik.th2b), ik.E);
+    pose.Mc = rest || !sim ? [1, 0, 0, 1, 0, 0] : [1, 0, 0, 1, sim.cx, sim.cy];
+    pose.Mn = null;                                    // the neck is still in these motions (the hood holds)
+    // the wing's flip: 0 while the upper arm has turned under FLIP[0] degrees from rest, the cloth hanging on the other
+    // side of the arm (mirrored) past FLIP[1]; in between it turns edge-on
+    var raised = wrap180(ik.th1 - ik.th1b), phi = Math.PI * smooth((raised - FLIP[0]) / (FLIP[1] - FLIP[0]));
+    pose.flipK = Math.cos(phi);
+    // the sleeve hangs from the wrist: its frame turns with the arm, and on toward straight down as the arm rises (the
+    // drawn reach's sleeve hangs from the wrist to her shoulder's height); exact at rest, so it is always on
+    pose.hangDeg = HANG[1] * clamp(raised / HANG[0], 0, 1);
+    pose.drapeW = 0;   // the first round's hang-from-the-wrist drape is off: drawn sleeves replace it
+    pose.raised = raised;
+    pose.forearmRaise = Math.abs(wrap180(ik.th2 - ik.th2b));
+    pose.sleeveS = rest || SLEEVE_MODE === 'none' ? 0 : smooth((pose.forearmRaise - SLEEVE_ON[0]) / (SLEEVE_ON[1] - SLEEVE_ON[0]));
+    // the hand goes in front of the hood once it has left its rest place (in the drawn poses it is over the hood's rim)
+    pose.handTop = rest ? 0 : smooth((dist(ik.G, g.H0r) - 6) / 14);
+    pose.shapes = rest ? { rest: 1, open: 0, fist: 0 } : arm.shapes;
+    pose.glance = rest ? 0 : arm.glance;
+    pose.G = ik.G;
+    pose.forearm = rest ? 0 : smooth((dist(ik.G, g.H0r) - 1) / 5);
+    var theta = sim ? SWING.max * Math.tanh(sim.theta / SWING.max) : 0;
+    pose.theta = rest ? 0 : theta * (1 - (arm.damp || 0));
+    return pose;
+  }
+
+  // ---- images ----------------------------------------------------------------------------------------------------------
+  var images = {};
+  function load(key, src) {
+    return new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () { images[key] = im; res(); };
+      im.onerror = function () { rej(new Error('image ' + key)); };
+      im.src = src;
+    });
+  }
+
+  // ---- the software rasteriser: premultiplied float buffers, triangles sampled bilinearly, each pixel once per part -
+  var prepCache = {};
+  function prepImage(im, sc) {
+    var w = Math.max(1, Math.round(im.width * sc)), h = Math.max(1, Math.round(im.height * sc));
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var x = c.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(im, 0, 0, w, h);
+    var raw = x.getImageData(0, 0, w, h).data, pre = new Float32Array(raw.length);
+    for (var i = 0; i < raw.length; i += 4) {
+      var a = raw[i + 3] / 255;
+      pre[i] = raw[i] * a; pre[i + 1] = raw[i + 1] * a; pre[i + 2] = raw[i + 2] * a; pre[i + 3] = raw[i + 3];
+    }
+    return { pre: pre, w: w, h: h, sx: w / im.width, sy: h / im.height };
+  }
+  function prepared(sc) {
+    var key = sc.toFixed(5);
+    if (prepCache[key]) return prepCache[key];
+    var W = Math.ceil((RIG.size[0] + PADL + PADR) * sc), H = Math.ceil((RIG.size[1] + PADT + PADB) * sc);
+    var P = { sc: sc, W: W, H: H, parts: {}, hands: {},
+      buf: new Float32Array(W * H * 4), hand: new Float32Array(W * H * 4), tmp: new Float32Array(W * H * 4),
+      scratch: new Float32Array(W * H * 4), stamp: new Int32Array(W * H), token: 1,
+      fig: document.createElement('canvas'), partsC: document.createElement('canvas'), handC: document.createElement('canvas') };
+    P.fig.width = P.partsC.width = P.handC.width = W;
+    P.fig.height = P.partsC.height = P.handC.height = H;
+    Object.keys(RIG.parts).forEach(function (n) {
+      var R = RIG.parts[n], im = prepImage(images[n], sc), M = R.mesh, nv = M.verts.length / 2;
+      var su = new Float64Array(nv), sv = new Float64Array(nv);
+      for (var i = 0; i < nv; i++) { su[i] = (M.verts[2 * i] - R.origin[0]) * im.sx; sv[i] = (M.verts[2 * i + 1] - R.origin[1]) * im.sy; }
+      P.parts[n] = { img: im, su: su, sv: sv, dx: new Float64Array(nv), dy: new Float64Array(nv), tris: Int32Array.from(M.tris),
+        verts: Float64Array.from(M.verts), weights: Float32Array.from(M.weights), nv: nv };
+      if (n === 'wing') {
+        // the wing's drape: each vertex as (along the rest arm, across it), so a raised arm can hang the cloth below itself
+        // in a frame at the hand: `a` back along the straight line to the shoulder, `s` across it (sleeve hangs from the wrist)
+        var LA = dist(S0, H0), dir0 = { x: (S0.x - H0.x) / LA, y: (S0.y - H0.y) / LA }, n0 = { x: -dir0.y, y: dir0.x };
+        var U = new Float64Array(nv), SS = new Float64Array(nv);
+        for (var j = 0; j < nv; j++) {
+          var x = M.verts[2 * j] - H0.x, y = M.verts[2 * j + 1] - H0.y;
+          U[j] = x * dir0.x + y * dir0.y; SS[j] = x * n0.x + y * n0.y;
+        }
+        P.parts[n].U = U; P.parts[n].SS = SS; P.parts[n].dir0 = dir0;
+      }
+    });
+    Object.keys(RIG.hands).forEach(function (s) {
+      var h = RIG.hands[s], im = prepImage(images['hand-' + s], sc), iw = images['hand-' + s].width, ih = images['hand-' + s].height;
+      P.hands[s] = { img: im, def: h, iw: iw, ih: ih, su: Float64Array.from([0, im.w, 0, im.w]), sv: Float64Array.from([0, 0, im.h, im.h]),
+        dx: new Float64Array(4), dy: new Float64Array(4), tris: Int32Array.from([0, 1, 3, 0, 3, 2]) };
+    });
+    // the drawn sleeves: each vertex weighted to the forearm by how far along its drawing's arm it lies (an IK solve from
+    // the rig's shoulder to that drawing's grip gives the arm it was drawn on), the rest to the upper arm
+    P.sleeves = {};
+    Object.keys(RIG.sleeves || {}).forEach(function (k) {
+      var R = RIG.sleeves[k], im = prepImage(images['sleeve-' + k], sc), M = R.mesh, nv = M.verts.length / 2;
+      var su = new Float64Array(nv), sv = new Float64Array(nv), wf = new Float32Array(nv);
+      var bind = solveIK({ x: R.grip[0], y: R.grip[1] }, S0, E0, H0, true);
+      var L1 = dist(bind.S, bind.E), L2 = dist(bind.E, bind.G);
+      for (var i = 0; i < nv; i++) {
+        var x = M.verts[2 * i], y = M.verts[2 * i + 1];
+        su[i] = (x - R.origin[0]) * im.sx; sv[i] = (y - R.origin[1]) * im.sy;
+        var t1 = ((x - bind.S.x) * (bind.E.x - bind.S.x) + (y - bind.S.y) * (bind.E.y - bind.S.y)) / (L1 * L1);
+        var u = t1 < 1 ? t1 : 1 + ((x - bind.E.x) * (bind.G.x - bind.E.x) + (y - bind.E.y) * (bind.G.y - bind.E.y)) / (L2 * L2);
+        wf[i] = smooth((u - 0.7) / 0.6);
+      }
+      // the cuff end drawn again over the hood (in the drawn poses the raised sleeve's cuff is in front of the hood's rim)
+      var cuff = new Float32Array(nv);
+      for (var c2 = 0; c2 < nv; c2++) cuff[c2] = smooth((wf[c2] - 0.45) / 0.4);
+      P.sleeves[k] = { img: im, su: su, sv: sv, wf: wf, verts: Float64Array.from(M.verts), tris: Int32Array.from(M.tris), nv: nv,
+        bind: bind, cuff: cuff, dx: new Float64Array(nv), dy: new Float64Array(nv), area: R.area };
+    });
+    prepCache[key] = P;
+    return P;
+  }
+  function raster(dst, P, img, su, sv, dx, dy, tris, op, va) {
+    var W = P.W, H = P.H, stamp = P.stamp, token = ++P.token, pre = img.pre, iw = img.w, ih = img.h;
+    var EPS = 1e-7;
+    for (var t = 0; t < tris.length; t += 3) {
+      var i0 = tris[t], i1 = tris[t + 1], i2 = tris[t + 2];
+      var x0 = dx[i0], y0 = dy[i0], x1 = dx[i1], y1 = dy[i1], x2 = dx[i2], y2 = dy[i2];
+      var area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+      if (Math.abs(area) < 1e-9) continue;
+      var inv = 1 / area;
+      var minx = Math.max(0, Math.floor(Math.min(x0, x1, x2))), maxx = Math.min(W - 1, Math.ceil(Math.max(x0, x1, x2)));
+      var miny = Math.max(0, Math.floor(Math.min(y0, y1, y2))), maxy = Math.min(H - 1, Math.ceil(Math.max(y0, y1, y2)));
+      var e1x = x1 - x0, e1y = y1 - y0, e2x = x2 - x0, e2y = y2 - y0;
+      var u0 = su[i0], v0 = sv[i0], du1 = su[i1] - u0, dv1 = sv[i1] - v0, du2 = su[i2] - u0, dv2 = sv[i2] - v0;
+      for (var py = miny; py <= maxy; py++) {
+        var cy = py + 0.5 - y0, row = py * W;
+        for (var px = minx; px <= maxx; px++) {
+          var cx = px + 0.5 - x0;
+          var w1 = (cx * e2y - e2x * cy) * inv, w2 = (e1x * cy - cx * e1y) * inv;
+          if (w1 < -EPS || w2 < -EPS || w1 + w2 > 1 + EPS) continue;
+          var idx = row + px;
+          if (stamp[idx] === token) continue;
+          stamp[idx] = token;
+          var u = u0 + w1 * du1 + w2 * du2 - 0.5, v = v0 + w1 * dv1 + w2 * dv2 - 0.5;
+          var xi = Math.floor(u), yi = Math.floor(v), fx = u - xi, fy = v - yi;
+          var w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+          if (xi < 0) { w00 = 0; w01 = 0; } if (xi + 1 >= iw) { w10 = 0; w11 = 0; }
+          if (yi < 0) { w00 = 0; w10 = 0; } if (yi + 1 >= ih) { w01 = 0; w11 = 0; }
+          var xa = xi < 0 ? 0 : xi >= iw ? iw - 1 : xi, xb = xi + 1 >= iw ? iw - 1 : xi + 1 < 0 ? 0 : xi + 1;
+          var ya = yi < 0 ? 0 : yi >= ih ? ih - 1 : yi, yb = yi + 1 >= ih ? ih - 1 : yi + 1 < 0 ? 0 : yi + 1;
+          var p00 = (ya * iw + xa) * 4, p10 = (ya * iw + xb) * 4, p01 = (yb * iw + xa) * 4, p11 = (yb * iw + xb) * 4;
+          var opx = va ? op * ((1 - w1 - w2) * va[i0] + w1 * va[i1] + w2 * va[i2]) : op;
+          var a = (pre[p00 + 3] * w00 + pre[p10 + 3] * w10 + pre[p01 + 3] * w01 + pre[p11 + 3] * w11) * opx;
+          if (a < 0.2) continue;
+          var r = (pre[p00] * w00 + pre[p10] * w10 + pre[p01] * w01 + pre[p11] * w11) * opx;
+          var g = (pre[p00 + 1] * w00 + pre[p10 + 1] * w10 + pre[p01 + 1] * w01 + pre[p11 + 1] * w11) * opx;
+          var b = (pre[p00 + 2] * w00 + pre[p10 + 2] * w10 + pre[p01 + 2] * w01 + pre[p11 + 2] * w11) * opx;
+          var k = 1 - a / 255, o = idx * 4;
+          dst[o] = r + dst[o] * k; dst[o + 1] = g + dst[o + 1] * k; dst[o + 2] = b + dst[o + 2] * k; dst[o + 3] = a + dst[o + 3] * k;
+        }
+      }
+    }
+  }
+  function skin(part, pose, sc) {
+    var v = part.verts, w = part.weights, n = part.nv, R = pose.R, idle = pose.idle;
+    var Mu = pose.Mu, Mf = pose.Mf, Mc = pose.Mc, Mn = pose.Mn;
+    var drape = part.U && pose.drapeW > 0, ik = pose.ik, kf = pose.flipK, dw = pose.drapeW;
+    if (drape) {
+      // the hand's frame turned by the hang angle: its `a` axis swings from up the arm toward straight down
+      var hb = pose.hangDeg * Math.PI / 180, hc = Math.cos(hb), hs = Math.sin(hb);
+      var DAx = hc * part.dir0.x - hs * part.dir0.y, DAy = hs * part.dir0.x + hc * part.dir0.y, NAx = -DAy, NAy = DAx;
+      var GX = ik.G.x, GY = ik.G.y;
+    }
+    for (var i = 0; i < n; i++) {
+      var x = v[2 * i], y = v[2 * i + 1];
+      var hh = (FEET - y) / HGT, xr = x + (idle.sway + (idle.lx || 0)) * hh, yr = FEET + (y - FEET) * idle.s + (idle.ly || 0) * hh;
+      var px = xr, py = yr, wn = w[4 * i], wu = w[4 * i + 1], wf = w[4 * i + 2], wc = w[4 * i + 3];
+      if (wn && Mn) { px += wn * (Mn[0] * xr + Mn[2] * yr + Mn[4] - xr); py += wn * (Mn[1] * xr + Mn[3] * yr + Mn[5] - yr); }
+      if (wu) { px += wu * (Mu[0] * xr + Mu[2] * yr + Mu[4] - xr); py += wu * (Mu[1] * xr + Mu[3] * yr + Mu[5] - yr); }
+      if (wf) { px += wf * (Mf[0] * xr + Mf[2] * yr + Mf[4] - xr); py += wf * (Mf[1] * xr + Mf[3] * yr + Mf[5] - yr); }
+      if (wc) { px += wc * Mc[4]; py += wc * Mc[5]; }
+      if (drape && wu + wf > 0) {
+        // the cloth hung from the posed arm: its distance across the arm flips side (through edge-on) as the arm rises
+        var aa = part.U[i], ss = part.SS[i] * kf;
+        var qx = GX + DAx * aa + NAx * ss, qy = GY + DAy * aa + NAy * ss;
+        var bw = (wu + wf) * dw;
+        px += bw * (qx - px); py += bw * (qy - py);
+      }
+      if (part.U && pose.sleeveS > 0 && wu + wf > 0) {
+        // the flat wing narrows onto the posed arm (shoulder to grip) as the drawn sleeve takes over
+        var ax = ik.G.x - ik.S.x, ay = ik.G.y - ik.S.y, aa2 = ax * ax + ay * ay || 1;
+        var tt = clamp(((px - ik.S.x) * ax + (py - ik.S.y) * ay) / aa2, 0, 1.2), fxp = ik.S.x + ax * tt, fyp = ik.S.y + ay * tt;
+        var keepW = 1 - 0.85 * pose.sleeveS * (wu + wf);
+        px = fxp + (px - fxp) * keepW; py = fyp + (py - fyp) * keepW;
+      }
+      part.dx[i] = (px + PADL) * sc; part.dy[i] = (py + PADT) * sc;
+    }
+  }
+  function drawPart(dst, P, name, pose, op) {
+    var part = P.parts[name];
+    skin(part, pose, P.sc);
+    raster(dst, P, part.img, part.su, part.sv, part.dx, part.dy, part.tris, op === undefined ? 1 : op);
+  }
+  function sleeveWeights(pose) {
+    var s = pose.sleeveS || 0, out = {};
+    if (!(s > 0)) return out;
+    if (SLEEVE_MODE === 'auto') {
+      var f = pose.shapes.fist || 0, c = (pose.arm && pose.arm.carry) || 0;
+      out.reach = s * (1 - f); out.grip = s * f * (1 - c); out.held = s * f * c;
+    } else out[SLEEVE_MODE] = s;
+    return out;
+  }
+  // each drawn sleeve moved by the arm: the upper arm's and the forearm's turn from the pose it was drawn in, blended
+  function drawSleeves(dst, P, pose, full, over) {
+    var W8 = sleeveWeights(pose), ik = pose.ik, sc = P.sc;
+    Object.keys(W8).forEach(function (k) {
+      var sl = P.sleeves[k];
+      if (!sl || !(W8[k] > 0.002)) return;
+      var b = sl.bind, Mu = rotAbout(b.S, wrap180(ik.th1 - b.th1), ik.S), Mf = rotAbout(b.E, wrap180(ik.th2 - b.th2), ik.E);
+      for (var i = 0; i < sl.nv; i++) {
+        var x = sl.verts[2 * i], y = sl.verts[2 * i + 1], f = sl.wf[i];
+        var ux = Mu[0] * x + Mu[2] * y + Mu[4], uy = Mu[1] * x + Mu[3] * y + Mu[5];
+        var fx = Mf[0] * x + Mf[2] * y + Mf[4], fy = Mf[1] * x + Mf[3] * y + Mf[5];
+        sl.dx[i] = (ux + f * (fx - ux) + PADL) * sc; sl.dy[i] = (uy + f * (fy - uy) + PADT) * sc;
+      }
+      raster(dst, P, sl.img, sl.su, sl.sv, sl.dx, sl.dy, sl.tris, full ? 1 : W8[k], over ? sl.cuff : null);
+    });
+  }
+  // a hand shape, rigid: its grip at the arm's grip, turned so its forearm points back to the elbow
+  function handXform(pose, def) {
+    var toElbow = pose.ik.th2 + 180;
+    return rotAbout({ x: def.grip[0], y: def.grip[1] }, wrap180(toElbow - def.elbowDeg), pose.ik.G);
+  }
+  function drawHand(P, pose) {
+    var H = P.hand, n = P.W * P.H * 4, box = handBox(P, pose);
+    for (var y = box[1]; y <= box[3]; y++) for (var x = box[0]; x <= box[2]; x++) { var o = (y * P.W + x) * 4; H[o] = H[o + 1] = H[o + 2] = H[o + 3] = 0; }
+    ['rest', 'open', 'fist'].forEach(function (s) {
+      var wgt = pose.shapes[s];
+      if (!(wgt > 0.002)) return;
+      var hs = P.hands[s], M = handXform(pose, hs.def), o = hs.def.origin;
+      var corners = [[o[0], o[1]], [o[0] + hs.iw, o[1]], [o[0], o[1] + hs.ih], [o[0] + hs.iw, o[1] + hs.ih]];
+      corners.forEach(function (c, i) { var q = apply(M, { x: c[0], y: c[1] }); hs.dx[i] = (q.x + PADL) * P.sc; hs.dy[i] = (q.y + PADT) * P.sc; });
+      // shapes are mixed by weight (a lerp, not two layers over each other), so a half-closed hand stays opaque
+      var T = P.tmp;
+      for (var y = box[1]; y <= box[3]; y++) for (var x = box[0]; x <= box[2]; x++) { var p = (y * P.W + x) * 4; T[p] = T[p + 1] = T[p + 2] = T[p + 3] = 0; }
+      raster(T, P, hs.img, hs.su, hs.sv, hs.dx, hs.dy, hs.tris, 1);
+      for (y = box[1]; y <= box[3]; y++) for (x = box[0]; x <= box[2]; x++) {
+        var q = (y * P.W + x) * 4;
+        H[q] += T[q] * wgt; H[q + 1] += T[q + 1] * wgt; H[q + 2] += T[q + 2] * wgt; H[q + 3] += T[q + 3] * wgt;
+      }
+    });
+    return box;
+  }
+  function handBox(P, pose) {
+    // 110 canvas px round the grip holds every corner of the three hand images however they turn: the scratch buffer is
+    // cleared only inside this box, so a corner drawn outside it stayed behind and came back as a grey patch (bare grid, t 1.7 s)
+    var r = 110 * P.sc, cx = (pose.ik.G.x + PADL) * P.sc, cy = (pose.ik.G.y + PADT) * P.sc;
+    return [Math.max(0, Math.floor(cx - r)), Math.max(0, Math.floor(cy - r)), Math.min(P.W - 1, Math.ceil(cx + r)), Math.min(P.H - 1, Math.ceil(cy + r))];
+  }
+  function overInto(dst, src, W, box, m) {
+    m = m === undefined ? 1 : m;
+    for (var y = box[1]; y <= box[3]; y++) for (var x = box[0]; x <= box[2]; x++) {
+      var o = (y * W + x) * 4, a = src[o + 3] * m;
+      if (a <= 0) continue;
+      var k = 1 - a / 255;
+      dst[o] = src[o] * m + dst[o] * k; dst[o + 1] = src[o + 1] * m + dst[o + 1] * k; dst[o + 2] = src[o + 2] * m + dst[o + 2] * k; dst[o + 3] = a + dst[o + 3] * k;
+    }
+  }
+  // her forearm between the elbow and the hand: drawn, like the walk rig's legs (dark, round-ended), under the hand
+  function drawForearm(dst, P, pose) {
+    if (!(pose.forearm > 0.001)) return;
+    var sc = P.sc, E = pose.ik.E, G = pose.ik.G, hw = ARM.forearm.width / 2 * sc, col = ARM.forearm.colour;
+    var ax = (E.x + PADL) * sc, ay = (E.y + PADT) * sc, bx = (G.x + PADL) * sc, by = (G.y + PADT) * sc;
+    var x0 = Math.max(0, Math.floor(Math.min(ax, bx) - hw - 1)), x1 = Math.min(P.W - 1, Math.ceil(Math.max(ax, bx) + hw + 1));
+    var y0 = Math.max(0, Math.floor(Math.min(ay, by) - hw - 1)), y1 = Math.min(P.H - 1, Math.ceil(Math.max(ay, by) + hw + 1));
+    var vx = bx - ax, vy = by - ay, vv = vx * vx + vy * vy || 1;
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+      var px = x + 0.5 - ax, py = y + 0.5 - ay, t = clamp((px * vx + py * vy) / vv, 0, 1);
+      var d = Math.hypot(px - vx * t, py - vy * t), cov = clamp(hw + 0.5 - d, 0, 1) * pose.forearm;
+      if (cov <= 0) continue;
+      var o = (y * P.W + x) * 4, a = 255 * cov, k = 1 - cov;
+      dst[o] = col[0] * a + dst[o] * k; dst[o + 1] = col[1] * a + dst[o + 1] * k; dst[o + 2] = col[2] * a + dst[o + 2] * k; dst[o + 3] = a + dst[o + 3] * k;
+    }
+  }
+  function toImage(src, ctx, W, H, box) {
+    var x0 = box ? box[0] : 0, y0 = box ? box[1] : 0, w = box ? box[2] - box[0] + 1 : W, h = box ? box[3] - box[1] + 1 : H;
+    var im = ctx.createImageData(w, h), d = im.data;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var o = ((y + y0) * W + x + x0) * 4, q = (y * w + x) * 4, a = src[o + 3];
+      if (a < 0.5) continue;
+      var k = 255 / a;
+      d[q] = src[o] * k; d[q + 1] = src[o + 1] * k; d[q + 2] = src[o + 2] * k; d[q + 3] = a;
+    }
+    ctx.putImageData(im, x0, y0);
+  }
+
+  // ---- the eyes, drawn in code over the painted ones (the walk rig's, without the morph) -----------------------------
+  function drawEyes(ctx, pose, sc) {
+    var F = RIG.face, R = pose.R;
+    var X = function (x, y) { var p = R({ x: x, y: y }); return { x: (p.x + PADL) * sc, y: (p.y + PADT) * sc }; };
+    ctx.save();
+    ctx.beginPath();
+    F.facePoly.forEach(function (q, n) { var p = X(q[0], q[1]); if (n) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); });
+    ctx.closePath();
+    ctx.clip();
+    F.eyes.forEach(function (e) {
+      var c = X(e.cx, e.cy);
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(e.rx * sc * EYE_COVER, e.ry * sc * EYE_COVER);
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, rgba(F.faceBlack, 1)); g.addColorStop(0.8, rgba(F.faceBlack, 1)); g.addColorStop(1, rgba(F.faceBlack, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, 1, 0, 2 * Math.PI); ctx.fill();
+      ctx.restore();
+    });
+    var EB = F.eyeBody, G = F.eyeGlow, glowR = G.stops[G.stops.length - 1][0], rim = EB[EB.length - 1][1];
+    var open = clamp(1 - pose.idle.blink, 0, 1), v = LENS + (1 - LENS) * open;
+    F.eyes.forEach(function (e) {
+      var c = X(e.cx, e.cy), cx = c.x + pose.glance * GLANCE * F.faceW * sc, cy = c.y, rx = e.rx * sc, ry = e.ry * sc * pose.idle.s;
+      var gcy = cy + ry - ry * v, grx = rx * (0.55 + 0.45 * v), gry = Math.max(0.01, ry * v);
+      ctx.save();
+      ctx.translate(cx, gcy);
+      ctx.scale(grx, gry);
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+      g.addColorStop(0, rgba(G.colour, G.stops[0][1]));
+      G.stops.forEach(function (st) { g.addColorStop(Math.min(1, st[0] / glowR), rgba(G.colour, st[1])); });
+      ctx.fillStyle = g;
+      ctx.fillRect(-glowR, -glowR, 2 * glowR, 2 * glowR);
+      ctx.restore();
+      var lid = cy + ry - 2 * ry * v, bow = ry * 0.7 * Math.min(v, 1 - v);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx - rx - 2, lid - bow * 0.3);
+      ctx.quadraticCurveTo(cx, lid + bow, cx + rx + 2, lid - bow * 0.3);
+      ctx.lineTo(cx + rx + 2, cy + ry + 2);
+      ctx.lineTo(cx - rx - 2, cy + ry + 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.translate(cx, cy);
+      ctx.scale(rx, ry);
+      var b = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      EB.forEach(function (st) { b.addColorStop(st[0], rgba(st[1], 1)); });
+      b.addColorStop(1, rgba(rim, 0));
+      ctx.fillStyle = b;
+      ctx.beginPath(); ctx.arc(0, 0, 1, 0, 2 * Math.PI); ctx.fill();
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  // ---- her figure: legs and boots, then the parts in order, then the eyes ------------------------------------------
+  // opt.collect: also rasterise the head and the wing alone (for the checks). Returns the figure's canvas (buffer px,
+  // her sw canvas at PADL, PADT), the hand's canvas (for the fist over the finial) and where the grip is on the page.
+  function renderFigure(pose, sc, opt) {
+    opt = opt || {};
+    var P = prepared(sc), buf = P.buf, W = P.W, H = P.H, out = {};
+    buf.fill(0);
+    drawPart(buf, P, 'torso', pose);
+    drawPart(buf, P, 'farhand', pose);
+    drawForearm(buf, P, pose);
+    var hbox = drawHand(P, pose), hTop = pose.handTop || 0;
+    overInto(buf, P.hand, W, hbox);
+    var wingOp = 1 - smooth(((pose.sleeveS || 0) - 0.35) / 0.45);
+    if (wingOp > 0.002) drawPart(buf, P, 'wing', pose, wingOp);
+    drawSleeves(buf, P, pose);
+    var DBG = params.get('debug') || '';
+    if (DBG.indexOf('nohead') < 0) { drawPart(buf, P, 'head', pose); drawPart(buf, P, 'bow', pose); }
+    if (params.get('cuff') !== '0') drawSleeves(buf, P, pose, false, true);
+    if (hTop > 0.002) overInto(buf, P.hand, W, hbox, hTop);   // again, over the sleeve and the hood
+    if (opt.collect) {
+      var s = P.scratch;
+      s.fill(0); drawPart(s, P, 'head', pose); out.head = alphaOf(s, W, H);
+      // the cloth on the arm as shown (the wing at its share, the sleeves at theirs), and the sleeves alone and whole
+      s.fill(0); if (wingOp > 0.002) drawPart(s, P, 'wing', pose, wingOp); drawSleeves(s, P, pose); out.wing = alphaOf(s, W, H);
+      s.fill(0); drawSleeves(s, P, pose, true); out.sleeveOnly = alphaOf(s, W, H);
+    }
+    var pctx = P.partsC.getContext('2d');
+    pctx.clearRect(0, 0, W, H);
+    toImage(buf, pctx, W, H);
+    if (DBG.indexOf('nohead') < 0) drawEyes(pctx, pose, sc);
+    if (DBG.indexOf('arm') >= 0) {
+      // debug: the posed wing's vertices (red) and the bones shoulder -> elbow -> grip (green), in buffer px
+      var wp = P.parts.wing;
+      pctx.fillStyle = 'rgba(255,0,60,0.9)';
+      for (var di = 0; di < wp.nv; di++) pctx.fillRect(wp.dx[di] - 1, wp.dy[di] - 1, 2, 2);
+      var bp = function (p) { return [(p.x + PADL) * sc, (p.y + PADT) * sc]; };
+      var s1 = bp(pose.ik.S), e1 = bp(pose.ik.E), g1 = bp(pose.ik.G);
+      pctx.strokeStyle = '#0f0'; pctx.lineWidth = 3;
+      pctx.beginPath(); pctx.moveTo(s1[0], s1[1]); pctx.lineTo(e1[0], e1[1]); pctx.lineTo(g1[0], g1[1]); pctx.stroke();
+      pctx.fillStyle = '#ff0'; pctx.font = '14px sans-serif';
+      pctx.fillText('raised ' + pose.raised.toFixed(0) + ' k ' + pose.flipK.toFixed(2) + ' dw ' + pose.drapeW.toFixed(2), 4, H - 8);
+    }
+    var f = P.fig.getContext('2d');
+    f.setTransform(1, 0, 0, 1, 0, 0);
+    f.clearRect(0, 0, W, H);
+    f.setTransform(sc, 0, 0, sc, PADL * sc, PADT * sc);
+    f.imageSmoothingEnabled = true; f.imageSmoothingQuality = 'high';
+    f.lineCap = 'round';
+    RIG.legs.forEach(function (L) {
+      var hip = pose.R({ x: L.hip[0], y: L.hip[1] });
+      f.strokeStyle = 'rgb(' + L.colour.join(',') + ')';
+      f.lineWidth = L.width;
+      f.beginPath(); f.moveTo(hip.x, hip.y); f.lineTo(L.ankle[0], L.ankle[1]); f.stroke();
+    });
+    f.drawImage(images['foot-0'], 0, 0);
+    f.drawImage(images['foot-1'], 0, 0);
+    f.setTransform(1, 0, 0, 1, 0, 0);
+    f.drawImage(P.partsC, 0, 0);
+    var hctx = P.handC.getContext('2d');
+    hctx.clearRect(0, 0, W, H);
+    toImage(P.hand, hctx, W, H, hbox);
+    out.canvas = P.fig; out.hand = P.handC; out.sc = sc; out.W = W; out.H = H;
+    out.grip = toPage(pose.ik.G);
+    return out;
+  }
+  function alphaOf(buf, W, H) {
+    var a = new Uint8Array(W * H);
+    for (var i = 0; i < W * H; i++) a[i] = buf[i * 4 + 3] > 255 ? 255 : buf[i * 4 + 3];
+    return a;
+  }
+  // a drawn pose from its pieces (lumi-walk's variants): legs, boots, body, at the same stand and scale, mirrored
+  function renderDrawn(name, sc) {
+    var R = DRAWN[name], W = Math.ceil((R.size[0] + PADL + PADR) * sc), H = Math.ceil((R.size[1] + PADT + PADB) * sc);
+    var c = document.createElement('canvas'), h = document.createElement('canvas');
+    c.width = h.width = W; c.height = h.height = H;
+    var f = c.getContext('2d');
+    f.setTransform(sc, 0, 0, sc, PADL * sc, PADT * sc);
+    f.imageSmoothingEnabled = true; f.imageSmoothingQuality = 'high';
+    f.lineCap = 'round';
+    R.legs.forEach(function (L) {
+      f.strokeStyle = 'rgb(' + L.colour.join(',') + ')'; f.lineWidth = L.width;
+      f.beginPath(); f.moveTo(L.hip[0], L.hip[1]); f.lineTo(L.ankle[0], L.ankle[1]); f.stroke();
+    });
+    var pre = name === 'sw' ? 'sw-' : name + '-';
+    f.drawImage(images[name === 'sw' ? 'foot-0' : pre + 'foot-0'], 0, 0);
+    f.drawImage(images[name === 'sw' ? 'foot-1' : pre + 'foot-1'], 0, 0);
+    f.drawImage(images[pre + 'body'], 0, 0);
+    if (images[pre + 'hand']) {
+      var hx = h.getContext('2d');
+      hx.setTransform(sc, 0, 0, sc, PADL * sc, PADT * sc);
+      hx.imageSmoothingEnabled = true; hx.imageSmoothingQuality = 'high';
+      hx.drawImage(images[pre + 'hand'], 0, 0);
+    }
+    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2;
+    return { canvas: c, hand: images[pre + 'hand'] ? h : null, sc: sc, W: W, H: H, rootX: rootX, feet: R.feet,
+      grip: R.grip ? { x: ST.x - (R.grip[0] - rootX) * Q, y: ST.y + (R.grip[1] - R.feet) * Q } : null };
+  }
+
+  // ---- the room: plate and shadows, her contact shadow, the layers in order, the lantern after the table ------------
+  var floorCanvas = null, lightBuf = { key: '' };
+  function floorComposite() {
+    if (floorCanvas) return floorCanvas;
+    floorCanvas = document.createElement('canvas');
+    floorCanvas.width = PW; floorCanvas.height = PH;
+    var x = floorCanvas.getContext('2d');
+    x.drawImage(images.plate, 0, 0);
+    ROOM.layers.forEach(function (L) { if (L.shadow && images['shadow:' + L.id]) x.drawImage(images['shadow:' + L.id], L.shadow.offset[0], L.shadow.offset[1]); });
+    return floorCanvas;
+  }
+  function lightCanvases(D) {
+    var key = D.toFixed(5);
+    if (lightBuf.key === key) return lightBuf;
+    var th = LAN.glow.through, im = images['lantern:through'];
+    var ix = Math.floor(th.offset[0] * D), iy = Math.floor(th.offset[1] * D);
+    var w = Math.max(1, Math.ceil((th.offset[0] + im.width) * D) - ix), h = Math.max(1, Math.ceil((th.offset[1] + im.height) * D) - iy);
+    var mask = document.createElement('canvas'), glow = document.createElement('canvas'), shade = document.createElement('canvas');
+    mask.width = glow.width = shade.width = w; mask.height = glow.height = shade.height = h;
+    var mx = mask.getContext('2d');
+    mx.imageSmoothingEnabled = true; mx.imageSmoothingQuality = 'high';
+    mx.drawImage(im, th.offset[0] * D - ix, th.offset[1] * D - iy, im.width * D, im.height * D);
+    lightBuf = { key: key, ix: ix, iy: iy, w: w, h: h, mask: mask, glow: glow, shade: shade };
+    return lightBuf;
+  }
+  function radialProfile(ctx, cx, cy, h, n, peak) {
+    var top = Math.max(peak[0], peak[1], peak[2]);
+    if (!(top > 0.25)) return;
+    var R = h * Math.sqrt(Math.pow(top / 0.25, 1 / n) - 1), N = 48;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, B);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    for (var i = 0; i <= N; i++) {
+      var d = R * i / N, f = i === N ? 0 : Math.pow(1 + d * d / (h * h), -n);
+      g.addColorStop(i / N, 'rgb(' + (peak[0] * f).toFixed(2) + ',' + (peak[1] * f).toFixed(2) + ',' + (peak[2] * f).toFixed(2) + ')');
+    }
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+  }
+  // the lantern for this frame: on its anchor, or hung from the fist's grip at the pendulum's angle
+  function lampFor(pose, grip) {
+    if (!pose.arm || !pose.arm.attached || pose.rest) return { held: false, base: A, carry: 0 };
+    var bg = baseFromGrip(), c = Math.cos(pose.theta), s = Math.sin(pose.theta);
+    var restBase = { x: grip.x + bg.x, y: grip.y + bg.y }, groundY = A.y + SURF_H;
+    return { held: true, grip: grip, theta: pose.theta, base: { x: grip.x + bg.x * c - bg.y * s, y: grip.y + bg.x * s + bg.y * c },
+      rest: { base: restBase, lift: groundY - restBase.y, x: restBase.x, y: groundY }, carry: pose.arm.carry };
+  }
+  function drawTableLight(ctx, D, ox, oy, lamp) {
+    var LB = lightCanvases(D), c = lamp.carry || 0, G = LAN.glow;
+    var base = lamp.held ? lamp.rest.base : lamp.base;
+    var gx = LB.glow.getContext('2d');
+    gx.setTransform(1, 0, 0, 1, 0, 0);
+    gx.globalCompositeOperation = 'source-over'; gx.globalAlpha = 1;
+    gx.fillStyle = '#000'; gx.fillRect(0, 0, LB.w, LB.h);
+    gx.setTransform(D, 0, 0, D, -LB.ix, -LB.iy);
+    gx.imageSmoothingEnabled = true; gx.imageSmoothingQuality = 'high';
+    gx.globalCompositeOperation = 'lighter';
+    if (c < 1) {
+      var gi = images['lantern:glow'];
+      gx.globalAlpha = 1 - c;
+      gx.drawImage(gi, base.x - G.base[0] * LK, base.y - G.base[1] * LK, gi.width * LK, gi.height * LK);
+      gx.globalAlpha = 1;
+    }
+    if (c > 0 && lamp.held) {
+      var T0 = G.tabletop, F = G.flame.height, over = lamp.rest.lift - SURF_H, hf = over + LK * F;
+      if (hf > 0) {
+        var ratio = Math.pow(LK * F / hf, 2);
+        radialProfile(gx, base.x + T0.centre[0] * LK, base.y + over + T0.centre[1] * LK, T0.h * hf / F, T0.n,
+          T0.peak.map(function (p) { return p * ratio * c; }));
+      }
+    }
+    gx.setTransform(1, 0, 0, 1, 0, 0);
+    gx.globalCompositeOperation = 'destination-in';
+    gx.drawImage(LB.mask, 0, 0);
+    gx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(LB.glow, LB.ix - ox, LB.iy - oy);
+    ctx.globalCompositeOperation = 'source-over';
+    if (c < 1) {
+      var sx = LB.shade.getContext('2d'), si = images['lantern:shadow'], Sh = LAN.shadow;
+      sx.setTransform(1, 0, 0, 1, 0, 0);
+      sx.globalCompositeOperation = 'source-over';
+      sx.clearRect(0, 0, LB.w, LB.h);
+      sx.setTransform(D, 0, 0, D, -LB.ix, -LB.iy);
+      sx.imageSmoothingEnabled = true; sx.imageSmoothingQuality = 'high';
+      sx.drawImage(si, base.x - Sh.base[0] * LK, base.y - Sh.base[1] * LK, si.width * LK, si.height * LK);
+      sx.setTransform(1, 0, 0, 1, 0, 0);
+      sx.globalCompositeOperation = 'destination-in';
+      sx.drawImage(LB.mask, 0, 0);
+      sx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1 - c;
+      ctx.drawImage(LB.shade, LB.ix - ox, LB.iy - oy);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+  function drawFloorLight(ctx, lamp) {
+    if (!lamp.held || !(lamp.carry > 0)) return;
+    var T0 = LAN.glow.tabletop, Fl = LAN.glow.floor, F = LAN.glow.flame.height;
+    var hf = lamp.rest.lift + LK * F, ratio = Math.pow(LK * F / hf, 2);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    radialProfile(ctx, lamp.rest.x, lamp.rest.y, T0.h * hf / F, Fl.n, T0.gain.map(function (g, i) { return g * ratio * Fl.rug[i] * lamp.carry; }));
+    ctx.restore();
+  }
+  function lanternMatrix(lamp) {
+    // canvas-2D transform (page px) that draws the lantern image: its grip at the fist, or its base on the anchor
+    if (lamp.held) {
+      var c = Math.cos(lamp.theta), s = Math.sin(lamp.theta);
+      return { M: [c * LK, s * LK, -s * LK, c * LK, lamp.grip.x - (c * LAN.grip[0] - s * LAN.grip[1]) * LK, lamp.grip.y - (s * LAN.grip[0] + c * LAN.grip[1]) * LK] };
+    }
+    return { M: [LK, 0, 0, LK, lamp.base.x - LAN.base[0] * LK, lamp.base.y - LAN.base[1] * LK] };
+  }
+  function drawLantern(ctx, lamp) {
+    var m = lanternMatrix(lamp).M;
+    ctx.save();
+    ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    ctx.drawImage(images.lantern, 0, 0);
+    ctx.restore();
+  }
+  // her figure on the page: buffer px -> device px, mirrored about her feet (sw drawn at se)
+  function placeFigure(ctx, fig, D, ox, oy, canvas, rootX, feet) {
+    var sx0 = ST.x * D - ox, sy0 = ST.y * D - oy;
+    ctx.save();
+    ctx.setTransform(-1, 0, 0, 1, sx0 + (PADL + rootX) * fig.sc, sy0 - (PADT + feet) * fig.sc);
+    ctx.drawImage(canvas || fig.canvas, 0, 0);
+    ctx.restore();
+  }
+  // one view of the room round her: cam = { cx, cy (page px), D }
+  function drawScene(ctx, w, h, cam, fr) {
+    var D = cam.D, ox = Math.round((cam.cx - w / (2 * D)) * D), oy = Math.round((cam.cy - h / (2 * D)) * D);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.setTransform(D, 0, 0, D, -ox, -oy);
+    if (params.get('bare')) {
+      // her figure and the lantern on a flat ground, no room: for judging the arm and the wing below the tabletop
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#5a7088'; ctx.fillRect(0, 0, w, h);
+      if (fr.fig) placeFigure(ctx, fr.fig, D, ox, oy, null, fr.rootX, fr.feet);
+      ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      // the reach poses' targets are on the lantern's own ground point: bare, the lantern would hide the hand it is judging
+      if (!(params.get('seq') === 'reach')) drawLantern(ctx, fr.lamp);
+      if (fr.fig && fr.handOver > 0 && fr.handCanvas) {
+        var gb = fr.lamp.held ? fr.lamp.grip : A_GRIP;
+        ctx.save(); ctx.beginPath(); ctx.rect(gb.x - 9, gb.y - 7, 18, 15); ctx.clip();
+        ctx.globalAlpha = fr.handOver;
+        placeFigure(ctx, fr.fig, D, ox, oy, fr.handCanvas, fr.rootX, fr.feet);
+        ctx.restore();
+      }
+      return { ox: ox, oy: oy };
+    }
+    ctx.drawImage(floorComposite(), 0, 0);
+    drawFloorLight(ctx, fr.lamp);
+    var Hh = ROOM.lumi.height;
+    ctx.save();
+    ctx.translate(ST.x + 3, ST.y + 1);
+    ctx.scale(1, 0.42);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, Hh * 0.24);
+    g.addColorStop(0, 'rgba(36, 20, 9, 0.46)'); g.addColorStop(0.55, 'rgba(36, 20, 9, 0.24)'); g.addColorStop(1, 'rgba(36, 20, 9, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, Hh * 0.24, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+    var layer = function (id) {
+      var L = ROOM.layers.filter(function (l) { return l.id === id; })[0];
+      ctx.drawImage(images['layer:' + id], L.offset[0], L.offset[1]);
+    };
+    STAGE.before.forEach(layer);
+    if (fr.fig) placeFigure(ctx, fr.fig, D, ox, oy, null, fr.rootX, fr.feet);
+    ctx.setTransform(D, 0, 0, D, -ox, -oy);
+    STAGE.after.forEach(function (id) {
+      layer(id);
+      if (id !== STAGE.surface) return;
+      drawTableLight(ctx, D, ox, oy, fr.lamp);
+      ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      drawLantern(ctx, fr.lamp);
+      // her hand over the table and the lantern: the whole hand drawn again once it reaches out over the tabletop (its
+      // target's ground is inside the table and it is near it, or the lantern is in it); the drawn poses (no rig hand)
+      // keep the fist over the finial only
+      if (fr.fig && fr.handCanvas && fr.handFront) {
+        placeFigure(ctx, fr.fig, D, ox, oy, fr.handCanvas, fr.rootX, fr.feet);
+        ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      } else if (fr.fig && fr.handOver > 0 && fr.handCanvas) {
+        var gp = fr.lamp.held ? fr.lamp.grip : A_GRIP;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(gp.x - 9, gp.y - 7, 18, 15); ctx.clip();
+        ctx.globalAlpha = fr.handOver;
+        placeFigure(ctx, fr.fig, D, ox, oy, fr.handCanvas, fr.rootX, fr.feet);
+        ctx.restore();
+        ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      }
+    });
+    if (fr.marks) fr.marks(ctx, D);
+    return { ox: ox, oy: oy };
+  }
+  // a frame of the rig at time t: its figure at device scale D, the lantern, and how much of the fist goes over it
+  function rigFrame(t, arm, D) {
+    var pose = poseFrom(t, arm, false), fig = renderFigure(pose, Q * D);
+    var lamp = lampFor(pose, fig.grip);
+    var near = dist(fig.grip, lamp.held ? lamp.grip : A_GRIP);
+    // in front of the table: the target's ground (straight below it, on the lantern's row) is inside the table's extent,
+    // and the hand is within 8 px of the target or has covered half the way to it; or the lantern hangs from it
+    var tgt = toPage(arm.T), tgtGround = { x: tgt.x, y: A.y + SURF_H }, front;
+    if (arm.height !== undefined) {
+      // a reach pose: out over the table once the hand has covered half the way to a target whose ground is on the table
+      var reachFrac = 1 - pose.ik.miss / Math.max(1e-6, dist(arm.T, H0));
+      front = inPoly(tgtGround, TABLE_EXTENT) && reachFrac > 0.5 && dist(arm.T, H0) > 40;
+    } else {
+      // the pick-up: the lantern in her hand, or her hand within 10 px of the finial (above the table's back edge there)
+      front = lamp.held || (inPoly({ x: A_GRIP.x, y: A.y + SURF_H }, TABLE_EXTENT) && near < 10);
+    }
+    // the hand drawn again is whole and opaque; the partial, clipped redraw (handOver) is only for the drawn poses
+    return { pose: pose, fig: fig, lamp: lamp, handCanvas: fig.hand, handOver: 0, handFront: front, rootX: ROOTX, feet: FEET };
+  }
+  function drawnFrame(name, D, lanternHeld) {
+    var fig = renderDrawn(name, Q * D), lamp = { held: false, base: A, carry: 0 };
+    if (lanternHeld && fig.grip) {
+      var bg = baseFromGrip(), rb = { x: fig.grip.x + bg.x, y: fig.grip.y + bg.y };
+      lamp = { held: true, grip: fig.grip, theta: 0, base: rb, rest: { base: rb, lift: A.y + SURF_H - rb.y, x: rb.x, y: A.y + SURF_H }, carry: 1 };
+    }
+    var near = fig.grip ? dist(fig.grip, lamp.held ? lamp.grip : A_GRIP) : 99;
+    return { fig: fig, lamp: lamp, handCanvas: fig.hand, handOver: fig.hand ? 1 - smooth((near - 3) / 4) : 0, rootX: fig.rootX, feet: fig.feet };
+  }
+
+  var CAMS = {
+    upper: function () { return { cx: ST.x + 10, cy: ST.y - 84, D: 9 }; },
+    whole: function () { return { cx: ST.x + 6, cy: ST.y - 64, D: 3 }; },
+    bare: function () { return { cx: ST.x - 2, cy: ST.y - 62, D: 4 }; },
+    reach: function () { return { cx: ST.x + 6, cy: ST.y - 52, D: 9 }; }
+  };
+  function label(ctx, text, big) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.font = (big ? 22 : 13) + 'px system-ui, sans-serif';
+    var w = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(4, 4, w + 10, big ? 30 : 20);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(text, 9, big ? 27 : 19);
+  }
+  function crossAt(ctx, D, ox, oy, p, col) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    var x = p.x * D - ox, y = p.y * D - oy;
+    ctx.strokeStyle = col; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.moveTo(x, y - 10); ctx.lineTo(x, y + 10); ctx.stroke();
+  }
+
+  // ---- ?grid=: cells of a motion on the fixed clock, one screenshot ----------------------------------------------------
+  function runGrid() {
+    document.body.className = 'grid';
+    var g = params.get('grid').split(',').map(Number), start = g[0], step = g[1], count = g[2], cols = g[3];
+    var cell = (params.get('cell') || '780x740').split('x').map(Number), cw = cell[0], ch = cell[1];
+    var seq = params.get('seq') || 'pickup', focus = params.get('focus') || 'upper', zoom = num('zoom', 9);
+    var index0 = num('index', 0);
+    var rows = Math.ceil(count / cols), cv = document.getElementById('grid');
+    cv.hidden = false; cv.width = cw * cols; cv.height = ch * rows;
+    var out = cv.getContext('2d'), c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    var ctx = c.getContext('2d');
+    resetSim();
+    for (var i = 0; i < count; i++) {
+      var cam = CAMS[focus](); cam.D = zoom;
+      var fr, t;
+      if (seq === 'reach') {
+        t = 5.0;
+        fr = rigFrame(t, reachArm(i), zoom);
+        var tgt = toPage(reachArm(i).T), hi = i;
+        fr.marks = function (x, D) {};
+        var o = drawScene(ctx, cw, ch, cam, fr);
+        crossAt(ctx, zoom, o.ox, o.oy, tgt, '#ff2bd6');
+        label(ctx, 'reach to ' + HEIGHTS[hi] + ' px' + (fr.pose.ik.miss > 0.5 ? ' · short by ' + (fr.pose.ik.miss * Q).toFixed(1) + ' px' : ' · reached') +
+          ' · forearm ' + fr.pose.forearmRaise.toFixed(0) + '° sleeve ' + fr.pose.sleeveS.toFixed(2) + ' lean ' + (fr.pose.idle.leanE * 1.84).toFixed(2) + ' px', true);
+      } else {
+        t = start + i * step;
+        simulateTo(t, armAt);
+        fr = rigFrame(t, armAt(t), zoom);
+        if ((params.get('debug') || '').indexOf('holes') >= 0) {
+          // debug: background pixels enclosed by her now that were not enclosed at rest at the same time, in magenta
+          var aP = figAlpha(fr.fig), rf = renderFigure(poseFrom(t, armAt(t), true), Q * zoom), aR = figAlpha(rf);
+          fr = rigFrame(t, armAt(t), zoom);
+          var eP = enclosed(aP, fr.fig.W, fr.fig.H), eR = enclosed(aR, fr.fig.W, fr.fig.H), fc = fr.fig.canvas.getContext('2d');
+          // magenta: a tear (paint at rest, background now); cyan: background closed off outside her rest silhouette
+          var id = fc.getImageData(0, 0, fr.fig.W, fr.fig.H), nh = 0, nt = 0;
+          for (var hi2 = 0; hi2 < eP.length; hi2++) {
+            if (!eP[hi2] || eR[hi2]) continue;
+            var tear = aR[hi2] >= 128;
+            id.data[hi2 * 4] = tear ? 255 : 0; id.data[hi2 * 4 + 1] = tear ? 0 : 230; id.data[hi2 * 4 + 2] = tear ? 220 : 255; id.data[hi2 * 4 + 3] = 255;
+            if (tear) nt++; else nh++;
+          }
+          fc.putImageData(id, 0, 0);
+          fr.marks = null;
+          fr.holeCount = 'tears ' + nt + ' · gap ' + nh;
+        }
+        drawScene(ctx, cw, ch, cam, fr);
+        label(ctx, 't ' + t.toFixed(3) + ' s  #' + (index0 + i) + (fr.holeCount !== undefined ? '  enclosed new ' + fr.holeCount : ''), zoom >= 6);
+      }
+      out.drawImage(c, (i % cols) * cw, Math.floor(i / cols) * ch);
+    }
+  }
+
+  // ---- ?compare=: the rig's pose beside the drawn one, 9x upper body over 3x whole ----------------------------------
+  var POSES = { reach: { t: K.at, drawn: 'front-reach', held: false }, grip: { t: K.fist + 0.001, drawn: 'front-grip', held: false },
+    held: { t: K.hold + 1.0, drawn: 'sw-lantern', held: true } };
+  function runCompare(which) {
+    document.body.className = 'grid';
+    var cell = (params.get('cell') || '780x740').split('x').map(Number), cw = cell[0], ch = cell[1];
+    var cv = document.getElementById('grid');
+    cv.hidden = false; cv.width = cw * 2; cv.height = ch * 2;
+    var out = cv.getContext('2d'), c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    var ctx = c.getContext('2d'), P = POSES[which];
+    resetSim();
+    simulateTo(P.t, armAt);
+    [['upper', 9, 0], ['whole', 3, 1]].forEach(function (v) {
+      var cam = CAMS[v[0]](); cam.D = v[1];
+      var fr = rigFrame(P.t, armAt(P.t), v[1]);
+      drawScene(ctx, cw, ch, cam, fr);
+      label(ctx, 'rig · ' + which + ' · ' + v[1] + 'x', true);
+      out.drawImage(c, 0, v[2] * ch);
+      var dr = drawnFrame(P.drawn, v[1], P.held);
+      drawScene(ctx, cw, ch, cam, dr);
+      label(ctx, 'drawn ' + P.drawn + ' · ' + v[1] + 'x', true);
+      out.drawImage(c, cw, v[2] * ch);
+    });
+  }
+
+  // ---- numbers ---------------------------------------------------------------------------------------------------------
+  // her figure alone (no room) on a page-space canvas at D round her: for the side-by-side's differences and the stills
+  function figureOnly(fr, D, withLantern) {
+    var w = Math.round(110 * D), h = Math.round(150 * D), cam = { cx: ST.x + 4, cy: ST.y - 62, D: D };
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    var ox = Math.round((cam.cx - w / (2 * D)) * D), oy = Math.round((cam.cy - h / (2 * D)) * D);
+    placeFigure(ctx, fr.fig, D, ox, oy, null, fr.rootX, fr.feet);
+    if (withLantern) {
+      ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      drawLantern(ctx, fr.lamp);
+      if (fr.handOver > 0 && fr.handCanvas) {
+        var gp = fr.lamp.held ? fr.lamp.grip : A_GRIP;
+        ctx.save(); ctx.beginPath(); ctx.rect(gp.x - 9, gp.y - 7, 18, 15); ctx.clip();
+        ctx.globalAlpha = fr.handOver;
+        placeFigure(ctx, fr.fig, D, ox, oy, fr.handCanvas, fr.rootX, fr.feet);
+        ctx.restore();
+      }
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    return { canvas: c, ctx: ctx, ox: ox, oy: oy, w: w, h: h, D: D };
+  }
+  function pageRect(fo, cx0, cy0, cx1, cy1) {
+    // a box in her sw canvas px -> device px on a figureOnly canvas (mirrored: canvas x grows leftward on the page)
+    var p0 = toPage({ x: cx1, y: cy0 }), p1 = toPage({ x: cx0, y: cy1 });
+    return [Math.max(0, Math.floor(p0.x * fo.D - fo.ox)), Math.max(0, Math.floor(p0.y * fo.D - fo.oy)),
+      Math.min(fo.w, Math.ceil(p1.x * fo.D - fo.ox)), Math.min(fo.h, Math.ceil(p1.y * fo.D - fo.oy))];
+  }
+  function regionDiff(a, b, r, w) {
+    var sum = 0, n = 0, inter = 0, uni = 0;
+    for (var y = r[1]; y < r[3]; y++) for (var x = r[0]; x < r[2]; x++) {
+      var o = (y * w + x) * 4, aa = a[o + 3] / 255, ba = b[o + 3] / 255;
+      if (aa > 0.5 && ba > 0.5) inter++;
+      if (aa > 0.5 || ba > 0.5) uni++;
+      if (aa > 0 || ba > 0) {
+        sum += (Math.abs(a[o] * aa - b[o] * ba) + Math.abs(a[o + 1] * aa - b[o + 1] * ba) + Math.abs(a[o + 2] * aa - b[o + 2] * ba)) / 3;
+        n++;
+      }
+    }
+    return { meanAbs: +(sum / Math.max(1, n)).toFixed(2), iou: +(inter / Math.max(1, uni)).toFixed(4), px: n };
+  }
+  // per row, the silhouette's left and right edges (alpha 0.5, sub-pixel) between rows y0..y1
+  function rowEdges(alpha, W, y0, y1, x0, x1) {
+    var L = [], R = [];
+    for (var y = y0; y < y1; y++) {
+      var row = y * W, l = null, r = null;
+      for (var x = x0; x < x1; x++) { var a = alpha[row + x]; if (a >= 128) { var p = x > x0 ? alpha[row + x - 1] : 0; l = x - 1 + (128 - p) / Math.max(1, a - p) + 0.5; break; } }
+      for (x = x1 - 1; x >= x0; x--) { a = alpha[row + x]; if (a >= 128) { p = x < x1 - 1 ? alpha[row + x + 1] : 0; r = x + 1 - (128 - p) / Math.max(1, a - p) + 0.5; break; } }
+      L.push(l); R.push(r);
+    }
+    return { L: L, R: R };
+  }
+  function edgeShift(e1, e2) {
+    var m = 0, rows = 0;
+    for (var i = 0; i < e1.L.length; i++) {
+      if (e1.L[i] === null || e2.L[i] === null) { if ((e1.L[i] === null) !== (e2.L[i] === null)) m = Math.max(m, 99); continue; }
+      m = Math.max(m, Math.abs(e1.L[i] - e2.L[i]), Math.abs(e1.R[i] - e2.R[i]));
+      rows++;
+    }
+    return m;
+  }
+  function sideShift(e1, e2, side) {
+    var m = 0, k = side === 'L' ? 'L' : 'R';
+    for (var i = 0; i < e1[k].length; i++) {
+      if (e1[k][i] === null || e2[k][i] === null) continue;
+      m = Math.max(m, Math.abs(e1[k][i] - e2[k][i]));
+    }
+    return m;
+  }
+  // background pixels enclosed by her silhouette (not reachable from the edge through transparent pixels)
+  function enclosed(alpha, W, H) {
+    var outside = new Uint8Array(W * H), stack = [];
+    function push(i) { if (!outside[i] && alpha[i] < 128) { outside[i] = 1; stack.push(i); } }
+    for (var x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+    for (var y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+    while (stack.length) {
+      var i = stack.pop(), xx = i % W;
+      if (xx > 0) push(i - 1); if (xx < W - 1) push(i + 1); if (i >= W) push(i - W); if (i < W * (H - 1)) push(i + W);
+    }
+    var enc = new Uint8Array(W * H);
+    for (var j = 0; j < W * H; j++) enc[j] = alpha[j] < 128 && !outside[j] ? 1 : 0;
+    return enc;
+  }
+  // tears: background now enclosed where she had paint at rest (the same instant, arm down) — a part pulled open
+  function tearsOf(encPose, aRest, W, H) {
+    var m = new Uint8Array(W * H);
+    for (var i = 0; i < W * H; i++) m[i] = encPose[i] && aRest[i] >= 128 ? 1 : 0;
+    return components(m, W, H);
+  }
+  function components(m, W, H) {
+    var seen = new Uint8Array(W * H), total = 0, maxc = 0, comps = 0;
+    for (var i = 0; i < W * H; i++) {
+      if (!m[i] || seen[i]) continue;
+      var st = [i], size = 0; seen[i] = 1; comps++;
+      while (st.length) {
+        var k = st.pop(); size++;
+        var kx = k % W;
+        if (kx > 0 && m[k - 1] && !seen[k - 1]) { seen[k - 1] = 1; st.push(k - 1); }
+        if (kx < W - 1 && m[k + 1] && !seen[k + 1]) { seen[k + 1] = 1; st.push(k + 1); }
+        if (k >= W && m[k - W] && !seen[k - W]) { seen[k - W] = 1; st.push(k - W); }
+        if (k < W * (H - 1) && m[k + W] && !seen[k + W]) { seen[k + W] = 1; st.push(k + W); }
+      }
+      total += size; maxc = Math.max(maxc, size);
+    }
+    return { px: total, maxComponent: maxc, components: comps };
+  }
+  function holesAgainst(encPose, encRest, W, H) {
+    var grown = new Uint8Array(W * H);
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+      if (!encRest[y * W + x]) continue;
+      for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+        var yy = y + dy, xx = x + dx;
+        if (yy >= 0 && yy < H && xx >= 0 && xx < W) grown[yy * W + xx] = 1;
+      }
+    }
+    var seen = new Uint8Array(W * H), total = 0, maxc = 0, comps = 0;
+    for (var i = 0; i < W * H; i++) {
+      if (!encPose[i] || grown[i] || seen[i]) continue;
+      var st = [i], size = 0; seen[i] = 1; comps++;
+      while (st.length) {
+        var k = st.pop(); size++;
+        var kx = k % W;
+        [kx > 0 ? k - 1 : -1, kx < W - 1 ? k + 1 : -1, k - W, k + W].forEach(function (q) {
+          if (q >= 0 && q < W * H && encPose[q] && !grown[q] && !seen[q]) { seen[q] = 1; st.push(q); }
+        });
+      }
+      total += size; maxc = Math.max(maxc, size);
+    }
+    return { px: total, maxComponent: maxc, components: comps };
+  }
+  function figAlpha(fig) {
+    var d = fig.canvas.getContext('2d').getImageData(0, 0, fig.W, fig.H).data, a = new Uint8Array(fig.W * fig.H);
+    for (var i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+    return a;
+  }
+  function round(v, n) { return v === null || v === undefined ? v : +v.toFixed(n === undefined ? 3 : n); }
+
+  function runCheck() {
+    var D = 9, sc = Q * D, P = prepared(sc), W = P.W, H = P.H, frames = [], dt = 1 / 30;
+    var yChin = Math.round((RIG.chin + PADT) * sc), yTop = Math.max(0, Math.round((TOP - 4 + PADT) * sc));
+    var yHem = Math.round((RIG.hem + 8 + PADT) * sc), yFeet = Math.min(H, Math.round((FEET + 4 + PADT) * sc));
+    var ms9 = [], sumTime = 0;
+    resetSim();
+    var lastAttached = null, detach = null, hold = null, restWing = null;
+    var n = Math.round(K.end / dt);
+    for (var f = 0; f <= n; f++) {
+      var t = f * dt;
+      simulateTo(t, armAt);
+      var arm = armAt(t), pose = poseFrom(t, arm, false), rest = poseFrom(t, arm, true);
+      var t0 = performance.now();
+      var fig = renderFigure(pose, sc, { collect: true });
+      ms9.push(performance.now() - t0);
+      var aPose = figAlpha(fig), headP = fig.head, wingP = fig.wing;
+      var lamp = lampFor(pose, fig.grip);
+      // the fist's grip, from the fist shape's own grip sent through the hand's transform, against where the lantern hangs
+      var fistGrip = toPage(apply(handXform(pose, RIG.hands.fist), { x: RIG.hands.fist.grip[0], y: RIG.hands.fist.grip[1] }));
+      var lanGrip = null;
+      if (lamp.held) { var m = lanternMatrix(lamp).M; lanGrip = { x: m[0] * LAN.grip[0] + m[2] * LAN.grip[1] + m[4], y: m[1] * LAN.grip[0] + m[3] * LAN.grip[1] + m[5] }; }
+      var sleeveSum = 0;
+      if (fig.sleeveOnly) for (var i0 = 0; i0 < W * H; i0++) sleeveSum += fig.sleeveOnly[i0];
+      var restFig = renderFigure(rest, sc, { collect: true });
+      var aRest = figAlpha(restFig);
+      var restLeanHead = renderFigure(poseFrom(t, arm, 'lean'), sc, { collect: true }).head;
+      var wingSum = 0, wingRest = 0;
+      for (var i = 0; i < W * H; i++) { wingSum += wingP[i]; wingRest += restFig.wing[i]; }
+      var encP = enclosed(aPose, W, H);
+      var holes = holesAgainst(encP, enclosed(aRest, W, H), W, H), tears = tearsOf(encP, aRest, W, H);
+      var hoodP = rowEdges(headP, W, yTop, yChin, 0, W), hoodR = rowEdges(restFig.head, W, yTop, yChin, 0, W);
+      var hoodL = rowEdges(restLeanHead, W, yTop, yChin, 0, W);
+      var keyArea = RIG.sleeves && RIG.sleeves[SLEEVE_MODE] ? RIG.sleeves[SLEEVE_MODE].area * sc * sc : null;
+      var hoodCP = rowEdges(aPose, W, yTop, yChin, 0, W), hoodCR = rowEdges(aRest, W, yTop, yChin, 0, W);
+      var bootP = rowEdges(aPose, W, yHem, yFeet, 0, W), bootR = rowEdges(aRest, W, yHem, yFeet, 0, W);
+      var rec = { t: round(t), tears: tears.px, tearMax: tears.maxComponent, holes: holes.px, holeMax: holes.maxComponent,
+        sleeve: round(wingSum / wingRest, 4), sleeveS: round(pose.sleeveS, 3),
+        sleeveKey: keyArea && pose.sleeveS > 0.5 ? round(sleeveSum / 255 / keyArea, 4) : null,
+        headPart: round(edgeShift(hoodP, hoodL) / D, 3), headLean: round(edgeShift(hoodP, hoodR) / D, 3),
+        hoodFar: round(sideShift(hoodCP, hoodCR, 'R') / D, 3), hoodArmSide: round(sideShift(hoodCP, hoodCR, 'L') / D, 3),
+        boots: round(edgeShift(bootP, bootR) / D, 3), miss: round(pose.ik.miss * Q, 3),
+        grip: lamp.held ? round(dist(fistGrip, lanGrip), 4) : null, attached: arm.attached, ms: round(ms9[ms9.length - 1], 1) };
+      frames.push(rec);
+      if (arm.attached) lastAttached = { t: t, base: lamp.base, rest: lamp.rest.base, theta: pose.theta };
+      if (!arm.attached && lastAttached && !detach && t > K.fist) detach = { t: t, lastHeldBase: lastAttached.base, lastHeldTheta: lastAttached.theta };
+      if (!hold && t >= K.hold + 1.0) {
+        var eyes = RIG.face.eyes.map(function (e) { var c = toPage(pose.R({ x: e.cx, y: e.cy })); return [c.x - e.rx * Q, c.y - e.ry * Q, c.x + e.rx * Q, c.y + e.ry * Q]; });
+        var lm = lanternMatrix(lamp).M, lw = images.lantern.width, lh = images.lantern.height;
+        var cs = [[0, 0], [lw, 0], [0, lh], [lw, lh]].map(function (p) { return { x: lm[0] * p[0] + lm[2] * p[1] + lm[4], y: lm[1] * p[0] + lm[3] * p[1] + lm[5] }; });
+        var lbox = [Math.min.apply(null, cs.map(function (p) { return p.x; })), Math.min.apply(null, cs.map(function (p) { return p.y; })),
+          Math.max.apply(null, cs.map(function (p) { return p.x; })), Math.max.apply(null, cs.map(function (p) { return p.y; }))];
+        var overlap = eyes.map(function (e) { return Math.max(0, Math.min(e[2], lbox[2]) - Math.max(e[0], lbox[0])) * Math.max(0, Math.min(e[3], lbox[3]) - Math.max(e[1], lbox[1])); });
+        var gc = pose.ik.G;
+        hold = { t: round(t), fistShare: round((gc.y - TOP) / HGT, 4), fistPage: { x: round(fig.grip.x, 2), y: round(fig.grip.y, 2) },
+          lanternBox: lbox.map(function (v) { return round(v, 2); }), eyeBoxes: eyes.map(function (e) { return e.map(function (v) { return round(v, 2); }); }),
+          eyeOverlapPx2: overlap.map(function (v) { return round(v, 2); }), lanternLeftOfNearEye: round(Math.min.apply(null, eyes.map(function (e) { return e[0]; })) - lbox[2], 2),
+          baseAboveTable: round(A.y + 0 - lamp.rest.base.y + 0, 2), shoulderPage: { x: round(toPage(pose.ik.S).x, 2), y: round(toPage(pose.ik.S).y, 2) },
+          elbowAngle: round(pose.ik.elbowAngle, 1), upperDeg: round(pose.ik.th1, 1) };
+      }
+    }
+    function worst(key, absval) {
+      var best = null;
+      frames.forEach(function (r) { if (r[key] === null) return; var v = absval ? Math.abs(r[key] - 1) : r[key]; if (!best || v > best.v) best = { v: v, t: r.t, value: r[key] }; });
+      return best;
+    }
+    var sleeveMin = frames.reduce(function (m, r) { return r.sleeve < m.v ? { v: r.sleeve, t: r.t } : m; }, { v: 9, t: null });
+    var sleeveMax = frames.reduce(function (m, r) { return r.sleeve > m.v ? { v: r.sleeve, t: r.t } : m; }, { v: 0, t: null });
+    // render cost at room scale and at 2x: the figure alone, and a whole 3x cell
+    var roomMs = [], dev2 = [], cellMs = [];
+    [[1, roomMs], [2, dev2]].forEach(function (p) {
+      for (var k = 0; k < 40; k++) { var tt = K.reach + k * 0.08; simulateTo(tt, armAt); var ps = poseFrom(tt, armAt(tt), false); var a0 = performance.now(); renderFigure(ps, Q * p[0]); p[1].push(performance.now() - a0); }
+    });
+    var cc = document.createElement('canvas'); cc.width = 300; cc.height = 400;
+    for (var k2 = 0; k2 < 20; k2++) { var t2 = K.reach + k2 * 0.15; simulateTo(t2, armAt); var a1 = performance.now(); drawScene(cc.getContext('2d'), 300, 400, CAMS.whole(), rigFrame(t2, armAt(t2), 3)); cellMs.push(performance.now() - a1); }
+    function stats(a) { var s = a.slice().sort(function (x, y) { return x - y; }); return { mean: round(s.reduce(function (x, y) { return x + y; }, 0) / s.length, 2), p95: round(s[Math.floor(s.length * 0.95)], 2), max: round(s[s.length - 1], 2) }; }
+    // the reach heights: how far the hand is from each target
+    var reaches = HEIGHTS.map(function (h, i) {
+      var arm = reachArm(i), pose = poseFrom(5.0, arm, false);
+      return { height: h, missPx: round(pose.ik.miss * Q, 2), reached: pose.ik.miss * Q < 0.25, elbowAngle: round(pose.ik.elbowAngle, 1),
+        forearmRaise: round(pose.forearmRaise, 1), sleeveShown: round(pose.sleeveS, 3), leanPx: round(pose.idle.leanE * Math.hypot(LEAN[0], LEAN[1]), 2),
+        upperDeg: round(pose.ik.th1, 1), limited: pose.ik.limited, gripPage: { x: round(toPage(pose.ik.G).x, 2), y: round(toPage(pose.ik.G).y, 2) },
+        target: { x: round(toPage(arm.T).x, 2), y: round(toPage(arm.T).y, 2) } };
+    });
+    var summary = {
+      frames: frames.length, dt: round(dt, 4), scale: '9x (' + round(sc, 4) + ' buffer px per canvas px)',
+      stand: { x: round(ST.x, 2), y: round(ST.y, 2) }, finial: { x: round(A_GRIP.x, 2), y: round(A_GRIP.y, 2) },
+      tears: { note: 'background enclosed by her where she had paint at rest at the same instant (a part pulled open): the spec\'s holes, 9x px',
+        totalPx: frames.reduce(function (s, r) { return s + r.tears; }, 0), framesWithAny: frames.filter(function (r) { return r.tears > 0; }).length,
+        worst: worst('tears'), maxComponent: worst('tearMax') },
+      holes: { note: 'all background newly enclosed against rest, including outside her rest silhouette (the gap closed off under the raised arm), 9x px',
+        totalPx: frames.reduce(function (s, r) { return s + r.holes; }, 0), worst: worst('holes'), maxComponent: worst('holeMax') },
+      sleeveArea: { min: sleeveMin, max: sleeveMax, worstOffOne: worst('sleeve', true) },
+      heldParts9xToPage: { note: 'headPartMax: the hood against rest with the same lean (its shape); headLeanMax: against rest without it (the lean itself); the hood sides and boots against rest without lean',
+        headPartMax: worst('headPart'), headLeanMax: worst('headLean'), hoodFarSideMax: worst('hoodFar'), hoodArmSideMax: worst('hoodArmSide'), bootsMax: worst('boots') },
+      sleeveKeyStretch: (function () {
+        var v = frames.filter(function (r) { return r.sleeveKey !== null; });
+        if (!v.length) return null;
+        var lo = v.reduce(function (m, r) { return r.sleeveKey < m.v ? { v: r.sleeveKey, t: r.t } : m; }, { v: 9 });
+        var hi = v.reduce(function (m, r) { return r.sleeveKey > m.v ? { v: r.sleeveKey, t: r.t } : m; }, { v: 0 });
+        return { note: 'the drawn sleeve\'s painted area as skinned against as drawn, frames where it is over half shown', mode: SLEEVE_MODE, frames: v.length, min: lo, max: hi };
+      })(),
+      gripError: worst('grip'), ikMissWhileMoving: worst('miss'),
+      setDown: detach ? { detachT: round(detach.t), lastHeldBaseToA: round(dist(detach.lastHeldBase, A), 4), lastHeldTheta: round(detach.lastHeldTheta, 6),
+        baseAfter: 0, note: 'after the detach frame the lantern is drawn from A itself' } : null,
+      hold: hold,
+      renderMs: { figure9x: stats(ms9), figureRoomScale: stats(roomMs), figure2x: stats(dev2), scene3xCell: stats(cellMs) },
+      reaches: reaches
+    };
+    return { summary: summary, frames: frames };
+  }
+
+  function runCompareCheck() {
+    var res = {};
+    var D = 9;
+    function fo(fr) { var f = figureOnly(fr, D, false); return { f: f, d: f.ctx.getImageData(0, 0, f.w, f.h).data }; }
+    var regions = { hood: [20, TOP - 2, 262, RIG.chin], cloakAwayFromArm: [110, RIG.chin + 10, 262, RIG.hem], boots: [0, RIG.hem + 8, 262, FEET + 6] };
+    function diffs(a, b) {
+      var out = {};
+      Object.keys(regions).forEach(function (k) { var r = regions[k]; out[k] = regionDiff(a.d, b.d, pageRect(a.f, r[0], r[1], r[2], r[3]), a.f.w); });
+      return out;
+    }
+    resetSim();
+    var base = fo(drawnFrame('sw', D, false));
+    var rigRest = fo(rigFrame(0.0, armAt(0), D));
+    res.baseline = { note: 'the rig at rest against the walk rig\'s sw drawing at rest (should be ~0)', diff: diffs(rigRest, base) };
+    Object.keys(POSES).forEach(function (k) {
+      var P = POSES[k];
+      resetSim(); simulateTo(P.t, armAt);
+      var r = fo(rigFrame(P.t, armAt(P.t), D)), d = fo(drawnFrame(P.drawn, D, P.held));
+      resetSim(); simulateTo(P.t, armAt);
+      res[k] = { drawn: P.drawn, rigVsDrawn: diffs(r, d), drawnVsRest: diffs(d, base), rigVsRest: diffs(r, rigRest) };
+    });
+    res.note = 'meanAbs: mean |premultiplied RGB| difference over pixels where either has paint (0-255); iou: silhouette overlap at alpha 0.5; regions in her sw canvas px, rendered at 9x round her stand';
+    return res;
+  }
+
+  function runExport() {
+    var D = 9, stills = {};
+    function still(name, fr, lantern) { stills[name] = figureOnly(fr, D, lantern).canvas.toDataURL('image/png'); }
+    resetSim();
+    still('rest', rigFrame(0.2, armAt(0.2), D), false);
+    [['reach', K.at], ['grip', K.fist + 0.001], ['held', K.hold + 1.0]].forEach(function (p) {
+      resetSim(); simulateTo(p[1], armAt);
+      still(p[0], rigFrame(p[1], armAt(p[1]), D), true);
+    });
+    HEIGHTS.forEach(function (h, i) { still('reach-' + h, rigFrame(5.0, reachArm(i), D), false); });
+    return { stills: stills };
+  }
+
+  function emit(obj) {
+    var pre = document.getElementById('audit');
+    pre.textContent = JSON.stringify(obj);
+    pre.hidden = false;
+  }
+
+  // ---- the page: two views playing on the real clock --------------------------------------------------------------------
+  function runPage() {
+    var mode = 'pickup', t0 = performance.now(), whole = document.getElementById('whole'), upper = document.getElementById('upper');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-play]'), function (b) {
+      b.addEventListener('click', function () {
+        mode = b.getAttribute('data-play'); t0 = performance.now(); resetSim();
+        Array.prototype.forEach.call(document.querySelectorAll('[data-play]'), function (q) { q.setAttribute('aria-pressed', q === b ? 'true' : 'false'); });
+      });
+    });
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function frame(now) {
+      var t = reduce ? K.hold + 1 : ((now - t0) / 1000) % (mode === 'pickup' ? K.end : 10);
+      var arm = mode === 'pickup' ? armAt(t) : reachArm(Math.floor(t / 2) % HEIGHTS.length);
+      if (mode === 'pickup') simulateTo(t, armAt); else resetSim();
+      [[whole, 'whole', 3], [upper, 'upper', 6]].forEach(function (v) {
+        var cam = CAMS[v[1]](); cam.D = v[2];
+        drawScene(v[0].getContext('2d'), v[0].width, v[0].height, cam, rigFrame(t, arm, v[2]));
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  var loads = [];
+  Object.keys(PARTS).forEach(function (k) { loads.push(load(k, PARTS[k])); });
+  loads.push(load('plate', SCENE.plate));
+  Object.keys(SCENE.layers).forEach(function (k) { loads.push(load('layer:' + k, SCENE.layers[k])); });
+  Object.keys(SCENE.shadows).forEach(function (k) { loads.push(load('shadow:' + k, SCENE.shadows[k])); });
+  ['lantern', 'lantern:glow', 'lantern:shadow', 'lantern:through'].forEach(function (k) { loads.push(load(k, SCENE[k])); });
+  Promise.all(loads).then(function () {
+    try {
+      if (params.get('grid')) runGrid();
+      else if (params.get('compare')) runCompare(params.get('compare'));
+      else if (params.get('check') === 'compare') emit(runCompareCheck());
+      else if (params.get('check')) emit(runCheck());
+      else if (params.get('export')) emit(runExport());
+      else runPage();
+    } catch (err) { emit({ error: String(err && err.stack || err) }); throw err; }
+  }).catch(function (err) { emit({ error: String(err && err.stack || err) }); });
+})();
+</script>
