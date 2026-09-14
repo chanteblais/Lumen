@@ -13,6 +13,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 
 ## Docs — read on demand (index: `docs/README.md`)
 - `AGENTS.md` — rules for every coding agent in this repo (this Next.js differs from training data: read the guide in `node_modules/next/dist/docs/` before writing Next code), loaded here: @AGENTS.md
+- `docs/design/routine/README.md` — hourly design-routine proposals for review; read relevant entries during product/design work, check against current canon and code, and record our decisions in `docs/design/routine/review.md`. Imported proposals are not approval to implement. The importer preserves review notes. In another worktree, use `/Users/chante/Projects/lumen/docs/design/routine/` until the inbox is committed into that checkout.
 - `docs/architecture.md` — stack, how the AI layer touches state (context block + tools), sticky decisions, repo layout
 - `docs/domain.md` — the seven tables, events catalogue, derived views
 - `docs/v1-plan.md` — milestones M0–M7 with done-when + EF checks

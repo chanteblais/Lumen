@@ -27,10 +27,8 @@ describe("deterministicSessionOps", () => {
   it("confirms the matching strategy after a completed session", () => {
     expect(deterministicSessionOps(session({ approach: "reading the last paragraph first" }), [b])).toEqual([{ op: "confirm", id: "b1" }]);
   });
-  it("contradicts it after an abandoned one, and stays out of a stopped-early one", () => {
-    const ops = deterministicSessionOps(session({ approach: "reading the last paragraph first", outcome: "abandoned" }), [b]);
-    expect(ops).toHaveLength(1);
-    expect(ops[0]).toMatchObject({ op: "contradict", id: "b1" });
+  it("stays out of an abandoned one (an unknown ending) and a stopped-early one", () => {
+    expect(deterministicSessionOps(session({ approach: "reading the last paragraph first", outcome: "abandoned" }), [b])).toEqual([]);
     expect(deterministicSessionOps(session({ approach: "reading the last paragraph first", outcome: "stopped_early" }), [b])).toEqual([]);
   });
   it("does nothing without an approach or a match, or on a retired belief", () => {
@@ -94,6 +92,7 @@ describe("worthModelStep", () => {
     expect(worthModelStep({ outcome: "stopped_early", startedAt: started, endedAt: new Date(started.getTime() + 4 * 60_000) })).toBe(true);
     expect(worthModelStep({ outcome: "completed", startedAt: started, endedAt: new Date(started.getTime() + 11_000) })).toBe(true);
     expect(worthModelStep({ outcome: null, startedAt: started, endedAt: null })).toBe(false);
+    expect(worthModelStep({ outcome: "abandoned", startedAt: started, endedAt: new Date(started.getTime() + 90 * 60_000) })).toBe(false);
   });
 });
 

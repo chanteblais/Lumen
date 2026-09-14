@@ -15,9 +15,37 @@
 - Silence is not endorsement, inclusion in a digest is not endorsement, endorsing a problem is not endorsing a proposed solution, and one verdict is not a rule for related ideas.
 - The notebook is not canon. It never edits a canonical doc, never becomes a requirement and never implements anything; a note moves into the canon only when Chanté puts it there (`PROJECT-CANON.md` → How the canon works).
 - No review queue, page or count: feedback is optional and conversational (`ef-burden-log.md`, 2026-09-14).
+- Sits with *Directions adopted from the first routine review* (below): a design note is a note, not an action — it moves nothing in the app, plans nothing and speaks only as a ledger line — so design thinking stays with meaning (Q23), and Lumi still starts nothing unprompted (Q9). What she notices is recorded quietly, the lowest level that works.
 
 **Principle.** EP§17 (show inference for what it is), AI & IA §57 (explicit ≠ inferred), V§4 (automate administration, never agency).
 **Replaces.** Nothing.
+
+## 2026-09-14 · Directions adopted from the first routine review
+
+**Decision.** From the first pass over the design-routine proposals ([`design/routine/review.md`](../design/routine/review.md), each line linked there to its proposal), these directions are adopted. Each narrows an open question; none adds a surface or changes the persona by itself.
+- **Autonomy (Q10).** Lumi interprets the present freely and changes the enduring model conservatively. Her authority is scoped to what was asked — granted and narrowed in conversation, never a global setting. A clear instruction is acted on without asking; a reversible change stays legible (a ledger line, Undo where it helps); a change to what something *means* (letting go, a lasting priority, a guess treated as known, a real date) needs the user's word; anything that reaches another person or can't be undone gets a concrete preview of exactly what will happen first.
+- **Reflection and action (Q23).** Lumi may notice action before the user commits to it; she doesn't confuse the two. A thought, worry or possibility stays with meaning; a request for clarity orients; a decision, a direct ask or a clear commitment moves. When unsure, the least-committing reading that still helps. A clear obligation said in passing may be filed quietly without steering the conversation toward tasks: updating the model is not a change of subject. The stance stays internal, never a visible mode, and "just help me start" wins at once.
+- **Proactivity (Q9).** Importance decides what Lumi remembers; change, consequence and permission decide when she speaks. She may start something only when the situation changed since the user last had a fair chance to account for it, when they asked her to, or at a meaningful transition (arriving, coming back). At the lowest level that works: fold it in silently, then mention it on the next arrival, then in the app; an outside notification only for something they delegated or a clear, consequential, time-sensitive change. She can always say why now. No notification centre; nothing prompted by inactivity, streaks or bringing them back.
+- **Stated priorities (Q11).** A priority is never held broader or longer than the words that stated it. It leans on recommendations and never dictates them (today's deadline can still go first). An old priority that new talk contradicts is offered back, never silently expired.
+- **Scope of a move (Q20).** The visible thing moved sets the default scope: reordering Today changes today; moving something into Right now is a separate, stronger act; one move stays local, and a repeated pattern is offered back rather than learned silently.
+- **Session endings (Q28).** When evidence runs out, the ending is unknown, and an unknown ending teaches nothing about the way in. Lumi learns evaluatively only from what the user said or did.
+- **Re-entry (Q26).** The plan stays theirs until they come back to it. A fixed time passing is a fact the plan can follow; something left untouched is not a reason to change it.
+- **Memory (Q12, Q19, Q24).** Transparency follows consequence, not storage: the more a remembered thing shaped a recommendation, the easier its provenance (*you told me* / *I noticed*) should be to see and correct, in wording, never a confidence number. What a turn's context leaves out is not less true: absence from attention is not absence from the life model.
+- **Mail and other outside sources (Q4).** Detection is not adoption. What Lumi notices outside the app stays tentative, with its source, until the user says it's theirs, and it never reaches Today before that.
+- **Growth (Q6–8).** The world changes because Coherence knows the user better, not because they performed better. Traces come from continuity, never from a count or a hidden score; absence never subtracts; a place grows more particular, not more crowded; changes are rarely announced.
+
+**Rationale.** Chanté asked for the routine's proposals to be reviewed against the canon and the code, and, after Claude's triage, said: "Please use your best judgment and commit." *(Claude's reading:)* each direction follows from settled principles — automate administration, never agency; presence without interruption; design for return; show inference for what it is; continuity, not rewards — and makes an open question decidable without giving the user anything to keep. Proposals whose premise the app has since removed (Study entered through *Start with Lumi*, check-in cadence, Insights leaving the nav) are deferred until sessions or mail return; the Library reading table stays under exploration beside Chanté's open Library questions.
+
+**Implications.**
+- One code change comes with it: session reflection no longer contradicts a strategy when a session was left open (dormant code; engineering log, 2026-09-14). No persona, tool or UI change.
+- Before the reflection-and-action rule reaches the persona, it needs conversation-eval scenarios: thinking aloud that must not become a task, and a clear obligation in passing that should be filed.
+- These are Claude's calls under Chanté's delegation. She can revise any of them; `review.md` records which proposal each came from, and which were deferred or left open.
+- Refines *Direct manipulation is correction that teaches Lumi* (2026-09-12): a single move is local.
+
+**Principle.** V§4, V§7–8, V§14; EP§1, EP§5–6, EP§11, EP§16–17.
+**Replaces.** Nothing settled. Narrows open questions 4, 6–12, 19–20, 23–24, 26 and 28.
+
+---
 
 ## 2026-09-13 · Lumi sees roughly the last 30 to 40 messages
 
@@ -348,6 +376,7 @@ Chanté approved the conceptual comparison and consolidation structure. **Previo
 - A manual move must reach Lumi as an event and, where it means something durable, a belief. Changes that aren't reflected in AI context are a *watch for* (EP§16, EP§18).
 - "Requiring manual sorting Lumi could perform" remains a *watch for*. Nothing may depend on the user dragging.
 - The design choices are open question 20.
+- *Refined 2026-09-14* ([Directions adopted from the first routine review](#2026-09-14--directions-adopted-from-the-first-routine-review)): the visible thing moved sets the scope. One move is a local correction; relative priority comes from their words, or from a pattern Lumi offers back, not from a single drag.
 
 **Principle.** EP§5, EP§6, EP§16, EP§18.
 **Replaces.** The *drag-to-prioritise* rejection in the EF-burden log's Lists-board row, and "reorder and drag later".
