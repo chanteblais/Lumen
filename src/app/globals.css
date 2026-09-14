@@ -1192,6 +1192,61 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 body:has(.home-scene)::before { opacity: 0.16; } /* the grain stays; it reads as the paper of the painting */
 body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 
+/* ---------- Home: the fire ----------
+   The stove's fire moves (`HomeFire`, `fire.ts`): the painting's own flames,
+   warped in a small canvas over the glass — swaying, licking upward, burning
+   taller and lower (art-direction §4, tier 1: motion from one drawing) — and
+   its light on the stove and hearth following how high they burn (`--fire`,
+   0–1, set each frame; `--fire-slow` lags it for the floor). Both are placed
+   in the painting's own pixels (--x, --y from `fire.ts`), mapped through the
+   cover fit (one painting pixel is --px), so they stay on the stove at any
+   window size. The canvas is transparent wherever nothing moves, so the
+   painting shows through with no seam. The light is two dark amber radial
+   gradients colour-dodged over the painting, so what the fire lights brightens
+   and the iron stays dark (screen lifted the stove into a grey haze); dodge
+   only brightens, so at its lowest the fire is the painting as painted. Under
+   the veil, so the dimming still applies. Shown with the painting (the same
+   fade and 3s fallback); off under reduced motion, leaving the painting still. */
+.home-scene { --px: max(calc(100vw / 1536), calc(100vh / 1024)); }
+.scene-flame,
+.scene-fire {
+  position: absolute;
+  left: calc(50% + (var(--x) - 768) * var(--px));
+  top: calc(50% + (var(--y) - 512) * var(--px));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.scene-flame { width: calc(var(--w) * var(--px)); height: calc(var(--h) * var(--px)); }
+.scene-fire { mix-blend-mode: color-dodge; }
+.scene-painting[data-shown] ~ :is(.scene-flame, .scene-fire) { opacity: 1; }
+.scene-painting[data-instant] ~ :is(.scene-flame, .scene-fire) { transition: none; }
+.scene-painting:not([data-shown]) ~ :is(.scene-flame, .scene-fire) { animation: scene-shown 0s 3s forwards; }
+.scene-fire-glow,
+.scene-fire-spill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+}
+.scene-fire-glow {
+  width: calc(120 * var(--px));
+  height: calc(96 * var(--px));
+  translate: -50% -55%;
+  transform-origin: 50% 85%;
+  background: radial-gradient(closest-side, rgb(140 70 10 / 0.8), rgb(110 50 5 / 0.4) 45%, rgb(110 50 5 / 0) 100%);
+  opacity: calc(0.42 + 0.46 * var(--fire, 0.5));
+  scale: 1 calc(0.94 + 0.16 * var(--fire, 0.5));
+}
+.scene-fire-spill {
+  width: calc(460 * var(--px));
+  height: calc(320 * var(--px));
+  translate: -50% -38%;
+  background: radial-gradient(closest-side, rgb(120 60 12 / 0.34), rgb(90 45 8 / 0.14) 50%, rgb(90 45 8 / 0) 100%);
+  opacity: calc(0.62 + 0.38 * var(--fire-slow, 0.5));
+}
+@media (prefers-reduced-motion: reduce) { .scene-flame, .scene-fire { display: none; } }
+
 .shell:has(.home-scene) {
   /* The palette by lantern light. Both the raw tokens and Tailwind's mapped
      colours: `--color-*` resolve on :root, so re-mapping `--ink` alone would
