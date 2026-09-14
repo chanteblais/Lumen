@@ -12,6 +12,10 @@ The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gap
 
 ## Implementation, evidence and operations
 
+The [routine review inbox](design/routine/README.md) imports proposals from **Coherence App Mockups Routine** for Chanté and Claude. Read it when relevant to current design work; imported ideas remain unapproved until reviewed in its separate decision ledger.
+
+The [Coherence Context Package](context-package.md) is the persistent Google Drive briefing for conversations without repository access, with stable cloud links, current screenshots and the in-place refresh procedure.
+
 | Doc | What's in it |
 |---|---|
 | [Product](product.md) | Retired early brief; links to current documents and historical source |
