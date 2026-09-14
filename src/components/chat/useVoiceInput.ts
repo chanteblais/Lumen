@@ -25,7 +25,10 @@ type VoiceInput = {
   /** One line in Lumi's voice when something went wrong; undefined otherwise. */
   error?: string;
   start: () => void;
+  /** Finish up: the rest of the transcript still lands via `onTranscript`/`onEnd`. */
   stop: () => void;
+  /** Drop the take: no more transcript arrives (the message it fed was sent). */
+  cancel: () => void;
 };
 
 type Options = {
@@ -88,5 +91,12 @@ export function useVoiceInput({ onTranscript, onEnd }: Options): VoiceInput {
     engineRef.current?.stop();
   }, []);
 
-  return { supported: Boolean(engineName), engine: engineName, state, listening: state === "listening", error, start, stop };
+  // abort() never calls onEnd, so the hook goes idle itself.
+  const cancel = useCallback(() => {
+    engineRef.current?.abort();
+    engineRef.current = null;
+    setState("idle");
+  }, []);
+
+  return { supported: Boolean(engineName), engine: engineName, state, listening: state === "listening", error, start, stop, cancel };
 }
