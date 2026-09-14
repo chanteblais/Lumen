@@ -1,8 +1,8 @@
 /**
  * Reflection v1: what one finished focus session says about what helps this
  * person start. Code decides the part that needs no judgement — a completed
- * session whose approach matches a strategy belief confirms it, an abandoned
- * one contradicts it — then one model call with structured output may
+ * session whose approach matches a strategy belief confirms it; a session left
+ * open (abandoned) is an unknown ending and teaches nothing — then one model call with structured output may
  * propose a few more operations, which `core/domain/memory.ts` applies under
  * its guardrails. Runs in the chat route's `after()` when a session ends; the
  * user never sees it and never rates anything. See docs/architecture.md → The
@@ -55,7 +55,7 @@ const REFLECTION_RULES = `You are the reflection step behind Lumi, a companion f
 Rules:
 - Only what this session is real evidence for. An empty list is a good answer.
 - Prefer confirm / contradict / revise of an existing belief over creating one. Use ids from the list; never invent one. A strategy gets evidence only from a session that actually used it (its approach or first step names it) — the code drops anything else.
-- Create a strategy only when the session was completed and the way in was specific ("reads the last paragraph first"), and no existing strategy already says it. Create an anti_pattern only when the session was abandoned or stopped early and the transcript shows a clear cause. A pattern (time of day, capacity) almost never comes from one session; only if the transcript states it.
+- Create a strategy only when the session was completed and the way in was specific ("reads the last paragraph first"), and no existing strategy already says it. Create an anti_pattern only when the session was stopped early and the transcript shows the person saying what got in the way. A pattern (time of day, capacity) almost never comes from one session; only if the transcript states it.
 - Beliefs describe what works for this person, never who they are. No judgements, no diagnoses, no productivity language. One sentence, present tense, plain.
 - Confidence stays modest; the code caps it.
 - Operations already applied by code (listed) are done — don't repeat them.`;
@@ -83,14 +83,15 @@ export function matchesStrategy(approach: string, belief: Pick<MemoryNote, "kind
 
 /**
  * The part that needs no judgement. Completed + a matching strategy →
- * confirm; abandoned + a matching strategy → contradict. Stopped early is
- * neutral: stopping is allowed, and says little about the way in. Pure.
+ * confirm. Stopped early is neutral: stopping is allowed, and says little about
+ * the way in. Abandoned is neutral too: a session left open with no end signal
+ * is an unknown ending — the app lost sight of them, which says nothing about
+ * how the work went (open question 28, 2026-09-14). Pure.
  */
 export function deterministicSessionOps(session: Pick<FocusSession, "approach" | "outcome" | "goal">, beliefs: Pick<MemoryNote, "id" | "kind" | "content" | "retiredAt">[]): BeliefOp[] {
   if (!session.approach) return [];
   const matching = beliefs.filter((b) => !b.retiredAt && matchesStrategy(session.approach!, b));
   if (session.outcome === "completed") return matching.map((b) => ({ op: "confirm", id: b.id }));
-  if (session.outcome === "abandoned") return matching.map((b) => ({ op: "contradict", id: b.id, note: `a session on "${session.goal}" that began this way was left open` }));
   return [];
 }
 
@@ -98,6 +99,7 @@ export function deterministicSessionOps(session: Pick<FocusSession, "approach" |
 const MIN_MINUTES_FOR_MODEL_STEP = 3;
 export function worthModelStep(s: Pick<FocusSession, "outcome" | "startedAt" | "endedAt">): boolean {
   if (s.outcome === "completed") return true;
+  if (s.outcome === "abandoned") return false; // an unknown ending: nothing to learn either way
   if (!s.endedAt) return false;
   return (s.endedAt.getTime() - s.startedAt.getTime()) / 60_000 >= MIN_MINUTES_FOR_MODEL_STEP;
 }
