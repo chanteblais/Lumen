@@ -1132,6 +1132,9 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   .msg p { font-size: 17px; }
   .send { width: 52px; height: 52px; }
   .opening-body { gap: 18px; }
+  /* The compact portrait on a phone too, so the title keeps to one line and the room gets height back
+     (UX review 1, finding 4). LumiAvatar sizes itself inline, hence !important. */
+  .opening:not(.is-compact) .opening-portrait { width: 44px !important; height: 44px !important; }
   .opening-head { margin-bottom: 28px; }
   .opening-title { font-size: 30px; }
   .opening-line { font-size: 22px; }
@@ -1179,7 +1182,13 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
     linear-gradient(to bottom, rgba(22, 14, 9, 0.33), rgba(22, 14, 9, 0.15) 22%, rgba(22, 14, 9, 0.05) 40%, rgba(22, 14, 9, 0.14) 68%, rgba(22, 14, 9, 0.39) 100%);
 }
 /* The page opens scrolled to the greeting; leave room above it for the scroll's top rod. */
-.shell:has(.home-scene) .chat-scroll { scroll-padding-top: 12px; }
+.shell:has(.home-scene) .chat-scroll {
+  scroll-padding-top: 26px;
+  /* Paper passes out of view instead of being cut: the top 18px fade (UX review 1, finding 3). The
+     scroll padding keeps the greeting's top rod just below the fade on a fresh open. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px);
+  mask-image: linear-gradient(to bottom, transparent, #000 18px);
+}
 body:has(.home-scene)::before { opacity: 0.16; } /* the grain stays; it reads as the paper of the painting */
 body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 
@@ -2294,4 +2303,30 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   .lists-row,
   .lists-row.is-single { grid-template-columns: auto minmax(0, 1fr) auto 34px; gap: 10px; }
   .lists-row .lists-tag { display: none; }
+}
+
+/* More tabs past the edge: the strip fades out on its right while there is more to scroll
+   (ListsTabs sets data-more), so the quick views and Completed don't hide unannounced
+   (UX review 1, finding 2, 2026-09-13). */
+.lists-tabs[data-more] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+
+/* Phones: everything tapped in the day's loop is at least 44pt, Apple's minimum, without looking
+   any bigger (UX review 1, finding 1, 2026-09-13). A transparent ::after widens the hit area past
+   the drawn control — the ticks, Today's card and capacity words, a row's date and ⋯. The tabs sit
+   in a sideways scroller that would clip it, so they simply grow. */
+@media (max-width: 767px) {
+  .circle, .tool-link, .lists-due-btn, .lists-more { position: relative; }
+  .circle::after, .tool-link::after, .lists-due-btn::after, .lists-more::after { content: ""; position: absolute; }
+  .circle::after { inset: -11px; border-radius: 999px; }
+  .tool-link::after { inset: -12px -6px; }
+  .lists-due-btn::after { inset: -7px -4px; }
+  .lists-more::after { inset: -5px; border-radius: 999px; }
+  .lists-tab { min-height: 44px; }
+  /* The rows' ticks sit near the list's scrolling edge, which would clip their hit area on the left. */
+  .lists-row { padding-left: 12px; }
+  .lists-add { position: relative; }
+  .lists-close::after, .lists-add::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; }
 }
