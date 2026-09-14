@@ -238,7 +238,7 @@ export async function reflectOnSession(db: Db, user: Pick<User, "id" | "timezone
 
   let proposed: RawOp[] = [];
   if (!worthModelStep(session)) {
-    // Ended within a couple of minutes without finishing: nothing to learn from yet.
+    // Ended within a couple of minutes without finishing, or left open (an unknown ending): nothing to learn from.
   } else try {
     const [checkInEvents, conversation] = await Promise.all([
       listEventsSince(db, user.id, ["session.check_in"], session.startedAt, 30, until),
