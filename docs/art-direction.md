@@ -243,6 +243,7 @@ The evolving part. A bet moves to *Settled*, with a `decisions.md` entry, or to 
 
 ## Change log
 
+- 2026-09-13 — The lantern: §1 rows for the holding drawings. Three §4a Progress rows: the layer and drawings; the moment on the page; the rig tested and parked, and the hand swap fixed. Bet 2 records the full-rig test.
 - 2026-09-13 — No bet moved: handoff before a new session. §4a's second round is rewritten for the rig (an object is a room layer, a holding pose and a path); a Progress row records Chanté's verdict on the walk on layers and her choice of the lantern on the low table; §9 questions 3 and 4 are answered.
 - 2026-09-13 — No bet moved, evidence on bet 4: the walk rig runs on Home's layers (§4a progress), occlusion checked by a count as well as grids.
 - 2026-09-13 — No bet moved, one confirmed: Chanté's isometric repaint of the Library (`scenery/library/background-iso.png`) is served, so bet 5 now covers the Library too and the spatial map's projection question is answered. §1 gains its row; the map is redrawn as v3.
