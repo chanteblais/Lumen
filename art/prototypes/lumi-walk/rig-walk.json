@@ -4863,8 +4863,8 @@
    "height": 440.0,
    "chin": 205.26,
    "neck": 258.06,
-   "hem": 376.59,
-   "hoodX": 159.77,
+   "hem": 365.46,
+   "hoodX": 156.06,
    "contact": [
     [
      111.85,
@@ -4878,7 +4878,7 @@
    "legs": [
     {
      "hip": [
-      124.77,
+      123.85,
       335.88
      ],
      "ankle": [
@@ -4894,7 +4894,7 @@
     },
     {
      "hip": [
-      176.56,
+      175.64,
       360.97
      ],
      "ankle": [
@@ -5834,7 +5834,7 @@
     "ringPx": 1836,
     "groundFloodedPx": 2431
    },
-   "specksPx": 993,
+   "specksPx": 32,
    "toBase": {
     "k": 0.9992,
     "offset": [
@@ -5846,7 +5846,8 @@
     "bottom": 280.43,
     "feet": 442.86,
     "clears": true
-   }
+   },
+   "turned": 50.9
   },
   "ssw-lantern": {
    "size": [
@@ -5858,8 +5859,8 @@
    "height": 440.0,
    "chin": 205.2,
    "neck": 258.0,
-   "hem": 386.8,
-   "hoodX": 154.63,
+   "hem": 381.93,
+   "hoodX": 149.93,
    "contact": [
     [
      122.21,
@@ -5873,7 +5874,7 @@
    "legs": [
     {
      "hip": [
-      121.9,
+      120.73,
       364.23
      ],
      "ankle": [
@@ -5889,7 +5890,7 @@
     },
     {
      "hip": [
-      204.41,
+      203.24,
       360.4
      ],
      "ankle": [
@@ -6725,7 +6726,7 @@
     "ringPx": 1620,
     "groundFloodedPx": 0
    },
-   "specksPx": 2874,
+   "specksPx": 29,
    "toBase": {
     "k": 0.99921,
     "offset": [
@@ -6737,7 +6738,8 @@
     "bottom": 281.51,
     "feet": 442.8,
     "clears": true
-   }
+   },
+   "turned": 18.3
   },
   "s-lantern": {
    "size": [
@@ -6749,8 +6751,8 @@
    "height": 440.0,
    "chin": 205.14,
    "neck": 257.94,
-   "hem": 383.78,
-   "hoodX": 157.47,
+   "hem": 378.66,
+   "hoodX": 151.68,
    "contact": [
     [
      122.64,
@@ -6764,7 +6766,7 @@
    "legs": [
     {
      "hip": [
-      121.79,
+      120.34,
       361.47
      ],
      "ankle": [
@@ -6780,7 +6782,7 @@
     },
     {
      "hip": [
-      202.62,
+      201.17,
       361.81
      ],
      "ankle": [
@@ -7640,7 +7642,7 @@
     "ringPx": 2356,
     "groundFloodedPx": 0
    },
-   "specksPx": 33,
+   "specksPx": 185,
    "toBase": {
     "k": 0.99845,
     "offset": [
@@ -7652,7 +7654,8 @@
     "bottom": 286.38,
     "feet": 442.74,
     "clears": true
-   }
+   },
+   "turned": -0.2
   },
   "front-reach": {
    "size": [
@@ -8630,7 +8633,8 @@
     "bottom": 277.45,
     "feet": 442.86,
     "clears": true
-   }
+   },
+   "turned": 50.8
   },
   "front-grip": {
    "size": [
@@ -8642,8 +8646,8 @@
    "height": 440.0,
    "chin": 205.26,
    "neck": 258.06,
-   "hem": 377.43,
-   "hoodX": 158.84,
+   "hem": 362.22,
+   "hoodX": 157.43,
    "contact": [
     [
      117.24,
@@ -8657,7 +8661,7 @@
    "legs": [
     {
      "hip": [
-      128.56,
+      128.2,
       335.82
      ],
      "ankle": [
@@ -8673,7 +8677,7 @@
     },
     {
      "hip": [
-      179.46,
+      179.1,
       360.93
      ],
      "ankle": [
@@ -9613,7 +9617,7 @@
     "ringPx": 1846,
     "groundFloodedPx": 184
    },
-   "specksPx": 18,
+   "specksPx": 15,
    "toBase": {
     "k": 0.99839,
     "offset": [
@@ -9625,7 +9629,8 @@
     "bottom": 277.05,
     "feet": 442.86,
     "clears": true
-   }
+   },
+   "turned": 51.2
   }
  }
 }

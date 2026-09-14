@@ -46,17 +46,35 @@ rig = json.load(open(os.path.join(HERE, 'rig-walk.json')))
 morph_path = os.path.join(HERE, 'morph.json')
 morph = json.load(open(morph_path)) if os.path.exists(morph_path) else {}   # no morph.json: the page falls back to Swap
 parts = {f'{f}-{l}': uri(os.path.join(HERE, 'parts', f'{f}-{l}.png'), 'image/png')
-         for f in rig if f != 'variants' for l in ('body', 'foot-0', 'foot-1')}   # every facing split.py wrote (variants: holding and pick-up drawings, not yet on the page)
+         for f in rig if f != 'variants' for l in ('body', 'foot-0', 'foot-1')}   # every facing split.py wrote
+# the holding and pick-up drawings (split.py's `variants`): the same three pieces plus the hand drawn over the lantern
+parts.update({f'{f}-{l}': uri(os.path.join(HERE, 'parts', f'{f}-{l}.png'), 'image/png')
+              for f in rig.get('variants', {}) for l in ('body', 'foot-0', 'foot-1', 'hand')})
 
 # ---- the room: Home's layers ---------------------------------------------------------------------------------------
 layers = json.load(open(os.path.join(SCENE, 'layers.json')))
 floor, minus = layers['walkable']['floor'], [m['poly'] for m in layers['walkable']['minus']]
-anchors = {n: a['at'] for L in layers['layers'] for n, a in L['anchors'].items()}
+anchor_of = {n: a for L in layers['layers'] for n, a in L['anchors'].items()}
+anchors = {n: a['at'] for n, a in anchor_of.items()}
 
 # ---- the tour: anchors where they fit, every stop on the walkable floor -------------------------------------------
+# A lantern stop (`lantern`: from and to, two of the lantern's surface anchors) is the lantern moment: she walks to the
+# `from` anchor's stand, picks it up, carries it to `to` and sets it down. Its stands sit inside her clearance band behind
+# the table, so they are not checked against the walkable floor; the page derives each exact stand from the pick-up
+# drawing's grip and enters it along its facing.
 tour_src = json.load(open(os.path.join(HERE, 'tour-home.json')))
 tour = []
+lantern = next((o for o in layers.get('objects', []) if o['id'] == 'lantern'), None)
 for i, t in enumerate(tour_src['tour']):
+    if 'lantern' in t:
+        assert lantern, f'tour stop {i} is a lantern moment but layers.json has no lantern object'
+        for end in ('from', 'to'):
+            a = anchor_of.get(t['lantern'][end])
+            assert a and 'stand' in a and a.get('facing') == 'se', f'tour stop {i}: {t["lantern"][end]} needs a stand facing se'
+            assert t['lantern'][end].split('.')[0] == lantern['surface'], f'tour stop {i}: {t["lantern"][end]} is not on the {lantern["surface"]}'
+        tour.append({'lantern': {'from': t['lantern']['from'], 'to': t['lantern']['to']}, 'rest': t['rest'],
+                     'at': anchor_of[t['lantern']['from']]['stand'], 'name': t.get('name', 'the lantern')})
+        continue
     at = anchors[t['anchor']] if 'anchor' in t else t['at']
     assert depth.walkable(at[0], at[1], floor, minus), f'tour stop {i} {t} at {at} is not on the walkable floor'
     tour.append({'at': at, 'rest': t['rest'], 'name': t.get('anchor') or t.get('name', '')})
@@ -71,12 +89,19 @@ for L in layers['layers']:
     floorlike[L['id']] = [[int(x), int(y)] for x, y in zip(xs, ys)]
 
 room = {k: layers[k] for k in ('size', 'iso', 'lumi', 'depth', 'layers', 'blockers', 'walkable')}
+room['objects'] = layers.get('objects', [])
 room['tour'] = tour
 room['floorlike'] = floorlike
 scene = {
     'layers': {L['id']: uri(os.path.join(SCENE, L['src']), 'image/png') for L in layers['layers']},
     'shadows': {L['id']: uri(os.path.join(SCENE, L['shadow']['src']), 'image/png') for L in layers['layers'] if L['shadow']},
 }
+if lantern:
+    # the lantern piece, its additive glow, its contact shadow and the mask both are drawn through
+    scene['lantern'] = {'src': uri(os.path.join(SCENE, lantern['src']), 'image/png'),
+                        'glow': uri(os.path.join(SCENE, lantern['glow']['src']), 'image/png'),
+                        'shadow': uri(os.path.join(SCENE, lantern['shadow']['src']), 'image/png'),
+                        'through': uri(os.path.join(SCENE, lantern['glow']['through']['src']), 'image/png')}
 
 html = open(os.path.join(HERE, 'index.src.html')).read()
 html = (html.replace('/*RIG*/null', json.dumps(rig, separators=(',', ':')))

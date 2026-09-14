@@ -47,14 +47,17 @@ rows = (count + cols - 1) // cols
 out_dir = os.path.join(HERE, 'out')
 os.makedirs(out_dir, exist_ok=True)
 
-if '--audit' in sys.argv or '--trace' in sys.argv or '--occlusion' in sys.argv:
+if '--audit' in sys.argv or '--trace' in sys.argv or '--occlusion' in sys.argv or '--lantern' in sys.argv:
+    # --lantern runs the page's ?lanterncheck=1: the lantern moment frame by frame (grip error, attach and detach jumps,
+    # the base on the anchor after the set-down, light left at the anchor it left, reach, swing) and each phase's time
     # the page's ?audit=1 mode (facing against movement, turns and flips, over the tour and 60 random clicks), or
     # ?trace=start,step,count (her position, drawing, facing and heading at each sample), or ?occlusion=1 (the same
     # walk as the audit, counting at sampled frames her pixels covered by a layer the depth rule puts behind her and
     # floor-coloured layer pixels drawn over her; see the page's runOcclusion)
     # --audit --query 'around=905.2,905.5' adds every frame between those sim times to the audit's JSON, for a worst
     # case found among the random clicks, which --trace (the tour only) cannot reach
-    mode = 'audit=1' if '--audit' in sys.argv else 'occlusion=1' if '--occlusion' in sys.argv else 'trace=' + arg('--trace', '0,1,10')
+    mode = ('audit=1' if '--audit' in sys.argv else 'occlusion=1' if '--occlusion' in sys.argv
+            else 'lanterncheck=1' if '--lantern' in sys.argv else 'trace=' + arg('--trace', '0,1,10'))
     query = mode + (('&' + arg('--query', '').lstrip('?&')) if '--query' in sys.argv else '')
     dom = subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--virtual-time-budget=120000', '--dump-dom',
                           'file://' + os.path.join(HERE, 'index.html') + '?' + query], check=True, capture_output=True,

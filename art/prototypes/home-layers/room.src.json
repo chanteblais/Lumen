@@ -78,7 +78,7 @@
       },
       "anchors": {
         "table.lantern": { "at": [790, 542], "stand": [760, 587], "facing": "se" },
-        "table.place": { "at": [659, 614], "stand": [632, 660], "facing": "se" },
+        "table.place": { "at": [662, 615], "stand": [632, 660], "facing": "se" },
         "table.reach": [612, 700]
       }
     },

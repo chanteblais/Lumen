@@ -33,7 +33,7 @@ Lumi walking Home's painting, rigged in code from two drawings. Built 2026-09-13
 
 Rebuild, from the repo root: `python3 art/prototypes/lumi-walk/split.py && python3 art/prototypes/lumi-walk/facings.py && python3 art/prototypes/lumi-walk/morph.py && python3 art/prototypes/lumi-walk/elevation.py && python3 art/prototypes/lumi-walk/build.py`, then `python3 art/prototypes/lumi-walk/capture.py --plan --zoom 1.6 --cell 480x320 --step 2.5 --count 20 --cols 5 --start 0 --name tour`, `capture.py --audit` and `capture.py --occlusion`. `build.py` reads `art/scenery/home/` and imports `home-layers/depth.py` and `fringe.py`; `facings.py` and `elevation.py` read the iso slope from `layers.json`. `elevation.py` is the camera-angle gate (room 34.8°, s 29.1°, n 33.3°); it only prints, and belongs in the chain so every rebuild re-checks it. `capture.py --turn swap` renders the same frames with the old behaviour, for comparison.
 
-**Holding the lantern (2026-09-13, `ux/lumi-lantern-table`, in progress — not on the page yet).**
+**Holding the lantern (2026-09-13, `ux/lumi-lantern-table`).**
 - **The drawings:** five, each an edit of its empty-handed drawing.
   - `lumi-iso-front-lantern` (sw), `-ssw-lantern` and `-s-lantern` hold her lantern up by its finial, the fist between chin and eyes (0.29–0.31 of her height down).
   - Two pick-up keys at sw: `-front-reach`, an open hand at eye height, and `-front-grip`, the fist closed on the finial.
@@ -44,7 +44,27 @@ Rebuild, from the repo root: `python3 art/prototypes/lumi-walk/split.py && pytho
 - **The hands gate, `hands.py`:** counts dark hand blobs from 0.12 of her height down (face excluded, blobs within 0.025 of her height merged) against the same facing's empty-handed drawing. More hands fails: a pasted third hand fails 3 vs 2, and the ten facings pass against themselves.
 - **The other gates:** `facings.py --ref <empty drawing>`, and `elevation.py` measuring the hood's centre from its peak with the lantern removed, on the half away from it. Together they keep a held object from reading as a turn or a steeper camera.
 - **Rebuild:** nothing added to the chain above. `split.py` and `morph.py` write the variants with the facings, and the ten facings stay byte-identical.
-- **Known:** ragged cloak where the drawn lantern was cut out (14,380 px open on ssw, 12,051 on s), mostly under the 40 px lantern; on ssw and s the edge runs about 4 room px below it.
+- **Filled:** the torn cloak on ssw and s and the holed sleeve on the grip key are painted with OpenAI's masked edit (`fill.py`, `art/prompts/lumi-iso-lantern-fill.md`, chosen fills `art/lumi/*-fill.png`, pasted by `split.py` inside the mask). `split.py` also trims each hand piece to the fist.
+- **On the page:** the lantern moment.
+  - **Where it is:** `?lantern=A|B|hand` sets where it starts, and `?stop=<i>` starts the tour at stop i.
+  - **Controls:** Pick up and Set down buttons, a readout line; clicks on the floor do nothing while she holds it.
+  - **The tour:** walks in along se to `table.lantern`'s stand, reaches, closes her hand and lifts (0.55 s, 0.25 s, 0.5 s, 0.35 s settles), turns se → sw holding it, walks sw along the back edge, turns back and sets it down at `table.place`. It carries A → B only: every holding drawing faces toward you, so no route carries it back. With the lantern already at B, the tour is the plain one.
+  - **Depth:** the held lantern is its own depth item (its ground point under it, a lift of 72, so it stays over the tabletop) and swings at most 3°.
+  - **Light:** the tabletop light and the floor pool follow `layers.json`'s recipe, crossfading over the lift.
+  - **`capture.py --lantern`** (page `?lanterncheck=1`) checks, per frame: grip error, the attach and detach jumps, the base on the anchor after the set-down, light left behind, and reach.
+- **Numbers:**
+  - audit 0 of 30,614 px sideways with the moment (plain walk 0 of 30,710);
+  - occlusion 0 on every count, the lantern's too, with 100% of it showing over the top;
+  - grip error 0, attach jump 0.05 px, detach 0.36 px, base on the anchor 0, light left behind 0;
+  - reach 47.2 (limit 50);
+  - render 4.5 / 16.7 ms a frame, 7.8 / 34.0 while she holds it.
+- **Grids and GIFs:** `out/lantern-{pickup,turn,carry,setdown,moment,idle}`.
+- **Known:**
+  - **The hand swap:** turning se → s → sw while holding it moves the lantern to her other hand at s (13.6 px in one frame), because the mirrored drawings hold it on the other side.
+  - **Ghosting:** the hood washes pale at se → sse, and the arm ghosts faintly at rest → reach and grip → held.
+  - **Past the corner:** at the end of the carry the lantern hangs past the table's left corner.
+  - **Both wait on the rig test** (`lumi-rig/`), Chanté's call.
+- **B moved:** to (662, 615), so a sw corridor lands its base exactly.
 
 **Status:** landed and pushed (2026-09-13, `5433a9f`) after eight rounds of Chanté's review, the last with the rig on Home's layers: "This is looking like a really good start." The eighth look below is the current state; the limits in this paragraph are from the first build. Next: Lumi picks up the lantern and sets it down on the low table (`docs/animation-pipeline.md` → Next animation). At the first publish, what the renders showed: boots step and hold, the tabletop, lantern and plant cover her behind the table and she covers the cushions in front; a blink first left the painted eyes' rims as orange rings (the lid now takes the rim and glow). Known limits: a turn is a dip and a swap, not an in-between; one room, one tour; nothing in the app plays it.
 

@@ -152,6 +152,13 @@
         <span class="label"></span>
         <label class="toggle"><input type="checkbox" id="auto" checked> Auto idle</label>
       </div>
+      <div class="row">
+        <span class="label">Lantern</span>
+        <div class="cues" id="lantern" role="group" aria-label="Her lantern">
+          <button type="button" data-lantern="pickup">Pick up</button>
+          <button type="button" data-lantern="setdown">Set down</button>
+        </div>
+      </div>
     </div>
 
     <div class="notes">
@@ -164,6 +171,8 @@
         <li>Her legs run from under the cloak to her boots every step.</li>
         <li><b>Idle:</b> standing she blinks at uneven gaps, now and then glances or tilts her head, sways very slowly, and rarely looks curious or sleepy; walking, she only blinks and glances. Her eyes are drawn over the painted ones, so they can shut, shift and change shape. Try the cues: do the eyes read as hers, or as stickers? Does the tilt bend the collar or tear it?</li>
         <li>Turning away past side-on, her ribbon bow and medallions shrink to a sliver and go — a drawing just past side-on carries them — rather than fading out.</li>
+        <li><b>Her lantern:</b> on the low table, lit. Once a tour she walks in behind the table, reaches up, closes her hand on its finial and lifts it — the same lantern, its light going with it — carries it high along the table’s back edge, and sets it down by the books. She carries it only that way: her drawings holding it all face toward you, so she can’t walk it back up the page. <b>Pick up</b> and <b>Set down</b> send her to the right place first.</li>
+        <li><b>Known, and waiting on the rig test:</b> as she turns from facing the table to walking along it, the lantern jumps to her other hand halfway round (the mirrored drawings hold it on the other side), and the hood washes pale for a moment. The arm also ghosts faintly as it reaches and as it lifts, where one drawing dissolves into the next. A fully rigged Lumi is being tried as the fix for all three, and for carrying it back.</li>
       </ul>
       <p class="small">Her height is in the painting’s own pixels; the table stands about 62. Heights, pace and the turn style here are for judging, not settings in the app.</p>
     </div>
@@ -188,6 +197,10 @@
   var PLATE_SRC = '__PLATE_URI__';
   var PW = ROOM.size[0], PH = ROOM.size[1];
   var TOUR = ROOM.tour;
+  // the tour's plain stops (a lantern stop is a moment, not a place: when it can't run the tour is exactly these)
+  var PLAIN = TOUR.filter(function (t) { return !t.lantern; });
+  // Her lantern (layers.json `objects`): a room object on a surface at an anchor, or in her hand
+  var LANTERN = (ROOM.objects || []).filter(function (o) { return o.id === 'lantern'; })[0] || null;
 
   var params = new URLSearchParams(location.search);
   var GRID = params.get('grid');
@@ -308,12 +321,15 @@
     return lo === Infinity ? null : [lo, hi];
   }
   function groundOf(L) { return L.extent || L.footprint; }
-  // her feet columns first; failing that, the item's column nearest her if it is within her drawn reach (her hem is wider)
-  function groundYNear(L, fx) {
-    var g = groundOf(L), m = stripMaxY(g, fx - HALF(), fx + HALF());
+  // her feet columns first; failing that, the item's column nearest her if it is within her drawn reach (her hem is wider).
+  // `half` and `reach` default to hers; the held lantern passes its own.
+  function groundYNear(L, fx, half, reach) {
+    if (half === undefined) half = HALF();
+    if (reach === undefined) reach = REACH();
+    var g = groundOf(L), m = stripMaxY(g, fx - half, fx + half);
     if (m !== null) return m;
     var xs = g.map(function (p) { return p[0]; }), gx0 = Math.min.apply(null, xs), gx1 = Math.max.apply(null, xs);
-    if (gx1 < fx - REACH() || gx0 > fx + REACH()) return null;
+    if (gx1 < fx - reach || gx0 > fx + reach) return null;
     var c = Math.min(Math.max(fx, gx0), gx1);
     return stripMaxY(g, c, c);
   }
@@ -323,17 +339,36 @@
   }
   var LOW = {};
   ROOM.layers.forEach(function (L) { LOW[L.id] = Math.max.apply(null, groundOf(L).map(function (p) { return p[1]; })); });
+  // The held lantern is its own depth item: a ground point under it and a lift (page px from the floor to its base).
+  // A layer whose ground polygon holds that point and whose top is no higher than the lift is under it (the tabletop it
+  // is carried over); any other layer is ranked by the depth rule, as for her, at the lantern's own width.
+  var LAMP_HALF = 12, LAMP_REACH = 16;   // the drawn lantern is 23 px wide at 40 px; its reach adds the ±3° swing
+  function lampUnder(L, lamp) {
+    return inPoly(lamp, groundOf(L)) && L.height <= lamp.lift + 0.5;
+  }
   // Back-to-front: a topological sort of "in front of" over the layers and Lumi, ties by the lowest ground point.
-  function drawOrder(fx, fy) {
+  // `lamp` ({x, y, lift}, the held lantern's ground point) adds the lantern: in front of her (she holds it on her near
+  // side), after every layer under it, and ranked against the rest by the rule.
+  function drawOrder(fx, fy, lamp) {
     var names = ROOM.depth.order.concat(['lumi']), after = {}, indeg = {}, key = {};
-    names.forEach(function (n) { after[n] = []; indeg[n] = 0; key[n] = n === 'lumi' ? fy : LOW[n]; });
+    if (lamp) names.push('lantern');
+    names.forEach(function (n) { after[n] = []; indeg[n] = 0; key[n] = n === 'lumi' ? fy : n === 'lantern' ? lamp.y : LOW[n]; });
     ROOM.depth.infront.forEach(function (p) { after[p[1]].push(p[0]); });
-    var over = {};
+    var over = {}, lampOver = {}, lampUnderIds = {};
     ROOM.layers.forEach(function (L) {
       var m = groundYNear(L, fx);
       if (m === null) return;
       if (m > fy + ROOM.depth.margin) { after.lumi.push(L.id); over[L.id] = true; } else after[L.id].push('lumi');
     });
+    if (lamp) {
+      after.lumi.push('lantern');
+      ROOM.layers.forEach(function (L) {
+        if (lampUnder(L, lamp)) { after[L.id].push('lantern'); lampUnderIds[L.id] = true; return; }
+        var m = groundYNear(L, lamp.x, LAMP_HALF, LAMP_REACH);
+        if (m === null) return;
+        if (m > lamp.y + ROOM.depth.margin) { after.lantern.push(L.id); lampOver[L.id] = true; } else after[L.id].push('lantern');
+      });
+    }
     names.forEach(function (n) { after[n].forEach(function (b) { indeg[b]++; }); });
     var ready = names.filter(function (n) { return !indeg[n]; }), out = [];
     var byKey = function (a, b) { return key[a] - key[b]; };
@@ -345,7 +380,7 @@
       ready.sort(byKey);
     }
     if (out.length < names.length) names.filter(function (n) { return out.indexOf(n) < 0; }).sort(byKey).forEach(function (n) { out.push(n); });
-    return { order: out, over: over };
+    return { order: out, over: over, lampOver: lampOver, lampUnder: lampUnderIds };
   }
 
   // Where her feet may stand: inside layers.json's `walkable.floor` and outside every footprint (extent where given)
@@ -413,6 +448,25 @@
     return true;
   }
 
+  // ---- the holding and pick-up drawings --------------------------------------------------------------------------
+  // split.py's `variants`: the lantern held at sw, ssw and s (the page mirrors them to se and sse), and the pick-up's two
+  // keys at sw, reaching and gripping. Each is its own canvas, and `toBase` maps a point of it onto its base facing's
+  // canvas, so each takes its base facing's root, feet line and height mapped into its own pixels: a variant then stands
+  // exactly where its base drawing stands, and a morph between them (rest → reach → grip → held) moves only what the
+  // drawings move. DRAW holds every drawing, the ten facings as they are and the variants with those frames.
+  function rootOf(R) { return R.rootX !== undefined ? R.rootX : (R.contact[0][0] + R.contact[1][0]) / 2; }
+  var DRAW = {};
+  Object.keys(RIG).forEach(function (f) { DRAW[f] = RIG[f]; });
+  Object.keys(VARIANTS).forEach(function (f) {
+    var V = VARIANTS[f], Bf = RIG[V.base];
+    if (!Bf || !V.toBase) return;
+    var R = Object.assign({}, V), k = V.toBase.k, off = V.toBase.offset;
+    R.rootX = (rootOf(Bf) - off[0]) / k;
+    R.feet = (Bf.feet - off[1]) / k;
+    R.height = Bf.height / k;
+    DRAW[f] = R;
+  });
+
   // ---- the ring of facings: angles, not even steps ---------------------------------------------------------------
   // Every drawing sits on the ring at the angle it was drawn at — `facings.py` writes that into rig-walk.json as
   // `deg`, and each drawing strictly between facing you (0°) and facing away (180°) is mirrored to the other side.
@@ -466,6 +520,30 @@
     var p = fromUV(du, dv), l = Math.hypot(p.x, p.y);
     d.face = { x: (d.mirror ? -p.x : p.x) / l, y: p.y / l };
   });
+  // Every drawing the page can show, as an entry: the ring's first (ENT[i] is DIRS[i] for i < N_DIRS), then each holding
+  // and pick-up drawing at its base facing's place on the ring and at that place's mirror. A morph pairs two entries.
+  // Each carries where its own face points (its `turned`, measured by facings.py), so the audit judges the drawing shown.
+  var ENT = DIRS.slice();
+  var HOLD_OF = { sw: 'sw-lantern', ssw: 'ssw-lantern', s: 's-lantern' };
+  var HOLD = {}, KEYS = {};   // ring index → its holding entry; → [rest, reach, grip, held] where the pick-up is drawn
+  function addEntry(img, ring) {
+    var d = DIRS[ring], R = DRAW[img];
+    var e = { id: d.id + ':' + img, img: img, deg: d.deg, mirror: d.mirror, say: d.say, v: d.v, fore: d.fore, ring: ring };
+    var th = (typeof R.turned === 'number' ? R.turned : RIG[d.img].turned) * Math.PI / 180;
+    var du = (Math.cos(th) - Math.sin(th)) / Math.SQRT2, dv = (Math.cos(th) + Math.sin(th)) / Math.SQRT2;
+    var p = fromUV(du, dv), l = Math.hypot(p.x, p.y);
+    e.face = { x: (d.mirror ? -p.x : p.x) / l, y: p.y / l };
+    ENT.push(e);
+    return ENT.length - 1;
+  }
+  DIRS.forEach(function (d, i) {
+    var h = HOLD_OF[d.img];
+    if (h && DRAW[h]) HOLD[i] = addEntry(h, i);
+    if (d.img === 'sw' && HOLD[i] !== undefined && DRAW['front-reach'] && DRAW['front-grip'])
+      KEYS[i] = [i, addEntry('front-reach', i), addEntry('front-grip', i), HOLD[i]];
+  });
+  var SE = null, SW = null;   // the ring's se (the sw drawing mirrored: where the lantern is picked up) and sw
+  DIRS.forEach(function (d, i) { if (d.img === 'sw') { if (d.mirror) SE = i; else SW = i; } });
   function dirFor(v, fallback) {
     var l = Math.hypot(v.x, v.y);
     if (l < 1e-6) return fallback;
@@ -498,11 +576,11 @@
   // no data of their own.
   var NK = 256;
   var MORPHN = {};
-  Object.keys(RIG).forEach(function (f) {
-    var m = MORPH && MORPH[f], R = RIG[f];
+  Object.keys(DRAW).forEach(function (f) {
+    var m = MORPH && (MORPH[f] || MORPH_VARIANTS[f]), R = DRAW[f];
     if (!m) { MORPHN[f] = null; return; }
     var L = new Float32Array(NK), F = new Float32Array(NK), Rt = new Float32Array(NK);
-    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2, n = m.rows.length;
+    var rootX = rootOf(R), n = m.rows.length;
     for (var i = 0; i < NK; i++) {
       var row = R.feet + (-1 + i / (NK - 1)) * R.height - m.row0;
       var a = clamp(Math.floor(row), 0, n - 1), b = clamp(a + 1, 0, n - 1), t = clamp(row - a, 0, 1);
@@ -519,9 +597,9 @@
   // screen-left foot in every facing. Four of the sixteen pairs of neighbours order their two legs the other way round
   // (the drawing's own order is far foot first, and mirroring reverses it); ordering by where they land on the page
   // instead lets a morph pair leg with leg, and keeps the stepping foot the same foot across a change of drawing.
-  var FIGN = DIRS.map(function (d) {
-    var R = RIG[d.img], ms = d.mirror ? -1 : 1, h = R.height;
-    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2;
+  var FIGN = ENT.map(function (d) {
+    var R = DRAW[d.img], ms = d.mirror ? -1 : 1, h = R.height;
+    var rootX = rootOf(R);
     var nx = function (x) { return ms * (x - rootX) / h; }, ny = function (y) { return (y - R.feet) / h; };
     var legs = (R.legs || []).map(function (L, i) {
       return { i: i, hip: [nx(L.hip[0]), ny(L.hip[1])], ankle: [nx(L.ankle[0]), ny(L.ankle[1])],
@@ -533,10 +611,10 @@
   // Her eyes in the same units and the same page order (slot 0 the screen-left eye), so a morph moves them the way it
   // moves the legs. Turning away, the far eye has no partner in the next drawing and fades over the morph instead of
   // vanishing at a change of drawing; past side-on the last one fades into wbw. A view from behind has none.
-  var EYEN = DIRS.map(function (d) {
-    var R = RIG[d.img], ms = d.mirror ? -1 : 1, h = R.height;
+  var EYEN = ENT.map(function (d) {
+    var R = DRAW[d.img], ms = d.mirror ? -1 : 1, h = R.height;
     if (!R.eyes) return { eyes: [] };
-    var rootX = (R.contact[0][0] + R.contact[1][0]) / 2;
+    var rootX = rootOf(R);
     var eyes = R.eyes.map(function (e, i) {
       return { i: i, x: ms * (e.cx - rootX) / h, y: (e.cy - R.feet) / h, rx: e.rx / h, ry: e.ry / h };
     });
@@ -687,11 +765,18 @@
   function sizeMul() { return ui.size / 120; }
   var random = rng(7);
   var S;
+  var LANTERN_AT = { A: 'table.lantern', B: 'table.place' };
+  // ?stop=<i> starts the tour at stop i (for grids of a later part of it); ?lantern=A|B|hand where her lantern starts —
+  // on the table at its back corner (A, the default) or its left corner (B), or in her hand, standing at A's stand
   function resetSim() {
-    var start = TOUR[0].at, k0 = nearestDir(45), p0 = DIRS[k0].deg;   // she starts facing the front diagonal
+    var si = params.has('stop') ? clamp(parseInt(params.get('stop'), 10) || 0, 0, TOUR.length - 1) : 0;
+    while (TOUR[si].lantern) si = (si + TOUR.length - 1) % TOUR.length;
+    var start = TOUR[si].at, k0 = nearestDir(45), p0 = DIRS[k0].deg;   // she starts facing the front diagonal
     S = {
       x: start[0], y: start[1], p: p0, praw: p0, dirIdx: k0, spinTo: null, roundAhead: null,
-      path: [], leg: 0, legRest: TOUR[0].rest, hold: TOUR[0].rest, waiting: true,
+      path: [], leg: si, legRest: TOUR[si].rest, hold: TOUR[si].rest, waiting: true,
+      still: 0, script: null,
+      lamp: { where: null, P: 0, dir: 0, from: null, theta: 0, thetaV: 0, hx: null, hv: 0, acc: 0, log: [] },
       r: 0, phi: 0, L: T.speed * T.step,
       turnActive: false, turnT: 0, turnFrom: p0, turnTo: p0, turnEl: 0, turnDur: T.turnStep,
       turnP: 0, turnIndex: 0, turnTotal: 0, turnSide: 0,
@@ -699,9 +784,27 @@
       pulse: 0, settle: 0, settleFrom: [[0, 0], [0, 0]], snapped: 0,
       feet: [[0, 0], [0, 0]], lean: 0, leanV: 0, time: 0, idle: newIdle(), cam: null
     };
+    if (LANTERN) {
+      var want = params.get('lantern') || 'A', surf = LAYER[LANTERN.surface];
+      S.lamp.where = LANTERN_AT[want] || LANTERN.at;
+      if (!surf.anchors[S.lamp.where]) S.lamp.where = LANTERN.at;
+      if (want === 'hand' && KEYS[SE] !== undefined) {
+        var pl = lanternPlaces()[LANTERN.at];
+        S.x = pl.stand.x; S.y = pl.stand.y;
+        S.p = S.praw = S.turnFrom = S.turnTo = DIRS[SE].deg; S.dirIdx = SE;
+        S.lamp.where = 'hand'; S.lamp.P = 3; S.lamp.from = LANTERN.at;
+        var li = lanternStop();
+        if (li >= 0 && ui.tour && !reduced) { S.leg = li; S.script = carryScript(TOUR[li], true); }
+      }
+    }
   }
   function turning() { return S.turnActive || S.turnT > 0; }
   function rounding() { return S.spinTo !== null; }
+  // the lantern in her hand and lifted; the pick-up or set-down under way (P between rest 0 and held 3)
+  function holding() { return !!LANTERN && S.lamp.where === 'hand' && S.lamp.P >= 3; }
+  function handling() { return !!LANTERN && S.lamp.P > 0 && S.lamp.P < 3; }
+  // the drawing shown for a ring position: its holding drawing while she holds the lantern
+  function entryOf(i) { return holding() && HOLD[i] !== undefined ? HOLD[i] : i; }
   // Her facing is a number of degrees on the ring (0 facing you, 90 side-on to the left, 180 away), not a drawing: a
   // turn slides it. S.dirIdx is only the drawing nearest to it, and everything that reads a facing — the paths, the
   // audit, the floor plan, the readout — still reads that. praw is p before it is wrapped, so a turn that crosses 0°
@@ -734,19 +837,224 @@
     return { x: q.x / l, y: q.y / l };
   }
 
+  // ---- the lantern: its places, where it hangs from her hand, and the moment ----------------------------------------
+  // Timings of the pick-up, played backwards for the set-down: rest → reach (her hand rises to the finial), reach → grip
+  // (it closes on it), grip → held (the lift). Each key is eased in and out, so she settles on each for a beat.
+  var POSE_DUR = [0.55, 0.25, 0.5];
+  // Held, its base this far above the surface it was taken from (px). The drawings raise the fist no higher on the page
+  // than the grip key does, so a lift is read as the lantern carried further out over the top: at 10 its ground point
+  // stays over the tabletop at the stands and along the back-left edge (at 3 it ran 3-5 ground px behind the edge while
+  // she carried it facing sw). The carried pool on the top dims with it, by the formula (to ~31% of the resting pool).
+  var HELD_LIFT = 10;
+  function surfaceH() { return LAYER[LANTERN.surface].height; }
+  function baseFromGrip() {
+    return { x: (LANTERN.base[0] - LANTERN.grip[0]) * LANTERN.scale, y: (LANTERN.base[1] - LANTERN.grip[1]) * LANTERN.scale };
+  }
+  // an entry's grip at rest, from her feet, in painting px on the page (mirrored with the entry), or null
+  function restGrip(e) {
+    var d = ENT[e], R = DRAW[d.img];
+    if (!R.grip) return null;
+    var q = ROOM.lumi.height * sizeMul() / R.height;
+    return { dx: (R.grip[0] - rootOf(R)) * q * (d.mirror ? -1 : 1), dy: (R.grip[1] - R.feet) * q };
+  }
+  // How high each drawing carries the lantern's base above the floor at rest: the pick-up keys exactly at the surface
+  // (so at a stand the grip key's ground point is the anchor's), the holding drawings HELD_LIFT above it. The ground
+  // point under the lantern is her feet plus the grip's offset across, plus this forward offset (page px, down the page).
+  function liftOf(e) {
+    var img = ENT[e].img;
+    return img === 'front-grip' || img === 'front-reach' ? surfaceH() : surfaceH() + HELD_LIFT;
+  }
+  function forwardOf(e) {
+    var g = restGrip(e), bg = baseFromGrip();
+    return g ? { x: bg.x, y: g.dy + bg.y + liftOf(e) } : null;
+  }
+  // Each surface anchor with a stand: the exact stand, where the grip key's hand, at rest and facing se, closes on the
+  // lantern standing at the anchor (layers.json's `stand` is the proposal it refines), and the entry, the first point on
+  // the walkable floor straight back from it, so she walks in along se and arrives facing the table.
+  var standCache = { key: null };
+  function lanternPlaces() {
+    if (standCache.key === ui.size) return standCache;
+    var out = { key: ui.size, list: [] }, surf = LAYER[LANTERN.surface], g = restGrip(KEYS[SE][2]), bg = baseFromGrip();
+    Object.keys(surf.anchors).forEach(function (name) {
+      var a = surf.anchors[name];
+      if (!a.stand) return;
+      var stand = { x: a.at[0] - bg.x - g.dx, y: a.at[1] - bg.y - g.dy }, back = DIRS[SE].v, entry = null;
+      for (var t = 0.5; t < 90 && !entry; t += 0.5) {
+        if (standable({ x: stand.x - back.x * t, y: stand.y - back.y * t })) {
+          var e2 = { x: stand.x - back.x * (t + 2), y: stand.y - back.y * (t + 2) };
+          entry = standable(e2) ? e2 : { x: stand.x - back.x * t, y: stand.y - back.y * t };
+        }
+      }
+      out[name] = { name: name, at: { x: a.at[0], y: a.at[1] }, stand: stand, entry: entry, proposal: a.stand };
+      out.list.push(out[name]);
+    });
+    standCache = out;
+    return out;
+  }
+  function atStand(p) {
+    if (!LANTERN || KEYS[SE] === undefined) return null;
+    var L = lanternPlaces().list;
+    for (var i = 0; i < L.length; i++) if (Math.hypot(p.x - L[i].stand.x, p.y - L[i].stand.y) < 0.75) return L[i];
+    return null;
+  }
+  function lanternStop() { for (var i = 0; i < TOUR.length; i++) if (TOUR[i].lantern) return i; return -1; }
+  // Carrying it she can face only se, sse, s, ssw or sw (the holding drawings), and every one of those walks toward the
+  // camera, so she carries it from one stand to another only straight along sw, the table's back-left edge — never back
+  // up the page.
+  function carries(a, b) {
+    var p = toUV(a.stand.x, a.stand.y), q = toUV(b.stand.x, b.stand.y);
+    return Math.abs(q.u - p.u) < 0.5 && q.v - p.v > 6;
+  }
+  function canCarry(t) {
+    if (!LANTERN || !t.lantern || KEYS[SE] === undefined || reduced) return false;
+    var pl = lanternPlaces(), a = pl[t.lantern.from], b = pl[t.lantern.to];
+    return !!(a && b && a.entry && S.lamp.where === t.lantern.from && S.lamp.P <= 0 && carries(a, b));
+  }
+  // A path from a to b, rounded; from a stand it first walks back out to the stand's entry along its facing
+  function routeFrom(a, b) {
+    var st = atStand(a);
+    if (!st || !st.entry) { var p = findPath(a, b); return p ? roundCorners(a, p) : null; }
+    var q = findPath(st.entry, b);
+    return q ? [{ x: st.entry.x, y: st.entry.y }].concat(roundCorners(st.entry, q)) : null;
+  }
+  // a path to a lantern stand: to its entry, then in along se
+  function routeToStand(pl) {
+    var here = atStand({ x: S.x, y: S.y });
+    if (here === pl) return [];
+    var from = here && here.entry ? here.entry : { x: S.x, y: S.y }, p = findPath(from, pl.entry);
+    if (!p) return null;
+    var pts = roundCorners(from, p);
+    if (here && here.entry) pts.unshift({ x: here.entry.x, y: here.entry.y });
+    pts.push({ x: pl.stand.x, y: pl.stand.y });
+    return pts;
+  }
+  // The held lantern at rest, from the sim alone (no warp, so no device scale): its grip, base, the ground point under
+  // it and its lift, lerped across whatever morph is showing. The depth rule and the light read this; the sprite hangs
+  // from the grip as drawn.
+  function lampRest() {
+    var sh = showing(), a = sh.mix ? sh.mix.a : sh.under, b = sh.mix ? sh.mix.b : sh.under, t = sh.mix ? sh.mix.t : 0;
+    if (!restGrip(a)) a = b;
+    if (!restGrip(b)) b = a;
+    var ga = restGrip(a), gb = restGrip(b);
+    if (!ga) return null;
+    var fa = forwardOf(a), fb = forwardOf(b), bg = baseFromGrip();
+    var gx = S.x + lerp(ga.dx, gb.dx, t), gy = S.y + lerp(ga.dy, gb.dy, t);
+    var base = { x: gx + bg.x, y: gy + bg.y }, y = S.y + lerp(fa.y, fb.y, t);
+    return { grip: { x: gx, y: gy }, base: base, x: base.x, y: y, lift: y - base.y };
+  }
+
+  // The lantern moment is a short script of ops run one at a time whenever she is neither walking nor turning: walk,
+  // turn, wait, and the pose (the pick-up or the set-down). Each op's start is logged with its sim time.
+  function opWait(t, label) { return { label: label, done: function (op) { return op.el >= t; } }; }
+  function opWalk(pts, label) {
+    return { label: label, start: function () { S.hold = 0; S.waiting = false; startWalk(pts, 0); },
+      done: function () { return !S.path.length && !turning() && S.settle <= 0; } };
+  }
+  function opTurn(to, label) {
+    return { label: label, start: function () { if (Math.abs(degDist(S.p, DIRS[to].deg)) > 1e-6) beginTurn(to); },
+      done: function () { return !turning(); } };
+  }
+  function opPose(target, label) {
+    return { label: label, tick: function (dt) { poseStep(target, dt); }, done: function () { return S.lamp.P === target; } };
+  }
+  function opCall(fn, label) { return { label: label, start: fn, done: function () { return true; } }; }
+  function runScript(dt) {
+    var op = S.script[0];
+    if (!op.started) {
+      op.started = true; op.el = 0;
+      if (op.label) S.lamp.log.push({ op: op.label, t: +S.time.toFixed(3) });
+      if (op.start) op.start();
+    }
+    op.el += dt;
+    if (op.tick) op.tick(dt);
+    if (op.done(op)) { S.script.shift(); if (!S.script.length) S.script = null; }
+  }
+  // The pose runs P toward its target a key at a time, landing exactly on each key. The lantern leaves the surface on
+  // the frame P reaches the grip key (2) going up, and lands on the frame it reaches it coming down.
+  function poseStep(target, dt) {
+    var L = S.lamp, P0 = L.P, P, seg;
+    if (reduced) P = target;
+    else if (target > P0) { seg = Math.min(2, Math.floor(P0)); P = Math.min(seg + 1, P0 + dt / POSE_DUR[seg], target); }
+    else { seg = Math.max(0, Math.ceil(P0) - 1); P = Math.max(seg, P0 - dt / POSE_DUR[seg], target); }
+    L.dir = target > P0 ? 1 : target < P0 ? -1 : 0;
+    var here = atStand({ x: S.x, y: S.y });
+    if (P0 < 2 && P >= 2 && here && L.where === here.name) {
+      L.where = 'hand'; L.from = here.name; L.theta = 0; L.thetaV = 0; L.hx = null;
+      L.log.push({ op: 'attach', t: +S.time.toFixed(3), at: here.name });
+    }
+    if (P0 > 2 && P <= 2 && L.where === 'hand' && here) {
+      L.where = here.name;
+      L.log.push({ op: 'detach', t: +S.time.toFixed(3), at: here.name });
+    }
+    L.P = P;
+  }
+  // From the stand at `from` (walking there first unless she is already holding it): pick it up, turn to sw, carry it
+  // along the edge to `to`, turn back to se, set it down, and hand back to the tour
+  function carryScript(stop, fromHand) {
+    var pl = lanternPlaces(), to = pl[stop.lantern.to], ops = [];
+    if (fromHand) ops.push(opWait(0.6, 'hold'));
+    else ops.push(opTurn(SE, 'face the table'), opWait(0.35, 'settle'), opPose(3, 'pick up'), opWait(0.35, 'hold'));
+    ops.push(opTurn(SW, 'turn to carry'), opWalk([{ x: to.stand.x, y: to.stand.y }], 'carry'), opTurn(SE, 'turn to the table'),
+      opWait(0.35, 'settle'), opPose(0, 'set down'), opWait(0.5, 'let go'),
+      opCall(function () { S.hold = stop.rest; S.waiting = true; }, 'on with the tour'));
+    return ops;
+  }
+
+  // The pendulum: the lantern hangs from her fist and lags it a little. Driven by how the grip moves across the page
+  // (her pace, her sway as she walks, a turn carrying it round her), damped, and drawn at most ±3° (a soft limit), so it
+  // settles rather than swings.
+  var SWING = { w: 6.5, zeta: 0.5, gain: 0.5, max: 3 * Math.PI / 180 };
+  function swingLantern(dt, walkW, moving) {
+    var L = S.lamp;
+    if (L.where !== 'hand' || reduced) { L.theta = 0; L.thetaV = 0; L.hx = null; return; }
+    var r = lampRest();
+    if (!r) return;
+    var hx = r.grip.x + T.sway * sizeMul() * 0.6 * Math.sin(2 * Math.PI * S.phi) * (moving ? walkW : 0);
+    if (L.hx === null) { L.hx = hx; L.hv = 0; L.acc = 0; }
+    var v = (hx - L.hx) / dt, a = (v - L.hv) / dt;
+    L.hx = hx; L.hv = v;
+    L.acc += (a - L.acc) * Math.min(1, dt * 25);
+    L.thetaV += (-SWING.w * SWING.w * Math.sin(L.theta) - 2 * SWING.zeta * SWING.w * L.thetaV + SWING.gain * L.acc / 40) * dt;
+    L.theta += L.thetaV * dt;
+  }
+  function swingAngle() { return SWING.max * Math.tanh(S.lamp.theta / SWING.max); }
+
   function startWalk(path, rest) { S.path = path; S.legRest = rest; }
-  // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it.
+  // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it. A
+  // lantern stop she can carry from ends the leg at its stand and hands on to the moment; one she can't is skipped, so
+  // the tour is then exactly its plain stops. From a lantern stand she first walks back out along its facing.
   function nextLeg() {
-    var pts = [], from = { x: S.x, y: S.y }, k = S.leg, rest = 0;
+    var pts = [], from = { x: S.x, y: S.y }, k = S.leg, rest = 0, moment = null;
+    var st = atStand(from), pre = st && st.entry ? [{ x: st.entry.x, y: st.entry.y }] : null;
+    if (pre) from = pre[0];
+    var origin = from;
     for (var guard = 0; guard < TOUR.length; guard++) {
-      var k2 = (k + 1) % TOUR.length, t = TOUR[k2], p = findPath(from, { x: t.at[0], y: t.at[1] });
+      var k2 = (k + 1) % TOUR.length, t = TOUR[k2];
+      if (t.lantern) {
+        if (canCarry(t)) {
+          var pe = findPath(from, lanternPlaces()[t.lantern.from].entry);
+          if (pe) { pts = pts.concat(pe); k = k2; moment = t; break; }
+        }
+        k = k2;
+        continue;
+      }
+      var p = findPath(from, { x: t.at[0], y: t.at[1] });
       if (!p) break;
       pts = pts.concat(p); from = p[p.length - 1]; k = k2; rest = t.rest;
       if (rest > 0) break;
     }
     if (!pts.length) { S.leg = (S.leg + 1) % TOUR.length; S.hold = 0.5; S.waiting = true; return; }   // no way round: skip it
     S.leg = k;
-    startWalk(roundCorners({ x: S.x, y: S.y }, pts), rest);
+    var path = roundCorners(origin, pts);
+    if (pre) path = pre.concat(path);
+    if (moment) {
+      var ms0 = lanternPlaces()[moment.lantern.from].stand;
+      path.push({ x: ms0.x, y: ms0.y });
+      S.lamp.log.push({ op: 'walk to the stand', t: +S.time.toFixed(3) });
+      S.script = carryScript(moment, false);
+      rest = 0;
+    }
+    startWalk(path, rest);
   }
   function turnDur(i, n) { return T.turnStep * (n === 1 || i === 0 || i === n - 1 ? T.turnEase : 0.9); }
   // Turning on the spot: p slides the whole way on one ease, so there is no pause at a drawing and no pop to hide. The
@@ -887,6 +1195,8 @@
         S.x += ux * move; S.y += uy * move;
         S.phi = frac(S.phi + move / (2 * S.L));
       }
+    } else if (S.script) {
+      runScript(dt);
     } else if (S.waiting) {
       // resting at a stop
       S.hold -= dt;
@@ -918,6 +1228,11 @@
     var leanTarget = moving ? T.lean * S.r : 0;
     S.leanV += (70 * (leanTarget - S.lean) - 9 * S.leanV) * dt;
     S.lean += S.leanV * dt;
+    if (LANTERN) {
+      // her body holds still round the grip key, so the hand meets the finial exactly (drawFigure's `calm`)
+      S.still = smooth(1 - Math.abs(S.lamp.P - 2));
+      swingLantern(dt, walkW, moving);
+    }
   }
 
   // ---- the pieces, scaled to the screen -------------------------------------------------------------------
@@ -928,18 +1243,27 @@
     var k = {};
     ['sL', 'sF', 'sR', 'dL', 'dF', 'dR'].forEach(function (n) { k[n] = new Float32Array(NK); });
     k.on = false;
-    return { fig: document.createElement('canvas'), body: document.createElement('canvas'), image: null, k: k };
+    return { fig: document.createElement('canvas'), body: document.createElement('canvas'), image: null, k: k,
+      hand: document.createElement('canvas'), handImage: null };
+  }
+  function premul(c, w, h) {
+    var raw = c.getContext('2d').getImageData(0, 0, w, h).data, pre = new Float32Array(raw.length);
+    for (var i = 0; i < raw.length; i += 4) {
+      var a = raw[i + 3] / 255;
+      pre[i] = raw[i] * a; pre[i + 1] = raw[i + 1] * a; pre[i + 2] = raw[i + 2] * a; pre[i + 3] = raw[i + 3];
+    }
+    return pre;
   }
   var CUR = target(), PREV = target();
   function prepare(D) {
     var key = ui.size + '@' + D.toFixed(3);
     if (prepared.key === key) return prepared;
     prepared = { key: key };
-    Object.keys(RIG).forEach(function (f) {
-      var R = RIG[f], q = ROOM.lumi.height * sizeMul() / R.height, sc = q * D;
+    Object.keys(DRAW).forEach(function (f) {
+      var R = DRAW[f], q = ROOM.lumi.height * sizeMul() / R.height, sc = q * D;
       var w = Math.max(1, Math.round(R.size[0] * sc)), h = Math.max(1, Math.round(R.size[1] * sc));
       var layers = {};
-      ['body', 'foot-0', 'foot-1'].forEach(function (l) {
+      ['body', 'foot-0', 'foot-1'].concat(images[f + '-hand'] ? ['hand'] : []).forEach(function (l) {
         var c = document.createElement('canvas');
         c.width = w; c.height = h;
         var x = c.getContext('2d');
@@ -948,18 +1272,16 @@
         x.drawImage(images[f + '-' + l], 0, 0, w, h);
         layers[l] = c;
       });
-      var raw = layers.body.getContext('2d').getImageData(0, 0, w, h).data, pre = new Float32Array(raw.length);
-      for (var i = 0; i < raw.length; i += 4) {
-        var a = raw[i + 3] / 255;
-        pre[i] = raw[i] * a; pre[i + 1] = raw[i + 1] * a; pre[i + 2] = raw[i + 2] * a; pre[i + 3] = raw[i + 3];
-      }
+      var pre = premul(layers.body, w, h);
       var sx = w / R.size[0], sy = h / R.size[1];
       prepared[f] = {
         R: R, w: w, h: h, sc: sc, sx: sx, sy: sy, layers: layers, pre: pre,
-        rootX: (R.contact[0][0] + R.contact[1][0]) / 2 * sx, feet: R.feet * sy, height: R.height * sy, hx: R.height * sx,
+        rootX: rootOf(R) * sx, feet: R.feet * sy, height: R.height * sy, hx: R.height * sx,
         chin: R.chin * sy, neck: R.neck * sy, hem: R.hem * sy, contact: R.contact.map(function (c) { return [c[0] * sx, c[1] * sy]; }),
         Yd: new Float64Array(h + 1)
       };
+      // the hand drawn over the lantern: warped exactly as the body is, from its own pixels
+      if (layers.hand) prepared[f].hand = Object.assign({}, prepared[f], { pre: premul(layers.hand, w, h), Yd: new Float64Array(h + 1) });
     });
     return prepared;
   }
@@ -968,13 +1290,18 @@
   // root — and, when `kn` is given, before all of that a piecewise-linear remap of the row through three knots, so her
   // left edge, her feature and her right edge land where the morph wants them. Every row still comes from one row of
   // the source, so the mesh cannot tear however far the knots move.
-  function warp(P, out, W, H, mapY, xoff, sxScale, padX, padT, kn) {
+  // `rows` ([first, last] source rows) warps only those rows: the hand piece, a small box of the drawing.
+  function warp(P, out, W, H, mapY, xoff, sxScale, padX, padT, kn, rows) {
     var data = out.data, src = P.pre, sw = P.w, sh = P.h, Yd = P.Yd, rootS = P.rootX;
     data.fill(0);
     for (var j = 0; j <= sh; j++) Yd[j] = padT + mapY(j);
     var j0 = 0, inv = 1 / sxScale;
     var kScale = kn ? (NK - 1) / P.height : 0, kBase = kn ? (NK - 1) * (1 - P.feet / P.height) : 0;
     var y0 = Math.max(0, Math.floor(Yd[0])), y1 = Math.min(H - 1, Math.ceil(Yd[sh]));
+    if (rows) {
+      y0 = Math.max(y0, Math.floor(Yd[clamp(rows[0], 0, sh)]));
+      y1 = Math.min(y1, Math.ceil(Yd[clamp(rows[1], 0, sh)]));
+    }
     for (var yd = y0; yd <= y1; yd++) {
       var c = yd + 0.5;
       if (c < Yd[0] || c > Yd[sh]) continue;
@@ -1091,7 +1418,7 @@
     else if (CUES[name]) CUES[name]();
   }
   function idleTick() {
-    var I = S.idle, standing = !S.path.length && !turning();
+    var I = S.idle, standing = !S.path.length && !turning() && !handling();
     I.forced.forEach(function (c) { if (!c.done && S.time >= c.t) { c.done = true; fireCue(c.name); } });
     var due = I.actions.filter(function (a) { return a.time <= S.time; });
     if (due.length) {
@@ -1151,9 +1478,9 @@
   // morph is sending them to (the lerp of A's and B's, read at the same height). Both in this drawing's own pixels.
   var KO = new Float64Array(6);
   function fillKnots(tg, P, dirIdx, mix) {
-    var A = MORPHN[DIRS[mix.a].img], B = MORPHN[DIRS[mix.b].img], own = MORPHN[DIRS[dirIdx].img];
+    var A = MORPHN[ENT[mix.a].img], B = MORPHN[ENT[mix.b].img], own = MORPHN[ENT[dirIdx].img];
     if (!A || !B || !own) return null;
-    var msA = DIRS[mix.a].mirror ? -1 : 1, msB = DIRS[mix.b].mirror ? -1 : 1, ms = DIRS[dirIdx].mirror ? -1 : 1;
+    var msA = ENT[mix.a].mirror ? -1 : 1, msB = ENT[mix.b].mirror ? -1 : 1, ms = ENT[dirIdx].mirror ? -1 : 1;
     // the face and the sun are opposite sides of her: where two neighbours measured different sides — side-on against
     // the first view from behind — the feature is no evidence, and the morph falls back to the two edges alone
     var pair = FIGN[mix.a].kind === FIGN[mix.b].kind;
@@ -1199,7 +1526,7 @@
   function drawEyes(ctx, P, dirIdx, mix, kn, padX, padT, sxScale, mapY, xoff, ip) {
     var R = P.R;
     if (!R.eyes || !R.facePoly) return;
-    var mir = DIRS[dirIdx].mirror, ms = mir ? -1 : 1;
+    var mir = ENT[dirIdx].mirror, ms = mir ? -1 : 1;
     var own = EYEN[dirIdx].eyes, other = mix ? EYEN[mix.a === dirIdx ? mix.b : mix.a].eyes : null;
     var u = mix ? (mix.a === dirIdx ? mix.t : 1 - mix.t) : 0;
     var toX = function (sx, ys) { return padX + P.rootX + (morphX(kn, P, sx, ys) - P.rootX) * sxScale + xoff(ys); };
@@ -1320,8 +1647,11 @@
   // Draw her, facing ring position dirIdx, into a target's canvas; returns where it goes, in painting px. With `mix`
   // — { a, b, t }, the two drawings a turn is between and how far — this drawing is warped onto the shared, lerped
   // knots, and its legs, boots and feet are put where the lerp says, so the two halves of the morph coincide.
-  function drawFigure(D, dirIdx, tg, mix) {
-    var prep = prepare(D), dir = DIRS[dirIdx], P = prep[dir.img], m = sizeMul(), ms = dir.mirror ? -1 : 1;
+  function drawFigure(D, dirIdx, tg, mix, withHand) {
+    var prep = prepare(D), dir = ENT[dirIdx], P = prep[dir.img], m = sizeMul(), ms = dir.mirror ? -1 : 1;
+    // while she takes the lantern or lets it go her body holds still, so the hand meets the finial exactly: her breath,
+    // the slow sway, the lean and the idle's hood moves fade out round the grip key (her eyes keep going)
+    var calm = 1 - (S.still || 0);
     var kn = mix ? fillKnots(tg, P, dirIdx, mix) : null;
     var padX = Math.ceil(P.w * 0.22), padT = Math.ceil(P.h * 0.08), padB = Math.ceil(P.h * 0.05);
     var W = P.w + 2 * padX, H = P.h + padT + padB;
@@ -1343,11 +1673,11 @@
     var head = (T.sway * m * 0.8 * Math.sin(TAU * (phi - T.headLag)) * w + (still ? 0 : S.turnLean * T.lead * m * ms)) * D;
     // the hem swings against the walk's sway, and out behind each change of drawing
     var hem = (-T.hemSwing * m * Math.sin(TAU * (phi - T.hemLag)) * w + (still ? 0 : S.swing * ms)) * D;
-    var lean = -S.lean * P.height;
+    var lean = -S.lean * P.height * calm;
     // each change of drawing rides on a small squash, so the new drawing arrives on a motion rather than a flash
     var pa = still || S.pulse <= 0 ? 0 : Math.sin(Math.PI * (1 - S.pulse / T.pulse));
     var dip = pa * 1.2 * m * D;
-    var breath = still ? 0 : T.breath * m * (1 - Math.cos(TAU * S.time / T.breathS)) / 2 * (1 - w) * D;
+    var breath = still ? 0 : T.breath * m * (1 - Math.cos(TAU * S.time / T.breathS)) / 2 * (1 - w) * D * calm;
     var syAll = (1 - squash) * (1 + breath / P.height) * (1 - 0.018 * pa);
     var hemTop = P.hem - 0.24 * P.height;
     var wHead = function (y) { return 1 - smooth((y - P.chin) / Math.max(1, P.neck - P.chin)); };
@@ -1357,9 +1687,9 @@
     // the hood top, and the head weight bends the collar rather than tearing it), sleepy lowers it and curious lifts it,
     // and standing she sways very slowly from the feet. Sides are the page's, so they flip on a mirrored drawing.
     var ip = idlePose();
-    var idleSway = still ? 0 : IDLE.sway * m * Math.sin(TAU * S.time / IDLE.swayS + 0.9) * (1 - w) * D;
-    var idleTx = ip.tx * IDLE.glanceHood * m * ms * D, idleTy = ip.ty * IDLE.headY * m * D;
-    var idleTilt = ip.tilt * IDLE.tiltTop * P.height * ms, neckSpan = Math.max(1, P.neck - (P.feet - P.height));
+    var idleSway = still ? 0 : IDLE.sway * m * Math.sin(TAU * S.time / IDLE.swayS + 0.9) * (1 - w) * D * calm;
+    var idleTx = ip.tx * IDLE.glanceHood * m * ms * D * calm, idleTy = ip.ty * IDLE.headY * m * D * calm;
+    var idleTilt = ip.tilt * IDLE.tiltTop * P.height * ms * calm, neckSpan = Math.max(1, P.neck - (P.feet - P.height));
     var mapY = function (j) {
       return P.feet + (j - P.feet) * syAll + bob + dip + ((headDY - bob * 0.25) * (walking ? 1 : 0) + idleTy) * wHead(j);
     };
@@ -1371,6 +1701,22 @@
     var sxScale = (1 + squash * 0.7) * (1 - 0.06 * pa);
     warp(P, tg.image, W, H, mapY, xoff, sxScale, padX, padT, kn);
     bctx.putImageData(tg.image, 0, 0);
+    // the hand piece, warped with the body so it lies exactly on the fist, for drawing again over the lantern
+    var handCanvas = null, HR = P.R.hand;
+    if (withHand && P.hand && HR) {
+      if (tg.hand.width !== W || tg.hand.height !== H) { tg.hand.width = W; tg.hand.height = H; tg.handImage = null; }
+      var hctx = tg.hand.getContext('2d');
+      if (!tg.handImage) tg.handImage = hctx.createImageData(W, H);
+      warp(P.hand, tg.handImage, W, H, mapY, xoff, sxScale, padX, padT, kn, [Math.floor(HR[1] * P.sy) - 2, Math.ceil(HR[3] * P.sy) + 2]);
+      hctx.putImageData(tg.handImage, 0, 0);
+      handCanvas = tg.hand;
+    }
+    // where the lantern hangs: the drawing's grip sent through the same map as the body (knots, sway, lean, breath)
+    var grip = null;
+    if (P.R.grip) {
+      var gxs = P.R.grip[0] * P.sx, gys = P.R.grip[1] * P.sy;
+      grip = { x: (padX + P.rootX + (morphX(kn, P, gxs, gys) - P.rootX) * sxScale + xoff(gys)) / D, y: (padT + mapY(gys)) / D };
+    }
 
     // the eyes, drawn in code over the painted ones (a view from behind has none)
     var R = P.R;
@@ -1417,7 +1763,8 @@
       fctx.drawImage(P.layers['foot-' + f.i], padX + f.dx, padT + f.dy);
     });
     fctx.drawImage(tg.body, 0, 0);
-    return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D, mirror: dir.mirror, canvas: tg.fig };
+    return { w: W / D, h: H / D, rootX: (padX + P.rootX) / D, feetY: (padT + P.feet) / D, mirror: dir.mirror, canvas: tg.fig,
+      hand: handCanvas, grip: grip };
   }
 
   // Where she is between two drawings: null when she is on one (or with Turn: Swap, where she always is), otherwise
@@ -1425,10 +1772,12 @@
   // Where the drawing on screen actually faces. With Turn: Morph, part-way through a turn she is genuinely between two
   // drawings, so the audit and the floor plan's red arrow read the facing between them; with Swap she is always on one.
   function faceNow() {
-    if (!ui.morph || reduced) return DIRS[S.dirIdx].face;
-    var br = bracket(S.p), A = DIRS[br.a].face;
+    var pm = poseMix();
+    if (pm) return ENT[pm.single !== undefined ? pm.single : pm.t > 0.5 ? pm.b : pm.a].face;
+    if (!ui.morph || reduced) return ENT[entryOf(S.dirIdx)].face;
+    var br = bracket(S.p), A = ENT[entryOf(br.a)].face;
     if (br.t < 1e-4) return A;
-    var B = DIRS[br.b].face;
+    var B = ENT[entryOf(br.b)].face;
     var x = A.x + (B.x - A.x) * br.t, y = A.y + (B.y - A.y) * br.t, l = Math.hypot(x, y) || 1;
     return { x: x / l, y: y / l };
   }
@@ -1439,6 +1788,27 @@
     var br = bracket(S.p);
     if (br.t < 0.004 || br.t > 0.996) return null;
     return br;
+  }
+  // The pick-up's morph, at the facing it is drawn for: rest → reach → grip → held by P, each key eased (entries)
+  function poseMix() {
+    if (!handling() || KEYS[S.dirIdx] === undefined) return null;
+    var P = S.lamp.P, seg = Math.min(2, Math.floor(P)), t = smooth(P - seg), K = KEYS[S.dirIdx];
+    if (t < 0.004) return { single: K[seg] };
+    if (t > 0.996) return { single: K[seg + 1] };
+    return { a: K[seg], b: K[seg + 1], t: t };
+  }
+  // What is on screen: the entry drawn solid (`under`), the one over it at `alpha` in a morph, and the morph
+  function showing() {
+    var pm = poseMix(), mix = null;
+    if (pm) {
+      if (pm.single !== undefined) return { under: pm.single, other: null, mix: null, alpha: 0 };
+      mix = pm;
+    } else {
+      var mm = morphMix();
+      if (mm) mix = { a: entryOf(mm.a), b: entryOf(mm.b), t: mm.t };
+    }
+    if (!mix) return { under: entryOf(S.dirIdx), other: null, mix: null, alpha: 0 };
+    return { under: mix.t > 0.5 ? mix.b : mix.a, other: mix.t > 0.5 ? mix.a : mix.b, mix: mix, alpha: mix.t > 0.5 ? 1 - mix.t : mix.t };
   }
 
   // ---- the scene ----------------------------------------------------------------------------------------------
@@ -1505,6 +1875,168 @@
     return sc;
   }
 
+  // ---- the lantern drawn --------------------------------------------------------------------------------------------
+  // Her figures for this frame and where the lantern is: on its anchor, or hung from the drawn grip (lerped across a
+  // morph between the two drawings' grips) at the pendulum's angle. `rest` is the sim's lantern (lampRest), `carry` the
+  // crossfade over the lift from the tabletop pool to the carried light, `handAlpha` the hand pieces over the lantern.
+  function figRoom(fig, p) {
+    var x = S.x - fig.rootX + p.x;
+    return { x: fig.mirror ? 2 * S.x - x : x, y: S.y - fig.feetY + p.y };
+  }
+  function frameFigures(D) {
+    var sh = showing(), L = LANTERN ? S.lamp : null, hands = !!L && (L.where === 'hand' || L.P > 0);
+    var fig = drawFigure(D, sh.under, CUR, sh.mix, hands);
+    var fig2 = sh.mix ? drawFigure(D, sh.other, PREV, sh.mix, hands) : null;
+    var lamp = { held: false, carry: 0, handAlpha: 0 };
+    if (L) {
+      lamp.rest = L.where === 'hand' ? lampRest() : null;
+      lamp.held = !!lamp.rest;
+      lamp.handAlpha = L.where === 'hand' ? 1 : smooth((L.P - 0.7) / 0.3);
+      if (lamp.held) {
+        var mix = sh.mix, gU = fig.grip ? figRoom(fig, fig.grip) : null, gO = fig2 && fig2.grip ? figRoom(fig2, fig2.grip) : null;
+        var ga = gU, gb = gO;
+        if (mix && sh.under !== mix.a) { ga = gO; gb = gU; }
+        if (!ga) ga = gb;
+        if (!gb) gb = ga;
+        lamp.grip = mix ? { x: lerp(ga.x, gb.x, mix.t), y: lerp(ga.y, gb.y, mix.t) } : ga;
+        lamp.theta = reduced ? 0 : swingAngle();
+        var bg = baseFromGrip(), c = Math.cos(lamp.theta), s = Math.sin(lamp.theta);
+        lamp.base = { x: lamp.grip.x + bg.x * c - bg.y * s, y: lamp.grip.y + bg.x * s + bg.y * c };
+        lamp.carry = smooth(L.P - 2);
+      } else {
+        var an = LAYER[LANTERN.surface].anchors[L.where].at;
+        lamp.base = { x: an[0], y: an[1] };
+        lamp.anchor = L.where;
+      }
+    }
+    return { sh: sh, fig: fig, fig2: fig2, lamp: lamp };
+  }
+  function drawLanternSprite(ctx, lamp) {
+    var im = images.lantern, k = LANTERN.scale;
+    ctx.save();
+    if (lamp.held) {
+      ctx.translate(lamp.grip.x, lamp.grip.y);
+      ctx.rotate(lamp.theta);
+      ctx.drawImage(im, -LANTERN.grip[0] * k, -LANTERN.grip[1] * k, im.width * k, im.height * k);
+    } else {
+      ctx.drawImage(im, lamp.base.x - LANTERN.base[0] * k, lamp.base.y - LANTERN.base[1] * k, im.width * k, im.height * k);
+    }
+    ctx.restore();
+  }
+  function drawHands(ctx, fr) {
+    var a = fr.lamp.handAlpha;
+    if (!(a > 0)) return;
+    [[fr.fig, 1], [fr.fig2, fr.sh.alpha]].forEach(function (p) {
+      var f = p[0];
+      if (!f || !f.hand || !(p[1] > 0)) return;
+      ctx.globalAlpha = a * p[1];
+      place(ctx, { canvas: f.hand, rootX: f.rootX, feetY: f.feetY, w: f.w, h: f.h, mirror: f.mirror });
+    });
+    ctx.globalAlpha = 1;
+  }
+  // The tabletop's light and the lantern's shadow go through table-light.png (where on the table they may land): each
+  // drawn into an offscreen canvas the mask's size at device scale, 'destination-in' the mask, then onto the room.
+  var lightBuf = { key: '' };
+  function lightCanvases(D) {
+    var key = D.toFixed(5);
+    if (lightBuf.key === key) return lightBuf;
+    var th = LANTERN.glow.through, im = images['lantern:through'];
+    var ix = Math.floor(th.offset[0] * D), iy = Math.floor(th.offset[1] * D);
+    var w = Math.max(1, Math.ceil((th.offset[0] + im.width) * D) - ix), h = Math.max(1, Math.ceil((th.offset[1] + im.height) * D) - iy);
+    var mask = document.createElement('canvas'), glow = document.createElement('canvas'), shade = document.createElement('canvas');
+    mask.width = glow.width = shade.width = w; mask.height = glow.height = shade.height = h;
+    var mx = mask.getContext('2d');
+    mx.imageSmoothingEnabled = true; mx.imageSmoothingQuality = 'high';
+    mx.drawImage(im, th.offset[0] * D - ix, th.offset[1] * D - iy, im.width * D, im.height * D);
+    lightBuf = { key: key, ix: ix, iy: iy, w: w, h: h, mask: mask, glow: glow, shade: shade };
+    return lightBuf;
+  }
+  // layers.json's profile as added light: L_c(d') = peak_c (1 + d'²/h²)^-n, d' the ground distance (page px across)
+  function radialProfile(ctx, cx, cy, h, n, peak) {
+    var top = Math.max(peak[0], peak[1], peak[2]);
+    if (!(top > 0.25)) return;
+    var R = h * Math.sqrt(Math.pow(top / 0.25, 1 / n) - 1), N = 48;   // out to where it falls under a quarter level
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, B);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    for (var i = 0; i <= N; i++) {
+      var d = R * i / N, f = i === N ? 0 : Math.pow(1 + d * d / (h * h), -n);
+      g.addColorStop(i / N, 'rgb(' + (peak[0] * f).toFixed(2) + ',' + (peak[1] * f).toFixed(2) + ',' + (peak[2] * f).toFixed(2) + ')');
+    }
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+  }
+  // Its light where it stands or is carried over the table, drawn right after the table layer: the painted pool
+  // (lantern-glow, scaled about its base) and its contact shadow while it rests, crossfading over the lift to the carried
+  // light, the tabletop profile for the flame's height over the top. Read from the sim's lantern, so it never bobs.
+  function drawTableLight(ctx, D, ox, oy, lamp) {
+    var LB = lightCanvases(D), c = lamp.carry || 0, k = LANTERN.scale, G = LANTERN.glow;
+    var base = lamp.held ? lamp.rest.base : lamp.base;
+    var gx = LB.glow.getContext('2d');
+    gx.setTransform(1, 0, 0, 1, 0, 0);
+    gx.globalCompositeOperation = 'source-over';
+    gx.globalAlpha = 1;
+    gx.fillStyle = '#000';
+    gx.fillRect(0, 0, LB.w, LB.h);
+    gx.setTransform(D, 0, 0, D, -LB.ix, -LB.iy);
+    gx.imageSmoothingEnabled = true; gx.imageSmoothingQuality = 'high';
+    gx.globalCompositeOperation = 'lighter';
+    if (c < 1) {
+      var gi = images['lantern:glow'];
+      gx.globalAlpha = 1 - c;
+      gx.drawImage(gi, base.x - G.base[0] * k, base.y - G.base[1] * k, gi.width * k, gi.height * k);
+      gx.globalAlpha = 1;
+    }
+    if (c > 0 && lamp.held) {
+      var T0 = G.tabletop, F = G.flame.height, over = lamp.rest.lift - surfaceH(), hf = over + k * F;
+      if (hf > 0) {
+        var ratio = Math.pow(k * F / hf, 2);
+        radialProfile(gx, base.x + T0.centre[0] * k, base.y + over + T0.centre[1] * k, T0.h * hf / F, T0.n,
+          T0.peak.map(function (p) { return p * ratio * c; }));
+      }
+    }
+    gx.setTransform(1, 0, 0, 1, 0, 0);
+    gx.globalCompositeOperation = 'destination-in';
+    gx.drawImage(LB.mask, 0, 0);
+    gx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(LB.glow, LB.ix - ox, LB.iy - oy);
+    ctx.globalCompositeOperation = 'source-over';
+    if (c < 1) {
+      var sx = LB.shade.getContext('2d'), si = images['lantern:shadow'], Sh = LANTERN.shadow;
+      sx.setTransform(1, 0, 0, 1, 0, 0);
+      sx.globalCompositeOperation = 'source-over';
+      sx.clearRect(0, 0, LB.w, LB.h);
+      sx.setTransform(D, 0, 0, D, -LB.ix, -LB.iy);
+      sx.imageSmoothingEnabled = true; sx.imageSmoothingQuality = 'high';
+      sx.drawImage(si, base.x - Sh.base[0] * k, base.y - Sh.base[1] * k, si.width * k, si.height * k);
+      sx.setTransform(1, 0, 0, 1, 0, 0);
+      sx.globalCompositeOperation = 'destination-in';
+      sx.drawImage(LB.mask, 0, 0);
+      sx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1 - c;
+      ctx.drawImage(LB.shade, LB.ix - ox, LB.iy - oy);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+  // Carried, its light on the floor: the same profile, centred under the flame, wider and dimmer with the flame's height
+  // over the floor (layers.json glow.floor), as added light of the rug's colour. Drawn before her shadow and every layer.
+  function drawFloorLight(ctx, lamp) {
+    if (!lamp.held || !(lamp.carry > 0)) return;
+    var T0 = LANTERN.glow.tabletop, Fl = LANTERN.glow.floor, k = LANTERN.scale, F = LANTERN.glow.flame.height;
+    var hf = lamp.rest.lift + k * F, ratio = Math.pow(k * F / hf, 2);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    radialProfile(ctx, lamp.rest.x, lamp.rest.y, T0.h * hf / F, Fl.n,
+      T0.gain.map(function (g, i) { return g * ratio * Fl.rug[i] * lamp.carry; }));
+    ctx.restore();
+  }
+
   function render(ctx, wDev, hDev, cam) {
     var D = cam.D, sc = sceneAt(D);
     var ox = Math.round(cam.x0 * D), oy = Math.round(cam.y0 * D);
@@ -1545,9 +2077,10 @@
     // their edges in the same place, that is almost everywhere. Drawing the nearer one solid keeps the odd pixel
     // where only one of them has paint from showing as a half-transparent fringe; at t = ½ the two orders agree, so
     // the swap of order is invisible.
-    var mix = morphMix(), m = sizeMul(), H = ROOM.lumi.height * m;
-    var under = mix && mix.t > 0.5 ? mix.b : mix ? mix.a : S.dirIdx;
-    var fig = drawFigure(D, under, CUR, mix);
+    var m = sizeMul(), H = ROOM.lumi.height * m;
+    var fr = frameFigures(D);
+    // the carried lantern's light on the floor: under her shadow, and under every layer drawn over her
+    if (LANTERN) drawFloorLight(ctx, fr.lamp);
     // her shadow: a soft contact shadow, a little toward the right (the window light comes from the left)
     ctx.save();
     ctx.translate(S.x + 3 * m, S.y + 1);
@@ -1564,21 +2097,31 @@
 
     // then the layers and her, back to front by the depth rule: a layer is drawn over her only when its ground reaches
     // lower on the page than her feet in her columns; her contact shadow above is under every layer
-    var order = drawOrder(S.x, S.y).order;
+    // (the held lantern is its own item in the order; on a surface it is drawn right after that surface's layer)
+    var order = drawOrder(S.x, S.y, fr.lamp.held ? fr.lamp.rest : undefined).order;
     for (var oi = 0; oi < order.length; oi++) {
       if (order[oi] === 'lumi') {
-        place(ctx, fig);
-        if (mix) {
-          ctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
-          place(ctx, drawFigure(D, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+        place(ctx, fr.fig);
+        if (fr.fig2) {
+          ctx.globalAlpha = fr.sh.alpha;
+          place(ctx, fr.fig2);
           ctx.globalAlpha = 1;
         }
+        continue;
+      }
+      if (order[oi] === 'lantern') {
+        drawLanternSprite(ctx, fr.lamp);
+        drawHands(ctx, fr);
         continue;
       }
       var lc = sc.layers[order[oi]];
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(lc.c, lc.ix - ox, lc.iy - oy);
       ctx.setTransform(D, 0, 0, D, -ox, -oy);
+      if (LANTERN && order[oi] === LANTERN.surface) {
+        drawTableLight(ctx, D, ox, oy, fr.lamp);
+        if (!fr.lamp.held) { drawLanternSprite(ctx, fr.lamp); drawHands(ctx, fr); }
+      }
     }
 
     if (ui.plan) {
@@ -1614,6 +2157,30 @@
           ctx.fillStyle = '#fff4d6'; ctx.fillText(name, a[0] + 6 / D, a[1] - 4 / D);
         });
       });
+      // the lantern's stands (amber), each entered along se from its entry (dashed), the edge she carries it along, and
+      // while she holds it the ground point under it with a line up to its base (yellow)
+      if (LANTERN && KEYS[SE] !== undefined) {
+        var LPl = lanternPlaces();
+        ctx.lineWidth = 1.6 / D;
+        ctx.strokeStyle = 'rgba(255, 190, 60, 0.95)'; ctx.fillStyle = 'rgba(255, 190, 60, 0.95)';
+        LPl.list.forEach(function (pl) {
+          if (pl.entry) {
+            ctx.setLineDash([3 / D, 3 / D]);
+            ctx.beginPath(); ctx.moveTo(pl.entry.x, pl.entry.y); ctx.lineTo(pl.stand.x, pl.stand.y); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          ctx.beginPath(); ctx.arc(pl.stand.x, pl.stand.y, 3 / D, 0, 2 * Math.PI); ctx.fill();
+          LPl.list.forEach(function (q) {
+            if (q !== pl && carries(pl, q)) { ctx.beginPath(); ctx.moveTo(pl.stand.x, pl.stand.y); ctx.lineTo(q.stand.x, q.stand.y); ctx.stroke(); }
+          });
+        });
+        var lr = S.lamp.where === 'hand' ? lampRest() : null;
+        if (lr) {
+          ctx.strokeStyle = 'rgba(255, 230, 120, 0.95)'; ctx.fillStyle = '#ffe678';
+          ctx.beginPath(); ctx.moveTo(lr.x, lr.y); ctx.lineTo(lr.base.x, lr.base.y); ctx.stroke();
+          ctx.beginPath(); ctx.arc(lr.x, lr.y, 3 / D, 0, 2 * Math.PI); ctx.fill();
+        }
+      }
       ctx.strokeStyle = 'rgba(255, 59, 59, 0.9)'; ctx.lineWidth = 2 / D;
       ctx.beginPath(); ctx.moveTo(S.x - HALF(), S.y); ctx.lineTo(S.x + HALF(), S.y); ctx.stroke();
       if (S.path.length) {
@@ -1669,7 +2236,7 @@
     document.body.classList.add('chromeless');
     var dt = 1 / 60;
     var log = { walkedPx: 0, sidewaysPx: 0, worstDeg: 0, worstAt: null, standingFlips: 0, stepTurns: 0, walkingTurns: 0, snappedPx: 0, clicks: 0, unreachable: 0, faceOffDeg: {} };
-    DIRS.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
+    ENT.forEach(function (d) { log.faceOffDeg[d.id] = Math.round(Math.acos(clamp(d.face.x * d.v.x + d.face.y * d.v.y, -1, 1)) * 180 / Math.PI); });
     function run(frames) {
       for (var i = 0; i < frames; i++) {
         var x0 = S.x, y0 = S.y, d0 = S.dirIdx, r0 = S.r, inTurn = turning(), onTheMove = rounding(), snap0 = S.snapped;
@@ -1714,16 +2281,25 @@
   // tour legs and the clicks with no path.
   function walkAudit(run, log) {
     var pick = rng(11);
-    log.tourLegs = TOUR.length;
-    TOUR.forEach(function (t, k) {
-      var n = TOUR[(k + 1) % TOUR.length];
+    log.tourLegs = PLAIN.length;
+    PLAIN.forEach(function (t, k) {
+      var n = PLAIN[(k + 1) % PLAIN.length];
       if (!findPath({ x: t.at[0], y: t.at[1] }, { x: n.at[0], y: n.at[1] })) {
         log.unreachable++;
         (log.tourLegsUnreachable = log.tourLegsUnreachable || []).push(k);
       }
     });
+    log.lanternStops = TOUR.length - PLAIN.length;
     run(120 * 60);
     ui.tour = false;
+    // a lantern moment still under way finishes (and she walks back out of the stand) before the clicks
+    for (var g0 = 0; g0 < 2400 && (S.script || handling() || S.lamp.where === 'hand'); g0++) run(1);
+    if (atStand({ x: S.x, y: S.y }) && S.lamp.where !== 'hand') {
+      var out0 = atStand({ x: S.x, y: S.y }).entry;
+      S.hold = 0; S.waiting = false;
+      startWalk([{ x: out0.x, y: out0.y }], Infinity);
+      for (var g1 = 0; g1 < 600 && (S.path.length || turning()); g1++) run(1);
+    }
     for (var c = 0; c < 60; c++) {
       var p = null;
       for (var tries = 0; tries < 200 && !p; tries++) {
@@ -1731,11 +2307,11 @@
         if (standable(q)) p = q;
       }
       if (!p) continue;
-      var path = findPath({ x: S.x, y: S.y }, p);
+      var path = routeFrom({ x: S.x, y: S.y }, p);
       log.clicks++;
       if (!path) { log.unreachable++; continue; }
       S.hold = 0; S.waiting = false;
-      startWalk(roundCorners({ x: S.x, y: S.y }, path), Infinity);
+      startWalk(path, Infinity);
       for (var f = 0; f < 60 * 40 && (S.path.length || turning()); f += 30) run(30);
       run(30);
     }
@@ -1762,6 +2338,52 @@
     var log = { samples: 0, clicks: 0, unreachable: 0, behindPx: 0, fringePx: 0, outOfReachPx: 0, columnMissPx: 0,
       columnOverPx: 0, coveredPx: 0, framesCovered: 0, halfWidth: HALF(), reach: REACH(), margin: ROOM.depth.margin,
       framesWith: {}, worst: {} };
+    // the held lantern counted like her: its pixels under a layer drawn after it that the rule does not put in front of
+    // it (behindPx, must be 0), and over the tabletop the share of its pixels no layer covers
+    if (LANTERN) log.lantern = { samples: 0, behindPx: 0, framesOverTop: 0, minShownOverTop: null, framesByTable: 0, minShownByTable: null, px: 0 };
+    var TOPX = LANTERN ? groundOf(LAYER[LANTERN.surface]).map(function (p) { return p[0]; }) : [0];
+    var topX0 = Math.min.apply(null, TOPX), topX1 = Math.max.apply(null, TOPX);
+    var LBOX = 90, lampC = document.createElement('canvas');
+    lampC.width = lampC.height = LBOX;
+    var lcx = lampC.getContext('2d', { willReadFrequently: true });
+    function lampSample(fr, d) {
+      var lamp = fr.lamp, lx = Math.round(lamp.grip.x) - LBOX / 2, ly = Math.round(lamp.grip.y) - 20;
+      lcx.setTransform(1, 0, 0, 1, 0, 0); lcx.clearRect(0, 0, LBOX, LBOX);
+      lcx.setTransform(1, 0, 0, 1, -lx, -ly);
+      drawLanternSprite(lcx, lamp);
+      var la = lcx.getImageData(0, 0, LBOX, LBOX).data, aft = {}, seen = false;
+      d.order.forEach(function (n) { if (n === 'lantern') { seen = true; return; } if (seen && LAYER[n]) aft[n] = true; });
+      var total = 0, shown = 0, behind = 0, ids = {};
+      for (var j = 0; j < LBOX; j++) {
+        for (var i = 0; i < LBOX; i++) {
+          if (la[(j * LBOX + i) * 4 + 3] <= 127) continue;
+          total++;
+          var px = lx + i, py = ly + j, cov = false;
+          for (var k = 0; k < ROOM.layers.length; k++) {
+            var id = ROOM.layers[k].id;
+            if (!aft[id]) continue;
+            var A = LA[id], u = px - A.x, v = py - A.y;
+            if (u < 0 || v < 0 || u >= A.w || v >= A.h || A.a[v * A.w + u] <= 25) continue;
+            cov = true;
+            if (!d.lampOver[id]) { behind++; ids[id] = true; }
+          }
+          if (!cov) shown++;
+        }
+      }
+      var Lg = log.lantern;
+      Lg.samples++; Lg.behindPx += behind; Lg.px = Math.max(Lg.px, total);
+      if (behind && (!Lg.worstBehind || behind > Lg.worstBehind.px)) Lg.worstBehind = Object.assign({ px: behind }, where(ids));
+      var share = total ? shown / total : 1;
+      if (total && inPoly(lamp.rest, groundOf(LAYER[LANTERN.surface]))) {
+        Lg.framesOverTop++;
+        if (Lg.minShownOverTop === null || share < Lg.minShownOverTop) { Lg.minShownOverTop = +share.toFixed(4); Lg.minShownAt = where(ids); }
+      }
+      // every held sample within the table's columns, over its top or not (the stands, the turn, the edge)
+      if (total && lamp.base.x >= topX0 && lamp.base.x <= topX1) {
+        Lg.framesByTable++;
+        if (Lg.minShownByTable === null || share < Lg.minShownByTable) { Lg.minShownByTable = +share.toFixed(4); Lg.minShownByTableAt = where(ids); }
+      }
+    }
     var LA = {};
     ROOM.layers.forEach(function (L) {
       var im = images['layer:' + L.id], c = document.createElement('canvas');
@@ -1786,21 +2408,22 @@
     }
     function sample() {
       var ox = Math.round(S.x) - BOX / 2, oy = Math.round(S.y) - Math.round(BOX * 0.72);
-      var mix = morphMix(), under = mix && mix.t > 0.5 ? mix.b : mix ? mix.a : S.dirIdx;
+      var fr = frameFigures(1);
       hctx.setTransform(1, 0, 0, 1, 0, 0); hctx.clearRect(0, 0, BOX, BOX);
       hctx.setTransform(1, 0, 0, 1, -ox, -oy);
-      place(hctx, drawFigure(1, under, CUR, mix));
-      if (mix) {
-        hctx.globalAlpha = mix.t > 0.5 ? 1 - mix.t : mix.t;
-        place(hctx, drawFigure(1, mix.t > 0.5 ? mix.a : mix.b, PREV, mix));
+      place(hctx, fr.fig);
+      if (fr.fig2) {
+        hctx.globalAlpha = fr.sh.alpha;
+        place(hctx, fr.fig2);
         hctx.globalAlpha = 1;
       }
+      if (LANTERN) drawHands(hctx, fr);   // her hand drawn again over the lantern is still her
       var ha = hctx.getImageData(0, 0, BOX, BOX).data;
-      var d = drawOrder(S.x, S.y), after = {}, seen = false;
+      var d = drawOrder(S.x, S.y, fr.lamp.held ? fr.lamp.rest : undefined), after = {}, seen = false;
       fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, BOX, BOX);
       d.order.forEach(function (n) {
         if (n === 'lumi') { seen = true; return; }
-        if (!seen) return;
+        if (!seen || !LAYER[n]) return;
         after[n] = true;
         fctx.drawImage(images['layer:' + n], LAYER[n].offset[0] - ox, LAYER[n].offset[1] - oy);
       });
@@ -1830,6 +2453,7 @@
           }
         }
       }
+      if (fr.lamp.held) lampSample(fr, d);
       log.samples++;
       if (n.covered) { log.coveredPx += n.covered; log.framesCovered++; }
       [['behindPx', 'behind'], ['fringePx', 'fringe'], ['outOfReachPx', 'reach'], ['columnMissPx', 'miss'], ['columnOverPx', 'over']].forEach(function (kv) {
@@ -1844,7 +2468,7 @@
       for (var f = 0; f < frames; f++) {
         step(dt);
         frameN++;
-        if (frameN % 4 === 0 || (frameN % 2 === 0 && morphMix())) sample();
+        if (frameN % 4 === 0 || (frameN % 2 === 0 && (morphMix() || poseMix()))) sample();
       }
     }
     walkAudit(run, log);
@@ -1882,6 +2506,24 @@
       }
       perf[v[0] + 'Ms'] = +((performance.now() - t1) / 40).toFixed(2);
     });
+    // the same, standing at the lantern's stand holding it (the hand pieces, the lantern and its light added)
+    if (LANTERN && KEYS[SE] !== undefined) {
+      var hp = lanternPlaces()[LANTERN.at];
+      S.path = []; S.script = null; S.turnActive = false; S.turnT = 0; S.spinTo = null; S.waiting = true; S.hold = Infinity;
+      S.x = hp.stand.x; S.y = hp.stand.y; S.p = S.praw = DIRS[SE].deg; S.dirIdx = SE;
+      S.lamp.where = 'hand'; S.lamp.P = 3; S.lamp.hx = null;
+      [['holdRoom', 1], ['holdFollow', 2.3]].forEach(function (v) {
+        S.cam = null;
+        render(sctx, W0, H0, camera(W0, H0, v[1], true));
+        var t1 = performance.now();
+        for (var f = 0; f < 40; f++) {
+          step(dt);
+          render(sctx, W0, H0, camera(W0, H0, v[1], false));
+          sctx.getImageData(0, 0, 1, 1);
+        }
+        perf[v[0] + 'Ms'] = +((performance.now() - t1) / 40).toFixed(2);
+      });
+    }
     log.renderMs = perf;
 
     var pre = document.createElement('pre');
@@ -1900,6 +2542,7 @@
       var nx = S.path.length ? S.path[0].x - S.x : 0, ny = S.path.length ? S.path[0].y - S.y : 0, nl = Math.hypot(nx, ny) || 1;
       var f = faceNow();
       rows.push({ t: +S.time.toFixed(2), x: +S.x.toFixed(1), y: +S.y.toFixed(1), dir: DIRS[S.dirIdx].id, p: +S.p.toFixed(2), img: DIRS[S.dirIdx].img, face: [+f.x.toFixed(2), +f.y.toFixed(2)],
+        shows: ENT[showing().under].id, lamp: LANTERN ? S.lamp.where : null, P: LANTERN ? +S.lamp.P.toFixed(2) : null,
         heading: S.path.length ? [+(nx / nl).toFixed(2), +(ny / nl).toFixed(2)] : null,
         state: turning() ? 'turning' : rounding() ? 'rounding' : S.path.length ? 'walking' : 'resting', r: +S.r.toFixed(2),
         // the next few points she is walking to, and how long each stretch is: a wobble in her facing is usually a
@@ -1917,12 +2560,187 @@
     document.title = 'ready';
   }
 
+  // `?lanterncheck=1` (capture.py --lantern): the lantern moment frame by frame at 1/60 s. She starts at the tour stop
+  // before it (or ?stop=) with the lantern at the moment's first anchor, and the tour runs until it has been set down and
+  // she has walked on. Per frame, at room scale (D = 1) and at the scale of a 9× grid cell: the sprite's grip against
+  // the drawn grip, its base against the grip and the swing, the base's jump across the frame it leaves the table and the
+  // frame it lands, the base against the anchor after it lands, how far the drawn lantern reaches from her feet, its
+  // swing, the largest move of its base in one held frame, and the tabletop's added light within 30 ground px of the
+  // anchor it left, from when it is 150 ground px away (what it casts there itself is then under a level). Phase times.
+  function runLanternCheck() {
+    document.body.classList.add('chromeless');
+    var dt = 1 / 60, li = lanternStop(), D9 = 420 / PW * 9, out = { ok: false };
+    var write = function () {
+      var pre = document.createElement('pre');
+      pre.id = 'audit';
+      pre.textContent = JSON.stringify(out);
+      document.querySelector('main').appendChild(pre);
+      document.title = 'ready';
+    };
+    if (!LANTERN || li < 0 || KEYS[SE] === undefined) { write(); return; }
+    var stop = TOUR[li], pls = lanternPlaces(), from = pls[stop.lantern.from], to = pls[stop.lantern.to];
+    if (!params.has('stop')) {
+      var pi = (li + TOUR.length - 1) % TOUR.length;
+      S.x = TOUR[pi].at[0]; S.y = TOUR[pi].at[1]; S.leg = pi; S.hold = 0.3; S.waiting = true;
+    }
+    ui.tour = true;
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    var fwd = {};
+    [KEYS[SE][2], KEYS[SE][3], HOLD[(SE + N_DIRS - 1) % N_DIRS], HOLD[0], HOLD[SW]].forEach(function (e) {
+      if (e === undefined) return;
+      var f = forwardOf(e), g = restGrip(e);
+      fwd[ENT[e].id] = { forward: [r2(f.x), r2(f.y)], grip: [r2(g.dx), r2(g.dy)], lift: liftOf(e) };
+    });
+    out = { ok: true, from: stop.lantern.from, to: stop.lantern.to, carries: carries(from, to),
+      stands: pls.list.map(function (p) {
+        return { name: p.name, at: [p.at.x, p.at.y], stand: [r2(p.stand.x), r2(p.stand.y)], proposal: p.proposal,
+          entry: p.entry ? [r2(p.entry.x), r2(p.entry.y)] : null, standable: standable(p.stand) };
+      }),
+      perEntry: fwd, D9: r2(D9), gripErrMax: 0, baseFromGripErrMax: 0, attach: null, detach: null, baseOnAnchorAfter: null,
+      reachMax: 0, reachAt: null, reachLimit: REACH(), swingMaxDeg: 0, swingAt: null, baseStepMax: 0, baseStepAt: null,
+      lightLeft: { maxLevel: null, frames: 0, radius: 30, fromDist: 150 }, frames: 0 };
+    var LW = 150, LH = 100, lb = document.createElement('canvas');
+    lb.width = LW; lb.height = LH;
+    var lbx = lb.getContext('2d', { willReadFrequently: true });
+    var gFrom = { x: from.at.x, y: from.at.y + surfaceH() };
+    var prev1 = null, prev9 = null, prevWhere = S.lamp.where, tDetach = null;
+    var dist = function (p, q) { return Math.hypot(p.x - q.x, p.y - q.y); };
+    for (var fno = 0; fno < 60 * 90; fno++) {
+      step(dt);
+      out.frames++;
+      var F1 = frameFigures(1), L1 = F1.lamp, L9 = frameFigures(D9).lamp, wh = S.lamp.where, show = ENT[F1.sh.under].id;
+      if (wh !== prevWhere && prev1) {
+        var kind = wh === 'hand' ? 'attach' : 'detach';
+        out[kind] = { t: r2(S.time), P: S.lamp.P, shows: show, jumpPx: r2(dist(L1.base, prev1)), jumpPx9: r2(dist(L9.base, prev9)) };
+        if (kind === 'detach') {
+          tDetach = S.time;
+          var an = LAYER[LANTERN.surface].anchors[wh].at, A0 = { x: an[0], y: an[1] };
+          out.detach.at = wh;
+          out.detach.lastHeldBaseToAnchorPx = r2(dist(prev1, A0));
+          out.detach.lastHeldBaseToAnchorPx9 = r2(dist(prev9, A0));
+          out.baseOnAnchorAfter = r2(dist(L1.base, A0));
+        } else {
+          out.attach.at = S.lamp.from;
+        }
+      }
+      if (L1.held) {
+        [L1, L9].forEach(function (Lx) {
+          var bg = baseFromGrip(), c = Math.cos(Lx.theta), s = Math.sin(Lx.theta);
+          out.baseFromGripErrMax = Math.max(out.baseFromGripErrMax, r2(Math.hypot(Lx.base.x - (Lx.grip.x + bg.x * c - bg.y * s), Lx.base.y - (Lx.grip.y + bg.x * s + bg.y * c))));
+        });
+        var k = LANTERN.scale, im = images.lantern, cth = Math.cos(L1.theta), sth = Math.sin(L1.theta);
+        [[0, 0], [im.width, 0], [0, im.height], [im.width, im.height]].forEach(function (q) {
+          var x = (q[0] - LANTERN.grip[0]) * k, y = (q[1] - LANTERN.grip[1]) * k, rx = L1.grip.x + x * cth - y * sth - S.x;
+          if (Math.abs(rx) > out.reachMax) { out.reachMax = r2(Math.abs(rx)); out.reachAt = { t: r2(S.time), shows: show }; }
+        });
+        // is its ground point over the tabletop (the table under it in the depth order)?
+        var ov = inPoly(L1.rest, groundOf(LAYER[LANTERN.surface]));
+        out.heldFrames = (out.heldFrames || 0) + 1;
+        if (ov) out.heldOverTopFrames = (out.heldOverTopFrames || 0) + 1;
+        else (out.heldOffTop = out.heldOffTop || []).push({ t: r2(S.time), shows: show, u: r2(toUV(L1.rest.x, L1.rest.y).u), lift: r2(L1.rest.lift) });
+        out.liftRange = [Math.min((out.liftRange || [Infinity])[0], r2(L1.rest.lift)), Math.max((out.liftRange || [0, -Infinity])[1], r2(L1.rest.lift))];
+        var sw = Math.abs(L1.theta) * 180 / Math.PI;
+        if (sw > out.swingMaxDeg) { out.swingMaxDeg = r2(sw); out.swingAt = { t: r2(S.time), shows: show }; }
+        if (prevWhere === 'hand' && prev1) {
+          var stp = dist(L1.base, prev1);
+          if (stp > out.baseStepMax) { out.baseStepMax = r2(stp); out.baseStepAt = { t: r2(S.time), shows: show, x: r2(L1.base.x) }; }
+        }
+      }
+      // Light left at the anchor it left, from the frame the lift ends (P = 3) and after it lands elsewhere: the tabletop
+      // light the page draws within 30 ground px of that anchor, less what the lantern where it now is casts there itself
+      // (its carried light rendered alone). What the lantern casts there itself is reported apart, with the distance.
+      var lifted = (wh === 'hand' && S.lamp.P >= 3) || (wh !== 'hand' && wh !== stop.lantern.from);
+      if (lifted && fno % 2 === 0) {
+        var ox = Math.round(from.at.x) - LW / 2, oy = Math.round(from.at.y) - LH / 2;
+        var levels = function (lamp) {
+          lbx.setTransform(1, 0, 0, 1, 0, 0);
+          lbx.globalCompositeOperation = 'source-over';
+          lbx.fillStyle = '#000'; lbx.fillRect(0, 0, LW, LH);
+          if (lamp) drawTableLight(lbx, 1, ox, oy, lamp);
+          return lbx.getImageData(0, 0, LW, LH).data;
+        };
+        var full = levels(L1), own = wh === 'hand' ? levels({ held: true, carry: 1, rest: L1.rest }) : null, mx = 0, mo = 0;
+        for (var j = 0; j < LH; j++) for (var i = 0; i < LW; i++) {
+          var dx = ox + i + 0.5 - from.at.x, dy = (oy + j + 0.5 - from.at.y) / B;
+          if (dx * dx + dy * dy > 900) continue;
+          var q = (j * LW + i) * 4;
+          for (var ch = 0; ch < 3; ch++) {
+            mx = Math.max(mx, full[q + ch] - (own ? own[q + ch] : 0));
+            if (own) mo = Math.max(mo, own[q + ch]);
+          }
+        }
+        out.lightLeft.frames++;
+        out.lightLeft.maxLevel = Math.max(out.lightLeft.maxLevel || 0, mx);
+        if (wh !== 'hand') out.lightLeft.afterSetDownMax = Math.max(out.lightLeft.afterSetDownMax || 0, mx);
+        if (own && mo > (out.lightLeft.carriedOwnMax || 0)) {
+          out.lightLeft.carriedOwnMax = mo;
+          out.lightLeft.carriedOwnAt = { t: r2(S.time), groundPxFromAnchor: r2(Math.hypot(L1.rest.x - gFrom.x, (L1.rest.y - gFrom.y) / B)) };
+        }
+      }
+      prev1 = L1.base; prev9 = L9.base; prevWhere = wh;
+      if (tDetach !== null && S.time - tDetach > 2.5 && !S.script) break;
+    }
+    out.phases = S.lamp.log;
+    out.endT = r2(S.time);
+    write();
+  }
+
+  // ---- the lantern's cues -----------------------------------------------------------------------------------------
+  // Pick up walks her to the stand where the lantern is and picks it up; Set down carries it to the stand she can carry
+  // it to (from the back corner to the books) or sets it down where she is. Each returns a hint, or '' when it started.
+  function cuePickUp() {
+    if (!LANTERN || KEYS[SE] === undefined) return 'There’s no lantern here to pick up.';
+    if (S.script || handling()) return 'She’s busy with her lantern.';
+    if (S.lamp.where === 'hand') return 'She’s already holding it.';
+    var pl = lanternPlaces()[S.lamp.where];
+    if (!pl || !pl.entry) return 'She can’t reach it from here.';
+    if (reduced) {
+      S.path = []; S.x = pl.stand.x; S.y = pl.stand.y; setP(DIRS[SE].deg);
+      S.lamp.P = 3; S.lamp.where = 'hand'; S.lamp.from = pl.name;
+      return '';
+    }
+    var pts = routeToStand(pl);
+    if (!pts) return 'There’s no way round to it from where she is.';
+    S.hold = 0; S.waiting = false;
+    if (pts.length) startWalk(pts, Infinity);
+    S.script = [opTurn(SE, 'face the table'), opWait(0.35, 'settle'), opPose(3, 'pick up')];
+    return '';
+  }
+  function cueSetDown() {
+    if (!LANTERN || KEYS[SE] === undefined) return 'There’s no lantern here.';
+    if (S.script || handling()) return 'She’s busy with her lantern.';
+    if (S.lamp.where !== 'hand') return 'She isn’t holding it: try Pick up.';
+    var here = atStand({ x: S.x, y: S.y });
+    if (!here) return 'She can only set it down on the table.';
+    var other = lanternPlaces().list.filter(function (q) { return q !== here && carries(here, q); })[0];
+    if (reduced) {
+      var at = other || here;
+      S.x = at.stand.x; S.y = at.stand.y; setP(DIRS[SE].deg);
+      S.lamp.P = 0; S.lamp.where = at.name;
+      return '';
+    }
+    S.script = other
+      ? [opTurn(SW, 'turn to carry'), opWalk([{ x: other.stand.x, y: other.stand.y }], 'carry'), opTurn(SE, 'turn to the table'),
+        opWait(0.35, 'settle'), opPose(0, 'set down')]
+      : [opTurn(SE, 'face the table'), opWait(0.35, 'settle'), opPose(0, 'set down')];
+    return '';
+  }
+  function lanternText() {
+    if (!LANTERN) return '';
+    var L = S.lamp, s;
+    if (handling()) s = L.dir < 0 ? 'setting her lantern down' : L.where === 'hand' ? 'lifting her lantern' : 'reaching for her lantern';
+    else if (L.where === 'hand') s = 'carrying her lantern · clicks wait until she sets it down';
+    else s = 'lantern on the table, ' + (L.where === LANTERN.at ? 'at its back corner' : 'by the books');
+    return '<span>' + s + '</span>';
+  }
+
   // ---- the page --------------------------------------------------------------------------------------------------
   function start() {
     resetSim();
     if (params.get('audit')) { runAudit(); return; }
     if (params.get('trace')) { runTrace(); return; }
     if (params.get('occlusion')) { runOcclusion(); return; }
+    if (params.get('lanterncheck')) { runLanternCheck(); return; }
     if (GRID) { runGrid(); return; }
     var stage = document.getElementById('stage'), sctx = stage.getContext('2d');
     var readout = document.getElementById('readout'), hint = document.getElementById('hint');
@@ -1960,6 +2778,19 @@
       if (ui.tour) { setTour(false); return; }
       setTour(true);
       hint.textContent = '';
+      if (LANTERN && (S.script || handling() || S.lamp.where === 'hand')) {
+        // with the lantern in hand the tour starts by carrying it on (or setting it down) and picks up from there
+        var li = lanternStop(), here = atStand({ x: S.x, y: S.y });
+        if (S.script) S.script.push(opCall(function () { S.hold = 0.3; S.waiting = true; }));
+        else if (li >= 0 && here && TOUR[li].lantern.from === here.name && carries(here, lanternPlaces()[TOUR[li].lantern.to])) {
+          S.leg = li; S.script = carryScript(TOUR[li], true);
+        } else {
+          if (li >= 0) S.leg = li;
+          S.script = [opTurn(SE, 'face the table'), opWait(0.35, 'settle'), opPose(0, 'set down'),
+            opCall(function () { S.hold = 0.3; S.waiting = true; })];
+        }
+        return;
+      }
       if (!S.path.length) { S.leg = TOUR.length - 1; S.hold = 0; S.waiting = false; nextLeg(); }
     });
     if (reduced) {
@@ -2005,12 +2836,25 @@
       if (cue !== 'blink') S.idle.nextMotion = Math.max(S.idle.nextMotion, S.time + 8);
     });
 
+    document.getElementById('lantern').addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-lantern]'); if (!b) return;
+      var msg = b.getAttribute('data-lantern') === 'pickup' ? cuePickUp() : cueSetDown();
+      hint.textContent = msg;
+      if (!msg) setTour(false);
+    });
+
     var lastCam = { D: 1, x0: 0, y0: 0 };
     stage.addEventListener('click', function (ev) {
       var rect = stage.getBoundingClientRect(), k = stage.width / rect.width;
       var p = { x: lastCam.x0 + (ev.clientX - rect.left) * k / lastCam.D, y: lastCam.y0 + (ev.clientY - rect.top) * k / lastCam.D };
+      if (LANTERN && (S.script || handling() || S.lamp.where === 'hand')) {
+        hint.textContent = S.lamp.where === 'hand' && !S.script
+          ? 'She carries her lantern only along the table. Set it down first, then send her anywhere.'
+          : 'She’s busy with her lantern.';
+        return;
+      }
       if (!standable(p)) { hint.textContent = 'She can’t stand there. Try open floor, the rug, or the runner by the stairs.'; return; }
-      var path = findPath({ x: S.x, y: S.y }, p);
+      var path = routeFrom({ x: S.x, y: S.y }, p);
       if (!path) { hint.textContent = 'There’s no way round to there from where she is.'; return; }
       hint.textContent = '';
       setTour(false);
@@ -2020,7 +2864,7 @@
         return;
       }
       S.hold = 0; S.waiting = false;
-      startWalk(roundCorners({ x: S.x, y: S.y }, path), Infinity);
+      startWalk(path, Infinity);
     });
 
     var last = performance.now(), lastText = '';
@@ -2040,7 +2884,7 @@
       var state = turning() ? 'turning' : S.path.length ? 'walking' : 'resting';
       var text = '<span><b>' + state + '</b></span><span>facing ' + DIRS[S.dirIdx].say + '</span>' +
         '<span>' + Math.round(T.speed * sizeMul() * DIRS[S.dirIdx].fore / UV_PX * (S.path.length && !turning() ? S.r : 0)) + ' px a second</span>' +
-        '<span>one step ' + T.step.toFixed(2) + ' s</span><span>height ' + ui.size + ' px</span>';
+        '<span>one step ' + T.step.toFixed(2) + ' s</span><span>height ' + ui.size + ' px</span>' + lanternText();
       if (text !== lastText) { readout.innerHTML = text; lastText = text; }
       requestAnimationFrame(frame);
     }
@@ -2062,6 +2906,11 @@
     keys.push('layer:' + L.id); srcs.push(SCENE.layers[L.id]);
     if (L.shadow) { keys.push('shadow:' + L.id); srcs.push(SCENE.shadows[L.id]); }
   });
+  // the lantern: its piece, its glow, its contact shadow and the mask they are drawn through
+  if (LANTERN) {
+    keys.push('lantern', 'lantern:glow', 'lantern:shadow', 'lantern:through');
+    srcs.push(SCENE.lantern.src, SCENE.lantern.glow, SCENE.lantern.shadow, SCENE.lantern.through);
+  }
   Promise.all(srcs.map(load)).then(function (imgs) {
     keys.forEach(function (k, i) { images[k] = imgs[i]; });
     start();

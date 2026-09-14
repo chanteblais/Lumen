@@ -155,6 +155,24 @@ for n in ORDER:
     rig[n]['turned'] = round(m['angle'], 1)
     rig[n]['back'] = n in BACK
     M[n] = m
+# The holding and pick-up drawings (split.py's `variants`), measured as their base facing is: on the variant's own body
+# piece, but with the hood's centre and half-width taken from the base facing's body mapped through `toBase` (a lantern
+# held high beside the hood widens the hood rows, which read the face as turned when it is not — the `--ref` finding).
+# The page's audit judges her against these while she holds the lantern. The ten facings above are untouched.
+for n, R in rig.get('variants', {}).items():
+    base = R['base']
+    if base not in M:
+        continue
+    ba = M[base]['im'][:, :, 3] > 200
+    bys = np.where(ba.any(axis=1))[0]
+    brows = np.zeros_like(ba)
+    brows[bys.min():int(bys.min() + CHIN * (bys.max() - bys.min()))] = True
+    bxs = np.where((ba & brows).any(axis=0))[0]
+    k, off = R['toBase']['k'], R['toBase']['offset']
+    hood = (((bxs.min() + bxs.max()) / 2 - off[0]) / k, (bxs.max() - bxs.min()) / 2 / k)
+    vm = mark(np.array(Image.open(os.path.join(HERE, 'parts', f'{n}-body.png')).convert('RGBA')), hood)
+    R['turned'] = round(angle(vm['turn'], side), 1)
+    print(f"{n} (base {base}) {vm['what']} turn {vm['turn']:+.3f} → turned {R['turned']:5.1f}° (its base {M[base]['angle']:.1f}°, needs {WANT[base]:.1f}°)")
 with open(os.path.join(HERE, 'rig-walk.json'), 'w') as fh:
     json.dump(rig, fh, indent=1)
 print('turns written to rig-walk.json (run after split.py, before build.py)')

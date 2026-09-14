@@ -213,6 +213,31 @@ def cut_lantern(f, rgba, origin, paper):
         fill = on_base & ~base_hands & notch
         out[cut, 3] = 0
         out[fill] = canvas[fill]
+        # A painted fill, when one is chosen (fill.py: what the drawn lantern hides, a masked edit of this drawing saved as
+        # <src>-fill.png): what the cut opened is filled from it inside the edit's own mask (fill.mask_for, the same mask
+        # that was sent) — never outside it (the ring's top, left in the edit, would come back), never on the fist, never
+        # where the fill is ground. (A first rule, "wherever the edit changed the drawing", left holes the shape of the
+        # glass and flame, whose highlights are as pale as the cloak painted over them.) Without it the cloak beside the
+        # room's lantern showed torn at 9×.
+        fill_src = f['src'].replace('.png', '-fill.png')
+        if os.path.exists(os.path.join(ROOT, fill_src)):
+            import fill as fillmod   # this folder
+            frgba, _, forigin, _ = matte_of(fill_src)
+            fc = np.zeros_like(rgba)
+            fdy, fdx = forigin[1] - origin[1], forigin[0] - origin[0]
+            fhh, fww = frgba.shape[:2]
+            a0, b0, a1, b1 = max(0, fdy), max(0, fdx), min(H, fdy + fhh), min(W, fdx + fww)
+            fc[a0:a1, b0:b1] = frgba[a0 - fdy:a1 - fdy, b0 - fdx:b1 - fdx]
+            _, edit_full = fillmod.mask_for(f['src'])
+            edit = np.zeros(cut.shape, bool)
+            eh, ew = edit_full.shape
+            sub = edit_full[origin[1]:origin[1] + H, origin[0]:origin[0] + W]
+            edit[:sub.shape[0], :sub.shape[1]] = sub
+            groundish_f = np.abs(fc[:, :, :3].astype(int) - np.asarray(paper, int)).sum(axis=2) < 70
+            painted = cut & edit & (fc[:, :, 3] > 200) & ~groundish_f & ~ndi.binary_dilation(fist, iterations=2)
+            out[painted] = fc[painted]
+            info['paintedPx'] = int(painted.sum())
+            print(f"  {f['name']}: {int(painted.sum())} px of the cut painted from {fill_src}")
         ly, lx = np.where(lan0)
         ry = np.where(lan.any(axis=1))[0]
         info['lantern'] = dict(box=(int(lx.min()), int(ly.min()), int(lx.max()), int(ly.max())),
@@ -236,6 +261,33 @@ def cut_lantern(f, rgba, origin, paper):
         fade = np.clip(dist / 180.0, 0, 1)
         out[band, 3] = np.minimum(out[band, 3], (fade[band] * 255).astype(np.uint8))
         info['lantern']['groundFloodedPx'] = int(flooded.sum())
+    # Leftovers of the drawn lantern's ring and cap round the fist (its white highlight, brass, dark outline strokes). The
+    # page draws the hand piece again over the room's lantern, so anything but the fist in it shows on top of the lantern:
+    # white specks by the fist at 9× (lumi-walk grids, 2026-09-13). The hand piece keeps the fist and its dark outline only.
+    # In the body, what the cut left hanging off the fist — small once the fist is set aside, and near it — is dropped,
+    # and light or brass pixels touching the fist below its middle over the drawn lantern's columns go too.
+    if lan.any():
+        alive = out[:, :, 3] > 0
+        lum_o = out[:, :, :3].astype(int).mean(axis=2)
+        tight = ndi.binary_dilation(fist, iterations=4)
+        info['zone'] = (fist | (tight & (lum_o < 90))) & alive
+        near_f = ndi.binary_dilation(fist, iterations=40)
+        lab_s, ks = ndi.label(alive & ~tight)
+        loose = np.zeros_like(alive)
+        if ks:
+            sizes_s = ndi.sum(np.ones_like(lab_s), lab_s, range(1, ks + 1))
+            inside = ndi.sum(near_f, lab_s, range(1, ks + 1))
+            bits = [i + 1 for i in range(ks) if sizes_s[i] < 0.01 * sizes_s.max() and inside[i] > 0.8 * sizes_s[i]]
+            loose = np.isin(lab_s, bits)
+        below = np.zeros_like(alive)
+        below[int(hy.mean()):, :] = True
+        over_lantern = ndi.binary_dilation(lan, iterations=8)
+        ro, go, bo = out[:, :, 0].astype(int), out[:, :, 1].astype(int), out[:, :, 2].astype(int)
+        brass_o = (bo < 0.45 * ro) & (go < 0.78 * ro) & (ro > 90)
+        rim = alive & tight & ~fist & below & over_lantern & ((lum_o > 110) | brass_o)
+        drop_bits = loose | rim
+        out[drop_bits] = 0
+        info['looseBitsPx'] = int(drop_bits.sum())
     # specks the cut leaves (the lantern's outline beyond its rim): keep what is sizeable
     lab, k = ndi.label(out[:, :, 3] > 0)
     if k > 1:
