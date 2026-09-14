@@ -54,8 +54,25 @@ Note why beside every ~ and ✗.
 | `not-the-call` | an insurance call put off for days; her guess that it keeps being put off | picks one and reshapes Today; takes a refusal without persuasion; names the obstacle once |
 | `body-double` | "Edit chapter 3" with its first step and 45 minutes | takes what's known; starts the session |
 | `low-day` | a three-hour rewrite, a five-minute reply, a small chore | capacity reported; the day made smaller |
+| `design-capture` | a design partner; nothing else | Lumi's design notebook: a note kept without asking, their words apart from her reading, nothing endorsed on her own, no to-do, a restatement not copied |
+| `design-feedback` | a design partner; the Today-paperwork note (her reading + a tappable-paragraph possibility) | agreeing with the problem endorses the reading only; the proposed interface rejected separately |
+| `design-personal` | a design partner; the same note | their own tasks go to intentions, never the notebook; a thanks is not feedback |
 
 ### Conversation runs
+
+#### Conversation run 2 — 2026-09-14 · Lumi's design notebook: three design scenarios, then again brief on and off after a fix, plus three live turns through `/api/chat` (`gpt-6-astra`, reasoning effort low, clock ~1:30pm Vancouver, `feat/design-contributions`)
+Chanté's ask: test the design notebook with a real design conversation before landing.
+
+**First pass (brief on): 9/10 musts.** Capture was proactive: a note kept on the first design turn with no "want me to save that?", their words quoted and checked, both parts unreviewed, no to-do filed, and later turns revised DC-1 instead of copying it. Agreeing with the tension and refusing the tappable paragraph split correctly. Their own tasks went to intentions and "thanks" wasn't feedback. **Missed:** in `design-capture`, turn 3 ("yeah. basically no paperwork before it's useful") was recorded as `design_feedback` **endorsing the possibility**. They had restated their own goal; she read it as agreement with her proposed design, the problem-vs-UI collapse the feature exists to prevent. Also, in `design-feedback`, one rejection was sent twice in a reply, writing two identical revisions.
+
+**What changed.** The persona's design section and the `design_feedback` description now say that agreeing with a goal, restating their own direction, or a "yeah" to something she just said is not endorsing a note's possibility, and that she records nothing when it's unclear which part they mean. `recordDesignFeedback` keeps an identical reaction once (same part, verdict and words as the note's last revision).
+
+**Second pass (brief on and off): 18/18 musts.** The restatement now revises DC-1 (brief on) or records nothing (off), with no endorsement either way. The double rejection recurred once (brief on) and was kept once. No sign showed: no asking to save, no copies, no narrating the note. Not graded blind: three scenarios, and the checks carry this run.
+
+**Live, through the review server's `/api/chat` as the local test user** (`COHERENCE_DEV_USER`, added to `COHERENCE_DESIGN_PARTNERS` for the test and removed after; its rows are real rows in the shared database):
+1. "…the Library… should never feel like something I have to tidy…" → a design reply with no mention of saving; `contribute_design` kept DC-1 (insight · Library), their words checked, a separate possibility ("no unsorted inbox or review queue"), both unreviewed. Log line `tools=contribute_design`, cacheRead 21,155 of 21,629.
+2. "Yes, that reading is right. But fixing things only when I happen to bump into them is not enough…" → reading **endorsed**; possibility **qualified**, with its new wording and the old kept in the history (checked in `/api/design-notes?view=notebook`).
+3. "…email the landlord… book a dentist appointment today. thanks for that by the way" → two intentions, no design note, no feedback on "thanks".
 
 #### Conversation run 1 — 2026-09-13 · all eight, brief on and off at one clock (`gpt-6-astra`, reasoning effort low, clock 1:54pm Vancouver, a Sunday)
 Every `must` held in all 16 conversations.

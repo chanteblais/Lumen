@@ -170,6 +170,10 @@ Index `(user_id, occurred_at)`, `(user_id, type, occurred_at)`, and the unique p
 | `library.forgotten` | `{ what: 'note'|'thread', versions or notes, keys, by: 'user' }` — deleted on the user's word. `keys` are one-way hashes of the forgotten content, so consolidation and Lumi can't file it again (`isForgotten`, which reads `memory.deleted` too); no words are kept |
 | `email.scanned` | `{ through, read, suggested, backlog }` — one look through the mail (Insights open, last look ≥ 30 min ago). `through` is the watermark the next look starts from; `read` how many new messages were read, `suggested` how many leads came out. `backlog` (2026-09-13, code review A12) is `{ after, before }` or null: older mail this look ran out of pages for, read by the next look after what's new — so mail beyond one look's pages is carried, never skipped, and nothing older than a week is read. The newest one is *when Lumi last looked* |
 | `lead.suggested` / `.kept` / `.dismissed` | `{ source, list }` / `{ via, intention_id }` / `{ via }` — a lead appeared, became an intention, or was let go; `via: 'app'` from Insights, `'chat'` from `keep_lead` / `dismiss_lead`. Each once per lead (2026-09-13, code review A6): keeping claims the lead (`status = 'suggested'`) in the transaction that creates the intention, and a second keep returns that intention with no event; a second let-go returns the lead as it is. A lead held already for the same message and title is not inserted again, and gets no `.suggested` |
+| `design.contributed` | `{ ref, kind, stated, possibility, supersedes }` (2026-09-14) — Lumi added a note to her design notebook (subject: the note); `stated` is `their_words`, `lumi_paraphrase` or null, `possibility` a boolean, `supersedes` the number of the note it replaced or null. Design partners only |
+| `design.revised` / `design.retracted` | `{ ref, fields }` — Lumi revised or withdrew one of her notes; `fields` are the columns that moved. The note's words are in its revision row, not here |
+| `design.feedback` | `{ ref, target: 'insight'|'possibility', verdict: 'endorse'|'reject'|'qualify'|'correct', reworded }` — the user's explicit reaction to one part of one note, on their checked words |
+| `design.digested` | `{ from, through, notes, quiet }` — a design digest made over revision ids `(from, through]` (subject: the digest); `quiet: true` when there was nothing to show and only the watermark moved |
 | `reflection.claimed` | `{}` (2026-09-13, code review A4) — written before reflection does any work on a session (the subject), on conflict do nothing against `events_reflection_claim_idx`; only the caller whose row came back reflects |
 | `reflection.ran` | `{ trigger: 'session_end'|'new_day', ops: number }` — subject is the session for `session_end` (M5; `new_day` is M6) |
 
@@ -250,6 +254,64 @@ Index `(user_id, retired_at)`. Whether a priority holds is derived (`currentPrio
 
 Events added: `priority.held {scope, week_of, intention_id, supersedes}`, `priority.let_go {scope, week_of}`; `plan.generated {reason: "priority"}`.
 
+## Added 2026-09-14 (migration `0008`) — Lumi's design notebook
+
+Only for design partners (`COHERENCE_DESIGN_PARTNERS`, `architecture.md` → *Lumi's design notebook*). Reference material about Coherence's design, never canon and never a requirement; kept apart from `docs/`.
+
+### `design_contributions` — one row per note, as it stands now
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk → users, cascade | |
+| ref | int | the stable number per user (DC-12). Unique `(user_id, ref)`; taken inside the insert, a racing insert takes the next |
+| kind | text | `insight · tension · assumption · possibility · shift` |
+| area | text null | where in Coherence it bears (Today, Lumi…), free text; groups the digest |
+| title, insight | text | the insight is always Lumi's reading |
+| stated_direction | text null | what the user said it rests on |
+| stated_source | text null | `their_words` (the quote was found in their messages) · `lumi_paraphrase`; null with no direction |
+| possibility | text null | a design idea, kept apart from the insight |
+| why_it_matters, uncertainty, prompted_by | text null | |
+| source_message_id | uuid null | the user message it came from. No FK (a pointer into history) |
+| related_ids | jsonb string[] | other notes that bear on it (≤ 6) |
+| supersedes_id, superseded_by_id | uuid null, fk → design_contributions, set null | a replacement links both ways; the old note stays |
+| insight_status | text | `unreviewed` (default) · `endorsed · qualified · corrected · rejected` — the user's explicit feedback only; reset to `unreviewed` when Lumi rewords the insight |
+| possibility_status | text null | the same, for the possibility; null when there is none |
+| retracted_at | timestamptz null | Lumi withdrew it; kept |
+| version | int | bumped by every change; writes compare-and-set on it |
+| created_at, updated_at | timestamptz | |
+
+Index `(user_id, updated_at)`. Whether a note is *current* (not superseded, not withdrawn) is derived, never stored.
+
+### `design_contribution_revisions` — append-only history
+| column | type | notes |
+|---|---|---|
+| id | bigserial pk | monotonic: the digest's watermark |
+| user_id | fk → users, cascade | |
+| contribution_id | fk → design_contributions, cascade | |
+| version | int | the note's version after this change. Unique `(contribution_id, version)` |
+| change | text | `created · revised · feedback · superseded · retracted` |
+| actor | text | `lumi` · `user` (feedback) |
+| target, verdict | text null | feedback only: `insight · possibility`; `endorse · reject · qualify · correct` |
+| their_words | text null | feedback: what they said, checked against their messages |
+| note | text null | their point, or why Lumi's thinking moved |
+| snapshot | jsonb | the whole note (content, links, both statuses, `retracted`) after the change |
+| created_at | timestamptz | |
+
+Index `(user_id, id)`.
+
+### `design_digests`
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk → users, cascade | |
+| from_revision_id, through_revision_id | bigint | the window `(from, through]`. Unique `(user_id, from_revision_id)`: a retry or a racing run over the same window finds this row instead of making another |
+| local_date | text | their local day it was made |
+| markdown | text null | the digest; null when the window held nothing worth showing (only the watermark moved) |
+| contribution_ids | jsonb string[] | the notes it shows |
+| created_at | timestamptz | |
+
+Index `(user_id, through_revision_id)`. Events added: `design.contributed`, `design.revised`, `design.retracted`, `design.feedback`, `design.digested` (catalogue above).
+
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · a priority field or score on intentions (stated priorities are scoped rows of their own, `priorities`, never a number) · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
 
@@ -262,6 +324,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0008_design_contributions.sql` | `design_contributions`, `design_contribution_revisions`, `design_digests` (Lumi's design notebook and its digests) + FKs (user cascade; revision → note cascade; supersedes / superseded_by → note set null) + unique `(user_id, ref)`, `(contribution_id, version)`, `(user_id, from_revision_id)` and indexes `(user_id, updated_at)`, `(user_id, id)`, `(user_id, through_revision_id)` | No (create-only) | **Yes** — 2026-09-14, applied by Claude with `npm run db:migrate` from `feat/design-contributions` while in review (create-only, so safe under `main`'s code; the journal held `0000`–`0007` with `0007`'s hash matching its file). Postgres truncates two generated FK names to 63 characters (`design_contribution_revisions_contribution_id_design_contributi`, `design_contributions_superseded_by_id_design_contributions_id_f`): a later migration that drops either must use the truncated name |
 | `0007_priorities.sql` | `priorities` table (stated priorities: content, `intention_id`, `scope`, `week_of`, `supersedes_id`, retired) + FKs (user cascade, intention set null) + index `(user_id, retired_at)` | No (create-only) | **Yes** — 2026-09-13. Written on `feat/plan-together` (as `0003`), renumbered to `0007` on `land/plan-together`, and landed byte-identical with `feat/priorities`. The table was already in the database from an earlier attempt with no journal row and matched the file exactly (columns, types, nullability, defaults, both FKs, the index; no rows), so only its `drizzle.__drizzle_migrations` row was inserted (Claude, one transaction: row 8, `created_at` = the journal's `when`); `npm run db:migrate` is a no-op |
 | `0006_data_integrity.sql` | `conversations.consolidating_until` (timestamptz null, consolidation's lease); unique partial indexes `conversations_user_main_idx (user_id) WHERE kind = 'main'`, `focus_sessions_user_open_idx (user_id) WHERE ended_at IS NULL`, `events_reflection_claim_idx (user_id, subject_id) WHERE type = 'reflection.claimed'`; unique `leads_user_ref_title_idx (user_id, source_ref, lower(title))`; GIN `episodes_thread_ids_idx` (code review 2026-09-13, section A) | No (add-only) — but a unique index fails to build if duplicates already exist: run the duplicate checks in the branch summary first | **Yes** — recorded in `drizzle.__drizzle_migrations` with a hash matching the file (read 2026-09-13 while checking `0007`) |
 | `0004_library.sql` | `episodes`, `threads`, `thread_notes` (recent memory and the Library) + FKs (cascade on user, conversation and thread delete; note → episode set null) and four indexes | No (create-only) | **Yes** — 2026-09-13, applied by hand (the tables were present before landing; checked). Recorded in `drizzle.__drizzle_migrations` on 2026-09-13, with `0005` (until then only `0000`–`0002` were, so `db:migrate` failed on "already exists") |

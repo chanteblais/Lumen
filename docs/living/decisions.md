@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-09-14 · Lumi contributes to Coherence's design, in a notebook of her own
+
+**Decision.** In Chanté's conversations about designing Coherence, Lumi notices meaningful insights, tensions, assumptions worth questioning, possibilities and changes in thinking, and keeps them as design notes **without asking to save each one**. The notes feed a daily design digest considered during design and implementation work. What Chanté said, Lumi's reading, and any design possibility stay apart, and each part is endorsed, qualified, corrected or rejected only by Chanté's explicit word in conversation.
+**Rationale.** Chanté (2026-09-14): she would rather discard ideas that don't fit than carry the burden of noticing every worthwhile insight herself; Lumi should contribute thinking, not transcribe.
+**Implications.**
+- Scoped to design partners and to design conversations: nobody else's Lumi changes, and personal tasks are never design evidence.
+- Silence is not endorsement, inclusion in a digest is not endorsement, endorsing a problem is not endorsing a proposed solution, and one verdict is not a rule for related ideas.
+- The notebook is not canon. It never edits a canonical doc, never becomes a requirement and never implements anything; a note moves into the canon only when Chanté puts it there (`PROJECT-CANON.md` → How the canon works).
+- No review queue, page or count: feedback is optional and conversational (`ef-burden-log.md`, 2026-09-14).
+- Sits with *Directions adopted from the first routine review* (below): a design note is a note, not an action — it moves nothing in the app, plans nothing and speaks only as a ledger line — so design thinking stays with meaning (Q23), and Lumi still starts nothing unprompted (Q9). What she notices is recorded quietly, the lowest level that works.
+
+**Principle.** EP§17 (show inference for what it is), AI & IA §57 (explicit ≠ inferred), V§4 (automate administration, never agency).
+**Replaces.** Nothing.
+
 ## 2026-09-14 · Directions adopted from the first routine review
 
 **Decision.** From the first pass over the design-routine proposals ([`design/routine/review.md`](../design/routine/review.md), each line linked there to its proposal), these directions are adopted. Each narrows an open question; none adds a surface or changes the persona by itself.

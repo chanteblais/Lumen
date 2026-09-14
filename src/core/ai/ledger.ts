@@ -60,6 +60,15 @@ function line(p: LedgerToolPart): string | null {
       return `Noted · ${out.title ?? ""}`;
     case "tool-dismiss_lead":
       return `Let go · ${out.title ?? ""}`;
+    case "tool-contribute_design": {
+      if (out.already_held) return null;
+      const what = out.change === "withdrawn" ? "Design note withdrawn" : out.change === "revised" ? "Design note revised" : "Design note";
+      return `${what} · ${out.id ?? ""} · ${String(out.title ?? inp.title ?? "").slice(0, 70)}`;
+    }
+    case "tool-design_feedback": {
+      const verdict = { endorse: "endorsed", reject: "rejected", qualify: "qualified", correct: "corrected" }[String(out.verdict ?? inp.verdict)] ?? "noted";
+      return `Design feedback · ${out.id ?? ""} · ${(out.on ?? inp.on) === "possibility" ? "possibility" : "reading"} ${verdict}`;
+    }
     default:
       return null;
   }

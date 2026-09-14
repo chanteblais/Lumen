@@ -8,6 +8,7 @@ import { describeScope } from "@/core/domain/priorities";
 import { isReentry, type Sitting } from "@/core/domain/users";
 import type { Where } from "@/core/places";
 import type { DayPlanJson, Episode, Intention, Lead, MemoryNote, Priority, Thread, ThreadNote } from "@/db/schema";
+import { designNotebookLines, type DesignNotebookView } from "./design-select";
 import type { LibraryView } from "./library-select";
 import { capacityPhrase, localFormat } from "./format";
 import { asQuoted, heldAs, noteHeldAs } from "./memory-select";
@@ -47,6 +48,8 @@ export type ContextInput = {
   leads?: Lead[];
   /** What they said matters, holding now or said for a week ahead (`listCurrentPriorities`). */
   priorities?: Priority[];
+  /** Design partners only: the notes from Lumi's design notebook chosen for this turn (`core/ai/design-select.ts`). */
+  design?: DesignNotebookView;
 };
 
 const MAX_INTENTIONS = 25;
@@ -214,6 +217,8 @@ export function buildContextBlock(input: ContextInput): string {
       lines.push(`- Also held (open_thread reads one): ${held}${library.moreThreads ? " · and more (search_library)" : ""}`);
     }
   }
+
+  lines.push(...designNotebookLines(input.design));
 
   return lines.join("\n");
 }

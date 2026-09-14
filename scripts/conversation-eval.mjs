@@ -32,9 +32,11 @@ import { buildContextBlock } from "../src/core/ai/context.ts";
 import { selectLibrary } from "../src/core/ai/library-select.ts";
 import { selectBeliefs } from "../src/core/ai/memory-select.ts";
 import { CHAT_MODEL_ID, cachedPrefixOptions, chatModel, chatProviderOptions } from "../src/core/ai/model.ts";
-import { PERSONA } from "../src/core/ai/persona.ts";
+import { selectDesignNotebook } from "../src/core/ai/design-select.ts";
+import { DESIGN_PARTNER, PERSONA } from "../src/core/ai/persona.ts";
 import { buildTools } from "../src/core/ai/tools.ts";
 import { listRecentActivity } from "../src/core/domain/activity.ts";
+import { contributeDesign, listDesignContributions, loadDesignNotebookOrNothing } from "../src/core/domain/design-contributions.ts";
 import { appendEvent, TODAY_BOUND_MS } from "../src/core/domain/events.ts";
 import { completeIntention, createIntention, listOpenIntentions } from "../src/core/domain/intentions.ts";
 import { loadLibraryOrNothing } from "../src/core/domain/library.ts";
@@ -221,7 +223,84 @@ const SCENARIOS = [
       { kind: "flag", label: "picked the three-hour rewrite", ok: !calls.some((c) => c.name === "_reply" && c.turn === 2 && /rewrite/i.test(c.text) && !/not the rewrite|rewrite can wait/i.test(c.text)) },
     ],
   },
+  // Lumi's design notebook: design partners only (docs/architecture.md → Lumi's design notebook).
+  {
+    id: "design-capture",
+    designPartner: true,
+    title: "A design conversation: noticing without being asked",
+    tests: "Proactive capture: a design note kept without asking, their words apart from her reading, nothing endorsed, no to-do filed, no copies.",
+    lookFor: "Engages with the design question itself. A note is kept quietly — a few words about it at most — with their stated direction quoted and her own reading of the tension. Doesn't ask whether to save it, doesn't file a task, doesn't make a new note for a restatement.",
+    turns: [
+      "I've been thinking about Today. It should draw out useful context without feeling like paperwork.",
+      "like, I want it to know what my day actually looks like, but I really don't want to fill in a form every morning",
+      "yeah. basically no paperwork before it's useful",
+    ],
+    checks: async ({ db, user, calls }) => {
+      const notes = await listDesignContributions(db, user.id);
+      const noted = calls.filter((c) => c.name === "contribute_design" && c.output?.change === "noted");
+      return [
+        { kind: "must", label: "kept a design note", ok: notes.length >= 1 },
+        { kind: "must", label: "a note rests on their words, checked", ok: notes.some((n) => n.statedSource === "their_words") },
+        { kind: "must", label: "endorsed or rejected nothing on her own", ok: notes.every((n) => n.insightStatus === "unreviewed" && (n.possibilityStatus ?? "unreviewed") === "unreviewed") },
+        { kind: "must", label: "filed no to-do", ok: !calls.some((c) => c.name === "create_intention") },
+        { kind: "flag", label: "asked whether to save or note it", ok: !replied(calls, /(want|should|shall) (me to|i) (note|save|keep|add|capture|jot|log)|\b(save|note|keep) (that|this)\?/i) },
+        { kind: "flag", label: "more than two new notes in three turns (the restatement should revise, or add nothing)", ok: noted.length <= 2 },
+        { kind: "flag", label: "narrated the note at length (the word 'note' in more than one reply)", ok: calls.filter((c) => c.name === "_reply" && /\bnot(e|ed)\b/i.test(c.text)).length <= 1 },
+      ];
+    },
+  },
+  {
+    id: "design-feedback",
+    designPartner: true,
+    title: "Agreeing with the problem, not the proposed interface",
+    tests: "Feedback on the part they meant, on their words: the reading endorsed, the possibility rejected, nothing decided.",
+    lookFor: "Takes it in a line or two. Records the agreement with the tension and the rejection of the tappable paragraph separately. Doesn't treat the note as decided or push the rejected idea; may offer a different angle as a new, unendorsed possibility.",
+    setup: async ({ db, user }) => {
+      await contributeDesign(db, user.id, DESIGN_TODAY_TENSION, daysAgo(1));
+    },
+    turns: ["about your note on Today and paperwork: yes, that tension is real. but I really don't want a paragraph of tappable phrases"],
+    checks: async ({ db, user, calls }) => {
+      const first = (await listDesignContributions(db, user.id)).find((n) => n.ref === 1);
+      return [
+        { kind: "must", label: "recorded feedback on her note", ok: calls.some((c) => c.name === "design_feedback" && !c.output?.error) },
+        { kind: "must", label: "the reading is endorsed or qualified", ok: ["endorsed", "qualified"].includes(first?.insightStatus) },
+        { kind: "must", label: "the tappable paragraph is rejected", ok: first?.possibilityStatus === "rejected" },
+        { kind: "flag", label: "added another note on the same tension", ok: !calls.some((c) => c.name === "contribute_design" && c.output?.change === "noted") },
+      ];
+    },
+  },
+  {
+    id: "design-personal",
+    designPartner: true,
+    title: "A design partner's own day is not design evidence",
+    tests: "Scope: their tasks and a hard day go to intentions, never to the design notebook; a thanks is not feedback on the note in view.",
+    lookFor: "Files the two tasks and helps pick one. No design note, and nothing recorded against the note already in the notebook.",
+    setup: async ({ db, user }) => {
+      await contributeDesign(db, user.id, DESIGN_TODAY_TENSION, daysAgo(1));
+    },
+    turns: ["ugh, today is a lot. I need to call the dentist and send Priya the draft", "thanks. ok which one first?"],
+    checks: async ({ db, user, calls }) => {
+      const notes = await listDesignContributions(db, user.id);
+      return [
+        { kind: "must", label: "kept no design note", ok: notes.length === 1 && !calls.some((c) => c.name === "contribute_design") },
+        { kind: "must", label: "gave the held note no feedback", ok: !calls.some((c) => c.name === "design_feedback") && notes[0]?.insightStatus === "unreviewed" },
+        { kind: "must", label: "filed the two tasks", ok: calls.filter((c) => c.name === "create_intention").length >= 2 },
+      ];
+    },
+  },
 ];
+
+/** Chanté's example (2026-09-14): her direction, a reading of it, and a possibility nobody has agreed to. */
+const DESIGN_TODAY_TENSION = {
+  kind: "tension",
+  area: "Today",
+  title: "Today learns without paperwork",
+  insight: "There is a tension between learning enough to help and making the user do more work. A useful design question is how little Today needs to ask before offering something useful.",
+  statedDirection: "Today should draw out useful context without feeling like paperwork.",
+  statedSource: "their_words",
+  possibility: "A shared paragraph with tappable phrases could represent the working picture of the day.",
+  uncertainty: "How little is enough to be useful?",
+};
 
 /* ---------------------------------------------------------------- run one */
 
@@ -255,19 +334,22 @@ async function runScenario(scenario, { brief, now, dry }) {
     const heard = [];
     const calls = [];
     const turns = [];
-    const system = personaFor(brief);
+    // A design partner's prefix is the persona with the design section after it (persona.ts → personaFor).
+    const system = scenario.designPartner ? `${personaFor(brief)}\n\n${DESIGN_PARTNER}` : personaFor(brief);
 
     for (const [index, text] of scenario.turns.entries()) {
       const turn = index + 1;
       heard.push({ messageId: randomUUID(), text });
       messages.push({ role: "user", content: text });
 
-      const [snap, recentActivity, library] = await Promise.all([
+      const [snap, recentActivity, library, notebook] = await Promise.all([
         loadSnapshot(db, user, now),
         listRecentActivity(db, user.id, new Date(now.getTime() - TODAY_BOUND_MS)),
         loadLibraryOrNothing(db, user.id),
+        scenario.designPartner ? loadDesignNotebookOrNothing(db, user.id) : undefined,
       ]);
-      const signals = { message: text, recent: scenario.turns.slice(Math.max(0, index - 6), index), focus: [snap.session.active?.goal, snap.session.active?.firstStep] };
+      // The snapshot lost `session` when focus sessions were removed (2026-09-13); read it only if it's there.
+      const signals = { message: text, recent: scenario.turns.slice(Math.max(0, index - 6), index), focus: [snap.session?.active?.goal, snap.session?.active?.firstStep] };
       const memory = selectBeliefs(snap.beliefs, signals, now);
       const context = buildContextBlock({
         displayName: user.displayName,
@@ -288,8 +370,9 @@ async function runScenario(scenario, { brief, now, dry }) {
         capacity: snap.capacity,
         plan: snap.plan,
         declinedToday: snap.declinedToday,
-        session: snap.session.active,
-        lastSession: snap.session.last,
+        session: snap.session?.active,
+        lastSession: snap.session?.last,
+        design: notebook ? selectDesignNotebook(notebook.contributions, notebook.feedback, signals, now) : undefined,
       });
 
       if (dry) {
@@ -306,6 +389,7 @@ async function runScenario(scenario, { brief, now, dry }) {
         reentry: isReentry(snap.sitting),
         onPlanChange: (r) => recuts.push(r.reason),
         userWords: heard.slice(-8),
+        designPartner: Boolean(scenario.designPartner),
       });
       const r = await generateText({
         model: chatModel(),
