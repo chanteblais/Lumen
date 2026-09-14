@@ -46,7 +46,7 @@ rig = json.load(open(os.path.join(HERE, 'rig-walk.json')))
 morph_path = os.path.join(HERE, 'morph.json')
 morph = json.load(open(morph_path)) if os.path.exists(morph_path) else {}   # no morph.json: the page falls back to Swap
 parts = {f'{f}-{l}': uri(os.path.join(HERE, 'parts', f'{f}-{l}.png'), 'image/png')
-         for f in rig for l in ('body', 'foot-0', 'foot-1')}   # every facing split.py wrote
+         for f in rig if f != 'variants' for l in ('body', 'foot-0', 'foot-1')}   # every facing split.py wrote (variants: holding and pick-up drawings, not yet on the page)
 
 # ---- the room: Home's layers ---------------------------------------------------------------------------------------
 layers = json.load(open(os.path.join(SCENE, 'layers.json')))

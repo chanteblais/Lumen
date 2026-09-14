@@ -176,6 +176,10 @@
 
   var RIG = /*RIG*/null;
   var MORPH = /*MORPH*/null;
+  // holding and pick-up drawings (split.py's `variants`, morph.py's likewise) are not facings on the ring: set aside
+  // so every Object.keys(RIG) below stays the ten drawn facings
+  var VARIANTS = RIG.variants || {}; delete RIG.variants;
+  var MORPH_VARIANTS = (MORPH && MORPH.variants) || {}; if (MORPH) delete MORPH.variants;
   // Home's layers (art/scenery/home/layers.json, trimmed to what the page reads) plus the tour (tour-home.json, its
   // anchors resolved by build.py) and each layer's floor-coloured pixels (fringe.py, for ?occlusion=1)
   var ROOM = /*ROOM*/null;

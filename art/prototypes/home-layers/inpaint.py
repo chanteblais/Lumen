@@ -1,10 +1,11 @@
 """Inpaint one cluster of layers out of Home's painting with OpenAI's image edit API (a mask whose transparent pixels
 are the hole), and keep only the hole's neighbourhood of each result.
 
-    python3 art/prototypes/home-layers/inpaint.py <cluster A|B|C|D> [--n 2] [--quality high] [--tag v1] [--dry-run]
+    python3 art/prototypes/home-layers/inpaint.py <cluster A|B|C|D|E> [--n 2] [--quality high] [--tag v1] [--dry-run]
 
 The hole is the union of the cluster's `mask` polygons (or, for a layer with `shadow: false`, its bodies grown by
-10px) from room.src.json. The API regenerates the whole image; each candidate is cropped to the hole's bounds plus
+10px) from room.src.json. An object's cluster (E, the lantern) has a `hole` instead: a patch of a surface layer's top
+round the object, less the other things on it (`hole_for`); lantern.py uses its candidate, not plate.py's floor pass. The API regenerates the whole image; each candidate is cropped to the hole's bounds plus
 48px and saved as out/inpaint/<cluster>-<tag>-<k>.png, with its offset, tokens and estimated cost appended to
 out/inpaint/log.jsonl. plate.py picks the candidates named in room.src.json → `plate_candidates`.
 The call is the same as scripts/gen-lumi-sheet.py's (multipart, the SSL context fix); MAX_IMAGES caps one run.
@@ -59,6 +60,13 @@ PROMPTS = {
                   "was behind them: the pale wooden floor planks in warm sunlight continuing to the floor's edge, and the "
                   "wooden stair treads going down beyond the edge, in the same light and painterly style. No railing, no "
                   "posts, no plants. Everything outside the masked area stays exactly as it is."),
+    'tabletop': ("An isometric painted cutaway of a cosy cabin room. Inside the transparent (masked) area on top of the low "
+                 "wooden table, remove the small brass oil lantern and all of the warm light it casts. Paint only the bare "
+                 "tabletop that was under and around it: the same warm-brown wooden planks running in the same direction, "
+                 "with their joints lining up with the planks around the mask, lit only by the room's soft, even evening "
+                 "light, as dim as the tabletop at the table's far corners. No bright pool of light, no glow, no flame "
+                 "reflections, no highlights. Nothing stands there: no lantern, no candle, no objects, no cast shadows. "
+                 "Same painterly style and texture. Everything outside the masked area stays exactly as it is."),
 }
 
 
@@ -83,8 +91,32 @@ def poly_mask(polys, size):
     return np.array(im) > 0
 
 
+def tabletop(room, on):
+    """A surface layer's top: its extent raised by its height, in painting px."""
+    L = next(l for l in room['layers'] if l['id'] == on)
+    return [[x, y - L['height']] for x, y in L['extent']]
+
+
+def ground_disc(size, centre, r, slope):
+    """Painting px within ground radius r of centre (a ground circle: r across the page, r * slope down it)."""
+    yy, xx = np.mgrid[0:size[1], 0:size[0]]
+    return np.hypot(xx - centre[0], (yy - centre[1]) / slope) <= r
+
+
 def hole_for(room, cluster):
     size = tuple(room['size'])
+    spec = room['clusters'][cluster]
+    if 'hole' in spec:                      # an object's cluster: a patch of a surface layer, not floor
+        h = spec['hole']
+        L = next(l for l in room['layers'] if l['id'] == h['on'])
+        obj = next(o for o in room['objects'] if o['id'] == spec['object'])
+        if 'around' in h:                   # tight round the object: its body grown, less the other things grown 1px
+            things = ndi.binary_dilation(poly_mask([L['things'][k] for k in h['keep']], size), iterations=1)
+            return ndi.binary_dilation(poly_mask(obj['body'], size), iterations=h['grow']) & ~things
+        top = ndi.binary_erosion(poly_mask([tabletop(room, h['on'])], size), iterations=h['inset'])
+        things = ndi.binary_dilation(poly_mask([L['things'][k] for k in h['keep']], size), iterations=2)
+        body = ndi.binary_dilation(poly_mask(obj['body'], size), iterations=2)
+        return (top & ground_disc(size, h['centre'], h['groundRadius'], room['iso']['slope']) & ~things) | body
     hole = np.zeros(size[::-1], bool)
     for L in room['layers']:
         if L['id'] not in room['clusters'][cluster]['layers']:

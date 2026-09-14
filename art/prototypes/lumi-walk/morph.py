@@ -144,7 +144,7 @@ def knots(name, R):
 
 rig = json.load(open(os.path.join(HERE, 'rig-walk.json')))
 out, tiles = {}, []
-for name in sorted(rig):
+for name in sorted(n for n in rig if n != 'variants'):
     R = rig[name]
     rows, xL, xF, xR, what, kind = knots(name, R)
     out[name] = dict(row0=int(rows[0]), head=[int(np.floor(R['top'])), int(round(R['chin']))],
@@ -164,6 +164,32 @@ for name in sorted(rig):
     d.text((4, 4), f'{name} ({what})', fill=(30, 20, 10, 255))
     tiles.append(tile)
 
+# Variants (split.py's holding and pick-up drawings): the same knots, so a holding turn sw ↔ ssw ↔ s morphs as the
+# empty-handed one does. Written under their own key after the ten facings, whose entries stay byte for byte as they were.
+vout, vtiles = {}, []
+for name, R in rig.get('variants', {}).items():
+    rows, xL, xF, xR, what, kind = knots(name, R)
+    vout[name] = dict(row0=int(rows[0]), head=[int(np.floor(R['top'])), int(round(R['chin']))],
+                      hem=int(round(R['hem'])), feet=int(np.ceil(R['feet'])), what=what, kind=kind, base=R['base'],
+                      rows=[[round(float(l), 2), round(float(f), 2), round(float(r), 2)] for l, f, r in zip(xL, xF, xR)])
+    print(f'{name:11s} rows {rows[0]}..{rows[-1]}  {what:9s} ({kind})  widest row {(xR - xL).max():5.1f}px')
+    im = Image.open(os.path.join(HERE, 'parts', f'{name}-body.png')).convert('RGBA')
+    tile = Image.new('RGBA', im.size, (246, 241, 232, 255))
+    tile.alpha_composite(im)
+    d = ImageDraw.Draw(tile)
+    for col, colour in ((xL, (40, 110, 200)), (xF, (220, 20, 130)), (xR, (40, 160, 90))):
+        d.line([(float(x), float(y)) for x, y in zip(col, rows)], fill=colour + (255,), width=2)
+    d.text((4, 4), f'{name} ({what})', fill=(30, 20, 10, 255))
+    vtiles.append(tile)
+if vout:
+    out['variants'] = vout
+    tw, th = max(t.width for t in vtiles), max(t.height for t in vtiles)
+    vsheet = Image.new('RGB', (tw * len(vtiles), th), (255, 255, 255))
+    for i, t in enumerate(vtiles):
+        vsheet.paste(t, (i * tw, 0))
+    os.makedirs(os.path.join(HERE, 'out'), exist_ok=True)
+    vsheet.save(os.path.join(HERE, 'out', 'morph-knots-variants.png'))
+
 with open(os.path.join(HERE, 'morph.json'), 'w') as fh:
     json.dump(out, fh, separators=(',', ':'))
 tw, th = max(t.width for t in tiles), max(t.height for t in tiles)
@@ -172,4 +198,5 @@ for i, t in enumerate(tiles):
     sheet.paste(t, (i * tw, 0))
 os.makedirs(os.path.join(HERE, 'out'), exist_ok=True)
 sheet.save(os.path.join(HERE, 'out', 'morph-knots.png'))
-print('wrote morph.json and out/morph-knots.png for', ', '.join(sorted(out)))
+print('wrote morph.json and out/morph-knots.png for', ', '.join(sorted(n for n in out if n != 'variants')),
+      '; variants:', ', '.join(vout) or 'none')

@@ -29,6 +29,27 @@ the cloak's outline with the cloak), in the lower part of the figure, in a part 
 boots (brown) seed the two feet; a foot is its boot plus ANKLE of what is just above it. Everything else below
 the hem — the painted legs — leaves the body, replaced by the drawn legs. `keep` boxes hold a hand that touches
 a leg on the body.
+
+Variants (VARIANTS, since 2026-09-13): drawings of a facing holding or reaching for something — carrying the lantern
+(`sw-lantern`, `ssw-lantern`, `s-lantern`) and the pick-up's two keys (`front-reach`, `front-grip`, at sw). Each is
+split exactly as a facing (body, feet, legs, eyes) after one step first: the drawn lantern is cut away, because the
+room's lantern piece (`art/scenery/home/layers/lantern.png`) hangs from her hand instead — the same pixels on the table
+and in her hand. The lantern is found by `hands.py` (lit glass grown through brass, the frame round it); the hand that
+holds it is hands.py's hand blob on the variant's side (`hand`: the viewer's `left`), grown through the fist's darker,
+lantern-lit side. The ring (thin brass near the fist, within 60 px of the lantern) goes with the lantern; brass of it
+drawn across the fist is repainted from the fist's own nearest pixels. The lantern, with a 2 px rim, leaves the body
+except the fist's dark outline. Ground the matte had kept inside the ring and between lantern, fist and cloak (its flood
+only reaches ground from outside) is flooded out and its edge faded. Where the lantern bit a notch out of her own outline
+(a 12 px closing of the outline left after the cut), the notch is filled from the empty-handed drawing (`base`, aligned
+on the image canvas — the generator keeps position, shift 0,0 on all five), never where the base drawing has its own
+hand; anything else it covered is left open (`leftOpenPx`): the room's lantern, drawn in front from the grip and larger
+than the drawn one, covers it. Detached specks left by the cut are dropped.
+Each variant also writes `parts/<variant>-hand.png` (the fist and its outline, in the same canvas: the page draws it
+again over the lantern's ring) and, under `variants` in rig-walk.json, beside everything a facing has: `base`, `deg`,
+`grip` (the fist's centre, where the ring hangs), `hand` (its box), `lanternSide`, `lantern` (the drawn lantern's
+height and box, and the cut's pixel counts) and `toBase` (k, offset: a point p in this variant's canvas is
+p·k + offset in its base facing's). The ten facings' parts and entries are unchanged — variants are processed after
+them and written under their own key. debug-split-variants.png and out/lantern-hold-strip.png show them.
 """
 import json
 import os
@@ -73,15 +94,172 @@ FACINGS = [
     dict(name='wnw', src='art/lumi/lumi-iso-wnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
     dict(name='nnw', src='art/lumi/lumi-iso-nnw.png', eyes=False, chin=0.50, neck=0.62, keep=[]),
 ]
+# Holding and pick-up drawings: each an edit of its base facing's drawing (art/prompts/lumi-iso-*-lantern.md, -reach,
+# -grip), split after its drawn lantern is cut away. `hand`: which of hands.py's blobs holds or reaches — the viewer's
+# left, her right hand, in all five. `deg`: the base facing's angle on the ring (facings.py's DEG).
+VARIANTS = [
+    dict(name='sw-lantern', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-lantern.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='ssw-lantern', base='ssw', deg=22.5, src='art/lumi/lumi-iso-ssw-lantern.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='s-lantern', base='s', deg=0.0, src='art/lumi/lumi-iso-s-lantern.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='front-reach', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-reach.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='front-grip', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-grip.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+]
+SRC = {f['name']: f['src'] for f in FACINGS}
 OUT = os.path.join(HERE, 'parts')
 os.makedirs(OUT, exist_ok=True)
 
 
-def split(f):
-    sheet = Sheet(os.path.join(ROOT, f['src']), glow=False, shadow=False)
+def matte_of(src):
+    """A drawing matted as the rig does it, and where its matte sits on the image canvas (Sheet.matte's 8 px margin)."""
+    sheet = Sheet(os.path.join(ROOT, src), glow=False, shadow=False)
     rows = sheet.rows()
     bbox = sheet.frames(rows[0][0], rows[-1][1], 1)[0]
     rgba, main = sheet.matte(bbox)
+    return rgba, main, (max(0, bbox[0] - 8), max(0, bbox[2] - 8)), sheet.paper
+
+
+def cut_lantern(f, rgba, origin, paper):
+    """Cut a variant's drawn lantern away and fill what it covered from the base drawing (see the docstring)."""
+    import hands   # this folder; only variants need it
+    res = hands.count(rgba)
+    a = rgba[:, :, 3] > 0
+    assert res['blobs'], (f['name'], 'no hand found')
+    pick = min if f['hand'] == 'left' else max
+    hand = pick(res['blobs'], key=lambda d: d['x'])['mask']
+    rgb_c = rgba[:, :, :3].astype(int)
+    lum_i = rgb_c.mean(axis=2)
+    sat_i = rgb_c.max(axis=2) - rgb_c.min(axis=2)
+    dark = a & (lum_i < 75) & (sat_i < 70)
+    # The lantern's light warms the side of the fist next to it (median ~45, 26, 14, saturation up to ~75) past hands.py's
+    # hand colour, so the blob is only part of the fist. Grown through fist-like pixels near it: dark and low in red —
+    # the brass of the ring is bright red-orange (median ~170, 105, 58), the cloak cream. Measured on sw-lantern, front-grip.
+    # (not brighter: the ring's dark brass shading, ~100, 60, 30, would carry the fist round the ring and close it inside)
+    # and only where it is thick: the ring's dark outline strokes (~4 px) are fist-coloured too, and growing along them
+    # wrapped the fist round the ring, so the outline stayed as claws after the cut
+    fistish = ndi.binary_opening(a & (rgb_c[:, :, 0] < 100) & (lum_i < 60), iterations=3)
+    hand = ndi.binary_propagation(hand, mask=(fistish | hand) & ndi.binary_dilation(hand, iterations=30))
+    hull = ndi.binary_fill_holes(ndi.binary_closing(hand, iterations=8))
+    zone = ndi.binary_dilation(hull, iterations=5) & a             # the fist and its dark outline: the hand piece
+    protect = ndi.binary_dilation(hull, iterations=3) & dark        # only the fist's dark outline is kept next to it
+    lan = res['lantern']
+    lan0 = lan.copy()                                               # glass, cap and base, without the ring: its height
+    # the ring: thin brass joined to the lantern near the fist. The cap's dark outline separates it from the lantern region,
+    # so it is grown from the region (grown 6 px) through brass within 45 px of the fist. Brass by colour ratio (blue well
+    # under red, green under red: ~170, 105, 58) — lantern-lit cream and the sleeve's tan lining are too blue or too green —
+    # and only its thin parts (what an opening of 5 px removes): the ring is a loop ~8 px thick, the lining a broad patch
+    r_, g_, b_ = rgb_c[:, :, 0], rgb_c[:, :, 1], rgb_c[:, :, 2]
+    brass = a & (b_ < 0.45 * r_) & (g_ < 0.78 * r_) & (r_ > 90) & (lum_i > 45)
+    thin = brass & ~ndi.binary_opening(brass, iterations=5)
+    fist = ndi.binary_fill_holes(hand)                              # the fist's own pixels, the ring's loop not closed in
+    # the hand piece and what the cut spares round the fist come from the fist itself: the closed hull closes over the top
+    # of the ring's loop, and sparing its dark pixels kept the ring's outline as thin claws round the fist (v3 ssw/s)
+    zone = ndi.binary_dilation(fist, iterations=5) & a
+    protect = ndi.binary_dilation(fist, iterations=3) & dark
+    if lan.any():
+        # every thin brass piece near the fist that isn't fist and comes within 60 px of the lantern: the ring is often
+        # cut off from the lantern region by the cap's dark outline, and a closed hull hid its loop from the cut
+        ring = thin & ndi.binary_dilation(hull, iterations=45) & ~fist
+        lab_r, kr = ndi.label(ring)
+        near_l = ndi.binary_dilation(lan, iterations=60)
+        ring = np.isin(lab_r, [i + 1 for i in range(kr) if (near_l & (lab_r == i + 1)).any()])
+        # the ring is drawn with a dark outline and a white highlight along it; within 6 px of its brass those go too —
+        # dark pixels and thin light strokes only (what a 4 px opening removes), so the broad cream of a sleeve beside it
+        # stays (without this the cut left thin claws of outline round the fist, v3 ssw/s)
+        light = a & (lum_i > 170)
+        thin_light = light & ~ndi.binary_opening(light, iterations=4)
+        ring_zone = ndi.binary_dilation(ring, iterations=6) & ~fist & ((a & (lum_i < 90)) | thin_light)
+        lan = lan | ((ndi.binary_dilation(ring, iterations=2) | ring_zone) & ~fist)
+        info_ring = int(ring.sum())
+    else:
+        info_ring = 0
+    out = rgba.copy()
+    hy, hx = np.where(hull)
+    zy, zx = np.where(zone)
+    info = dict(zone=zone, grip=(float(hx.mean()), float(hy.mean())),
+                handBox=(int(zx.min()), int(zy.min()), int(zx.max()), int(zy.max())), lantern=None)
+
+    brgba, bmain, borigin, _ = matte_of(SRC[f['base']])
+    canvas = np.zeros_like(rgba)
+    dy, dx = borigin[1] - origin[1], borigin[0] - origin[0]
+    H, W = rgba.shape[:2]
+    bh, bw = brgba.shape[:2]
+    ys0, xs0 = max(0, dy), max(0, dx)
+    ys1, xs1 = min(H, dy + bh), min(W, dx + bw)
+    canvas[ys0:ys1, xs0:xs1] = brgba[ys0 - dy:ys1 - dy, xs0 - dx:xs1 - dx]
+    bys = np.where(bmain.any(axis=1))[0]
+    info['baseOrigin'], info['baseFh'] = borigin, int(bys.max() - bys.min())
+
+    if lan.any():
+        # brass of the ring drawn across the fist: repainted from the fist's own nearest pixels
+        over = lan & fist
+        src = fist & ~lan
+        if over.any() and src.any():
+            iy, ix = ndi.distance_transform_edt(~src, return_indices=True)[1]
+            out[over, :3] = rgba[iy[over], ix[over], :3]
+            out[over, 3] = 255
+        cut = ndi.binary_dilation(lan, iterations=2) & ~protect & a
+        bres = hands.count(canvas) if (canvas[:, :, 3] > 0).any() else dict(blobs=[])
+        base_hands = np.zeros_like(a)
+        for bl in bres['blobs']:
+            base_hands |= bl['mask']
+        base_hands = ndi.binary_dilation(base_hands, iterations=12)
+        on_base = cut & (canvas[:, :, 3] > 0)
+        # Only notches: what the lantern bit out of the variant's own outline, found by closing that outline over 12 px.
+        # Filling everything the base drawing has there pasted a panel of its hanging cloak under the variant's lifted
+        # sleeve (ssw and s, v3), with a ghost of its outline. What is not a notch is left open: the room's lantern, drawn
+        # in front of her from the grip and larger than the drawn one, covers it.
+        kept = (out[:, :, 3] > 0) & ~cut
+        notch = ndi.binary_closing(kept, iterations=12) & cut
+        fill = on_base & ~base_hands & notch
+        out[cut, 3] = 0
+        out[fill] = canvas[fill]
+        ly, lx = np.where(lan0)
+        ry = np.where(lan.any(axis=1))[0]
+        info['lantern'] = dict(box=(int(lx.min()), int(ly.min()), int(lx.max()), int(ly.max())),
+                               height=int(ly.max() - ly.min() + 1), withRing=int(ry.max() - ry.min() + 1),
+                               cutPx=int(cut.sum()), filledPx=int(fill.sum()),
+                               leftOpenPx=int((on_base & ~fill).sum()),
+                               overBodyPx=int((lan & (canvas[:, :, 3] > 200) & ~base_hands).sum()),
+                               ringOverFistPx=int(over.sum()), ringPx=info_ring)
+    # Ground the matte kept: Sheet.matte floods the ground only from outside the figure, so the ground enclosed by the ring,
+    # the fist, the lantern and the cloak stayed opaque grey-blue, and the cut exposes it. Ground-coloured pixels joined to
+    # the new transparency are flooded out; the 2 px band they leave is faded by its distance from the ground's colour
+    # (the matte's own de-matte, lumi_cut.Sheet.matte), so no blue fringe is left along it.
+    if lan.any():
+        dist = np.abs(out[:, :, :3].astype(int) - np.asarray(paper, int)).sum(axis=2)
+        clear = out[:, :, 3] == 0
+        groundish = (dist < 70) & ~clear
+        near_cut = ndi.binary_dilation(cut, iterations=60)
+        flooded = ndi.binary_propagation(clear & near_cut, mask=(clear | groundish) & near_cut) & groundish
+        out[flooded, 3] = 0
+        band = ndi.binary_dilation(flooded, iterations=2) & (out[:, :, 3] > 0) & ~hull
+        fade = np.clip(dist / 180.0, 0, 1)
+        out[band, 3] = np.minimum(out[band, 3], (fade[band] * 255).astype(np.uint8))
+        info['lantern']['groundFloodedPx'] = int(flooded.sum())
+    # specks the cut leaves (the lantern's outline beyond its rim): keep what is sizeable
+    lab, k = ndi.label(out[:, :, 3] > 0)
+    if k > 1:
+        sizes = ndi.sum(np.ones_like(lab), lab, range(1, k + 1))
+        drop = np.isin(lab, [i + 1 for i in range(k) if sizes[i] < 0.05 * sizes.max()])
+        info['specksPx'] = int(drop.sum())
+        out[drop] = 0
+    lab, k = ndi.label(out[:, :, 3] > 200)
+    sizes = ndi.sum(np.ones_like(lab), lab, range(1, k + 1))
+    main = lab == 1 + int(np.argmax(sizes))
+    info['orig'] = rgba
+    return out, main, info
+
+
+def split(f):
+    if 'base' in f:
+        rgba, main, origin, paper_c = matte_of(f['src'])
+        rgba, main, extra = cut_lantern(f, rgba, origin, paper_c)
+    else:
+        sheet = Sheet(os.path.join(ROOT, f['src']), glow=False, shadow=False)
+        rows = sheet.rows()
+        bbox = sheet.frames(rows[0][0], rows[-1][1], 1)[0]
+        rgba, main = sheet.matte(bbox)
+        extra = None
     rgb = rgba[:, :, :3].astype(int)
     alpha = rgba[:, :, 3].astype(int)
     lum = rgb.mean(axis=2)
@@ -225,6 +403,10 @@ def split(f):
 
     s = FIG_H / fh
     layers = {'body': body, 'foot-0': pieces[0], 'foot-1': pieces[1]}
+    if extra:
+        hand_im = body.copy()
+        hand_im[~extra['zone']] = 0
+        layers['hand'] = hand_im
     scaled = {}
     for name, im in layers.items():
         scaled[name] = scale(im, im[:, :, 3] > 0, s)[0]
@@ -243,6 +425,32 @@ def split(f):
         rig['faceW'] = round(info['faceW'] * s, 2)
         rig['eyeBody'] = info['eyeBody']
         rig['eyeGlow'] = dict(colour=GLOW_RGB, stops=GLOW_STOPS)
+    if extra:
+        gx, gy = extra['grip']
+        x0, y0, x1, y1 = extra['handBox']
+        rig['base'] = f['base']
+        rig['deg'] = f['deg']
+        rig['back'] = False
+        rig['grip'] = [S(gx), S(gy)]
+        rig['hand'] = [S(x0), S(y0), S(x1), S(y1)]
+        # the lantern hangs beside her on the viewer's side of the outline in all five drawings; drawn over her where the
+        # two meet (overBodyPx counts where the drawn lantern covered what the base drawing shows as her)
+        rig['lanternSide'] = 'front'
+        L_ = extra['lantern']
+        if L_:
+            bx0, by0, bx1, by1 = L_['box']
+            rig['lantern'] = dict(height=round(L_['height'] * s, 2), share=round(L_['height'] / fh, 3),
+                                  withRing=round(L_['withRing'] * s, 2),
+                                  box=[S(bx0), S(by0), S(bx1), S(by1)],
+                                  **{k: L_[k] for k in ('cutPx', 'filledPx', 'leftOpenPx', 'overBodyPx', 'ringOverFistPx', 'ringPx', 'groundFloodedPx')})
+        else:
+            rig['lantern'] = None
+        rig['specksPx'] = extra.get('specksPx', 0)
+        # a point p in this canvas is p·k + offset in the base facing's canvas (both scaled to FIG_H from their own height)
+        sb = FIG_H / extra['baseFh']
+        k = sb / s
+        rig['toBase'] = dict(k=round(k, 5), offset=[round(0.5 * k + (origin[i] - extra['baseOrigin'][i]) * sb - 0.5, 2) for i in (0, 1)])
+        scaled['orig'] = scale(extra['orig'], extra['orig'][:, :, 3] > 0, s)[0]   # for the pictures only, never saved
     print(f['name'], json.dumps({k: v for k, v in rig.items() if k not in ('eyes',)}))
     return rig, scaled
 
@@ -313,6 +521,80 @@ for j, row in enumerate(tiles):
     for i, t in enumerate(row):
         sheet.paste(t, (i * tw, j * th))
 sheet.save(os.path.join(HERE, 'debug-split.png'))
+
+# ---- variants: holding and pick-up drawings, after the ten facings (so their parts and entries are unchanged) ----------
+variants, vrows, strip = {}, [], []
+for f in VARIANTS:
+    if not os.path.exists(os.path.join(ROOT, f['src'])) or f['base'] not in rigs:
+        print(f['name'], 'skipped: no', f['src'])
+        continue
+    rig, L = split(f)
+    variants[f['name']] = rig
+    size = (L['body'].shape[1], L['body'].shape[0])
+    legs = legs_layer(rig, size)
+    whole = over(legs, L['foot-0'], L['foot-1'], L['body'])
+    tint = lambda im, c: np.dstack([np.full(im.shape[:2] + (3,), c, np.uint8), im[:, :, 3]])
+    pieces = over(tint(legs, (40, 160, 90)), tint(L['foot-0'], (40, 110, 200)), tint(L['foot-1'], (200, 60, 60)), L['body'],
+                  tint(L['hand'], (240, 200, 0)))
+    # the base facing's pieces whole, the variant's pieces whole with the grip and hand box marked, and tinted by piece
+    # (hand yellow); for the strip also the drawing as generated (uncut, same scale)
+    B = rigs[f['base']]
+    bp = {n: np.array(Image.open(os.path.join(OUT, f"{f['base']}-{n}.png"))) for n in ('body', 'foot-0', 'foot-1')}
+    bwhole = over(legs_layer(B, (bp['body'].shape[1], bp['body'].shape[0])), bp['foot-0'], bp['foot-1'], bp['body'])
+    marked = paper(whole)
+    d = ImageDraw.Draw(marked)
+    gx, gy = rig['grip']
+    d.rectangle(rig['hand'], outline=(240, 170, 0, 255), width=2)
+    d.line([gx - 9, gy, gx + 9, gy], fill=(220, 0, 60, 255), width=2)
+    d.line([gx, gy - 9, gx, gy + 9], fill=(220, 0, 60, 255), width=2)
+    d.ellipse([gx - 4, gy - 4, gx + 4, gy + 4], outline=(220, 0, 60, 255), width=2)
+    if rig['lantern']:
+        d.rectangle(rig['lantern']['box'], outline=(0, 150, 220, 255), width=1)
+    row = [paper(bwhole), marked, paper(pieces)]
+    vrows.append((f['name'], row))
+    # the strip: as generated · the empty-handed pieces · the cut pieces with the grip, and the room's lantern at its
+    # 40 px-in-120 scale hung from the grip (dashed: its height only, the drawn lantern's width) to check it clears her feet
+    hung = paper(whole)
+    dh = ImageDraw.Draw(hung)
+    lh = 40.0 / 120.0 * rig['height']
+    lw = (rig['lantern']['box'][2] - rig['lantern']['box'][0]) * lh / max(1.0, rig['lantern']['box'][3] - rig['lantern']['box'][1]) \
+        if rig['lantern'] else lh * 0.55
+    for yy in np.arange(gy, gy + lh, 8):
+        dh.line([gx - lw / 2, yy, gx - lw / 2, min(gy + lh, yy + 4)], fill=(0, 120, 220, 255), width=2)
+        dh.line([gx + lw / 2, yy, gx + lw / 2, min(gy + lh, yy + 4)], fill=(0, 120, 220, 255), width=2)
+    dh.line([gx - lw / 2, gy + lh, gx + lw / 2, gy + lh], fill=(0, 120, 220, 255), width=2)
+    dh.line([0, rig['feet'], hung.width, rig['feet']], fill=(0, 170, 0, 255), width=1)
+    dh.line([gx - 9, gy, gx + 9, gy], fill=(220, 0, 60, 255), width=2)
+    dh.line([gx, gy - 9, gx, gy + 9], fill=(220, 0, 60, 255), width=2)
+    rig['lanternAt40'] = dict(bottom=round(gy + lh, 2), feet=rig['feet'], clears=bool(gy + lh <= rig['feet']))
+    strip.append((f['name'], [paper(L['orig']), paper(bwhole), hung]))
+
+if variants:
+    rigs['variants'] = variants
+    tw = max(t.width for _, row in vrows for t in row)
+    th = max(t.height for _, row in vrows for t in row)
+    vs = Image.new('RGBA', (tw * 3, (th + 18) * len(vrows)), (255, 255, 255, 255))
+    dv = ImageDraw.Draw(vs)
+    for j, (name, row) in enumerate(vrows):
+        for i, t in enumerate(row):
+            vs.paste(t, (i * tw, j * (th + 18) + 18))
+        dv.text((4, j * (th + 18) + 3), f"{name} (base {variants[name]['base']}): base pieces · pieces with the lantern "
+                                         f"cut, grip + and hand box · tinted, hand yellow", fill=(0, 0, 0, 255))
+    vs.save(os.path.join(HERE, 'debug-split-variants.png'))
+    tw = max(t.width for _, row in strip for t in row)
+    th = max(t.height for _, row in strip for t in row)
+    ss = Image.new('RGBA', (tw * len(strip), (th + 18) * 3), (255, 255, 255, 255))
+    ds = ImageDraw.Draw(ss)
+    for i, (name, row) in enumerate(strip):
+        ds.text((i * tw + 4, 3), name, fill=(0, 0, 0, 255))
+        for j, t in enumerate(row):
+            ss.paste(t, (i * tw, j * (th + 18) + 18))
+    for j, label in enumerate(('as generated', 'empty-handed pieces (base facing)', 'pieces, lantern cut · grip + · a 40-in-120 lantern hung from it (blue) · feet (green)')):
+        ds.text((4, j * (th + 18) + 18 + th - 14), label, fill=(90, 90, 90, 255))
+    os.makedirs(os.path.join(HERE, 'out'), exist_ok=True)
+    ss.save(os.path.join(HERE, 'out', 'lantern-hold-strip.png'))
+    print('wrote debug-split-variants.png and out/lantern-hold-strip.png for', ', '.join(variants))
+
 with open(os.path.join(HERE, 'rig-walk.json'), 'w') as fh_:
     json.dump(rigs, fh_, indent=1)
 print('wrote parts/, rig-walk.json, debug-split.png for', ', '.join(rigs))
