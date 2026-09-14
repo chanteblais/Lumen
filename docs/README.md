@@ -12,6 +12,8 @@ The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gap
 
 ## Implementation, evidence and operations
 
+The [Coherence Desk](desk/README.md) is Chanté's one place for what needs her: one decision at a time, each with Claude's recommendation and what happens if she never answers, the standing [delegations](desk/delegations.md) that keep the rest off her plate, and the desk's own [journal](desk/journal.md) of what it learns, including what it carries back into Coherence.
+
 The [routine review inbox](design/routine/README.md) imports proposals from **Coherence App Mockups Routine** for Chanté and Claude. Read it when relevant to current design work; imported ideas remain unapproved until reviewed in its separate decision ledger.
 
 The [Coherence Context Package](context-package.md) is the persistent Google Drive briefing for conversations without repository access, with stable cloud links, current screenshots and the in-place refresh procedure.

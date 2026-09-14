@@ -1,0 +1,684 @@
+<title>Coherence Desk</title>
+<meta name="description" content="What needs Chanté on Coherence, one decision at a time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  /* Coherence's own tokens (docs/design-system.md): ivory by day, lantern light by night. */
+  :root {
+    --ground: #efeae2;
+    --sheet: #f8f5ef;
+    --sheet-deep: #e6e0d5;
+    --ink: #1b1a17;
+    --ink-soft: #3f3c36;
+    --ink-mute: #736c61;
+    --brass: #8b6c3f;
+    --primary: #2a342e;
+    --on-primary: #f1e6cf;
+    --rule: rgba(27, 26, 23, 0.14);
+    --rule-strong: rgba(27, 26, 23, 0.32);
+    --oneway: #8a4529;
+    --heard: #3f5f45;
+    --shadow: 0 1px 2px rgba(27, 26, 23, 0.06), 0 14px 36px rgba(27, 26, 23, 0.1);
+    --display: "Cormorant Garamond", "Cormorant", Garamond, Georgia, serif;
+    --body: "EB Garamond", Garamond, Georgia, serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17100b;
+      --sheet: #22180f;
+      --sheet-deep: #2d2117;
+      --ink: #f1e6cf;
+      --ink-soft: #d6c8aa;
+      --ink-mute: #a89a80;
+      --brass: #d9ac5f;
+      --primary: #d9ac5f;
+      --on-primary: #1a120c;
+      --rule: rgba(241, 230, 207, 0.13);
+      --rule-strong: rgba(241, 230, 207, 0.34);
+      --oneway: #e39570;
+      --heard: #a3c7a6;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 44px rgba(0, 0, 0, 0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17100b;
+    --sheet: #22180f;
+    --sheet-deep: #2d2117;
+    --ink: #f1e6cf;
+    --ink-soft: #d6c8aa;
+    --ink-mute: #a89a80;
+    --brass: #d9ac5f;
+    --primary: #d9ac5f;
+    --on-primary: #1a120c;
+    --rule: rgba(241, 230, 207, 0.13);
+    --rule-strong: rgba(241, 230, 207, 0.34);
+    --oneway: #e39570;
+    --heard: #a3c7a6;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 44px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--brass); }
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.8em;
+    background: var(--sheet-deep);
+    padding: 0.05em 0.35em;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 4px; }
+  p { margin: 0; }
+
+  .wrap { max-width: 74rem; margin: 0 auto; padding: clamp(20px, 4vw, 52px) clamp(18px, 4vw, 44px) 96px; }
+
+  .label {
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.09em;
+    font-size: 16px;
+    color: var(--ink-mute);
+  }
+
+  /* Running head */
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px 24px;
+    padding-bottom: 14px;
+    border-bottom: 3px double var(--rule-strong);
+  }
+  .wordmark { font-family: var(--display); font-weight: 600; font-size: clamp(30px, 3.4vw, 38px); line-height: 1; letter-spacing: 0.005em; margin: 0; }
+  .wordmark span { color: var(--brass); font-style: italic; font-weight: 500; }
+  .capacity { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .capacity button[aria-pressed="true"] { color: var(--ink); text-decoration-color: var(--brass); text-decoration-thickness: 2px; }
+
+  .letter {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(21px, 2.3vw, 25px);
+    line-height: 1.38;
+    color: var(--ink-soft);
+    max-width: 40em;
+    margin: 26px 0 38px;
+    text-wrap: pretty;
+  }
+  .offline { margin: -22px 0 30px; color: var(--ink-mute); font-size: 16px; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: minmax(0, 43rem) minmax(0, 1fr); gap: 64px; }
+    .aside { border-left: 1px solid var(--rule); padding-left: 44px; }
+  }
+  .path { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
+
+  .kicker { display: flex; align-items: center; gap: 14px; margin: 0 0 14px; font-weight: 400; }
+  .kicker::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+
+  /* Buttons */
+  button { font: inherit; color: inherit; }
+  .btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 22px 9px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-primary:hover { filter: brightness(1.12); }
+  .tool {
+    background: none;
+    border: 0;
+    padding: 2px 0;
+    cursor: pointer;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-underline-offset: 4px;
+  }
+  .tool:hover { color: var(--ink); text-decoration-color: var(--brass); }
+  .dot { color: var(--ink-mute); user-select: none; }
+  .quiet-link { background: none; border: 0; padding: 0; cursor: pointer; font-size: 16px; color: var(--ink-mute); font-style: italic; }
+  .quiet-link:hover { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* The one card */
+  .now {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: clamp(22px, 3.2vw, 36px);
+  }
+  .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .meta .oneway { color: var(--oneway); }
+  .now h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(27px, 3vw, 34px);
+    line-height: 1.12;
+    margin: 6px 0 14px;
+    text-wrap: balance;
+  }
+  .ask-body { display: flex; flex-direction: column; gap: 16px; }
+  .context { color: var(--ink-soft); max-width: 62ch; }
+  .suggest p { max-width: 62ch; }
+  .suggest .label { display: block; color: var(--brass); margin-bottom: 1px; }
+  .suggest ul { margin: 8px 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 5px; max-width: 60ch; }
+  .suggest li::marker { color: var(--brass); }
+  .silent { font-style: italic; color: var(--ink-mute); font-size: 17px; max-width: 62ch; }
+  .silent .label { font-style: normal; margin-right: 4px; }
+  .sources { font-size: 16px; color: var(--ink-mute); }
+  .sources .label { margin-right: 6px; }
+  .controls { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; padding-top: 4px; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .empty-now { font-family: var(--display); font-style: italic; font-size: 24px; color: var(--ink-soft); }
+
+  .note-form { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .note-form textarea {
+    width: 100%;
+    min-height: 88px;
+    resize: vertical;
+    background: var(--ground);
+    color: var(--ink);
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 17px;
+  }
+
+  /* The slip: what comes after, quieter */
+  .slip {
+    background: color-mix(in srgb, var(--sheet) 55%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 4px clamp(16px, 2.4vw, 24px);
+  }
+  .row { border-top: 1px solid var(--rule); padding: 14px 0; }
+  .row:first-child { border-top: 0; }
+  .row-head {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .row-title { font-size: 19px; font-weight: 500; color: var(--ink); text-wrap: pretty; }
+  .row-head:hover .row-title { text-decoration: underline; text-decoration-color: var(--brass); text-underline-offset: 4px; }
+  .row-head .label { white-space: nowrap; }
+  .row .ask-body, .row .row-body { margin-top: 12px; }
+  .row-body { display: flex; flex-direction: column; gap: 10px; }
+  .steps { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; color: var(--ink-soft); max-width: 60ch; }
+  .when { font-size: 16px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .plain-list { display: flex; flex-direction: column; }
+  .plain-list .row { padding: 12px 0; }
+  .detail { color: var(--ink-soft); font-size: 17px; max-width: 62ch; }
+  .heard { color: var(--heard); font-style: italic; font-size: 17px; }
+
+  details.wait > summary {
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 23px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  details.wait > summary::-webkit-details-marker { display: none; }
+  details.wait > summary::before { content: "▸"; font-style: normal; font-size: 15px; color: var(--brass); transition: transform 0.15s; }
+  details.wait[open] > summary::before { transform: rotate(90deg); }
+  .wait-body { margin-top: 18px; display: flex; flex-direction: column; gap: 26px; }
+  .wait-group h4 { margin: 0 0 4px; font-weight: 400; }
+  .park-note { color: var(--ink-mute); font-size: 16px; }
+
+  .said .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
+  .said .choice { color: var(--heard); font-style: italic; }
+  .said .note-text { flex-basis: 100%; color: var(--ink-soft); font-size: 17px; }
+
+  .tell textarea { min-height: 72px; }
+
+  /* Aside */
+  .aside { display: flex; flex-direction: column; gap: 38px; min-width: 0; }
+  .question { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 23px; line-height: 1.3; margin: 0; text-wrap: balance; }
+  .deleg { display: flex; flex-direction: column; gap: 14px; }
+  .deleg-item p:first-child { font-weight: 500; font-size: 17px; }
+  .deleg-item q { display: block; font-style: italic; color: var(--ink-soft); font-size: 17px; }
+  .deleg-item .since { font-size: 15px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+  .decisions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .decisions li { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; font-size: 17px; }
+  .decisions .date { color: var(--ink-mute); font-variant-numeric: tabular-nums; font-size: 15px; padding-top: 2px; }
+  .learn { margin: 0; padding-left: 1.05em; display: flex; flex-direction: column; gap: 8px; font-size: 17px; color: var(--ink-soft); }
+  .learn li::marker { color: var(--brass); }
+  .carried { display: flex; flex-direction: column; gap: 12px; font-size: 17px; }
+  .carried p:first-child { font-weight: 500; }
+  .carried p:last-child { color: var(--ink-soft); }
+  .principles summary { cursor: pointer; }
+  .principles ol { margin: 10px 0 0; padding-left: 1.5em; font-size: 16px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 3px; }
+
+  .foot { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font-size: 15px; color: var(--ink-mute); }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    background: var(--primary);
+    color: var(--on-primary);
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 17px;
+    box-shadow: var(--shadow);
+    max-width: calc(100vw - 32px);
+  }
+  .toast.error { background: var(--oneway); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1 class="wordmark">Coherence <span>Desk</span></h1>
+    <div class="capacity label" id="capacity" role="group" aria-label="How much time you have"></div>
+  </header>
+  <p class="letter" id="letter"></p>
+  <p class="offline" id="offline" hidden></p>
+  <div class="layout">
+    <main class="path" id="path"></main>
+    <aside class="aside" id="aside"></aside>
+  </div>
+  <footer class="foot" id="foot"></footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="application/json" id="desk-data">/*DESK_DATA*/</script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("desk-data").textContent);
+  var GH = D.repoUrl || "https://github.com/chanteblais/Lumen/blob/main/";
+  var RANK = { glance: 0, think: 1, sit: 2 };
+  var CAPACITY = [["glance", "a minute"], ["think", "ten minutes"], ["sit", "a while"]];
+  var EFFORT = { glance: "a minute", think: "ten minutes", sit: "a sitting" };
+  var KIND = { taste: "your eye", direction: "direction", approval: "approval", account: "your accounts", "how-you-work": "a standing rule" };
+  var CHOICE = {
+    go: "Go with that", else: "Something else", yours: "Your call", later: "Not now",
+    never: "Don't bring me these", done: "Done", hold: "Hold on", forward: "Bring forward"
+  };
+  var HEARD = {
+    go: "Heard: going with the suggestion.", else: "Heard: your direction goes in next refresh.",
+    yours: "Heard: Claude's call, then.", later: "Set aside. No reason needed.",
+    never: "Heard: that kind stops coming to you, once you confirm the wording.",
+    done: "Marked done.", hold: "Held. It waits for you.", forward: "Brought forward for next round.", note: "Sent to the desk."
+  };
+
+  var db = null;
+  var dbState = "waiting";
+  var responses = new Map();
+  var notes = [];
+  var openRows = new Set();
+  var drafts = new Map();
+  var waitOpen = false;
+  var capacity = store("desk.capacity") || "think";
+  if (!(capacity in RANK)) capacity = "think";
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, value);
+    } catch (e) { return null; }
+  }
+
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === "class") el.className = v;
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, kid) {
+    if (kid == null || kid === false) return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { append(el, k); }); return; }
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  // `code` and *emphasis*, built as nodes, never as HTML.
+  function inline(text) {
+    var frag = document.createDocumentFragment();
+    String(text || "").split(/(`[^`]+`|\*[^*]+\*)/g).forEach(function (part) {
+      if (!part) return;
+      if (part.length > 2 && part[0] === "`" && part[part.length - 1] === "`") frag.append(h("code", null, part.slice(1, -1)));
+      else if (part.length > 2 && part[0] === "*" && part[part.length - 1] === "*") frag.append(h("em", null, part.slice(1, -1)));
+      else frag.append(document.createTextNode(part));
+    });
+    return frag;
+  }
+  function link(src) {
+    var parts = String(src.path || "").split(":");
+    var href = src.url || (GH + parts[0] + (parts[1] ? "#L" + parts[1].split("-")[0] : ""));
+    return h("a", { href: href, target: "_blank", rel: "noopener" }, src.label || parts[0]);
+  }
+  function joined(nodes, sep) {
+    var out = [];
+    nodes.forEach(function (n, i) { if (i) out.push(h("span", { class: "dot" }, sep)); out.push(n); });
+    return out;
+  }
+  function day(iso) {
+    var d = new Date(String(iso).length === 10 ? iso + "T12:00:00" : iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function docId(id) { return String(id).replace(/[^A-Za-z0-9_\-.~:@+]/g, "-").slice(0, 180) || "item"; }
+  function pending(id) { var r = responses.get(id); return !!(r && !r.processed); }
+
+  var toastTimer;
+  function toast(text, isError) {
+    var t = document.getElementById("toast");
+    t.textContent = text;
+    t.className = "toast" + (isError ? " error" : "");
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, isError ? 7000 : 3200);
+  }
+
+  function answer(item, kind, choice, note) {
+    if (!db) return;
+    var body = { id: item.id, title: item.title, kind: kind, choice: choice, note: note || "", at: new Date().toISOString(), round: D.round, processed: false };
+    responses.set(item.id, body);
+    drafts.delete(item.id);
+    openRows.delete(item.id);
+    render();
+    db.collection("responses").doc(docId(item.id)).set(body).then(function () {
+      toast(HEARD[choice] || "Saved.");
+    }, function (e) {
+      responses.delete(item.id);
+      render();
+      toast("That didn't save (" + ((e && e.code) || "unknown error") + "). Try again.", true);
+    });
+  }
+  function undo(id) {
+    if (!db) return;
+    var prior = responses.get(id);
+    responses.delete(id);
+    render();
+    db.collection("responses").doc(docId(id)).delete().then(function () { toast("Taken back."); }, function (e) {
+      if (prior) responses.set(id, prior);
+      render();
+      toast("Couldn't take that back (" + ((e && e.code) || "unknown error") + ").", true);
+    });
+  }
+  function sendNote(text) {
+    if (!db || !text.trim()) return;
+    drafts.delete("__tell");
+    render();
+    db.collection("notes").add({ text: text.trim(), at: new Date().toISOString(), round: D.round, processed: false }).then(function () {
+      toast(HEARD.note);
+    }, function (e) {
+      drafts.set("__tell", text);
+      render();
+      toast("That didn't send (" + ((e && e.code) || "unknown error") + "). It's still in the box.", true);
+    });
+  }
+
+  function tool(label, onclick) { return h("button", { class: "tool", type: "button", onclick: onclick }, label); }
+  function dot() { return h("span", { class: "dot", "aria-hidden": "true" }, "·"); }
+
+  function noteForm(item, kind, choice, placeholder) {
+    var ta = h("textarea", { "data-draft": item.id, "aria-label": "Your direction for " + item.title, placeholder: placeholder || "What you'd rather, in your own words." });
+    ta.value = drafts.get(item.id) || "";
+    ta.addEventListener("input", function () { drafts.set(item.id, ta.value); });
+    return h("div", { class: "note-form" }, ta,
+      h("div", { class: "actions" },
+        h("button", { class: "btn-primary", type: "button", onclick: function () {
+          if (!ta.value.trim()) { ta.focus(); return; }
+          answer(item, kind, choice, ta.value.trim());
+        } }, "Send"),
+        tool("Cancel", function () { drafts.delete(item.id); render(); })));
+  }
+  function openNote(id) {
+    if (!drafts.has(id)) drafts.set(id, "");
+    render();
+    var ta = document.querySelector('textarea[data-draft="' + CSS.escape(id) + '"]');
+    if (ta) ta.focus();
+  }
+  function unavailable() {
+    return h("p", { class: "park-note" }, dbState === "waiting" ? "Connecting…" : "Answers can be given when the desk is open on claude.ai.");
+  }
+
+  function askControls(ask) {
+    if (!db) return h("div", { class: "controls" }, unavailable());
+    var box = h("div", { class: "controls" },
+      h("div", { class: "actions" },
+        h("button", { class: "btn-primary", type: "button", onclick: function () { answer(ask, "ask", "go"); } }, "Go with that"),
+        tool("Something else", function () { openNote(ask.id); }), dot(),
+        tool("Your call", function () { answer(ask, "ask", "yours"); }), dot(),
+        tool("Not now", function () { answer(ask, "ask", "later"); })));
+    if (drafts.has(ask.id)) box.append(noteForm(ask, "ask", "else"));
+    box.append(h("button", { class: "quiet-link", type: "button", onclick: function () { answer(ask, "ask", "never"); } }, "Don't bring me things like this"));
+    return box;
+  }
+  function askBody(ask) {
+    var body = h("div", { class: "ask-body" });
+    if (ask.context) body.append(h("p", { class: "context" }, inline(ask.context)));
+    var suggest = h("div", { class: "suggest" }, h("span", { class: "label" }, "I'd suggest"), h("p", null, inline(ask.recommendation)));
+    if (ask.points && ask.points.length) suggest.append(h("ul", null, ask.points.map(function (p) { return h("li", null, inline(p)); })));
+    body.append(suggest);
+    body.append(h("p", { class: "silent" }, h("span", { class: "label" }, "If you never answer"), inline(ask.ifSilent)));
+    if (ask.sources && ask.sources.length) body.append(h("p", { class: "sources" }, h("span", { class: "label" }, "Read more"), joined(ask.sources.map(link), "·")));
+    body.append(askControls(ask));
+    return body;
+  }
+  function meta(ask) {
+    var bits = [h("span", null, ask.area), h("span", { class: "dot" }, "·"), h("span", null, KIND[ask.kind] || ask.kind), h("span", { class: "dot" }, "·"), h("span", null, EFFORT[ask.effort])];
+    if (ask.oneWay) bits.push(h("span", { class: "dot" }, "·"), h("span", { class: "oneway" }, "can't be undone"));
+    return h("div", { class: "meta label" }, bits);
+  }
+  function askRow(ask) {
+    var isOpen = openRows.has(ask.id);
+    return h("div", { class: "row" },
+      h("button", { class: "row-head", type: "button", "aria-expanded": String(isOpen), onclick: function () {
+        if (isOpen) openRows.delete(ask.id); else openRows.add(ask.id);
+        render();
+      } }, h("span", { class: "row-title" }, inline(ask.title)), h("span", { class: "label" }, EFFORT[ask.effort])),
+      isOpen ? askBody(ask) : null);
+  }
+  function section(title, content) {
+    return h("section", null, h("h2", { class: "kicker label" }, title), content);
+  }
+
+  function renderPath() {
+    var path = document.getElementById("path");
+    path.replaceChildren();
+    var openAsks = D.asks.filter(function (a) { return !pending(a.id); });
+    var fits = openAsks.filter(function (a) { return RANK[a.effort] <= RANK[capacity]; });
+    var shown = fits.slice(0, 4);
+    var rest = openAsks.filter(function (a) { return shown.indexOf(a) < 0; });
+
+    var now = shown[0];
+    path.append(section("Right now", now
+      ? h("article", { class: "now" }, meta(now), h("h3", null, inline(now.title)), askBody(now))
+      : h("div", { class: "now" }, h("p", { class: "empty-now" }, openAsks.length ? "Nothing that fits that little time. Everything else can wait." : "Nothing needs you right now."))));
+
+    if (shown.length > 1) path.append(section("After that", h("div", { class: "slip" }, shown.slice(1).map(askRow))));
+
+    var hands = D.hands.filter(function (x) { return !pending(x.id); });
+    if (hands.length) path.append(section("Only your hands can do these", h("div", { class: "plain-list" }, hands.map(function (x) {
+      var isOpen = openRows.has(x.id);
+      return h("div", { class: "row" },
+        h("button", { class: "row-head", type: "button", "aria-expanded": String(isOpen), onclick: function () {
+          if (isOpen) openRows.delete(x.id); else openRows.add(x.id);
+          render();
+        } }, h("span", { class: "row-title" }, inline(x.title))),
+        isOpen ? h("div", { class: "row-body" },
+          h("p", { class: "detail" }, inline(x.why)),
+          x.how && x.how.length ? h("ol", { class: "steps" }, x.how.map(function (s) { return h("li", null, inline(s)); })) : null,
+          x.sources && x.sources.length ? h("p", { class: "sources" }, h("span", { class: "label" }, "Read more"), joined(x.sources.map(link), "·")) : null,
+          db ? h("div", { class: "controls" },
+            h("div", { class: "actions" },
+              tool("Done", function () { answer(x, "hand", "done"); }), dot(),
+              tool("Not now", function () { answer(x, "hand", "later"); }), dot(),
+              tool("Something else", function () { openNote(x.id); })),
+            drafts.has(x.id) ? noteForm(x, "hand", "else", "Stuck, or want it done differently? Say so.") : null) : unavailable()) : null);
+    }))));
+
+    if (D.moving.length) path.append(section("Moving without you", h("div", { class: "plain-list" }, D.moving.map(function (m) {
+      var held = pending(m.id);
+      var isOpen = openRows.has(m.id);
+      return h("div", { class: "row" },
+        h("button", { class: "row-head", type: "button", "aria-expanded": String(isOpen), onclick: function () {
+          if (isOpen) openRows.delete(m.id); else openRows.add(m.id);
+          render();
+        } }, h("span", { class: "row-title" }, inline(m.title)), h("span", { class: "when" }, m.when || "")),
+        h("div", { class: "row-body" },
+          isOpen ? h("p", { class: "detail" }, inline(m.detail)) : null,
+          held ? h("p", { class: "heard" }, "Held. It becomes an ask next round.")
+            : db ? h("div", { class: "actions" }, tool("Hold on", function () { answer(m, "moving", "hold"); })) : null));
+    }))));
+
+    var wait = h("details", { class: "wait" }, h("summary", null, "Everything else can wait."));
+    if (waitOpen) wait.open = true;
+    wait.addEventListener("toggle", function () { waitOpen = wait.open; });
+    var waitBody = h("div", { class: "wait-body" });
+    if (rest.length) waitBody.append(h("div", { class: "wait-group" }, h("h4", { class: "label" }, "Also waiting for a decision"), h("div", null, rest.map(askRow))));
+    D.parked.forEach(function (group) {
+      waitBody.append(h("div", { class: "wait-group" }, h("h4", { class: "label" }, group.area), h("div", null, group.items.map(function (p) {
+        var fwd = pending(p.id);
+        return h("div", { class: "row" },
+          h("div", { class: "row-head", style: "cursor: default" }, h("span", { class: "row-title" }, inline(p.title)),
+            fwd ? h("span", { class: "heard" }, "Coming forward") : db ? tool("Bring forward", function () { answer(p, "parked", "forward"); }) : null),
+          p.note ? h("p", { class: "park-note" }, inline(p.note)) : null);
+      }))));
+    });
+    waitBody.append(h("p", { class: "park-note" }, "The whole register of open questions: ", link({ label: "open-questions.md", path: "docs/living/open-questions.md" }), "."));
+    wait.append(waitBody);
+    path.append(h("section", null, wait));
+
+    var said = [];
+    responses.forEach(function (r, id) {
+      if (r.processed) return;
+      said.push(h("div", { class: "row" },
+        h("span", null, h("span", { class: "row-title" }, inline(r.title || id)), " ", h("span", { class: "choice" }, "— " + (CHOICE[r.choice] || r.choice))),
+        db ? tool("Take back", function () { undo(id); }) : null,
+        r.note ? h("p", { class: "note-text" }, r.note) : null));
+    });
+    notes.forEach(function (n) {
+      said.push(h("div", { class: "row" }, h("span", { class: "choice" }, "A note to the desk"), h("p", { class: "note-text" }, n.text)));
+    });
+    if (said.length) path.append(section("What you've said, waiting for the next refresh", h("div", { class: "said plain-list" }, said)));
+
+    if (db) {
+      var tell = h("textarea", { "data-draft": "__tell", "aria-label": "A note to the desk", placeholder: "Direction for the project or for this desk. “Stop asking me about…”, “I want to think about the Library this week”." });
+      tell.value = drafts.get("__tell") || "";
+      tell.addEventListener("input", function () { drafts.set("__tell", tell.value); });
+      path.append(section("Tell the desk", h("div", { class: "note-form tell" }, tell,
+        h("div", { class: "actions" }, h("button", { class: "btn-primary", type: "button", onclick: function () { sendNote(tell.value); } }, "Send")))));
+    }
+  }
+
+  function renderAside() {
+    var aside = document.getElementById("aside");
+    aside.replaceChildren();
+    aside.append(section("The one question", h("p", { class: "question" }, D.compass.question)));
+    aside.append(section("What Claude decides without you", h("div", { class: "deleg" },
+      D.delegations.map(function (d) {
+        return h("div", { class: "deleg-item" }, h("p", null, d.scope), h("q", null, d.words), h("p", { class: "since" }, "since " + day(d.since)));
+      }),
+      h("p", { class: "park-note" }, link({ label: "All delegations, and where each stops", path: "docs/desk/delegations.md" })))));
+    aside.append(section("Recently decided", h("ul", { class: "decisions" }, D.decisions.map(function (d) {
+      return h("li", null, h("span", { class: "date" }, day(d.date)), link({ label: d.title, path: d.path }));
+    }))));
+    var r = D.reflection || {};
+    aside.append(section("What the desk is learning", h("ul", { class: "learn" }, (r.learned || []).concat(r.changing || []).map(function (t) { return h("li", null, inline(t)); }))));
+    aside.append(section("Carried to Coherence", h("div", { class: "carried" }, (r.forCoherence || []).map(function (c) {
+      return h("div", null, h("p", null, inline(c.lesson)), h("p", null, inline(c.inApp)));
+    }))));
+    aside.append(h("details", { class: "principles" }, h("summary", { class: "label" }, "The principles"),
+      h("ol", null, D.compass.principles.map(function (p) { return h("li", null, p); }))));
+  }
+
+  function renderChrome() {
+    document.getElementById("letter").replaceChildren(inline(D.letter));
+    var cap = document.getElementById("capacity");
+    cap.replaceChildren(h("span", null, "I have"));
+    CAPACITY.forEach(function (c, i) {
+      if (i) cap.append(dot());
+      cap.append(h("button", { class: "tool", type: "button", "aria-pressed": String(capacity === c[0]), onclick: function () {
+        capacity = c[0];
+        store("desk.capacity", capacity);
+        render();
+      } }, c[1]));
+    });
+    var off = document.getElementById("offline");
+    off.hidden = dbState !== "absent";
+    off.textContent = "Reading only: answers can be given when the desk is open on claude.ai.";
+    document.getElementById("foot").replaceChildren(
+      h("span", null, "Round " + D.round + " · refreshed " + day(D.refreshedAt) + " · swept to main at " + (D.sweptTo || D.commit)),
+      link({ label: "How this desk works", path: "docs/desk/README.md" }));
+  }
+
+  function render() {
+    var active = document.activeElement;
+    var draftKey = active && active.getAttribute && active.getAttribute("data-draft");
+    var sel = draftKey ? [active.selectionStart, active.selectionEnd] : null;
+    renderChrome();
+    renderPath();
+    renderAside();
+    if (draftKey) {
+      var again = document.querySelector('textarea[data-draft="' + CSS.escape(draftKey) + '"]');
+      if (again) { again.focus(); try { again.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
+    }
+  }
+
+  render();
+
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("db").then(function (ns) {
+      if (!ns) { dbState = "absent"; render(); return; }
+      db = ns;
+      dbState = "ready";
+      render();
+      db.collection("responses").onSnapshot(function (snap) {
+        var next = new Map();
+        snap.docs.forEach(function (d) { var v = d.data(); if (v) next.set(v.id || d.id, v); });
+        responses = next;
+        render();
+      }, function (e) { toast("Lost touch with saved answers (" + e.code + "). Reload to reconnect.", true); });
+      db.collection("notes").onSnapshot(function (snap) {
+        notes = snap.docs.map(function (d) { return d.data(); }).filter(function (n) { return n && !n.processed; });
+        render();
+      }, function () {});
+    }, function () { dbState = "absent"; render(); });
+  } else {
+    dbState = "absent";
+    render();
+  }
+})();
+</script>

@@ -36,7 +36,7 @@
 | CSS prefix audit | a rule in the compiled stylesheet that kept `-webkit-<prop>` but lost `<prop>` (lightningcss drops the unprefixed one when the prefixed line follows it) | inside `npm run check`; by hand as `npm run check:css` | `scripts/check-css-prefixes.mjs` |
 | Lumi's brief check | `src/core/ai/brief.ts` edited by hand, or not regenerated after its doc changed · a canon source of the brief changed since its last review (names each, and says how to review) · a review older than 30 days (a note only) | inside `npm run check`; by hand as `npm run check:brief` | `scripts/lumi-brief.mjs`, `docs/philosophy/lumi-brief.md` → Reviewing it |
 | `npm run land` | a merge that would need `main` checked out; landing a branch that doesn't contain the latest `main` (conflicts on `main`); two sessions landing at once (compare-and-swap on the ref) | every landing, instead of `git checkout main && git merge` | `scripts/land.mjs`, `branching.md` → Landing on main |
-| pre-commit hook | `.claude/` bookkeeping staged; direct commits to `main`; commits on the shared checkout's parked detached HEAD | every commit | `.githooks/pre-commit` |
+| pre-commit hook | `.claude/` bookkeeping staged (`launch.json` and the project skills in `.claude/skills/` are versioned); direct commits to `main`; commits on the shared checkout's parked detached HEAD | every commit | `.githooks/pre-commit` |
 | Port etiquette | killing or reusing someone else's server; two servers in one checkout | before starting any server (by hand) | `CLAUDE.md`, `branching.md` → Dev servers |
 
 ## Traps — symptom → cause → catch → fix
@@ -103,6 +103,8 @@ Only these; everything else Claude decides, does and records here.
 - Removing or rewriting anything another session or person owns: their worktrees, branches, stashes, running servers, or files in the shared checkout — including releasing `main` from a checkout a session may be working in.
 - Anything on ports 3000–3004 or in another project.
 - A change to how *she* works: what she runs, reviews or applies herself (migrations, the review checklist).
+
+When one of these comes up, it goes to her as an ask on the [Coherence Desk](desk/README.md), with a recommendation and what happens if she never answers.
 
 ## Change log
 - 2026-09-13 — Trap row: a detached worktree whose commit landed on `main` was removed by another session's cleanup while a dev server ran in it; lock such a worktree and chain restarts with `&&`.
