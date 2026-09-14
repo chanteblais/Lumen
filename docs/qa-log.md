@@ -6,6 +6,24 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (11) — Break it down's route, from the headless end-to-end sweep (`fix/steps-route-uuid`)
+
+A headless end-to-end sweep, signed in, sent `POST /api/intentions/not-a-uuid/steps` and got a 500 with an empty body. The server log showed `invalid input syntax for type uuid` from `getIntention`. The sibling routes had been fixed in code review B7; this one was missed.
+
+### Fixed
+- **The steps route checks its id and body.** A malformed id is a 400 (`isUuid`) before any query. A body that isn't JSON, or whose `smallerThan` isn't a list of at most five short strings, is a 400 (`readBody`) before any query or model call. Before this, both got a 200 and a paid model call, read as `{}`. An intention that isn't the user's or isn't open is still a 404. Tested in `src/app/api/validation.test.ts`.
+
+### Known and deliberate
+- An empty body is a 400 too: the one client (`RightNowActions`) always sends `{}` or `{ smallerThan }`.
+
+### Open
+- Nothing new.
+
+### Highest-value manual tests
+- On Today, *Break it down*, then *Smaller still*: both still bring back steps.
+
+---
+
 ## Sweep 2026-09-13 (10) — the whole app on a phone (`fix/greeting-mobile-drag`, `chore/dev-test-user`, `fix/mobile-pass`)
 
 Chanté: "Lumi's opening chat message drags left/right on mobile", then "could you do a mobile pass on the whole app?" Mobile Safari on the iOS Simulator (iPhone 17, 402pt wide), signed out for the public pages and as the local test user (`COHERENCE_DEV_USER=1`, `src/lib/dev-user.ts`) for the rest: Home before and after a message, Today empty and with a path, the Lists sheet (tabs, a date, the ⋯ menu), the Library, Settings, sign-in, sign-up and privacy. Each signed-in page was measured by a temporary probe (not committed) that logged to the dev server through Next's browser-log forwarding: every element scrolling sideways, the child causing it (found by hiding children one at a time and re-measuring), and every tap target under 44pt.
