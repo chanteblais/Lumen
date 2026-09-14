@@ -19,6 +19,8 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Dev only: Next's indicator sits over the clock, not over the phone bar's Home tab (UX review 1, finding 5).
+  devIndicators: { position: "top-left" },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
