@@ -420,6 +420,17 @@ export async function recordDesignFeedback(db: Db, userId: string, ref: number, 
   const screened = screenDesignText([theirWords, note, revisedText, revisedTitle]);
   if (screened) return { skipped: screened };
 
+  // The same reaction sent again (a repeated tool call in one reply, a retry): already kept, nothing to add.
+  if (!revisedText && !revisedTitle) {
+    const [last] = await db
+      .select()
+      .from(designContributionRevisions)
+      .where(eq(designContributionRevisions.contributionId, row.id))
+      .orderBy(desc(designContributionRevisions.id))
+      .limit(1);
+    if (last?.change === "feedback" && last.target === input.target && last.verdict === input.verdict && last.theirWords === theirWords) return { contribution: row, revision: last };
+  }
+
   if (revisedText && revisedText.length >= INSIGHT_MIN) set[input.target] = revisedText;
   if (revisedTitle && revisedTitle.length >= TITLE_MIN && revisedTitle !== row.title) set.title = revisedTitle;
   set[input.target === "insight" ? "insightStatus" : "possibilityStatus"] = STATUS_FOR[input.verdict];

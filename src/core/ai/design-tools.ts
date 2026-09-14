@@ -136,7 +136,7 @@ export function designTools(db: Db, userId: string, userWords: Heard[]) {
 
     design_feedback: tool({
       description:
-        "They reacted to a note in Your design notebook — agreed, disagreed, \"yes, but…\", \"not quite, it's…\". on: the part they meant — insight (your reading, the problem) or possibility (the design idea); agreeing with one is not agreeing with the other. verdict: endorse, reject, qualify (agree with a condition) or correct (right area, wrong reading). their_words: what they said, copied exactly (checked). note: their point in a sentence. For qualify or correct, revised_insight or revised_possibility — the part they meant — holds the note as it stands now; the old wording stays in its history. Only on their explicit reaction: silence, thanks or moving on is not feedback.",
+        "They reacted to a note in Your design notebook — agreed, disagreed, \"yes, but…\", \"not quite, it's…\". on: the part they meant — insight (your reading, the problem) or possibility (the design idea); agreeing with one is not agreeing with the other. verdict: endorse, reject, qualify (agree with a condition) or correct (right area, wrong reading). their_words: what they said, copied exactly (checked). note: their point in a sentence. For qualify or correct, revised_insight or revised_possibility — the part they meant — holds the note as it stands now; the old wording stays in its history. Only on their explicit reaction to a note, once per reaction: silence, thanks or moving on is not feedback, and agreeing with a goal or restating their own direction is not endorsing a possibility. When unsure, record nothing.",
       inputSchema: z.object({
         id: REF.describe("DC-n from Your design notebook"),
         on: z.enum(DESIGN_TARGETS),

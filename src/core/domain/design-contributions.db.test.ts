@@ -153,6 +153,17 @@ describe("their feedback", () => {
     expect(history[2]!.snapshot.insight).toBe(corrected);
   });
 
+  it("keeps the same reaction once, however often it's sent", async () => {
+    const u = await createTestUser(db, "Repeat");
+    made(await contributeDesign(db, u.id, TODAY_TENSION));
+    const input = { target: "possibility", verdict: "reject", theirWords: "no tappable paragraph please" } as const;
+    const a = made(await recordDesignFeedback(db, u.id, 1, input));
+    const b = made(await recordDesignFeedback(db, u.id, 1, input));
+    expect(b.revision.id).toBe(a.revision.id);
+    expect(b.contribution).toMatchObject({ version: 2, possibilityStatus: "rejected" });
+    expect((await listDesignHistory(db, u.id)).map((h) => h.change)).toEqual(["created", "feedback"]);
+  });
+
   it("refuses feedback on a possibility the note doesn't have", async () => {
     const u = await createTestUser(db, "NoPossibility");
     made(await contributeDesign(db, u.id, { kind: "insight", title: "Return is a greeting", insight: "Coming back reads best as a greeting, not a summary of what happened." }));

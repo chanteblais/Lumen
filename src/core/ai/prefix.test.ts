@@ -20,7 +20,7 @@ import type { Db } from "@/db/client";
 const EXPECTED = {
   persona: { mailOff: "e7a261a4d3b73ae44ac5795ab573e41fbd926990f4eaac78dddd2b254f1e5a05", mailOn: "48431b4dfbdfdc286cdcb10abcd5f330bd0b5c91288ac5fadb7e3f1d68e51321" },
   prefix: { mailOff: "bc6254831a9943bcf2d6a50f9721b0f824df39eeb9a62fe50de2daef474ad155", mailOn: "d0551e8b14ffb846b5f2658eef44b0f50feadd6fcea092428f232f9b0bf66fbe" },
-  designPartner: { persona: "870527b43d4f717938858e81c4cbcc7cc8d802d31c3d16e52ffefcdf9b9a2f87", prefix: "87280209769576f56df18e312b781c64b6f9773cf431da18b67224242b19b0b1" },
+  designPartner: { persona: "43bdcfc191b6c480292ececa7c3314d370ceb14122be182e9cba82f4baa4f1f3", prefix: "723047d85fe34338292752dd1c54a035b0eb81f96618c710144ab04c258582bd" },
 };
 
 async function hashes(mailOn: boolean, designPartner = false) {
