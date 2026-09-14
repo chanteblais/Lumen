@@ -144,6 +144,16 @@
     cursor: pointer;
   }
   .btn-primary:hover { filter: brightness(1.12); }
+  .btn-secondary {
+    background: none;
+    color: var(--ink);
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    padding: 6px 18px 7px;
+    font-size: 17px;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--brass); }
   .tool {
     background: none;
     border: 0;
@@ -327,11 +337,11 @@
   var EFFORT = { glance: "a minute", think: "ten minutes", sit: "a sitting" };
   var KIND = { taste: "your eye", direction: "direction", approval: "approval", account: "your accounts", "how-you-work": "a standing rule" };
   var CHOICE = {
-    go: "Go with that", else: "Something else", yours: "Your call", later: "Not now",
+    go: "Go with that", else: "In your own words", yours: "Your call", later: "Not now",
     never: "Don't bring me these", done: "Done", hold: "Hold on", forward: "Bring forward"
   };
   var HEARD = {
-    go: "Heard: going with the suggestion.", else: "Heard: your direction goes in next refresh.",
+    go: "Heard: going with the suggestion.", else: "Heard: your words go in next refresh.",
     yours: "Heard: Claude's call, then.", later: "Set aside. No reason needed.",
     never: "Heard: that kind stops coming to you, once you confirm the wording.",
     done: "Marked done.", hold: "Held. It waits for you.", forward: "Brought forward for next round.", note: "Sent to the desk."
@@ -473,17 +483,28 @@
     return h("p", { class: "park-note" }, dbState === "waiting" ? "Connecting…" : "Answers can be given when the desk is open on claude.ai.");
   }
 
+  // Every ask keeps a box for what the suggestions don't cover: sent along with
+  // whichever answer is tapped, or on its own.
   function askControls(ask) {
     if (!db) return h("div", { class: "controls" }, unavailable());
-    var box = h("div", { class: "controls" },
+    var ta = h("textarea", { "data-draft": ask.id, "aria-label": "Your own words on " + ask.title, placeholder: "Anything the suggestions don't cover. It goes along with whichever answer you tap, or on its own." });
+    ta.value = drafts.get(ask.id) || "";
+    ta.addEventListener("input", function () { drafts.set(ask.id, ta.value); });
+    function withWords(choice) { return function () { answer(ask, "ask", choice, ta.value.trim()); }; }
+    return h("div", { class: "controls" },
       h("div", { class: "actions" },
-        h("button", { class: "btn-primary", type: "button", onclick: function () { answer(ask, "ask", "go"); } }, "Go with that"),
-        tool("Something else", function () { openNote(ask.id); }), dot(),
-        tool("Your call", function () { answer(ask, "ask", "yours"); }), dot(),
-        tool("Not now", function () { answer(ask, "ask", "later"); })));
-    if (drafts.has(ask.id)) box.append(noteForm(ask, "ask", "else"));
-    box.append(h("button", { class: "quiet-link", type: "button", onclick: function () { answer(ask, "ask", "never"); } }, "Don't bring me things like this"));
-    return box;
+        h("button", { class: "btn-primary", type: "button", onclick: withWords("go") }, "Go with that"),
+        tool("Your call", withWords("yours")), dot(),
+        tool("Not now", withWords("later"))),
+      h("div", { class: "note-form" },
+        h("span", { class: "label" }, "Or in your own words"),
+        ta,
+        h("div", { class: "actions" },
+          h("button", { class: "btn-secondary", type: "button", onclick: function () {
+            if (!ta.value.trim()) { ta.focus(); return; }
+            answer(ask, "ask", "else", ta.value.trim());
+          } }, "Send just this"))),
+      h("button", { class: "quiet-link", type: "button", onclick: withWords("never") }, "Don't bring me things like this"));
   }
   function askBody(ask) {
     var body = h("div", { class: "ask-body" });

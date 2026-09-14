@@ -2,6 +2,8 @@
 
 *Chanté's one place for what needs her, and Claude's one inbox for asking her. Started 2026-09-14 at her ask: "one central place where I can review the things that need my attention, and quickly give direction", self-reflexive, and over time needing fewer micro-decisions from her. Claude owns this doc and the desk; it changes as the desk learns.*
 
+**An experiment, with an end.** The desk does for its builder what Coherence is meant to do for its users, so it runs as a time-boxed lab, not a product (Chanté, 2026-09-14: "let's experiment with the desk for now"). It stays rough and disposable. It ends with her M7 week of using Coherence daily. During that week she also brings her Coherence decisions to Lumi, and wherever the desk handles one better, that is a gap in the app with evidence. Afterwards, each mechanic that proved itself goes to [`living/ideas.md`](../living/ideas.md) for her to decide on, and the desk is retired or kept only as Claude's inbox. If she stops opening it before then, that is the answer too.
+
 The desk is a published page (an Artifact on claude.ai, private to Chanté) rendered from [`desk.json`](desk.json). She answers on the page; her answers wait in the page's database until a Claude session folds them into the repo, re-sweeps and republishes to the same link.
 
 - **Link:** [Coherence Desk](https://claude.ai/artifact/CShA2H6c3CErxyrhVri7QC) (from another session, publish with this `url` to keep the link).
@@ -42,7 +44,7 @@ Every ask on the desk has, or it doesn't render (`scripts/desk/render.mjs` refus
 | On the page | What Claude does with it |
 |---|---|
 | **Go with that** | Acts on the recommendation; records the decision in its home doc with her answer as the rationale |
-| **Something else** + a note | Acts on her direction; records it; notes in the journal where the recommendation missed and why |
+| **In your own words** (the box under every ask) | Sent on its own: acts on her direction, records it, and notes in the journal where the recommendation missed and why. Sent with any other answer: the words qualify that answer and are read before acting on it |
 | **Your call** | Claude decides this one, records it as Claude's call under her delegation |
 | **Not now** | Parked with the date, no reason asked (*Not this* is information). Comes back only when something changes that makes it timely |
 | **Don't bring me things like this** | The kind of decision becomes a proposed standing delegation, worded by Claude, confirmed with her once as its own ask |

@@ -244,10 +244,13 @@
       "Much of the weight is not knowing whose call something is. The ask test settles that before anything reaches you."
     ],
     "changing": [
+      "The desk is an experiment that ends with your M7 week. What proves itself goes into Coherence as ideas; the desk itself doesn't.",
+      "Every ask now has a box for your own words, sent with any answer or on its own.",
       "This round is the baseline. The desk aims for fewer asks each round, each one weightier.",
       "Two of this round's asks, the working rule and the leftovers, are really proposed delegations. Say yes and they stop coming to you."
     ],
     "forCoherence": [
+      { "lesson": "Suggested answers are a floor, not a fence.", "inApp": "Wherever Lumi offers choices (*Not this*, the capacity question), plain words stay one step away, never hidden." },
       { "lesson": "Close what's been answered.", "inApp": "Lumi reconciles, not only remembers: something settled in one conversation quietly stops being open everywhere else." },
       { "lesson": "Offer a proposal, not a question.", "inApp": "When starting is hard, the first step comes as something to say yes to, never *What do you want to do?*" },
       { "lesson": "Say what happens on silence.", "inApp": "Anything Lumi asks carries its default, so an unanswered question is never waiting for someone who comes back." },

@@ -18,7 +18,9 @@ Not fully swept: the `docs/product/*` and `docs/design/*` canon (other than the 
 
 **Measures (baseline).** 7 asks out: 3 glance, 3 think, 1 sit. 2 of the 7 are really proposed delegations (the working rule, the leftovers).
 
-**The desk changes.** Nothing yet; this is the shape it starts in. What to watch in round 2: whether she uses the capacity choice; whether *Everything else can wait* gets opened (if it's opened often, parked items were mis-sorted, or she needs a way to find things more than a path); whether the recommendations are trusted (*Go with that*) or corrected.
+**The desk changes.** Two changes, both the same day, from Chanté before any answers came in:
+- **It became an experiment with an end.** She asked whether it was mad to hand the app's own usefulness to a dashboard. Claude's recommendation: build the mechanics into the app, not the desk itself, and run the desk as a lab until her M7 week. She agreed.
+- **A box for her own words under every ask**, replacing *Something else*, which hid the box behind a tap. She: "I like the main task's suggestion boxes, but I'd also like a text box to input thoughts that aren't covered in the suggestions." What it teaches: the suggested answers are a floor, not a fence. Offering choices without an always-open way to say something else narrows what the person can say. *Carried to Coherence:* wherever Lumi offers chips (*Not this*, the capacity question), plain words should stay one step away, never hidden. What to watch in round 2: whether she uses the capacity choice; whether *Everything else can wait* gets opened (if it's opened often, parked items were mis-sorted, or she needs a way to find things more than a path); whether the recommendations are trusted (*Go with that*) or corrected.
 
 **Carried to Coherence.** What building the desk showed, offered as evidence for the app, not decisions:
 

@@ -15,7 +15,7 @@ Read `docs/desk/README.md` first: the ask test, what each answer does, how the d
 
 ## 2. Fold each answer in
 
-For each response (`choice` → the README's table):
+For each response (`choice` → the README's table). Read `note` whatever the choice: her own words can qualify *Go with that* or *Not now*, and they win over the recommendation where they differ.
 - Do or record what it says **in the item's home doc** (decision log, open question, spatial README, review log…), with her answer quoted as the rationale. A decision she made goes in `docs/living/decisions.md` when it moves how the product behaves; an engineering one in `docs/decisions.md`.
 - Remove the item from `desk.json` `asks`/`hands`/`moving`; *Not now* moves it to `parked` with the date; *Bring forward* moves it to `asks` with a recommendation.
 - Add it to `desk.json` `decisions` if it settled something (keep the newest ~6).
