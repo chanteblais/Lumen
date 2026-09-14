@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, type ReactNode } from "react";
 import { Sparkle, Tailpiece } from "@/components/ui/Ornament";
 import type { ListsShown } from "@/core/domain/lists-view";
 import { AllGlyph, DoneGlyph, ListNameGlyph, SoonGlyph, TodayGlyph } from "./ListGlyphs";
@@ -21,11 +23,28 @@ function views(lists: string[]): { tabs: View[]; quick: View[] } {
   };
 }
 
-/** Across the top: the views, then the quick views (which show here only on a phone, where the side column goes). */
+/**
+ * Across the top: the views, then the quick views (which show here only on a phone, where the side column goes).
+ * While tabs run past the right edge the strip carries `data-more`, and fades out there (globals.css).
+ */
 export function ListsTabs({ lists, shown, onShow }: Props) {
   const { tabs, quick } = views(lists);
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = strip.current;
+    if (!el) return;
+    const mark = () => el.toggleAttribute("data-more", el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    mark();
+    el.addEventListener("scroll", mark, { passive: true });
+    const resized = new ResizeObserver(mark);
+    resized.observe(el);
+    return () => {
+      el.removeEventListener("scroll", mark);
+      resized.disconnect();
+    };
+  }, [lists]);
   return (
-    <div className="lists-tabs" role="group" aria-label="Show">
+    <div ref={strip} className="lists-tabs" role="group" aria-label="Show">
       <Sparkle size={10} className="lists-tabs-mark" />
       {[...tabs, ...quick].map((t) => (
         <button
