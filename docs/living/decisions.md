@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-09-14 · Lumi contributes to Coherence's design, in a notebook of her own
+
+**Decision.** In Chanté's conversations about designing Coherence, Lumi notices meaningful insights, tensions, assumptions worth questioning, possibilities and changes in thinking, and keeps them as design notes **without asking to save each one**. The notes feed a daily design digest considered during design and implementation work. What Chanté said, Lumi's reading, and any design possibility stay apart, and each part is endorsed, qualified, corrected or rejected only by Chanté's explicit word in conversation.
+**Rationale.** Chanté (2026-09-14): she would rather discard ideas that don't fit than carry the burden of noticing every worthwhile insight herself; Lumi should contribute thinking, not transcribe.
+**Implications.**
+- Scoped to design partners and to design conversations: nobody else's Lumi changes, and personal tasks are never design evidence.
+- Silence is not endorsement, inclusion in a digest is not endorsement, endorsing a problem is not endorsing a proposed solution, and one verdict is not a rule for related ideas.
+- The notebook is not canon. It never edits a canonical doc, never becomes a requirement and never implements anything; a note moves into the canon only when Chanté puts it there (`PROJECT-CANON.md` → How the canon works).
+- No review queue, page or count: feedback is optional and conversational (`ef-burden-log.md`, 2026-09-14).
+
+**Principle.** EP§17 (show inference for what it is), AI & IA §57 (explicit ≠ inferred), V§4 (automate administration, never agency).
+**Replaces.** Nothing.
+
 ## 2026-09-13 · Lumi sees roughly the last 30 to 40 messages
 
 **Decision.** Each turn, Lumi sees roughly the last 30 to 40 messages of the conversation, not a fixed 30. What's older reaches her as recent memory and through the Library, as before.

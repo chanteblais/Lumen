@@ -57,6 +57,13 @@
       "when": 1789336938985,
       "tag": "0007_priorities",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789414555327,
+      "tag": "0008_design_contributions",
+      "breakpoints": true
     }
   ]
 }

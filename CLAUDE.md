@@ -22,6 +22,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 - `docs/today.md` — the Today page spec · `docs/branching.md` — branch rules, parallel sessions, dev servers and ports, commit guards
 - `docs/dev-hygiene.md` — **Claude's evolving strategy for keeping development tidy:** session-start and session-end checks, the guards (the preflight), the traps ledger (symptom → cause → catch → fix), the ranked backlog, what goes to Chanté
 - `docs/animation-pipeline.md` — **Claude's own working doc for Lumi's animations:** session-start checklist, the measure gates, touch points, the cost ledger and the ranked efficiency backlog
+- **Lumi's design digest** — `npm run design:digest` (`-- --notebook` for every note and its history): Lumi's own notes from Chanté's design conversations. Skim the latest before substantial design or implementation work and weigh it alongside the canon, as reference only: not canon, not requirements, and an endorsed note is agreement with that one part, not a decision. `docs/architecture.md` → Lumi's design notebook
 - `docs/art-direction.md` — **the evolving art direction and animation strategy** (draft): the character's invariants, the book-or-world tension, the ladder of animation tiers, motion principles, the bets under test and the questions for Chanté
 
 ## Conventions

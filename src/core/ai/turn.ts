@@ -14,6 +14,7 @@ import type { Snapshot } from "@/core/domain/snapshot";
 import { isUuid } from "@/core/ids";
 import { parseWhere, type Where } from "@/core/places";
 import type { ContextInput } from "./context";
+import type { DesignNotebookView } from "./design-select";
 import type { LibraryView } from "./library-select";
 import type { TurnSignals } from "./memory-select";
 import type { Recut } from "./today-plan";
@@ -117,6 +118,8 @@ export function contextInputFor(t: {
   mail?: { scan?: { at: Date } | null; leads?: Lead[] };
   /** The page they spoke from and which way in: a line in the context block, never in the cached prefix. */
   where?: Where;
+  /** Design partners only: the design notes chosen for this turn. */
+  design?: DesignNotebookView;
 }): ContextInput {
   const { user, snap } = t;
   return {
@@ -142,6 +145,7 @@ export function contextInputFor(t: {
     priorities: snap.priorities,
     mailScan: t.mail ? (t.mail.scan ? { at: t.mail.scan.at } : null) : undefined,
     leads: t.mail?.leads,
+    design: t.design,
   };
 }
 
