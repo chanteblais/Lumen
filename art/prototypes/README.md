@@ -60,11 +60,15 @@ Rebuild, from the repo root: `python3 art/prototypes/lumi-walk/split.py && pytho
   - render 4.5 / 16.7 ms a frame, 7.8 / 34.0 while she holds it.
 - **Grids and GIFs:** `out/lantern-{pickup,turn,carry,setdown,moment,idle}`.
 - **Known:**
-  - **The hand swap:** turning se → s → sw while holding it moves the lantern to her other hand at s (13.6 px in one frame), because the mirrored drawings hold it on the other side.
+  - **The hand swap is fixed.** `sw-lantern-left` and `ssw-lantern-left` hold it in her left hand, on the viewer's right (`art/prompts/lumi-iso-front-lantern-left.md`, `-ssw-lantern-left.md`; fills in `art/lumi/*-left-fill.png`), and s-lantern is mirrored at s. From se round to sw she keeps her left hand: grip dx stays between +25.7 and +38.0, never changing side, and the largest frame-to-frame move is 1.25 px.
   - **Ghosting:** the hood washes pale at se → sse, and the arm ghosts faintly at rest → reach and grip → held.
   - **Past the corner:** at the end of the carry the lantern hangs past the table's left corner.
-  - **Both wait on the rig test** (`lumi-rig/`), Chanté's call.
+  - **The ghosts stay.** The full rig was tested and parked (`lumi-rig/`), so they wait for better in-betweens.
 - **B moved:** to (662, 615), so a sw corridor lands its base exactly.
+- **Things on the table have their own depth.**
+  - **Occluders:** `plate.py --keep` writes one per thing on the tabletop (books, gourd, plant, small books, mug, note) into `layers.json` → `occluders`: the table layer's own pixels inside each polygon, with ground polygons and heights.
+  - **On the page:** a thing in front is erased from the held or resting lantern's buffer, and the order is held while their boxes meet, so it can't pop.
+  - **The result:** carrying it past the book stack, the books cover the lantern, and only her fist and its top show for about 3 s. The room without the lantern is pixel-identical.
 
 **Status:** landed and pushed (2026-09-13, `5433a9f`) after eight rounds of Chanté's review, the last with the rig on Home's layers: "This is looking like a really good start." The eighth look below is the current state; the limits in this paragraph are from the first build. Next: Lumi picks up the lantern and sets it down on the low table (`docs/animation-pipeline.md` → Next animation). At the first publish, what the renders showed: boots step and hold, the tabletop, lantern and plant cover her behind the table and she covers the cushions in front; a blink first left the painted eyes' rims as orange rings (the lid now takes the rim and glow). Known limits: a turn is a dip and a swap, not an in-between; one room, one tour; nothing in the app plays it.
 
@@ -114,6 +118,7 @@ Rebuild, from the repo root, from the committed plate and layers: `python3 art/p
   - Depth test 0 disagreements, table sweep 0 fringe px, walk audit 0 px sideways, occlusion 0/0/0.
 - **Known:** at 4×, a one-pixel seam at the glass's left edge and an olive speck on the table's front edge at B; the added light is flatter than the painting on the dark book covers.
 - **Spend:** two inpaint runs, $0.22.
+- **Occluders (2026-09-13):** `lantern.py`'s `occluders()` writes `layers/table-{books,gourd,plant,smallbooks,mug,note}.png` and `layers.json` → `occluders` from the table's `things` polygons, so an object can pass behind what stands on a surface. All 19 existing layer PNGs are unchanged.
 
 **Status:** approved and pushed (2026-09-13). Chanté on the viewer: "It looks good to me", with the fringes that could clip Lumi trimmed. Since `5433a9f` it feeds the walk page (`lumi-walk/`, eighth look), which composites these layers around the walking rig. Next, a first object as its own layer: the lantern is painted into the `table` layer today, together with the books, plant and mug, so picking it up means cutting it out and filling in the tabletop under it. **Recompose** (plate × shadows, then layers, from the quantised files, against the painting; per channel, 0–255), after the fringe cleanup:
 - whole painting: mean 0.031, max 117 (before the cleanup: 0.030, 121);

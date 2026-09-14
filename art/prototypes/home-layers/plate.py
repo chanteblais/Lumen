@@ -95,6 +95,8 @@ def write_room(layers_out):
     """The lantern step (lantern.build: the lantern, its shadow and glow cut out of the table, and the table without
     them), then layers.json, with the recompose measured from the files as written."""
     objects_out = [lantern.build(room, layers_out, order, o) for o in room.get('objects', [])]
+    # the things on each object's surface as occluders (lantern.occluders), cut from the surface layer as just written
+    occluders_out = [oc for s in sorted({o['on'] for o in room.get('objects', [])}) for oc in lantern.occluders(room, layers_out, s)]
     blocked = []
     for L in room['layers']:
         blocked += [{'of': L['id'], 'poly': p} for p in depth.grow(L['extent'] or L['footprint'])]
@@ -133,6 +135,16 @@ def write_room(layers_out):
         },
         'layers': layers_out,
         'objects': objects_out,
+        'occluders': {
+            'note': "Things standing on a surface (a surface layer's `things` in room.src.json), cut from that layer: the same "
+                    "pixels, so the room is unchanged. They order an object against the things on its surface, never Lumi: "
+                    "the surface layer, things included, still draws over her or under her as a whole. An occluder stands in "
+                    "front of an object (on the surface, or held over it) when its `ground` polygon (the silhouette dropped by "
+                    "the surface's height) has a point in the object's page columns lower on the page than the object's ground "
+                    "point by more than depth.margin (the rule for Lumi, at the object's width); the page then keeps the "
+                    "object's pixels out from under it.",
+            'items': occluders_out,
+        },
         'blockers': [{'id': B['id'], 'footprint': B['footprint'], 'note': 'stays in the plate; blocks the floor only'} for B in room['blockers']],
         'floor': room['floor'],
         'walkable': {

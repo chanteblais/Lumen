@@ -791,6 +791,231 @@
    "draw": "On the page, right after the surface layer (`surface`) in the depth order, at anchor point p and scale k: the lantern-glow ('lighter'), then the lantern-shadow (black, alpha), each with its `base` at p scaled by k, through `glow.through` (e.g. in an offscreen canvas: draw it, 'destination-in' the mask at its offset, then draw that canvas onto the room with 'lighter' for the glow and 'source-over' for the shadow); then the lantern with its `base` at p scaled by k. At `offset` and scale 1 the three recompose the painting."
   }
  ],
+ "occluders": {
+  "note": "Things standing on a surface (a surface layer's `things` in room.src.json), cut from that layer: the same pixels, so the room is unchanged. They order an object against the things on its surface, never Lumi: the surface layer, things included, still draws over her or under her as a whole. An occluder stands in front of an object (on the surface, or held over it) when its `ground` polygon (the silhouette dropped by the surface's height) has a point in the object's page columns lower on the page than the object's ground point by more than depth.margin (the rule for Lumi, at the object's width); the page then keeps the object's pixels out from under it.",
+  "items": [
+   {
+    "id": "table-books",
+    "thing": "books",
+    "surface": "table",
+    "src": "layers/table-books.png",
+    "offset": [
+     668,
+     560
+    ],
+    "ground": [
+     [
+      668,
+      640
+     ],
+     [
+      713,
+      620
+     ],
+     [
+      750,
+      643
+     ],
+     [
+      761,
+      662
+     ],
+     [
+      761,
+      681
+     ],
+     [
+      727,
+      703
+     ],
+     [
+      668,
+      679
+     ]
+    ],
+    "height": 30,
+    "px": 5334
+   },
+   {
+    "id": "table-gourd",
+    "thing": "gourd",
+    "surface": "table",
+    "src": "layers/table-gourd.png",
+    "offset": [
+     805,
+     550
+    ],
+    "ground": [
+     [
+      805,
+      612
+     ],
+     [
+      824,
+      612
+     ],
+     [
+      834,
+      652
+     ],
+     [
+      834,
+      674
+     ],
+     [
+      805,
+      674
+     ]
+    ],
+    "height": 45,
+    "px": 1680
+   },
+   {
+    "id": "table-plant",
+    "thing": "plant",
+    "surface": "table",
+    "src": "layers/table-plant.png",
+    "offset": [
+     806,
+     521
+    ],
+    "ground": [
+     [
+      806,
+      610
+     ],
+     [
+      815,
+      590
+     ],
+     [
+      840,
+      583
+     ],
+     [
+      870,
+      585
+     ],
+     [
+      896,
+      597
+     ],
+     [
+      909,
+      618
+     ],
+     [
+      910,
+      647
+     ],
+     [
+      882,
+      676
+     ],
+     [
+      836,
+      676
+     ],
+     [
+      806,
+      624
+     ]
+    ],
+    "height": 34,
+    "px": 6856
+   },
+   {
+    "id": "table-smallbooks",
+    "thing": "smallbooks",
+    "surface": "table",
+    "src": "layers/table-smallbooks.png",
+    "offset": [
+     880,
+     586
+    ],
+    "ground": [
+     [
+      880,
+      648
+     ],
+     [
+      918,
+      648
+     ],
+     [
+      918,
+      687
+     ],
+     [
+      880,
+      687
+     ]
+    ],
+    "height": 17,
+    "px": 1560
+   },
+   {
+    "id": "table-mug",
+    "thing": "mug",
+    "surface": "table",
+    "src": "layers/table-mug.png",
+    "offset": [
+     803,
+     645
+    ],
+    "ground": [
+     [
+      803,
+      707
+     ],
+     [
+      845,
+      707
+     ],
+     [
+      845,
+      744
+     ],
+     [
+      803,
+      744
+     ]
+    ],
+    "height": 13,
+    "px": 1634
+   },
+   {
+    "id": "table-note",
+    "thing": "note",
+    "surface": "table",
+    "src": "layers/table-note.png",
+    "offset": [
+     788,
+     527
+    ],
+    "ground": [
+     [
+      788,
+      589
+     ],
+     [
+      806,
+      589
+     ],
+     [
+      806,
+      605
+     ],
+     [
+      788,
+      605
+     ]
+    ],
+    "height": 6,
+    "px": 323
+   }
+  ]
+ },
  "blockers": [
   {
    "id": "stair-up",

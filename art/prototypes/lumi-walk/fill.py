@@ -43,7 +43,11 @@ RATES = dict(text_in=5.0, image_in=8.0, image_out=30.0)   # $ per million tokens
 SRC = {'sw-lantern': ('art/lumi/lumi-iso-front-lantern.png', 'art/lumi/lumi-iso-front.png'),
        'ssw-lantern': ('art/lumi/lumi-iso-ssw-lantern.png', 'art/lumi/lumi-iso-ssw.png'),
        's-lantern': ('art/lumi/lumi-iso-s-lantern.png', 'art/lumi/lumi-iso-s.png'),
-       'front-grip': ('art/lumi/lumi-iso-front-grip.png', 'art/lumi/lumi-iso-front.png')}
+       'front-grip': ('art/lumi/lumi-iso-front-grip.png', 'art/lumi/lumi-iso-front.png'),
+       # her left hand, on the viewer's right
+       'sw-lantern-left': ('art/lumi/lumi-iso-front-lantern-left.png', 'art/lumi/lumi-iso-front.png'),
+       'ssw-lantern-left': ('art/lumi/lumi-iso-ssw-lantern-left.png', 'art/lumi/lumi-iso-ssw.png')}
+RIGHT_HAND = {'sw-lantern-left', 'ssw-lantern-left'}   # the holding hand is the rightmost blob, not the leftmost
 
 
 def arg(name, default=None):
@@ -70,7 +74,9 @@ def mask_for(src):
     a = rgba[:, :, 3] > 0
     rgb = rgba[:, :, :3].astype(int)
     lum = rgb.mean(axis=2)
-    hand = min(res['blobs'], key=lambda d: d['x'])['mask']   # her right hand, the viewer's left, in all of them
+    # her right hand, the viewer's left, in the first four; the viewer's right in the -left drawings
+    pick = max if any(src == SRC[v][0] for v in RIGHT_HAND) else min
+    hand = pick(res['blobs'], key=lambda d: d['x'])['mask']
     fistish = ndi.binary_opening(a & (rgb[:, :, 0] < 100) & (lum < 60), iterations=3)
     hand = ndi.binary_propagation(hand, mask=(fistish | hand) & ndi.binary_dilation(hand, iterations=30))
     fist = ndi.binary_fill_holes(hand)

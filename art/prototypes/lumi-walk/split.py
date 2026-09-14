@@ -103,6 +103,12 @@ VARIANTS = [
     dict(name='s-lantern', base='s', deg=0.0, src='art/lumi/lumi-iso-s-lantern.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='front-reach', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-reach.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
     dict(name='front-grip', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-grip.png', hand='left', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    # her LEFT hand, on the viewer's right (the far side in these views), so the lantern stays in the hand the mirrored
+    # pick-up put it in as she turns se → s → sw (Chanté, 2026-09-13: it jumped sides at s). `hand='right'`: the viewer's
+    # right. `lanternSide`: whether the room's lantern hung from the grip is drawn over her body or under it, read off each
+    # drawing (see the report / its prompt file); the five above are all 'front'.
+    dict(name='sw-lantern-left', base='sw', deg=45.0, src='art/lumi/lumi-iso-front-lantern-left.png', hand='right', lanternSide='front', eyes=True, chin=0.46, neck=0.58, keep=[]),
+    dict(name='ssw-lantern-left', base='ssw', deg=22.5, src='art/lumi/lumi-iso-ssw-lantern-left.png', hand='right', lanternSide='front', eyes=True, chin=0.46, neck=0.58, keep=[]),
 ]
 SRC = {f['name']: f['src'] for f in FACINGS}
 OUT = os.path.join(HERE, 'parts')
@@ -487,7 +493,7 @@ def split(f):
         rig['hand'] = [S(x0), S(y0), S(x1), S(y1)]
         # the lantern hangs beside her on the viewer's side of the outline in all five drawings; drawn over her where the
         # two meet (overBodyPx counts where the drawn lantern covered what the base drawing shows as her)
-        rig['lanternSide'] = 'front'
+        rig['lanternSide'] = f.get('lanternSide') or 'front'
         L_ = extra['lantern']
         if L_:
             bx0, by0, bx1, by1 = L_['box']

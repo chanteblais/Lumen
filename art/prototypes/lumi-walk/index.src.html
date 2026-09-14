@@ -172,7 +172,7 @@
         <li><b>Idle:</b> standing she blinks at uneven gaps, now and then glances or tilts her head, sways very slowly, and rarely looks curious or sleepy; walking, she only blinks and glances. Her eyes are drawn over the painted ones, so they can shut, shift and change shape. Try the cues: do the eyes read as hers, or as stickers? Does the tilt bend the collar or tear it?</li>
         <li>Turning away past side-on, her ribbon bow and medallions shrink to a sliver and go — a drawing just past side-on carries them — rather than fading out.</li>
         <li><b>Her lantern:</b> on the low table, lit. Once a tour she walks in behind the table, reaches up, closes her hand on its finial and lifts it — the same lantern, its light going with it — carries it high along the table’s back edge, and sets it down by the books. She carries it only that way: her drawings holding it all face toward you, so she can’t walk it back up the page. <b>Pick up</b> and <b>Set down</b> send her to the right place first.</li>
-        <li><b>Known, and waiting on the rig test:</b> as she turns from facing the table to walking along it, the lantern jumps to her other hand halfway round (the mirrored drawings hold it on the other side), and the hood washes pale for a moment. The arm also ghosts faintly as it reaches and as it lifts, where one drawing dissolves into the next. A fully rigged Lumi is being tried as the fix for all three, and for carrying it back.</li>
+        <li><b>Known, and waiting on the rig test:</b> she keeps the lantern in her left hand all the way round now, but as she turns from facing the table to walking along it the hood washes pale for a moment, and the cloak and arm ghost faintly where one drawing dissolves into the next — as she reaches, as she lifts, and halfway round. She carries it one way only, from the back corner to the books. A fully rigged Lumi is being tried for the arm, and for carrying it back.</li>
       </ul>
       <p class="small">Her height is in the painting’s own pixels; the table stands about 62. Heights, pace and the turn style here are for judging, not settings in the app.</p>
     </div>
@@ -524,22 +524,37 @@
   // and pick-up drawing at its base facing's place on the ring and at that place's mirror. A morph pairs two entries.
   // Each carries where its own face points (its `turned`, measured by facings.py), so the audit judges the drawing shown.
   var ENT = DIRS.slice();
-  var HOLD_OF = { sw: 'sw-lantern', ssw: 'ssw-lantern', s: 's-lantern' };
+  // She holds it in her LEFT hand all the way round, so it never changes sides as she turns. The right-hand drawings
+  // (sw-lantern, ssw-lantern, and the pick-up keys) mirrored give her left hand at se and sse; the left-hand drawings
+  // (sw-lantern-left, ssw-lantern-left) hold it there unmirrored at sw and ssw; and at s, which has only an unmirrored
+  // place on the ring, s-lantern is shown mirrored. The grip stays on the viewer's right from se to sw. (Before the
+  // left-hand drawings, s held it on the left and the lantern jumped across her halfway round, 13.6 px in one frame.)
+  function holdOf(d) {
+    if (d.img === 's') return { img: 's-lantern', mirror: !!DRAW['sw-lantern-left'] };
+    if (d.img === 'sw' || d.img === 'ssw') {
+      var left = d.img + '-lantern-left';
+      return !d.mirror && DRAW[left] ? { img: left, mirror: false } : { img: d.img + '-lantern', mirror: d.mirror };
+    }
+    return null;
+  }
   var HOLD = {}, KEYS = {};   // ring index → its holding entry; → [rest, reach, grip, held] where the pick-up is drawn
-  function addEntry(img, ring) {
-    var d = DIRS[ring], R = DRAW[img];
-    var e = { id: d.id + ':' + img, img: img, deg: d.deg, mirror: d.mirror, say: d.say, v: d.v, fore: d.fore, ring: ring };
+  // `mirror` overrides the ring position's own (s-lantern at s): everything that draws an entry reads the entry's flag
+  function addEntry(img, ring, mirror) {
+    var d = DIRS[ring], R = DRAW[img], mir = mirror === undefined ? d.mirror : mirror;
+    var e = { id: d.id + ':' + img + (mir !== d.mirror ? ':mirrored' : ''), img: img, deg: d.deg, mirror: mir, say: d.say, v: d.v, fore: d.fore, ring: ring };
     var th = (typeof R.turned === 'number' ? R.turned : RIG[d.img].turned) * Math.PI / 180;
     var du = (Math.cos(th) - Math.sin(th)) / Math.SQRT2, dv = (Math.cos(th) + Math.sin(th)) / Math.SQRT2;
     var p = fromUV(du, dv), l = Math.hypot(p.x, p.y);
-    e.face = { x: (d.mirror ? -p.x : p.x) / l, y: p.y / l };
+    e.face = { x: (mir ? -p.x : p.x) / l, y: p.y / l };
     ENT.push(e);
     return ENT.length - 1;
   }
   DIRS.forEach(function (d, i) {
-    var h = HOLD_OF[d.img];
-    if (h && DRAW[h]) HOLD[i] = addEntry(h, i);
-    if (d.img === 'sw' && HOLD[i] !== undefined && DRAW['front-reach'] && DRAW['front-grip'])
+    var h = holdOf(d);
+    if (h && DRAW[h.img]) HOLD[i] = addEntry(h.img, i, h.mirror);
+    // the pick-up is drawn only at se: the right-hand keys mirrored, into the right-hand held drawing mirrored — the
+    // same (left) hand throughout, never paired with a drawing of the other hand
+    if (d.img === 'sw' && d.mirror && HOLD[i] !== undefined && ENT[HOLD[i]].img === 'sw-lantern' && DRAW['front-reach'] && DRAW['front-grip'])
       KEYS[i] = [i, addEntry('front-reach', i), addEntry('front-grip', i), HOLD[i]];
   });
   var SE = null, SW = null;   // the ring's se (the sw drawing mirrored: where the lantern is picked up) and sw
@@ -796,6 +811,7 @@
         var li = lanternStop();
         if (li >= 0 && ui.tour && !reduced) { S.leg = li; S.script = carryScript(TOUR[li], true); }
       }
+      updateThings();
     }
   }
   function turning() { return S.turnActive || S.turnT > 0; }
@@ -1232,6 +1248,7 @@
       // her body holds still round the grip key, so the hand meets the finial exactly (drawFigure's `calm`)
       S.still = smooth(1 - Math.abs(S.lamp.P - 2));
       swingLantern(dt, walkW, moving);
+      updateThings();
     }
   }
 
@@ -1923,6 +1940,105 @@
     }
     ctx.restore();
   }
+  // The things on the table (layers.json `occluders`: the table layer's own pixels for the books, the plant and pot, the
+  // mug…) order the lantern against what stands on the tabletop. Lumi never reads them: the table, things included, still
+  // draws over her or under her as a whole. A thing stands in front of the lantern when its ground polygon (its silhouette
+  // dropped by the table's height) has a point in the lantern's columns lower on the page than the lantern's ground point
+  // by more than the margin — her rule, at the lantern's width. Rather than drawing the table's pixels a second time, the
+  // lantern (and the fist over it) is drawn into a buffer with those things erased from it, so the room's own pixels are
+  // untouched whenever nothing is behind a thing. Only things whose pixels can meet the lantern's box are tested.
+  var OCC = ROOM.occluders || [];
+  OCC.forEach(function (o) { o.extent = o.ground; });   // groundYNear reads `extent`
+  function occBox(o) {
+    if (!o.box) {
+      var im = images['occ:' + o.id];
+      o.box = { x0: o.offset[0], y0: o.offset[1], x1: o.offset[0] + im.width, y1: o.offset[1] + im.height };
+    }
+    return o.box;
+  }
+  // the lantern's ground point (under it on the floor) and the box its sprite and the fist over it can take, room px
+  function lampGround(lamp) {
+    return lamp.held ? { x: lamp.rest.x, y: lamp.rest.y } : { x: lamp.base.x, y: lamp.base.y + surfaceH() };
+  }
+  function lampBox(lamp) {
+    var c = lamp.held ? lamp.grip : { x: lamp.base.x, y: lamp.base.y - baseFromGrip().y };   // the grip, or where it would be
+    return { x0: c.x - 45, y0: c.y - 60, x1: c.x + 45, y1: c.y + baseFromGrip().y + 8 };
+  }
+  // Which things stand in front of the lantern is decided in the sim (updateThings, every step), not per render: the
+  // carry along the back-left edge passes through the book stack's footprint (its ground point enters the stack's base
+  // at its back edge and leaves at its front edge, whatever the lift), so by the rule alone the books would stop covering
+  // the lantern in the middle of the stack — 587 of its pixels uncovered in one frame. So while the lantern's box meets a
+  // thing's box, the order they had when they met holds; once they part the rule decides again. The boxes hold every
+  // pixel of both, so a change of order can never pop. S.lamp.things[id] = { front, meet, rule }.
+  function boxesMeet(a, b) { return !(a.x1 < b.x0 || a.x0 > b.x1 || a.y1 < b.y0 || a.y0 > b.y1); }
+  function lampSimBox() {
+    var L = S.lamp, k = LANTERN.scale, im = images.lantern;
+    if (L.where === 'hand') {
+      var r = lampRest();
+      if (!r) return null;
+      // the sprite about the grip, widened for the ±3° swing and for the warp moving the drawn fist off its rest point
+      // (12 px across, 8 up and down: as she sets off her lean and sway carry the drawn fist up to ~9 px off its rest point)
+      return { g: { x: r.x, y: r.y }, box: { x0: r.grip.x - LANTERN.grip[0] * k - 12, x1: r.grip.x + (im.width - LANTERN.grip[0]) * k + 12,
+        y0: r.grip.y - LANTERN.grip[1] * k - 8, y1: r.grip.y + (im.height - LANTERN.grip[1]) * k + 8 } };
+    }
+    var an = LAYER[LANTERN.surface].anchors[L.where];
+    if (!an) return null;
+    var b = { x: an.at[0], y: an.at[1] };
+    return { g: { x: b.x, y: b.y + surfaceH() }, box: { x0: b.x - LANTERN.base[0] * k - 2, x1: b.x + (im.width - LANTERN.base[0]) * k + 2,
+      y0: b.y - LANTERN.base[1] * k - 2, y1: b.y + (im.height - LANTERN.base[1]) * k + 2 } };
+  }
+  // A thing's base on the ground: its silhouette's ground polygon is the base swept up by its height, so a ground point is
+  // on the base when it and the point `height` above it are both inside that polygon (exact for a convex prism).
+  function inThingBase(o, g) { return inPoly(g, o.ground) && inPoly({ x: g.x, y: g.y - o.height }, o.ground); }
+  var THING_REACH = 26;   // the drawn lantern's half-width, ±3° of swing and the warp's lean and sway: no pixel of it reaches further
+  function updateThings() {
+    var st = OCC.length ? lampSimBox() : null, T0 = S.lamp.things || {}, T1 = {};
+    if (st) {
+      OCC.forEach(function (o) {
+        var meet = boxesMeet(occBox(o), st.box), inside = inThingBase(o, st.g), prev = T0[o.id];
+        var m = groundYNear(o, st.g.x, LAMP_HALF, THING_REACH), known = m !== null;
+        var rule = known && m > st.g.y + ROOM.depth.margin;
+        // the order is held while they meet (or the lantern is inside the thing's footprint) once the rule has decided it
+        var keep = !!prev && prev.decided && (meet || inside);
+        T1[o.id] = { front: keep ? prev.front : rule, decided: keep || known, meet: meet, inside: inside, rule: rule };
+      });
+    }
+    S.lamp.things = T1;
+  }
+  function frontOccluders(lamp, byRule) {
+    if (!OCC.length || !lamp || !lamp.base) return [];
+    var b = lampBox(lamp), T = S.lamp.things || {};
+    return OCC.filter(function (o) {
+      var t = T[o.id];
+      return !!t && (byRule ? t.rule : t.front) && boxesMeet(occBox(o), b);
+    });
+  }
+  // The lantern and the fist over it, with the things in front of it erased. `hands` false draws the lantern alone.
+  var lampBuf = document.createElement('canvas');
+  function drawLamp(ctx, fr, hands) {
+    var occ = frontOccluders(fr.lamp);
+    if (!occ.length) { drawLanternSprite(ctx, fr.lamp); if (hands) drawHands(ctx, fr); return occ; }
+    var m = ctx.getTransform(), D = m.a, b = lampBox(fr.lamp);
+    var dx0 = Math.floor(b.x0 * D + m.e), dy0 = Math.floor(b.y0 * D + m.f);
+    var w = Math.max(1, Math.ceil(b.x1 * D + m.e) - dx0), h = Math.max(1, Math.ceil(b.y1 * D + m.f) - dy0);
+    if (lampBuf.width !== w || lampBuf.height !== h) { lampBuf.width = w; lampBuf.height = h; }
+    var bx = lampBuf.getContext('2d');
+    bx.setTransform(1, 0, 0, 1, 0, 0);
+    bx.globalCompositeOperation = 'source-over';
+    bx.clearRect(0, 0, w, h);
+    bx.setTransform(D, 0, 0, D, m.e - dx0, m.f - dy0);
+    bx.imageSmoothingEnabled = true; bx.imageSmoothingQuality = 'high';
+    drawLanternSprite(bx, fr.lamp);
+    if (hands) drawHands(bx, fr);
+    bx.globalCompositeOperation = 'destination-out';
+    occ.forEach(function (o) { bx.drawImage(images['occ:' + o.id], o.offset[0], o.offset[1]); });
+    bx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(lampBuf, dx0, dy0);
+    ctx.restore();
+    return occ;
+  }
   function drawHands(ctx, fr) {
     var a = fr.lamp.handAlpha;
     if (!(a > 0)) return;
@@ -2110,8 +2226,7 @@
         continue;
       }
       if (order[oi] === 'lantern') {
-        drawLanternSprite(ctx, fr.lamp);
-        drawHands(ctx, fr);
+        drawLamp(ctx, fr, true);
         continue;
       }
       var lc = sc.layers[order[oi]];
@@ -2120,7 +2235,7 @@
       ctx.setTransform(D, 0, 0, D, -ox, -oy);
       if (LANTERN && order[oi] === LANTERN.surface) {
         drawTableLight(ctx, D, ox, oy, fr.lamp);
-        if (!fr.lamp.held) { drawLanternSprite(ctx, fr.lamp); drawHands(ctx, fr); }
+        if (!fr.lamp.held) drawLamp(ctx, fr, true);
       }
     }
 
@@ -2352,26 +2467,73 @@
       lcx.setTransform(1, 0, 0, 1, -lx, -ly);
       drawLanternSprite(lcx, lamp);
       var la = lcx.getImageData(0, 0, LBOX, LBOX).data, aft = {}, seen = false;
+      // the lantern as the page draws it, with the things in front of it erased, and those things' alpha
+      lcx.setTransform(1, 0, 0, 1, 0, 0); lcx.clearRect(0, 0, LBOX, LBOX);
+      lcx.setTransform(1, 0, 0, 1, -lx, -ly);
+      var occ = drawLamp(lcx, fr, false);
+      var le = lcx.getImageData(0, 0, LBOX, LBOX).data;
+      lcx.setTransform(1, 0, 0, 1, 0, 0); lcx.clearRect(0, 0, LBOX, LBOX);
+      lcx.setTransform(1, 0, 0, 1, -lx, -ly);
+      occ.forEach(function (o) { lcx.drawImage(images['occ:' + o.id], o.offset[0], o.offset[1]); });
+      var oa = lcx.getImageData(0, 0, LBOX, LBOX).data;
       d.order.forEach(function (n) { if (n === 'lantern') { seen = true; return; } if (seen && LAYER[n]) aft[n] = true; });
-      var total = 0, shown = 0, behind = 0, ids = {};
+      var total = 0, shown = 0, behind = 0, ids = {}, legit = 0, shownFree = 0, overThing = 0;
       for (var j = 0; j < LBOX; j++) {
         for (var i = 0; i < LBOX; i++) {
-          if (la[(j * LBOX + i) * 4 + 3] <= 127) continue;
+          var qq = (j * LBOX + i) * 4;
+          if (la[qq + 3] <= 127) continue;
           total++;
-          var px = lx + i, py = ly + j, cov = false;
+          var byThing = oa[qq + 3] > 25;
+          if (byThing) legit++;
+          if (oa[qq + 3] > 127 && le[qq + 3] > 127) overThing++;   // drawn over a thing the rule puts in front of it
+          var px = lx + i, py = ly + j, cov = byThing, layerCov = false;
           for (var k = 0; k < ROOM.layers.length; k++) {
             var id = ROOM.layers[k].id;
             if (!aft[id]) continue;
             var A = LA[id], u = px - A.x, v = py - A.y;
             if (u < 0 || v < 0 || u >= A.w || v >= A.h || A.a[v * A.w + u] <= 25) continue;
-            cov = true;
+            cov = true; layerCov = true;
             if (!d.lampOver[id]) { behind++; ids[id] = true; }
           }
           if (!cov) shown++;
+          if (!byThing && !layerCov) shownFree++;
         }
       }
       var Lg = log.lantern;
       Lg.samples++; Lg.behindPx += behind; Lg.px = Math.max(Lg.px, total);
+      Lg.overThingPx = (Lg.overThingPx || 0) + overThing;
+      if (legit) {
+        Lg.framesThingInFront = (Lg.framesThingInFront || 0) + 1;
+        Lg.thingCoveredPxMax = Math.max(Lg.thingCoveredPxMax || 0, legit);
+        (Lg.thingsInFront = Lg.thingsInFront || {});
+        occ.forEach(function (o) { Lg.thingsInFront[o.id] = (Lg.thingsInFront[o.id] || 0) + 1; });
+      }
+      // where the page holds an order the rule alone would not (the lantern inside a thing's footprint): lantern pixels
+      // over a thing the rule puts in front, and lantern pixels erased by a thing the rule puts behind
+      var ruleOcc = frontOccluders(lamp, true), pageIds = occ.map(function (o) { return o.id; });
+      var ruleOnly = ruleOcc.filter(function (o) { return pageIds.indexOf(o.id) < 0; });
+      var pageOnly = occ.filter(function (o) { return ruleOcc.map(function (r) { return r.id; }).indexOf(o.id) < 0; });
+      if (ruleOnly.length || pageOnly.length) {
+        var countUnder = function (list) {
+          lcx.setTransform(1, 0, 0, 1, 0, 0); lcx.clearRect(0, 0, LBOX, LBOX);
+          lcx.setTransform(1, 0, 0, 1, -lx, -ly);
+          list.forEach(function (o) { lcx.drawImage(images['occ:' + o.id], o.offset[0], o.offset[1]); });
+          var ta = lcx.getImageData(0, 0, LBOX, LBOX).data, c = 0;
+          for (var q2 = 3; q2 < ta.length; q2 += 4) if (ta[q2] > 127 && la[q2] > 127) c++;
+          return c;
+        };
+        Lg.heldAgainstRule = Lg.heldAgainstRule || { frames: 0, overThingRuleFrontPx: 0, erasedRuleBehindPx: 0, at: [] };
+        var H1 = Lg.heldAgainstRule, a1 = ruleOnly.length ? countUnder(ruleOnly) : 0, a2 = pageOnly.length ? countUnder(pageOnly) : 0;
+        if (a1 || a2) {
+          H1.frames++; H1.overThingRuleFrontPx += a1; H1.erasedRuleBehindPx += a2;
+          if (H1.at.length < 6) H1.at.push(Object.assign({ ruleFront: ruleOnly.map(function (o) { return o.id; }), pageFront: pageOnly.map(function (o) { return o.id; }), px: a1 + a2 }, where({})));
+        }
+      }
+      var free = total - legit, shareFree = free ? shownFree / free : 1;
+      if (total && inPoly(lamp.rest, groundOf(LAYER[LANTERN.surface])) &&
+          (Lg.minShownOverTopExclThings === undefined || shareFree < Lg.minShownOverTopExclThings)) {
+        Lg.minShownOverTopExclThings = +shareFree.toFixed(4);
+      }
       if (behind && (!Lg.worstBehind || behind > Lg.worstBehind.px)) Lg.worstBehind = Object.assign({ px: behind }, where(ids));
       var share = total ? shown / total : 1;
       if (total && inPoly(lamp.rest, groundOf(LAYER[LANTERN.surface]))) {
@@ -2603,7 +2765,10 @@
     lb.width = LW; lb.height = LH;
     var lbx = lb.getContext('2d', { willReadFrequently: true });
     var gFrom = { x: from.at.x, y: from.at.y + surfaceH() };
-    var prev1 = null, prev9 = null, prevWhere = S.lamp.where, tDetach = null;
+    var prev1 = null, prev9 = null, prevWhere = S.lamp.where, tDetach = null, prevStill = null, prevGdx = null, prevOcc = null;
+    var occC = document.createElement('canvas');
+    occC.width = occC.height = 90;
+    var ocx = occC.getContext('2d', { willReadFrequently: true });
     var dist = function (p, q) { return Math.hypot(p.x - q.x, p.y - q.y); };
     for (var fno = 0; fno < 60 * 90; fno++) {
       step(dt);
@@ -2645,6 +2810,20 @@
           var stp = dist(L1.base, prev1);
           if (stp > out.baseStepMax) { out.baseStepMax = r2(stp); out.baseStepAt = { t: r2(S.time), shows: show, x: r2(L1.base.x) }; }
         }
+        // Which side of her the grip is on (dx from her feet, never allowed to change sign), and the frame-to-frame move of
+        // the lantern's base with her walk (her feet's move) and the pendulum (the swing about the grip) taken out: what
+        // the drawings themselves move it. Split into turns and the rest.
+        var gdx = L1.grip.x - S.x;
+        out.gripDx = out.gripDx || { min: Infinity, max: -Infinity, signChanges: 0 };
+        out.gripDx.min = Math.min(out.gripDx.min, r2(gdx)); out.gripDx.max = Math.max(out.gripDx.max, r2(gdx));
+        if (prevGdx !== null && Math.sign(gdx) !== Math.sign(prevGdx)) { out.gripDx.signChanges++; (out.gripDx.at = out.gripDx.at || []).push({ t: r2(S.time), shows: show }); }
+        var bg0 = baseFromGrip(), still0 = { x: L1.grip.x + bg0.x - S.x, y: L1.grip.y + bg0.y - S.y };
+        if (prevStill && prevWhere === 'hand') {
+          var jd = dist(still0, prevStill), key = turning() ? 'inTurns' : 'elsewhere';
+          out.drawnStep = out.drawnStep || { inTurns: { max: 0 }, elsewhere: { max: 0 } };
+          if (jd > out.drawnStep[key].max) out.drawnStep[key] = { max: r2(jd), t: r2(S.time), shows: show, p: r2(S.p) };
+        }
+        prevStill = still0; prevGdx = gdx;
       }
       // Light left at the anchor it left, from the frame the lift ends (P = 3) and after it lands elsewhere: the tabletop
       // light the page draws within 30 ground px of that anchor, less what the lantern where it now is casts there itself
@@ -2677,7 +2856,38 @@
           out.lightLeft.carriedOwnAt = { t: r2(S.time), groundPxFromAnchor: r2(Math.hypot(L1.rest.x - gFrom.x, (L1.rest.y - gFrom.y) / B)) };
         }
       }
+      // which things on the table stand in front of the lantern: every change, with how many of the lantern's pixels
+      // (alpha > 127) meet any of the things in either set at that frame — 0 means the change cannot pop
+      var occNow = frontOccluders(L1), occKey = occNow.map(function (o) { return o.id; }).join(',');
+      // frames where the held order differs from the rule for a thing the lantern meets, as time spans
+      var against = OCC.filter(function (o) { var t = S.lamp.things && S.lamp.things[o.id]; return t && t.meet && t.front !== t.rule; })
+        .map(function (o) { return o.id + (S.lamp.things[o.id].front ? ' held in front' : ' held behind'); }).join(',');
+      if (against) {
+        out.heldAgainstRule = out.heldAgainstRule || [];
+        var lastA = out.heldAgainstRule[out.heldAgainstRule.length - 1];
+        if (lastA && lastA.what === against && Math.abs(lastA.to - (S.time - dt)) < 1e-6 + dt / 2) lastA.to = r2(S.time);
+        else out.heldAgainstRule.push({ what: against, from: r2(S.time), to: r2(S.time), shows: show });
+      }
+      if (occKey !== prevOcc) {
+        if (prevOcc !== null) {
+          // only the things that changed side: one in the old set or the new, not both
+          var both = OCC.filter(function (o) { return (occKey.split(',').indexOf(o.id) >= 0) !== (prevOcc.split(',').indexOf(o.id) >= 0); });
+          ocx.setTransform(1, 0, 0, 1, 0, 0); ocx.clearRect(0, 0, 90, 90);
+          var ox0 = Math.round(L1.base.x) - 45, oy0 = Math.round(L1.base.y) - 70;
+          ocx.setTransform(1, 0, 0, 1, -ox0, -oy0);
+          drawLanternSprite(ocx, L1);
+          var sp = ocx.getImageData(0, 0, 90, 90).data;
+          ocx.setTransform(1, 0, 0, 1, 0, 0); ocx.clearRect(0, 0, 90, 90);
+          ocx.setTransform(1, 0, 0, 1, -ox0, -oy0);
+          both.forEach(function (o) { ocx.drawImage(images['occ:' + o.id], o.offset[0], o.offset[1]); });
+          var tp = ocx.getImageData(0, 0, 90, 90).data, meet = 0;
+          for (var qi = 3; qi < sp.length; qi += 4) if (sp[qi] > 127 && tp[qi] > 25) meet++;
+          (out.orderChanges = out.orderChanges || []).push({ t: r2(S.time), where: wh, shows: show, from: prevOcc, to: occKey, overlapPx: meet });
+        }
+        prevOcc = occKey;
+      }
       prev1 = L1.base; prev9 = L9.base; prevWhere = wh;
+      if (!L1.held) { prevStill = null; prevGdx = null; }
       if (tDetach !== null && S.time - tDetach > 2.5 && !S.script) break;
     }
     out.phases = S.lamp.log;
@@ -2878,6 +3088,7 @@
         // reduced motion: she stays put, but the clock runs so a cue can jump to its pose and back
         S.time += dt;
         idleTick();
+        if (LANTERN) updateThings();
       }
       lastCam = camera(stage.width, stage.height, ui.view === 'follow' ? 2.3 : 1, false);
       render(sctx, stage.width, stage.height, lastCam);
@@ -2911,6 +3122,7 @@
     keys.push('lantern', 'lantern:glow', 'lantern:shadow', 'lantern:through');
     srcs.push(SCENE.lantern.src, SCENE.lantern.glow, SCENE.lantern.shadow, SCENE.lantern.through);
   }
+  (ROOM.occluders || []).forEach(function (o) { keys.push('occ:' + o.id); srcs.push(SCENE.occluders[o.id]); });
   Promise.all(srcs.map(load)).then(function (imgs) {
     keys.forEach(function (k, i) { images[k] = imgs[i]; });
     start();

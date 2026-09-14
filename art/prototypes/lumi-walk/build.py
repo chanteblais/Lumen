@@ -90,6 +90,7 @@ for L in layers['layers']:
 
 room = {k: layers[k] for k in ('size', 'iso', 'lumi', 'depth', 'layers', 'blockers', 'walkable')}
 room['objects'] = layers.get('objects', [])
+room['occluders'] = (layers.get('occluders') or {}).get('items', [])   # the things on the table, for the lantern's depth
 room['tour'] = tour
 room['floorlike'] = floorlike
 scene = {
@@ -102,6 +103,7 @@ if lantern:
                         'glow': uri(os.path.join(SCENE, lantern['glow']['src']), 'image/png'),
                         'shadow': uri(os.path.join(SCENE, lantern['shadow']['src']), 'image/png'),
                         'through': uri(os.path.join(SCENE, lantern['glow']['through']['src']), 'image/png')}
+scene['occluders'] = {o['id']: uri(os.path.join(SCENE, o['src']), 'image/png') for o in room['occluders']}
 
 html = open(os.path.join(HERE, 'index.src.html')).read()
 html = (html.replace('/*RIG*/null', json.dumps(rig, separators=(',', ':')))

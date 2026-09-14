@@ -419,6 +419,39 @@ def build(room, layers, order, obj=None):
     }
 
 
+def occluders(room, layers, on='table'):
+    """The things standing on a surface as their own depth items, so an object on or over the surface can pass behind them.
+    For each of room.src.json's `things` polygons on the surface layer `on`: `layers/<on>-<thing>.png`, the surface layer's
+    own pixels (as written, after the lantern step) inside the polygon with an antialiased edge (soft_poly's coverage times
+    the layer's alpha). The surface layer itself is unchanged: an occluder only says which of its pixels stand in front of
+    something. Its ground polygon is the silhouette dropped by the surface's height (the thing's lowest page y in any
+    column is its base's front edge, which is all the depth rule reads); `height` is the silhouette's height less the
+    depth its base takes on the page (its width times the iso slope). Returns the layers.json `occluders` entries."""
+    size = tuple(room['size'])
+    S = room['iso']['slope']
+    surf = next(L for L in layers if L['id'] == on)
+    src = next(L for L in room['layers'] if L['id'] == on)
+    table = paste(load(surf['src']), *surf['offset'], size)
+    out = []
+    for name, poly in src.get('things', {}).items():
+        cov = soft_poly(poly, size) * table[:, :, 3] / 255
+        if not (cov > 0).any():
+            continue
+        x0, y0, x1, y1 = box_of(cov > 0)
+        rgba = table[y0:y1, x0:x1].copy()
+        rgba[:, :, 3] = np.round(cov[y0:y1, x0:x1] * 255)
+        rgba[rgba[:, :, 3] == 0, :3] = 0
+        path = f'layers/{on}-{name}.png'
+        Image.fromarray(rgba.astype(np.uint8), 'RGBA').save(os.path.join(SCENE, path), optimize=True)
+        xs, ys = [p[0] for p in poly], [p[1] for p in poly]
+        height = max(4, int(round((max(ys) - min(ys)) - (max(xs) - min(xs)) * S)))
+        out.append({'id': f'{on}-{name}', 'thing': name, 'surface': on, 'src': path, 'offset': [x0, y0],
+                    'ground': [[x, y + src['height']] for x, y in poly], 'height': height,
+                    'px': int((rgba[:, :, 3] > 0).sum())})
+        print(f"  occluder {path}: {x1 - x0}x{y1 - y0} at ({x0}, {y0}), height {height}")
+    return out
+
+
 def compose(doc, room, at=None, scale=1.0, parts=('glow', 'shadow', 'lantern')):
     """The room from the files: plate, shadows, layers in depth order, each object drawn after its surface layer (at its
     painted spot, or at `at` scaled by `scale`), with only `parts` of it."""
