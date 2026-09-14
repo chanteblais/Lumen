@@ -416,11 +416,28 @@
    ],
    "height": 62,
    "anchors": {
+    "table.lantern": {
+     "at": [
+      790,
+      542
+     ],
+     "stand": [
+      760,
+      587
+     ],
+     "facing": "se",
+     "proposal": true
+    },
     "table.place": {
      "at": [
-      760,
-      640
+      662,
+      615
      ],
+     "stand": [
+      632,
+      660
+     ],
+     "facing": "se",
      "proposal": true
     },
     "table.reach": {
@@ -617,6 +634,388 @@
    }
   }
  ],
+ "objects": [
+  {
+   "id": "lantern",
+   "surface": "table",
+   "at": "table.lantern",
+   "src": "layers/lantern.png",
+   "offset": [
+    765,
+    542
+   ],
+   "base": [
+    18,
+    61
+   ],
+   "grip": [
+    17.5,
+    1
+   ],
+   "height": 60,
+   "drawnHeight": 40,
+   "scale": 0.6667,
+   "glow": {
+    "src": "layers/lantern-glow.png",
+    "offset": [
+     572,
+     481
+    ],
+    "base": [
+     211,
+     122
+    ],
+    "mode": "lighter",
+    "store": "Additive: RGB light in levels (0-255) on black, what the painting adds over the unlit table. Drawn with globalCompositeOperation 'lighter' it adds; black adds nothing.",
+    "through": {
+     "src": "layers/table-light.png",
+     "offset": [
+      633,
+      515
+     ],
+     "note": "alpha: where on the table layer the lantern's light and shadow land, the layer's alpha above its top's front edges (`glow.clip`), less the pixels darker than the light that falls on them at the painted spot"
+    },
+    "clip": [
+     [
+      620,
+      0
+     ],
+     [
+      620,
+      613
+     ],
+     [
+      628,
+      613
+     ],
+     [
+      807,
+      706
+     ],
+     [
+      967,
+      612
+     ],
+     [
+      975,
+      612
+     ],
+     [
+      975,
+      0
+     ]
+    ],
+    "tabletop": {
+     "profile": "L_c(d') = peak_c * (1 + d'^2/h^2)^-n levels, d' the ground distance from the pool's centre in page px across (hypot(dx, dy/slope)); the centre is `centre` from the base; divide d' and h by sqrt 2 for u/v units. The image also carries, within ground radius 70 of the base, the painted light the profile misses (brightest just in front of the base, less right beside it), and fades the tail out over 150-210.",
+     "peak": [
+      85.8,
+      40.9,
+      3.8
+     ],
+     "gain": [
+      0.497,
+      0.46,
+      0.09
+     ],
+     "h": 339.3,
+     "hUV": 239.9,
+     "n": 23.69,
+     "centre": [
+      5.1,
+      2.4
+     ],
+     "centreUV": [
+      3.8,
+      -1.4
+     ],
+     "fitResidual": [
+      7.6,
+      4.7,
+      2.4
+     ],
+     "note": "`gain` is the peak over the unlit tabletop colour under it: the light as a fraction of the surface it lands on"
+    },
+    "flame": {
+     "height": 19,
+     "note": "the flame over the base, page px, measured (the brightest point of the lantern)"
+    },
+    "scaled": "Draw the glow image scaled by `scale` about its base, like the lantern, at the same strength: the pool's radius scales with the flame's height over the surface, and a flame that much smaller gives that much less light (intensity \u221d size\u00b2, falloff \u221d 1/height\u00b2), so its peak stays the same.",
+    "floor": {
+     "note": "When she carries it, no image: draw the same profile as added light, centred under the flame, on the floor, before her and the layers over her. Held higher it lands wider and dimmer: h \u221d the flame's height over the floor, gain \u221d (the flame's height over the tabletop at this scale / its height over the floor)\u00b2. The light added is gain \u00d7 the floor's colour, so the rug gets less than the tabletop did. Numbers for the base `carryBase` px above the floor at `scale`. For a lift L (page px from the floor to the base): heightFlame = L + scale * flame.height, h = tabletop.h * heightFlame / flame.height, gain = tabletop.gain * (scale * flame.height / heightFlame)\u00b2, peak = gain * floor colour.",
+     "carryBase": 10,
+     "heightFlame": 22.7,
+     "h": 404.8,
+     "hUV": 286.2,
+     "n": 23.69,
+     "gain": [
+      0.155,
+      0.144,
+      0.028
+     ],
+     "rug": [
+      95,
+      72,
+      42
+     ],
+     "peak": [
+      14.7,
+      10.4,
+      1.2
+     ],
+     "colour": [
+      255,
+      122,
+      11
+     ]
+    }
+   },
+   "shadow": {
+    "src": "layers/lantern-shadow.png",
+    "offset": [
+     784,
+     594
+    ],
+    "base": [
+     -1,
+     9
+    ],
+    "through": {
+     "src": "layers/table-light.png",
+     "offset": [
+      633,
+      515
+     ],
+     "note": "alpha: where on the table layer the lantern's light and shadow land, the layer's alpha above its top's front edges (`glow.clip`), less the pixels darker than the light that falls on them at the painted spot"
+    }
+   },
+   "draw": "On the page, right after the surface layer (`surface`) in the depth order, at anchor point p and scale k: the lantern-glow ('lighter'), then the lantern-shadow (black, alpha), each with its `base` at p scaled by k, through `glow.through` (e.g. in an offscreen canvas: draw it, 'destination-in' the mask at its offset, then draw that canvas onto the room with 'lighter' for the glow and 'source-over' for the shadow); then the lantern with its `base` at p scaled by k. At `offset` and scale 1 the three recompose the painting."
+  }
+ ],
+ "occluders": {
+  "note": "Things standing on a surface (a surface layer's `things` in room.src.json), cut from that layer: the same pixels, so the room is unchanged. They order an object against the things on its surface, never Lumi: the surface layer, things included, still draws over her or under her as a whole. An occluder stands in front of an object (on the surface, or held over it) when its `ground` polygon (the silhouette dropped by the surface's height) has a point in the object's page columns lower on the page than the object's ground point by more than depth.margin (the rule for Lumi, at the object's width); the page then keeps the object's pixels out from under it.",
+  "items": [
+   {
+    "id": "table-books",
+    "thing": "books",
+    "surface": "table",
+    "src": "layers/table-books.png",
+    "offset": [
+     668,
+     560
+    ],
+    "ground": [
+     [
+      668,
+      640
+     ],
+     [
+      713,
+      620
+     ],
+     [
+      750,
+      643
+     ],
+     [
+      761,
+      662
+     ],
+     [
+      761,
+      681
+     ],
+     [
+      727,
+      703
+     ],
+     [
+      668,
+      679
+     ]
+    ],
+    "height": 30,
+    "px": 5334
+   },
+   {
+    "id": "table-gourd",
+    "thing": "gourd",
+    "surface": "table",
+    "src": "layers/table-gourd.png",
+    "offset": [
+     805,
+     550
+    ],
+    "ground": [
+     [
+      805,
+      612
+     ],
+     [
+      824,
+      612
+     ],
+     [
+      834,
+      652
+     ],
+     [
+      834,
+      674
+     ],
+     [
+      805,
+      674
+     ]
+    ],
+    "height": 45,
+    "px": 1680
+   },
+   {
+    "id": "table-plant",
+    "thing": "plant",
+    "surface": "table",
+    "src": "layers/table-plant.png",
+    "offset": [
+     806,
+     521
+    ],
+    "ground": [
+     [
+      806,
+      610
+     ],
+     [
+      815,
+      590
+     ],
+     [
+      840,
+      583
+     ],
+     [
+      870,
+      585
+     ],
+     [
+      896,
+      597
+     ],
+     [
+      909,
+      618
+     ],
+     [
+      910,
+      647
+     ],
+     [
+      882,
+      676
+     ],
+     [
+      836,
+      676
+     ],
+     [
+      806,
+      624
+     ]
+    ],
+    "height": 34,
+    "px": 6856
+   },
+   {
+    "id": "table-smallbooks",
+    "thing": "smallbooks",
+    "surface": "table",
+    "src": "layers/table-smallbooks.png",
+    "offset": [
+     880,
+     586
+    ],
+    "ground": [
+     [
+      880,
+      648
+     ],
+     [
+      918,
+      648
+     ],
+     [
+      918,
+      687
+     ],
+     [
+      880,
+      687
+     ]
+    ],
+    "height": 17,
+    "px": 1560
+   },
+   {
+    "id": "table-mug",
+    "thing": "mug",
+    "surface": "table",
+    "src": "layers/table-mug.png",
+    "offset": [
+     803,
+     645
+    ],
+    "ground": [
+     [
+      803,
+      707
+     ],
+     [
+      845,
+      707
+     ],
+     [
+      845,
+      744
+     ],
+     [
+      803,
+      744
+     ]
+    ],
+    "height": 13,
+    "px": 1634
+   },
+   {
+    "id": "table-note",
+    "thing": "note",
+    "surface": "table",
+    "src": "layers/table-note.png",
+    "offset": [
+     788,
+     527
+    ],
+    "ground": [
+     [
+      788,
+      589
+     ],
+     [
+      806,
+      589
+     ],
+     [
+      806,
+      605
+     ],
+     [
+      788,
+      605
+     ]
+    ],
+    "height": 6,
+    "px": 323
+   }
+  ]
+ },
  "blockers": [
   {
    "id": "stair-up",
@@ -2536,9 +2935,24 @@
   }
  ],
  "recompose": {
-  "meanAbs": 0.031,
+  "meanAbs": 0.03147,
   "maxAbs": 117,
   "perMask": {
+   "table": {
+    "meanAbs": 0.1,
+    "maxAbs": 109,
+    "over8": 0.0032
+   },
+   "cushion-cream": {
+    "meanAbs": 0.09,
+    "maxAbs": 70,
+    "over8": 0.0022
+   },
+   "cushion-green": {
+    "meanAbs": 0.06,
+    "maxAbs": 29,
+    "over8": 0.0011
+   },
    "armchair": {
     "meanAbs": 0.05,
     "maxAbs": 36,
@@ -2559,26 +2973,24 @@
     "maxAbs": 70,
     "over8": 0.008
    },
-   "table": {
-    "meanAbs": 0.1,
-    "maxAbs": 109,
-    "over8": 0.0031
-   },
-   "cushion-cream": {
-    "meanAbs": 0.09,
-    "maxAbs": 70,
-    "over8": 0.0022
-   },
-   "cushion-green": {
-    "meanAbs": 0.06,
-    "maxAbs": 29,
-    "over8": 0.0011
-   },
    "balustrade": {
     "meanAbs": 0.19,
     "maxAbs": 117,
     "over8": 0.0092
    }
+  },
+  "lantern": {
+   "hole": {
+    "meanAbs": [
+     0.002,
+     0.002,
+     0.002
+    ],
+    "maxAbs": 0,
+    "over8": 0.0,
+    "px": 12263
+   },
+   "note": "the hole: cluster E in room.src.json, the lantern and its pool's middle"
   }
  }
 }

@@ -34,8 +34,8 @@ def draw(im, room, k=1.0, ox=0, oy=0):
         d.line(P(L['footprint'] + L['footprint'][:1]), fill=(0, 230, 255, 255), width=w + 1)
         if L.get('extent'):
             d.line(P(L['extent'] + L['extent'][:1]), fill=(255, 255, 255, 200), width=w)
-        for name, (x, y) in L['anchors'].items():
-            (px, py), = P([(x, y)])
+        for name, a in L['anchors'].items():
+            (px, py), = P([tuple(a['at'] if isinstance(a, dict) else a)])
             d.ellipse([px - 3 * w, py - 3 * w, px + 3 * w, py + 3 * w], fill=(255, 40, 40, 255))
     return im
 

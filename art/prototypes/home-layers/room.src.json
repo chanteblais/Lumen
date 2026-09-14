@@ -27,15 +27,32 @@
     "A": "A-v2-120023-2.png",
     "B": "B-v1-110714-1.png",
     "C": "C-v1-110750-1.png",
-    "D": "D-v1-120100-1.png"
+    "D": "D-v1-120100-1.png",
+    "E": "E-v1-160453-1.png",
+    "F": "F-v1-163534-1.png"
   },
 
   "clusters": {
     "A": { "layers": ["table", "cushion-cream", "cushion-green"], "prompt": "rug" },
     "B": { "layers": ["armchair", "stool"], "prompt": "corner" },
     "C": { "layers": ["desk", "chair"], "prompt": "window" },
-    "D": { "layers": ["balustrade"], "prompt": "stairwell" }
+    "D": { "layers": ["balustrade"], "prompt": "stairwell" },
+    "E": { "layers": [], "object": "lantern", "prompt": "tabletop",
+           "hole": { "on": "table", "centre": [783, 603], "groundRadius": 130, "inset": 3, "keep": ["books", "gourd", "plant", "smallbooks", "mug", "note"] },
+           "note": "Not a floor hole: the lantern and the pool of its light on the tabletop, cut out of the table layer (lantern.py, called by plate.py). The hole is the tabletop (the table's extent raised by its height, inset 3px) within groundRadius of the lantern's base (a ground circle: page px across, times the iso slope down the page), less the other things on the table grown 2px, plus the lantern's body grown 2px. Its candidate is the unlit reference the lantern's light is measured against." },
+    "F": { "layers": [], "object": "lantern", "prompt": "tabletop",
+           "hole": { "on": "table", "around": "lantern", "grow": 5, "keep": ["books", "gourd", "plant", "smallbooks", "mug", "note"] },
+           "note": "The fill under the lantern: its body grown 5px, less the other things grown 1px. A tight hole, so the generator continues the planks from the painting right beside it; E's candidate, repainting the whole pool, puts the plank joints elsewhere." }
   },
+
+  "objects_note": "Things Lumi picks up, cut out of the layer they stand on (lantern.py). `body`: the silhouette traced ~2px outside, as a layer's body; `base`: the centre of its base where it meets the surface, painting px as painted; `grip`: where a hand takes it (the top of the ring on its finial; the painted lantern has no bail handle); `drawnHeight`: the height it is drawn at in the room, px (Chanté, 2026-09-13: ~40, a third of her 120); `at`: the anchor it starts at; `cluster`: its inpaint cluster.",
+  "objects": [
+    { "id": "lantern", "on": "table", "at": "table.lantern", "cluster": "E", "fillCluster": "F", "drawnHeight": 40,
+      "outline": [[783,542.5],[785,543.5],[785.8,546],[785.8,553],[787.5,554.5],[789.5,557],[790.5,560],[793,561],[795.3,563],[797,566],[798,575],[798.3,585],[797.8,593],[798.5,595.5],[799.3,599],[799.3,604],[798,608],[795,611],[789,613.3],[783,613.8],[777,613.3],[771,611],[768,608],[765.8,604],[765.8,599],[767,595.5],[769,593],[769.3,585],[769.3,575],[769.7,566],[771.2,563],[773.5,561],[776,560],[777,557],[778.5,554.5],[780.2,553],[780.2,546],[781,543.5]],
+      "body": [[[783,541],[785,542],[787,545],[787,552],[790,554],[791,558],[794,560],[797,562],[799,566],[799,592],[801,598],[801,605],[799,609],[794,613],[783,615],[772,613],[767,609],[764,604],[764,598],[768,592],[768,566],[770,562],[773,560],[776,558],[777,554],[779,552],[779,545],[781,542]]],
+      "base": [783, 603],
+      "grip": [783, 543] }
+  ],
 
   "layers": [
     {
@@ -51,7 +68,19 @@
       "footprint": [[645,673],[797,588],[950,672],[803,758]],
       "extent": [[628,675],[797,576],[967,674],[807,768]],
       "height": 62,
-      "anchors": { "table.place": [760, 640], "table.reach": [612, 700] }
+      "things": {
+        "books": [[668,578],[713,558],[750,581],[761,600],[761,619],[727,641],[668,617]],
+        "gourd": [[805,550],[824,550],[834,590],[834,612],[805,612]],
+        "plant": [[806,548],[815,528],[840,521],[870,523],[896,535],[909,556],[910,585],[882,614],[836,614],[806,562]],
+        "smallbooks": [[880,586],[918,586],[918,625],[880,625]],
+        "mug": [[803,645],[845,645],[845,682],[803,682]],
+        "note": [[788,527],[806,527],[806,543],[788,543]]
+      },
+      "anchors": {
+        "table.lantern": { "at": [790, 542], "stand": [760, 587], "facing": "se" },
+        "table.place": { "at": [662, 615], "stand": [632, 660], "facing": "se" },
+        "table.reach": [612, 700]
+      }
     },
     {
       "id": "cushion-cream",

@@ -10,6 +10,7 @@
     { "at": [1075, 770], "rest": 0, "name": "right of the green cushion", "why": "turning up the table's right side" },
     { "at": [950, 636], "rest": 0, "name": "close behind the table's back-right edge", "why": "8 px outside its grown extent: the tabletop covers her lower half" },
     { "at": [797, 552], "rest": 0, "name": "close behind the table's back corner", "why": "the old failure: a bounding box let the top clip her here" },
+    { "lantern": { "from": "table.lantern", "to": "table.place" }, "rest": 0.8, "name": "the lantern moment", "why": "she walks to the lantern's stand, picks it up, carries it along the table's back-left edge and sets it down at the left corner. Only from table.lantern to table.place: carrying it she faces only se, sse, s, ssw or sw (the holding drawings), and each of those walks toward the camera, so the way back up the page has no drawing. When the lantern is not at `from`, the stop is skipped and the tour runs as before" },
     { "at": [655, 630], "rest": 0, "name": "close behind the table's back-left edge", "why": "8 px outside its grown extent" },
     { "anchor": "table.reach", "rest": 1.6, "why": "by the table's left corner, beside the cream cushion" }
   ]

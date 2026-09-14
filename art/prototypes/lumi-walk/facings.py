@@ -1,7 +1,7 @@
 """Mark where Lumi faces in each drawing, and check it against the direction she walks or turns through in it.
 
     python3 art/prototypes/lumi-walk/facings.py                                  # the rig's drawings: numbers + out/facings.png
-    python3 art/prototypes/lumi-walk/facings.py --candidates <dir> [--target 45] # generated candidates, before any is chosen
+    python3 art/prototypes/lumi-walk/facings.py --candidates <dir> [--target 45] [--ref <empty drawing>]  # candidates
 
 Chanté, 2026-09-13: "she's still not always walking forward ... it should be a relatively easy task of marking where
 her face is and always making sure it's facing in the direction she's walking." The page's audit proved she moved
@@ -58,8 +58,9 @@ def arg(name, default):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
 
 
-def mark(rgba):
-    """The face over the hood rows of a figure on transparent ground, or None."""
+def mark(rgba, hood=None):
+    """The face over the hood rows of a figure on transparent ground, or None. `hood` (centre, half-width) overrides
+    the hood's extent measured on this figure — for a drawing whose raised hand or lantern widens the hood rows."""
     a = rgba[:, :, 3] > 200
     rgb = rgba[:, :, :3].astype(int)
     lum = rgb.mean(axis=2)
@@ -70,6 +71,8 @@ def mark(rgba):
     rows[top:chin] = True
     xs = np.where((a & rows).any(axis=0))[0]
     hc, hw = (xs.min() + xs.max()) / 2, (xs.max() - xs.min()) / 2
+    if hood is not None:
+        hc, hw = hood
     dark = ndi.binary_opening(a & rows & (lum < 50), iterations=2)
     lab, k = ndi.label(dark)
     if not k:
@@ -98,13 +101,29 @@ if '--candidates' in sys.argv:
         print(f'{os.path.basename(folder)}: a view from behind has no face to measure — judge by eye in a strip between its two neighbours')
         sys.exit(0)
     print(f'side-on scale {side:.3f}; target {target:.1f}° ± {GATE}° turned toward the viewer\'s left')
+    def matte_at(path):
+        sh = Sheet(path, glow=False, shadow=False)
+        rows = sh.rows()
+        bb = sh.frames(rows[0][0], rows[-1][1], 1)[0]
+        return sh.matte(bb)[0], (max(0, bb[0] - 8), max(0, bb[2] - 8))
+    # --ref <empty-handed drawing>: take the hood's centre and half-width from it, on the image canvas (the generator keeps
+    # position when a drawing is asked as an edit), and only the face from the candidate. A lantern held high beside the
+    # hood widens the candidate's hood rows and read sw holding v2 as 17–26° while its face, by eye, had not turned.
+    ref = arg('--ref', None)
+    if ref:
+        rr, ro = matte_at(os.path.join(ROOT, ref) if not os.path.isabs(ref) else ref)
+        rm = mark(rr)
+        a_r = rr[:, :, 3] > 200
+        ys_r = np.where(a_r.any(axis=1))[0]
+        rows_r = np.zeros_like(a_r); rows_r[ys_r.min():int(ys_r.min() + CHIN * (ys_r.max() - ys_r.min()))] = True
+        xs_r = np.where((a_r & rows_r).any(axis=0))[0]
+        hood_img = ((xs_r.min() + xs_r.max()) / 2 + ro[0], (xs_r.max() - xs_r.min()) / 2)
+        print(f"  hood from {os.path.basename(ref)}: centre x {hood_img[0]:.1f} (image), half-width {hood_img[1]:.1f}; the ref itself turned {angle(rm['turn'], side):.1f}°")
     for path in sorted(glob.glob(os.path.join(folder, 'v*.png'))):
         if any(s in path for s in ('-aligned', '-motion', 'ref-')):
             continue
-        sh = Sheet(path, glow=False, shadow=False)
-        rows = sh.rows()
-        rgba, main = sh.matte(sh.frames(rows[0][0], rows[-1][1], 1)[0])
-        m = mark(rgba)
+        rgba, org = matte_at(path)
+        m = mark(rgba, (hood_img[0] - org[0], hood_img[1]) if ref else None)
         ang = angle(m['turn'], side)
         print(f"  {os.path.basename(path)}: {m['what']} turn {m['turn']:+.3f} → turned {ang:5.1f}°  {'pass' if abs(ang - target) <= GATE else 'fail'}")
     sys.exit(0)
@@ -136,6 +155,24 @@ for n in ORDER:
     rig[n]['turned'] = round(m['angle'], 1)
     rig[n]['back'] = n in BACK
     M[n] = m
+# The holding and pick-up drawings (split.py's `variants`), measured as their base facing is: on the variant's own body
+# piece, but with the hood's centre and half-width taken from the base facing's body mapped through `toBase` (a lantern
+# held high beside the hood widens the hood rows, which read the face as turned when it is not — the `--ref` finding).
+# The page's audit judges her against these while she holds the lantern. The ten facings above are untouched.
+for n, R in rig.get('variants', {}).items():
+    base = R['base']
+    if base not in M:
+        continue
+    ba = M[base]['im'][:, :, 3] > 200
+    bys = np.where(ba.any(axis=1))[0]
+    brows = np.zeros_like(ba)
+    brows[bys.min():int(bys.min() + CHIN * (bys.max() - bys.min()))] = True
+    bxs = np.where((ba & brows).any(axis=0))[0]
+    k, off = R['toBase']['k'], R['toBase']['offset']
+    hood = (((bxs.min() + bxs.max()) / 2 - off[0]) / k, (bxs.max() - bxs.min()) / 2 / k)
+    vm = mark(np.array(Image.open(os.path.join(HERE, 'parts', f'{n}-body.png')).convert('RGBA')), hood)
+    R['turned'] = round(angle(vm['turn'], side), 1)
+    print(f"{n} (base {base}) {vm['what']} turn {vm['turn']:+.3f} → turned {R['turned']:5.1f}° (its base {M[base]['angle']:.1f}°, needs {WANT[base]:.1f}°)")
 with open(os.path.join(HERE, 'rig-walk.json'), 'w') as fh:
     json.dump(rig, fh, indent=1)
 print('turns written to rig-walk.json (run after split.py, before build.py)')

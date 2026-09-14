@@ -2,10 +2,17 @@
 candidates, check that they recompose to the painting, and write the room file.
 
     python3 art/prototypes/home-layers/plate.py
+    python3 art/prototypes/home-layers/plate.py --keep     # the room's pieces as they are on disk; only the objects
+                                                            # (lantern.py) and layers.json are rebuilt
 
 Reads room.src.json (the hand-traced polygons and `plate_candidates`, one out/inpaint/ file per cluster). Writes
 art/scenery/home/plate.png, art/scenery/home/layers/<id>.png and <id>-shadow.png, art/scenery/home/layers.json, and
-out/recompose-diff.png, out/seams-<cluster>-<k>.png, out/plate-small.png. Prints the recompose error.
+out/recompose-diff.png, out/seams-<cluster>-<k>.png, out/plate-small.png. Prints the recompose error. Then, for each
+of room.src.json's `objects` (the lantern), lantern.build() cuts it out of the layer it stands on and rewrites that
+layer (lantern.py's docstring); layers.json gets an `objects` array, and its `recompose` is measured from the files as
+written, the objects at their painted spots. Clusters with an `object` (E, F) are not floor holes and are skipped
+below. `--keep` is for when the A-D candidates are not on disk (they are gitignored): the plate, the layers and their
+offsets are taken from the files and the last layers.json.
 
 **Method.**
 1. *The inpaint, corrected.* Each candidate is laid into the painting inside its cluster's hole and colour-corrected by
@@ -73,6 +80,97 @@ lum_o = orig @ LUM
 byid = {L['id']: L for L in room['layers']}
 ground = {L['id']: (L['extent'] or L['footprint']) for L in room['layers']}
 order = depth.order(ground)                                   # back to front
+import lantern  # noqa: E402
+
+
+def geometry(L):
+    """What layers.json carries of a layer from room.src.json: ground polygons, height, anchors (proposals). An anchor is
+    a point, or an object with `at` (and, for a surface's places, `stand` and `facing`)."""
+    return {'footprint': L['footprint'], 'extent': L['extent'], 'height': L['height'],
+            'anchors': {k: ({**v, 'proposal': True} if isinstance(v, dict) else {'at': v, 'proposal': True})
+                        for k, v in L['anchors'].items()}}
+
+
+def write_room(layers_out):
+    """The lantern step (lantern.build: the lantern, its shadow and glow cut out of the table, and the table without
+    them), then layers.json, with the recompose measured from the files as written."""
+    objects_out = [lantern.build(room, layers_out, order, o) for o in room.get('objects', [])]
+    # the things on each object's surface as occluders (lantern.occluders), cut from the surface layer as just written
+    occluders_out = [oc for s in sorted({o['on'] for o in room.get('objects', [])}) for oc in lantern.occluders(room, layers_out, s)]
+    blocked = []
+    for L in room['layers']:
+        blocked += [{'of': L['id'], 'poly': p} for p in depth.grow(L['extent'] or L['footprint'])]
+    for B in room['blockers']:
+        blocked += [{'of': B['id'], 'poly': p} for p in depth.grow(B['footprint'])]
+    pairs = []
+    for x_ in order:
+        for y_ in order:
+            if x_ < y_:
+                f = depth.in_front(ground[x_], ground[y_])
+                if f: pairs.append([x_, y_] if f > 0 else [y_, x_])
+    doc = {
+        'about': "Home as an empty plate plus furniture layers, cut from art/scenery/home/background.png (2026-09-13, "
+                 "art/prototypes/home-layers/). A prototype, not served. Painting px throughout. Draw the plate, then every "
+                 "shadow, then the layers and Lumi in depth order (`depth`). Built by plate.py from room.src.json.",
+        'plate': 'plate.png',
+        'painting': 'background.png',
+        'size': room['size'],
+        'iso': {'slope': room['iso']['slope'], 'note': 'ground u = (x + y/slope)/2, v = (y/slope - x)/2; toward the camera is +u and +v'},
+        'lumi': {'height': room['lumi']['height'], 'halfWidth': depth.HALF, 'reach': depth.REACH, 'clearance': depth.CLEARANCE,
+                 'note': "hood top to feet in painting px at every depth; halfWidth is her cloak at her feet, reach how far her "
+                         "drawing spreads either side of them (hem, hands), clearance her body's reach on the floor"},
+        'depth': {
+            'rule': "An item draws over Lumi when some point of its ground polygon (extent if given, else footprint) lies in "
+                    "one of her page columns (feet x ± halfWidth) lower on the page than her feet. In one page column two "
+                    "ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical "
+                    "extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider "
+                    "parts of her drawing: if its ground comes within her reach (feet x ± reach), test at its column nearest "
+                    "her feet; out of reach it cannot overlap her. A ground point counts as lower only by more than `margin` "
+                    "px, so a footprint corner level with her feet doesn't cover her hem. Order the "
+                    "layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, "
+                    "back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
+            'margin': depth.MARGIN,
+            'order': order,
+            'infront': pairs,
+        },
+        'layers': layers_out,
+        'objects': objects_out,
+        'occluders': {
+            'note': "Things standing on a surface (a surface layer's `things` in room.src.json), cut from that layer: the same "
+                    "pixels, so the room is unchanged. They order an object against the things on its surface, never Lumi: "
+                    "the surface layer, things included, still draws over her or under her as a whole. An occluder stands in "
+                    "front of an object (on the surface, or held over it) when its `ground` polygon (the silhouette dropped by "
+                    "the surface's height) has a point in the object's page columns lower on the page than the object's ground "
+                    "point by more than depth.margin (the rule for Lumi, at the object's width); the page then keeps the "
+                    "object's pixels out from under it.",
+            'items': occluders_out,
+        },
+        'blockers': [{'id': B['id'], 'footprint': B['footprint'], 'note': 'stays in the plate; blocks the floor only'} for B in room['blockers']],
+        'floor': room['floor'],
+        'walkable': {
+            'note': "Her feet may stand inside `floor` and outside every polygon of `minus`: each item's extent or footprint, and "
+                    "each blocker, grown by her clearance as a ground circle (an ellipse clearance wide and clearance*slope "
+                    "tall on the page; one hull per convex polygon, one per edge of a concave one).",
+            'floor': room['floor'],
+            'minus': blocked,
+        },
+        'inventory': room['inventory'],
+    }
+    doc['recompose'] = lantern.recompose(doc, room)
+    json.dump(doc, open(os.path.join(SCENE, 'layers.json'), 'w'), indent=1)
+    r = doc['recompose']
+    print(f"recompose from the files, the lantern at its painted spot: whole painting mean {r['meanAbs']:.5f} max {r['maxAbs']}")
+    print('wrote art/scenery/home/layers.json')
+    return doc
+
+
+if '--keep' in sys.argv:
+    # The room's pieces as they are on disk (plate.png, layers/<id>.png and -shadow.png, their offsets from the last
+    # layers.json): for when the A-D candidates are not on disk. Only the lantern step and layers.json are rebuilt.
+    prev = {L['id']: L for L in json.load(open(os.path.join(SCENE, 'layers.json')))['layers']}
+    write_room([{'id': i, 'src': prev[i]['src'], 'offset': prev[i]['offset'], 'shadow': prev[i]['shadow'], **geometry(byid[i])} for i in order])
+    sys.exit(0)
+
 solid = {i: poly_mask(byid[i]['body'], (W, H)) for i in order}
 fol = {i: poly_mask(byid[i]['foliage'], (W, H)) if byid[i]['foliage'] else np.zeros((H, W), bool) for i in order}
 items = {i: solid[i] | fol[i] for i in order}
@@ -90,6 +188,8 @@ IN = np.zeros((H, W), bool)        # where an item's pixels may be: its polygons
 holes = {}
 cands = room.get('plate_candidates', {})
 for cl, spec in room['clusters'].items():
+    if 'object' in spec:           # a patch of a surface layer under an object, not floor: lantern.py's
+        continue
     if cl not in cands:
         print(f'cluster {cl}: no candidate chosen, left as painted')
         continue
@@ -296,65 +396,11 @@ for i in order:
     L = byid[i]
     body = crop(np.dstack([np.round(colour[i]), np.round(alpha[i] * 255)]).astype(np.uint8), f'{i}.png')
     sh = crop(np.dstack([np.zeros((H, W, 3)), np.round(shadow[i] * 255)]).astype(np.uint8), f'{i}-shadow.png') if L['shadow'] else None
-    layers_out.append({
-        'id': i, 'src': body['src'], 'offset': body['offset'], 'shadow': sh,
-        'footprint': L['footprint'], 'extent': L['extent'], 'height': L['height'],
-        'anchors': {k: {'at': v, 'proposal': True} for k, v in L['anchors'].items()},
-    })
+    layers_out.append({'id': i, 'src': body['src'], 'offset': body['offset'], 'shadow': sh, **geometry(L)})
 
-blocked = []
-for L in room['layers']:
-    blocked += [{'of': L['id'], 'poly': p} for p in depth.grow(L['extent'] or L['footprint'])]
-for B in room['blockers']:
-    blocked += [{'of': B['id'], 'poly': p} for p in depth.grow(B['footprint'])]
-pairs = []
-for x_ in order:
-    for y_ in order:
-        if x_ < y_:
-            f = depth.in_front(ground[x_], ground[y_])
-            if f: pairs.append([x_, y_] if f > 0 else [y_, x_])
-
-doc = {
-    'about': "Home as an empty plate plus furniture layers, cut from art/scenery/home/background.png (2026-09-13, "
-             "art/prototypes/home-layers/). A prototype, not served. Painting px throughout. Draw the plate, then every "
-             "shadow, then the layers and Lumi in depth order (`depth`). Built by plate.py from room.src.json.",
-    'plate': 'plate.png',
-    'painting': 'background.png',
-    'size': room['size'],
-    'iso': {'slope': room['iso']['slope'], 'note': 'ground u = (x + y/slope)/2, v = (y/slope - x)/2; toward the camera is +u and +v'},
-    'lumi': {'height': room['lumi']['height'], 'halfWidth': depth.HALF, 'reach': depth.REACH, 'clearance': depth.CLEARANCE,
-             'note': "hood top to feet in painting px at every depth; halfWidth is her cloak at her feet, reach how far her "
-                     "drawing spreads either side of them (hem, hands), clearance her body's reach on the floor"},
-    'depth': {
-        'rule': "An item draws over Lumi when some point of its ground polygon (extent if given, else footprint) lies in "
-                "one of her page columns (feet x ± halfWidth) lower on the page than her feet. In one page column two "
-                "ground points differ only in u + v, so lower on the page is toward the camera. Items are vertical "
-                "extrusions of their ground polygon, so one with no ground in her feet columns can only meet the wider "
-                "parts of her drawing: if its ground comes within her reach (feet x ± reach), test at its column nearest "
-                "her feet; out of reach it cannot overlap her. A ground point counts as lower only by more than `margin` "
-                "px, so a footprint corner level with her feet doesn't cover her hem. Order the "
-                "layers and Lumi by a topological sort of that relation (`infront` holds it between layers, [front, "
-                "back]), ties by the lowest point. Shadows are drawn on the plate before any layer or Lumi.",
-        'margin': depth.MARGIN,
-        'order': order,
-        'infront': pairs,
-    },
-    'layers': layers_out,
-    'blockers': [{'id': B['id'], 'footprint': B['footprint'], 'note': 'stays in the plate; blocks the floor only'} for B in room['blockers']],
-    'floor': room['floor'],
-    'walkable': {
-        'note': "Her feet may stand inside `floor` and outside every polygon of `minus`: each item's extent or footprint, and "
-                "each blocker, grown by her clearance as a ground circle (an ellipse clearance wide and clearance*slope "
-                "tall on the page; one hull per convex polygon, one per edge of a concave one).",
-        'floor': room['floor'],
-        'minus': blocked,
-    },
-    'inventory': room['inventory'],
-    'recompose': {'meanAbs': round(report['overall'][0], 3), 'maxAbs': round(report['overall'][1]),
-                  'perMask': {i: {'meanAbs': round(v[0], 2), 'maxAbs': round(v[1]), 'over8': round(v[2], 4)} for i, v in per.items()}},
-}
-json.dump(doc, open(os.path.join(SCENE, 'layers.json'), 'w'), indent=1)
-print('wrote art/scenery/home/plate.png, layers/, layers.json')
+print('(the recompose above is before the lantern step, with the lantern still in the table)')
+write_room(layers_out)
+print('wrote art/scenery/home/plate.png, layers/')
 
 # the heatmap: the painting dimmed, the largest channel error x6 in red, the masks outlined
 heat = orig * 0.35

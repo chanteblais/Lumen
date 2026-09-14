@@ -33,6 +33,43 @@ Lumi walking Home's painting, rigged in code from two drawings. Built 2026-09-13
 
 Rebuild, from the repo root: `python3 art/prototypes/lumi-walk/split.py && python3 art/prototypes/lumi-walk/facings.py && python3 art/prototypes/lumi-walk/morph.py && python3 art/prototypes/lumi-walk/elevation.py && python3 art/prototypes/lumi-walk/build.py`, then `python3 art/prototypes/lumi-walk/capture.py --plan --zoom 1.6 --cell 480x320 --step 2.5 --count 20 --cols 5 --start 0 --name tour`, `capture.py --audit` and `capture.py --occlusion`. `build.py` reads `art/scenery/home/` and imports `home-layers/depth.py` and `fringe.py`; `facings.py` and `elevation.py` read the iso slope from `layers.json`. `elevation.py` is the camera-angle gate (room 34.8°, s 29.1°, n 33.3°); it only prints, and belongs in the chain so every rebuild re-checks it. `capture.py --turn swap` renders the same frames with the old behaviour, for comparison.
 
+**Holding the lantern (2026-09-13, `ux/lumi-lantern-table`).**
+- **The drawings:** five, each an edit of its empty-handed drawing.
+  - `lumi-iso-front-lantern` (sw), `-ssw-lantern` and `-s-lantern` hold her lantern up by its finial, the fist between chin and eyes (0.29–0.31 of her height down).
+  - Two pick-up keys at sw: `-front-reach`, an open hand at eye height, and `-front-grip`, the fist closed on the finial.
+  - The page mirrors them to se and sse, the facings she uses behind the low table.
+- **Why carried high:** behind the table the tabletop reaches her chest and a 40 px lantern's top is at her eye level. Chanté chose "reach up, carry it high".
+- **The pieces:** `split.py` writes them as `variants` in `rig-walk.json` and `morph.json`; the page sets them aside until the pick-up is wired. Per variant: a body, feet, and a `hand` piece drawn over the lantern's finial, plus `grip` (where the room's lantern hangs, piece px), `lanternSide` and `toBase` (onto its facing's canvas).
+- **One lantern:** the drawn lantern is cut away, so the room's lantern piece is the same pixels on the table and in her hand.
+- **The hands gate, `hands.py`:** counts dark hand blobs from 0.12 of her height down (face excluded, blobs within 0.025 of her height merged) against the same facing's empty-handed drawing. More hands fails: a pasted third hand fails 3 vs 2, and the ten facings pass against themselves.
+- **The other gates:** `facings.py --ref <empty drawing>`, and `elevation.py` measuring the hood's centre from its peak with the lantern removed, on the half away from it. Together they keep a held object from reading as a turn or a steeper camera.
+- **Rebuild:** nothing added to the chain above. `split.py` and `morph.py` write the variants with the facings, and the ten facings stay byte-identical.
+- **Filled:** the torn cloak on ssw and s and the holed sleeve on the grip key are painted with OpenAI's masked edit (`fill.py`, `art/prompts/lumi-iso-lantern-fill.md`, chosen fills `art/lumi/*-fill.png`, pasted by `split.py` inside the mask). `split.py` also trims each hand piece to the fist.
+- **On the page:** the lantern moment.
+  - **Where it is:** `?lantern=A|B|hand` sets where it starts, and `?stop=<i>` starts the tour at stop i.
+  - **Controls:** Pick up and Set down buttons, a readout line; clicks on the floor do nothing while she holds it.
+  - **The tour:** walks in along se to `table.lantern`'s stand, reaches, closes her hand and lifts (0.55 s, 0.25 s, 0.5 s, 0.35 s settles), turns se → sw holding it, walks sw along the back edge, turns back and sets it down at `table.place`. It carries A → B only: every holding drawing faces toward you, so no route carries it back. With the lantern already at B, the tour is the plain one.
+  - **Depth:** the held lantern is its own depth item (its ground point under it, a lift of 72, so it stays over the tabletop) and swings at most 3°.
+  - **Light:** the tabletop light and the floor pool follow `layers.json`'s recipe, crossfading over the lift.
+  - **`capture.py --lantern`** (page `?lanterncheck=1`) checks, per frame: grip error, the attach and detach jumps, the base on the anchor after the set-down, light left behind, and reach.
+- **Numbers:**
+  - audit 0 of 30,614 px sideways with the moment (plain walk 0 of 30,710);
+  - occlusion 0 on every count, the lantern's too, with 100% of it showing over the top;
+  - grip error 0, attach jump 0.05 px, detach 0.36 px, base on the anchor 0, light left behind 0;
+  - reach 47.2 (limit 50);
+  - render 4.5 / 16.7 ms a frame, 7.8 / 34.0 while she holds it.
+- **Grids and GIFs:** `out/lantern-{pickup,turn,carry,setdown,moment,idle}`.
+- **Known:**
+  - **The hand swap is fixed.** `sw-lantern-left` and `ssw-lantern-left` hold it in her left hand, on the viewer's right (`art/prompts/lumi-iso-front-lantern-left.md`, `-ssw-lantern-left.md`; fills in `art/lumi/*-left-fill.png`), and s-lantern is mirrored at s. From se round to sw she keeps her left hand: grip dx stays between +25.7 and +38.0, never changing side, and the largest frame-to-frame move is 1.25 px.
+  - **Ghosting:** the hood washes pale at se → sse, and the arm ghosts faintly at rest → reach and grip → held.
+  - **Past the corner:** at the end of the carry the lantern hangs past the table's left corner.
+  - **The ghosts stay.** The full rig was tested and parked (`lumi-rig/`), so they wait for better in-betweens.
+- **B moved:** to (662, 615), so a sw corridor lands its base exactly.
+- **Things on the table have their own depth.**
+  - **Occluders:** `plate.py --keep` writes one per thing on the tabletop (books, gourd, plant, small books, mug, note) into `layers.json` → `occluders`: the table layer's own pixels inside each polygon, with ground polygons and heights.
+  - **On the page:** a thing in front is erased from the held or resting lantern's buffer, and the order is held while their boxes meet, so it can't pop.
+  - **The result:** carrying it past the book stack, the books cover the lantern, and only her fist and its top show for about 3 s. The room without the lantern is pixel-identical.
+
 **Status:** landed and pushed (2026-09-13, `5433a9f`) after eight rounds of Chanté's review, the last with the rig on Home's layers: "This is looking like a really good start." The eighth look below is the current state; the limits in this paragraph are from the first build. Next: Lumi picks up the lantern and sets it down on the low table (`docs/animation-pipeline.md` → Next animation). At the first publish, what the renders showed: boots step and hold, the tabletop, lantern and plant cover her behind the table and she covers the cushions in front; a blink first left the painted eyes' rims as orange rings (the lid now takes the rim and glow). Known limits: a turn is a dip and a swap, not an in-between; one room, one tour; nothing in the app plays it.
 
 **Chanté's first look (2026-09-13):** "This is looking great! She's clipping the table, so we'll need to work on our mapping. But she looks awesome!" The rig passed; the map didn't. Two mistakes, both fixed in `room-home.json` and the page: the table's footprint was traced from its legs' feet, but the top overhangs them by ~15px (it is now the tabletop's outline dropped by its 65px height); and the clearance kept her *feet* 11px off a footprint while her cloak reaches ~25px either side (now 24px). Still true after the fix: close behind a low table the tabletop covers most of her, because at this painting's angle a 65px table hides a lot of floor — hand-traced polygons and a bounding-box depth test are the weak part, not the drawings.
@@ -64,6 +101,24 @@ Home's painting taken apart instead of mapped by hand. Chanté, asked whether to
 - `capture.py` — headless Chrome: the default `?grid=` mode puts Lumi at every test point in one screenshot (`out/grid.png`; `--view tinted`), `--test` checks the JS rule against `depth.py`, `--page` screenshots the page.
 
 Rebuild, from the repo root, from the committed plate and layers: `python3 art/prototypes/home-layers/cut_lumi.py && python3 art/prototypes/home-layers/build.py`, then `python3 art/prototypes/home-layers/capture.py --test`, `capture.py`, `capture.py --view tinted --name grid-tinted`, `capture.py --page`. To rebuild the plate itself, first generate candidates with `inpaint.py <cluster> --n 2` (about $0.11 a run; `.env.local`'s key), name the chosen ones in `room.src.json` → `plate_candidates`, then run `plate.py` before the above. The candidates are gitignored. To check fringes: `sweep.py --tag after`, then `build.py` and `capture.py --set <piece> --cols 10 --cell 240x220 --zoom 1.8 --name sweep-<piece>`. `sweep.py --ref <commit> --margin 0` counts an older commit's layers under the old rule.
+
+**The lantern as its own object (2026-09-13, `ux/lumi-lantern-table`).**
+- **The script:** `lantern.py`, called by `plate.py`. `plate.py --keep` rebuilds only the lantern and `layers.json`, since the A–D inpaint candidates aren't kept.
+- **What it cuts from the table:**
+  - `layers/lantern.png`: 35×72, an outline traced at 12×.
+  - `lantern-shadow.png`: its contact shadow.
+  - `lantern-glow.png`: its light, additive (RGB levels on black, drawn with `'lighter'`).
+  - `table-light.png`: where on the table its light and shadow may land.
+  - `table.png`, rebuilt unlit from inpaint clusters E (the pool) and F (tight round the lantern) in `room.src.json`.
+- **`layers.json`:** gains `objects: [lantern]` (base; grip at the finial's top; scale 0.6667, to 40 px; the glow's tabletop profile; a floor pool for when she carries it; a `draw` recipe).
+- **Two anchors, each with a stand and a facing:** `table.lantern` (790, 542), by the back corner, and `table.place` (659, 614), the left corner by the books. Both are reached from behind the back-left edge, facing se (Chanté, 2026-09-13; the painted spot is about 70 px from every edge, out of her reach).
+- **Checks:** `lantern.py --check` prints the recompose and writes `out/lantern-*.png`.
+  - Inside the hole: 0.002 per channel, 0.00% of pixels off by more than 8.
+  - Whole painting: 0.03147 (was 0.03143).
+  - Depth test 0 disagreements, table sweep 0 fringe px, walk audit 0 px sideways, occlusion 0/0/0.
+- **Known:** at 4×, a one-pixel seam at the glass's left edge and an olive speck on the table's front edge at B; the added light is flatter than the painting on the dark book covers.
+- **Spend:** two inpaint runs, $0.22.
+- **Occluders (2026-09-13):** `lantern.py`'s `occluders()` writes `layers/table-{books,gourd,plant,smallbooks,mug,note}.png` and `layers.json` → `occluders` from the table's `things` polygons, so an object can pass behind what stands on a surface. All 19 existing layer PNGs are unchanged.
 
 **Status:** approved and pushed (2026-09-13). Chanté on the viewer: "It looks good to me", with the fringes that could clip Lumi trimmed. Since `5433a9f` it feeds the walk page (`lumi-walk/`, eighth look), which composites these layers around the walking rig. Next, a first object as its own layer: the lantern is painted into the `table` layer today, together with the books, plant and mug, so picking it up means cutting it out and filling in the tabletop under it. **Recompose** (plate × shadows, then layers, from the quantised files, against the painting; per channel, 0–255), after the fringe cleanup:
 - whole painting: mean 0.031, max 117 (before the cleanup: 0.030, 121);
@@ -116,6 +171,48 @@ The zeros are not independent evidence: the trim uses the same classifier the co
 - (6) The floor's front edge by the balustrade is a guess (the rails run down a stair, so floor level there is ambiguous).
 - (7) Anchors are proposals.
 - (8) API: 10 images logged at about $0.54, plus two requests that hung and were killed (possibly billed, about $0.22 more). The cleanup used no API calls.
+
+## `lumi-rig/` — one facing of Lumi fully rigged, bet 2 (parked)
+
+A test of whether a complete 2D rig can replace the drawn reach, grip and holding poses (Chanté, 2026-09-13: "Why don't we try rigging her completely?"). Built by an Opus subagent at sw, shown mirrored to se at Home's low table, on `ux/lumi-lantern-table`. **Parked after two rounds** (Chanté, 2026-09-13): holds stay drawn poses.
+
+- `parts.py` splits `art/lumi/lumi-iso-front.png` into parts and writes the meshes, bones and weights into `rig-sw.json`.
+  - **Parts:** hood and face, cloak and torso, the near wing, the far hand, the bow.
+  - **Hands:** the rest hand, plus an open hand and a fist cleaned from the drawn variants' hand pieces.
+  - **Borrowed:** boots and legs from the walk rig.
+  - **Hidden areas:** painted with OpenAI edits; the chosen fills are kept in `fills/`.
+  - **Sleeves:** three shapes cut from the drawn `front-reach`, `front-grip` and `sw-lantern`, in `parts/sleeve-*.png`.
+  - **Check:** at rest it recomposes to `sw-body.png` within 0.002 per channel.
+- `index.src.html` + `build.py` → `index.html`.
+  - **Rig:** linear-blend skinning, and a two-bone IK reaching a target.
+  - **Sleeve:** follows the arm bones, with the flat wing fading as the forearm lifts; a lean of up to 1.84 px at 120.
+  - **Borrowed:** the walk rig's breath, sway, blinks and eyes, plus the lantern and its light.
+  - **Options:** `?sleeve=reach|grip|auto` and `?lean=0`, and grid, check, export and compare modes.
+- `capture.py --all` writes grids, GIFs, `compare-*.png` against the drawn poses, `check.json`, `hands.json` and `sleeve-before-after.png`.
+
+Rebuild, from the repo root: `python3 art/prototypes/lumi-rig/parts.py && python3 art/prototypes/lumi-rig/build.py && python3 art/prototypes/lumi-rig/capture.py --all`. It reads `lumi-walk/parts/` and `rig-walk.json`, so run the walk's `split.py` first.
+
+**What it showed.**
+- **Exact where drawings drift.**
+  - Hood and boots: 0 px in round one; round two's lean moves them at most 1.84 px.
+  - Grip error 0; the lantern back on its anchor within 0.005 px; two hands in every still.
+- **Round one, a flat cloak wing as the sleeve.**
+  - At 120 px and 3× it looks like the drawn poses, because the tabletop and hood hide the arm.
+  - At 9× it's a floating hand with a sliver of sleeve.
+  - In open space the sleeve stood up like a cone or tore into white strands.
+- **Round two, sleeves cut from the drawings plus a lean.**
+  - Bare reaches at 82 and 100 px read as her arm, cuff and embroidery included; at 62 px it's passable.
+  - In the room at 9× little changed: the open hand's wrist reads as a dark wedge, and at the hold the lantern covers the sleeve where the drawn pose shows cloth.
+- **What it can't carry:**
+  - anything below the tabletop (at 0 and 40 px it falls short by 52 and 14 px; she'd have to bend);
+  - turning while holding (separate rigs per facing don't morph);
+  - a held pose with cloth showing beside the object.
+- **Cost.**
+  - Round one: about 58 min and $0.22.
+  - Round two: 19 min and $0.
+  - Per facing: 25–45 min plus two sleeve shapes (one likely generated). Tracing and tuning need judgement per facing.
+
+**Why it's parked:** where Lumi actually handles things, the drawn poses look better. The rig still needs drawn keys for low reaches, holds and turns, and each facing costs about an hour of judgement. Take it up again when a motion needs many reach heights in open space.
 
 ## `shadow-mock.py` — Lumi's shadows on the room paintings
 
