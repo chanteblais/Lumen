@@ -106,6 +106,7 @@ Only these; everything else Claude decides, does and records here.
 - A change to how *she* works: what she runs, reviews or applies herself (migrations, the review checklist).
 
 ## Change log
+- 2026-09-14 — `docs/lumi-function`: `core.hooksPath` was absolute in the shared `local` config twice in one session. The first time was right after EnterWorktree, as its trap row predicts. The second came between two `npm run check` runs, most likely another session creating a worktree. The guard caught both and its fix worked each time; it cost two runs. Backlog unchanged.
 - 2026-09-14 — Trap row: the conversation-eval harness had rotted since focus sessions left the snapshot; `--dry` is the cheap catch. A `--dry` smoke of one scenario in `npm run check` is a backlog candidate (it needs `.env.local` only for the model id, so CI would need a stub). Backlog otherwise unchanged.
 - 2026-09-13 — Trap row: a detached worktree whose commit landed on `main` was removed by another session's cleanup while a dev server ran in it; lock such a worktree and chain restarts with `&&`.
 - 2026-09-13 — `ux/mobile-proposals`: Next's dev indicator moved top left, so the Home tab trap row now reads fixed. The simulator check reused the temporary tap-size probe (hit-testing outward from each control's centre), kept out of the commit as its row says.

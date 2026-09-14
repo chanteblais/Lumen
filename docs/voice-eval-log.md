@@ -112,6 +112,30 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 9 — 2026-09-14 · what she's for (`docs/lumi-function`; `gpt-6-astra`, context = ~4:40pm Vancouver, last seen 3h ago)
+The persona's opening line now says she helps someone see what matters and move it forward. *What you're for* gains a first item, *What matters*: goals and priorities noticed in passing, readings offered as questions, never a goals list, thinking about direction left as thinking. The brief gains one sentence (`living/decisions.md` → *Lumi's function*). The nine single replies, plus three conversations with tools (`brain-dump`, `stays-reflective`, `not-the-call`, brief on). Prefix 4,474 tokens, cached from the second call.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file. No writing yet." |
+| 2 | ✓ | ✓ | "What's competing for your attention? Put it here in whatever order it comes…" → the bigger pieces against the smaller ones, then "Is anything due today or tomorrow—including needing groceries for tonight?" |
+| 3 | ✓ | ✓ | "What's taking up space in your head right now? It doesn't need to sound like a task — loose ends and half-thoughts will do." |
+| 4 | ✓ | ~ | "What's the task — and do you know what you'd do first, or is that part unclear?" → "What do you need to get sorted with them?" |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" (no session in context, as in run 7) |
+| 6 | ✓ | ✓ | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? You don't need to sort it first." |
+| 7 | ✓ | ✓ | "I'm here. I'll stay quiet while you work." → "Here with you while you edit." |
+| 8 | ✓ | ✓ | "Then let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+| 9 | ✓ | ~ | the dump reflected as four short lines without a count, then "Is that everything for now, or is there more to get out?" |
+
+**Conversations** (all musts held; no sign seen):
+- `stays-reflective`, ✓ ✓. "I've been wondering whether I even want to keep doing the PhD" → "What's been making you question whether you want to stay?" → "We don't need to turn it into a task or settle it now…" → on "what I miss is making things with my hands": "What do you miss making?" This is the new first item at work: she stays with what matters to them, files nothing, writes no memory, narrates no feeling.
+- `not-the-call`, ✓ ✓. She picks the call and reshapes Today, takes the refusal and picks Sam, then meets "I just hate phone calls" with "Is it something the insurance company could handle by email or chat instead?", the obstacle and not persuasion.
+- `brain-dump`, ✓ ~. All six filed silently, then "Anything else before we pick a place to start?", the wait-a-turn already marked ~ in the conversation grading above. On "what's first?" she picks Priya's email with a reason and reshapes Today.
+
+**Why:** the change is about noticing what matters, and the reflective conversation is where it shows: she asked about what they miss, not about next steps. **Watch:** scenario 4 and scenario 9 asked where run 7 moved. Scenario 4's second turn asks what they need from the insurer instead of offering a threshold (run 7: "Pull up their phone number"), and scenario 9 asks for more instead of picking (run 7 picked Priya with a reason). These are single samples and both are defensible (what they need decides the call's first step; the dump may not be finished), but they lean the same way: a little more asking. If real use shows her asking what matters when someone just needs to start, the persona's *Starting* wins. Its "just help me start" line comes second in the list now, not first.
+
 ### Run 8 — 2026-09-13 · the app and where they are (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:50pm Vancouver, last seen 3h ago, two open intentions, a path with "Email Priya" as Right now)
 After *The app, and where they are* joined the persona and the context block gained *Where they are* (`decisions.md`). Eight single turns from an ad-hoc script (the persona and context block as production, a `where` per turn, no tools), not added to `voice-eval.mjs`. Prefix ≈ 4,630 tokens (cache reads 4,629–4,653).
 

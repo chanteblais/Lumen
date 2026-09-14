@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-09-14 · Lumi's function: to identify goals and priorities, and help the user actualize them
+
+**Decision.** Lumi's function is to help the user identify their goals and priorities, and help them act on those. Both halves are hers: seeing what matters, with the user and in their words, and moving it forward.
+**Rationale.** Chanté (2026-09-14): "I'd say it's to identify goals and priorities, and help the user actualize them." *(Claude's reading:)* the vision already held both halves: V§2's *intention → priority → capacity → attention → action*, and V§20's "understand what matters, begin when beginning is difficult…". The persona, though, described only the second half ("a companion for getting started, keeping going, and coming back"), so Lumi was built as a companion for execution.
+**Implications.**
+- `lumi.md` §1 states the function. The persona's opening line and *What you're for* carry it, with a new first item, *What matters*. Her brief carries the why in one sentence.
+- *Identify* means with the user, never for them. The user keeps authority over what matters (V§5), and her readings are offered as questions. There is no goals questionnaire or goals onboarding (Home §85–86), and values don't become fields (Home §41). A stated priority keeps the scope of its words (*Directions adopted from the first routine review* → Q11).
+- *Actualize* means appropriate forward movement, not maximum output (V§3). Letting something wait, or letting a goal go, can be the outcome.
+- Thinking about direction stays thinking until it lands somewhere, and isn't turned into tasks (the adopted direction on Q23).
+- No new tool, field or surface, and nothing for the user to keep. `CLAUDE.md`'s one-line description ("task initiation, momentum, re-entry and body doubling") and the Lumi paragraph in `PROJECT-CANON.md` still name only the second half. Chanté decides whether they change.
+
+**Principle.** V§2, V§3, V§5, V§20; EP§5, EP§17.
+**Replaces.** "A companion for getting started, keeping going, and coming back" as the persona's statement of what Lumi is.
+
 ## 2026-09-14 · Lumi contributes to Coherence's design, in a notebook of her own
 
 **Decision.** In Chanté's conversations about designing Coherence, Lumi notices meaningful insights, tensions, assumptions worth questioning, possibilities and changes in thinking, and keeps them as design notes **without asking to save each one**. The notes feed a daily design digest considered during design and implementation work. What Chanté said, Lumi's reading, and any design possibility stay apart, and each part is endorsed, qualified, corrected or rejected only by Chanté's explicit word in conversation.
