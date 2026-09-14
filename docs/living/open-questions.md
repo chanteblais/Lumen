@@ -12,7 +12,7 @@ Related: [Home](../product/home.md).
 
 ## 2. How does Focus move into the Study?
 
-**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Sessions still run on Home. The summary question is “What are we doing now?”; this is not mandated UI copy.
+**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Focus sessions were removed from the product on 2026-09-13 (Chanté: "for now"); the Study direction stands, and what a session is when it returns is part of this question. The summary question is “What are we doing now?”; this is not mandated UI copy.
 
 Related: [Study](../product/focus-study.md).
 
@@ -54,7 +54,7 @@ Related: [Garden](../product/today-garden.md).
 
 ## 9. What may Lumi initiate?
 
-**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings/check-ins remain as built.
+**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings remain as built; check-ins were removed with focus sessions (2026-09-13), so Lumi currently initiates nothing.
 
 Related: [Lumi](../philosophy/lumi.md).
 
@@ -66,7 +66,9 @@ Related: [AI & Information Architecture](../product/ai-and-information-architect
 
 ## 11. How are stated priorities represented over time?
 
-**Status: Semantics settled; representation open.** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. Decide representation, expiry and supersession of scoped priority signals. No universal priority score is implied.
+**Status: Semantics settled; representation first cut (2026-09-13, `feat/priorities`).** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. No universal priority score is implied.
+
+First cut ([decision](decisions.md)): a stated priority is a row of its own — the user's words, an optional intention, a scope of *a week* (this or next) or *for a while* — kept apart from beliefs and the day plan, and it comes only from what they say to Lumi. Expiry is derived (a week's priority stops holding when the week ends); supersession retires the old row as history. A Today-only ask stays `reshape_today` and writes no priority. Still open: whether priorities should attach to Threads once they exist, whether *for a while* needs a gentle re-check after long quiet, how Lumi shows what she's holding (question 12), and whether Library or direct manipulation can express one.
 
 Related: [Shared terminology](../product/shared-model.md#priority-and-temporal-scope).
 
@@ -110,7 +112,7 @@ Related: [Lumi](../philosophy/lumi.md).
 
 ## 18. What should check-in defaults be?
 
-**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Current timed check-ins remain as built; Study’s presence should not become supervision or engagement pressure.
+**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Timed check-ins were removed with focus sessions on 2026-09-13; Study’s presence should not become supervision or engagement pressure.
 
 Related: [Study](../product/focus-study.md).
 
@@ -150,7 +152,7 @@ Related: [Home](../product/home.md).
 
 ## 24. How does context selection evolve beyond one block?
 
-**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance.
+**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance. *(2026-09-13: each turn now says which page the user spoke from and which way in — the smallest form of space context, AI & IA §23 — but what the block selects doesn't change by space; this question stays open.)*
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 

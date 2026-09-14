@@ -43,8 +43,8 @@ describe("reflectOnSession", () => {
     };
     const results = await Promise.all([reflectOnSession(db, u, session.id, { now: () => at("11:00"), propose }), reflectOnSession(db, u, session.id, { now: () => at("11:00"), propose })]);
     expect(results.filter(Boolean)).toHaveLength(1);
-    const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, strategy.id));
-    expect(row.evidenceFor).toBe(1);
+    const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, strategy!.id));
+    expect(row!.evidenceFor).toBe(1);
     const ran = await db.select().from(events).where(and(eq(events.userId, u.id), eq(events.subjectId, session.id)));
     expect(ran.filter((e) => e.type === "reflection.ran")).toHaveLength(1);
     expect(ran.filter((e) => e.type === "reflection.claimed")).toHaveLength(1);
@@ -65,8 +65,8 @@ describe("reflectOnSession", () => {
     );
     const [preference, thesis] = extra.created;
     // Lumi contradicted the preference during the session; the thesis was confirmed hours later, in another conversation.
-    await appendEvent(db, { userId: u.id, type: "memory.contradicted", subjectType: "note", subjectId: preference.id, occurredAt: at("10:20") });
-    await appendEvent(db, { userId: u.id, type: "memory.confirmed", subjectType: "note", subjectId: thesis.id, occurredAt: at("13:00") });
+    await appendEvent(db, { userId: u.id, type: "memory.contradicted", subjectType: "note", subjectId: preference!.id, occurredAt: at("10:20") });
+    await appendEvent(db, { userId: u.id, type: "memory.confirmed", subjectType: "note", subjectId: thesis!.id, occurredAt: at("13:00") });
     await appendEvent(db, { userId: u.id, type: "session.check_in", subjectType: "session", subjectId: session.id, payload: { response: "ok", minute: 15 }, occurredAt: at("10:15") });
     const c = await ensureMainConversation(db, u.id);
     for (const [when, role, text] of [
@@ -85,8 +85,8 @@ describe("reflectOnSession", () => {
       },
     });
     expect(seen?.applied).toEqual([
-      { op: "contradict", id: preference.id },
-      { op: "confirm", id: strategy.id },
+      { op: "contradict", id: preference!.id },
+      { op: "confirm", id: strategy!.id },
     ]);
     expect(seen?.checkIns).toEqual([{ response: "ok", minute: 15 }]);
     expect(seen?.transcript.map((t) => t.text)).toEqual(["can you stay with me while I edit chapter three", "done, that went well"]);

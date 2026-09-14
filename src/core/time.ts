@@ -7,7 +7,7 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-export type GapBucket =
+type GapBucket =
   | "just_now"
   | "minutes"
   | "hours"
@@ -64,14 +64,14 @@ export function localDate(at: Date, timeZone: string): string {
 /** Whole local days from `a` to `b` in a timezone (0 = same day, 1 = `a` was yesterday). Calendar days, so DST can't shift it. */
 export function localDayDiff(a: Date, b: Date, timeZone: string): number {
   const utcDay = (d: Date) => {
-    const [y, m, day] = localDate(d, timeZone).split("-").map(Number);
+    const [y = NaN, m = NaN, day = NaN] = localDate(d, timeZone).split("-").map(Number);
     return Date.UTC(y, m - 1, day) / DAY;
   };
   return Math.round(utcDay(b) - utcDay(a));
 }
 
 /** Local hour (0–23) for an instant in a timezone. */
-export function localHour(at: Date, timeZone: string): number {
+function localHour(at: Date, timeZone: string): number {
   const h = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", hour12: false }).format(at);
   return Number(h) % 24;
 }

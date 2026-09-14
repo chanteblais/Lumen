@@ -13,6 +13,7 @@ Things to sort before anyone but Chanté uses Coherence.
 ## Database (Supabase / Drizzle)
 - [x] `0000_initial_schema` applied (2026-09-11). Keep the ledger in `docs/domain.md` → Migrations Reference current for every later migration.
 - [x] Pooler connection string (port 6543, transaction mode) in `DATABASE_URL` on Vercel (2026-09-12); `prepare: false` in the driver config.
+- [x] Node 22 in production (2026-09-13, Chanté): `"engines": { "node": "22.x" }` in `package.json` overrides the Vercel project's *Node.js Version* (24.x), so deploys run the major CI, `.nvmrc` and `@types/node` use. Moving to 24 is one change to all four.
 - [x] Functions in the database's region: `cle1` (Cleveland) for Supabase us-east-2, set in `vercel.json` (2026-09-13; was `iad1`). If the database ever moves, move this with it.
 - [ ] Backups enabled.
 
@@ -30,7 +31,12 @@ Things to sort before anyone but Chanté uses Coherence.
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` · `CLERK_SECRET_KEY` · `DATABASE_URL` · `OPENAI_API_KEY` (`ANTHROPIC_API_KEY` only for `LUMI_MODEL=anthropic:…`)
 - `NEXT_PUBLIC_CLERK_SIGN_IN_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_URL` · `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` · `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` (same values as `.env.local`; without them `auth.protect()` bounces to Clerk's hosted portal instead of `/sign-in`)
 - **Checked at startup** (2026-09-13): `src/instrumentation.ts` runs `validateServerEnv` (`src/lib/env.ts`) once per server instance, Node.js runtime only. With `NODE_ENV=production` (Production and Preview deploys alike) a missing required key — the four in the first bullet, with Lumi's model key following `LUMI_MODEL` — or a malformed `LUMI_MODEL` throws, naming the keys and never their values, so every request fails with *An error occurred while loading instrumentation hook: Server environment is incomplete — missing: …*. In dev it logs `[env] …` and carries on. `next build` doesn't run it. The sign-in/up URL keys are optional there.
-- Scope every variable to **Production and Preview**. A Development-only entry is invisible to deploys. Check with `vercel env ls --scope chante-s-projects1 --project lumen`; the app is `lumen` → https://lumen-nu-steel.vercel.app (the project keeps the old name until it's renamed; see below).
+- **Never set `COHERENCE_DEV_USER`** on any Vercel environment. It is the local test user (`src/lib/dev-user.ts`, 2026-09-13): it signs every request in as one fixed user with no session. The code ignores it outside `next dev`, and a production server (Production and Preview alike) with it set throws at startup, *COHERENCE_DEV_USER is set in production …*, so every request fails until the key is removed.
+- **Production** holds every key above, with the **live** Clerk keys: they work only on `burlyman.ca` (`clerk.burlyman.ca` refuses other origins), so they can't serve a preview on `*.vercel.app`.
+- **Preview is not set up** (Chanté, 2026-09-13: "Let's skip preview"). It holds only `OPENAI_API_KEY` (checked 2026-09-13), so a preview deploy fails at startup by design, naming the missing keys. To set it up later, Preview needs the Clerk **development instance** keys (`grown-bluejay`: the `pk_test_…` / `sk_test_…` values in `.env.local`), `DATABASE_URL` and the four `NEXT_PUBLIC_CLERK_*_URL` keys. **Previews share the one database with production**, so a preview reads and writes real data.
+  - Dashboard: `lumen` → Settings → Environment Variables → Add New; tick **Preview** only; mark secrets **Sensitive**; save, then redeploy a preview.
+  - CLI: `npx vercel env add <NAME> preview --scope chante-s-projects1` (add `--sensitive` for a secret), and paste the value at the prompt, never in the command.
+- A Development-only entry is invisible to deploys. Check with `vercel env ls --scope chante-s-projects1 --project lumen`; the app is `lumen` → https://lumen-nu-steel.vercel.app (the project keeps the old name until it's renamed; see below).
 
 ## Security headers (`next.config.ts`, 2026-09-13)
 - [x] On every response: `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'` (no framing, not even same-origin) · `Referrer-Policy: strict-origin-when-cross-origin` · `X-Content-Type-Options: nosniff` · `Permissions-Policy: microphone=(self), camera=(), geolocation=()` (voice input uses the microphone on this origin; nothing uses the camera or location). `x-powered-by` is off (`poweredByHeader: false`).
@@ -59,4 +65,4 @@ The app and docs say Coherence since 2026-09-12. These still say Lumen, and each
 - [ ] No conversation text in Vercel logs.
 
 ## General
-- [ ] Full loop on the deployed URL: sign in → talk → intention created → focus session with one check-in → return next day → greeting reflects it.
+- [ ] Full loop on the deployed URL: sign in → talk → intention created → Today: *Not this* and *Break it down* on the card → return next day → greeting reflects it.

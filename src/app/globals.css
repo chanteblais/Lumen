@@ -59,7 +59,7 @@ body {
 
 /* Line breaks set with care: display lines balance across their measure,
    running text avoids a single word stranded on its last line. */
-.opening-title, .opening-line, .session-goal, .session-question, h1, h2 { text-wrap: balance; }
+.opening-title, .opening-line, h1, h2 { text-wrap: balance; }
 .msg p, .companion-reply p { text-wrap: pretty; }
 
 ::selection { background: var(--brass-soft); color: var(--ink); }
@@ -674,6 +674,9 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
      cast and contact shadows (drawn inside the figure) painted across the
      bubble's tail and edge where it opens beside her (2026-09-13). */
   z-index: 2;
+  /* .companion turns selection off so a tap on her never highlights anything;
+     her words and yours can still be selected and copied (2026-09-13). */
+  user-select: text;
   width: 330px;
   max-width: calc(100vw - 112px);
   margin-right: 6px;
@@ -827,9 +830,6 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 .opening.is-compact .opening-title { font-size: 26px; line-height: 1.25; }
 .opening.is-compact .opening-line { font-size: 20px; margin-top: 6px; }
 
-/* Lumi's avatar as a medallion: a brass hairline ring set off the forest
-   by a gap of paper. */
-.medallion { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--brass-soft); }
 
 .chip {
   font-family: var(--font-body);
@@ -865,11 +865,14 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   display: flex;
   align-items: center;
   gap: 18px;
-  /* The left side clears the pill's round end now that nothing sits before the textarea. */
-  padding: 10px 14px 10px 30px;
+  /* The paperclip sits in the left round end as the send button does in the right. */
+  padding: 10px 14px;
   background: var(--card);
   border: 1px solid var(--rule-strong);
-  border-radius: 999px;
+  /* Half the ~76px pill at rest, so one line is still a full pill; once the
+     textarea grows, the ends stay 38px round rather than 999px, which curved
+     in over the first and last lines of a long message (2026-09-13). */
+  border-radius: 38px;
   box-shadow: var(--shadow);
 }
 /* On a wide page the pill is set to a measure (~70% of the column, never
@@ -892,6 +895,9 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   padding: 8px 0;
   min-height: 40px;
   max-height: 160px;
+  /* A line scrolled part-way out fades over the 8px padding instead of being
+     sliced at the textarea's edge; unscrolled text never reaches the padding. */
+  mask-image: linear-gradient(to bottom, transparent, #000 8px, #000 calc(100% - 8px), transparent);
 }
 .composer textarea::placeholder { color: var(--ink-mute); }
 .composer.is-listening { border-color: var(--brass); box-shadow: var(--shadow), 0 0 0 4px rgba(156, 126, 78, 0.12); }
@@ -927,6 +933,45 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   cursor: pointer;
 }
 .tool-link:hover { color: var(--ink); }
+
+/* ---------- Shared files ---------- */
+/* The paperclip before the textarea, and what will go with the next message as
+   chips above the pill. In the transcript a photo shared this visit shows as
+   itself; anything else, and anything from before this page open, as a chip. */
+.composer-attach { flex: none; }
+.composer-attach:disabled { opacity: 0.45; cursor: default; }
+.composer-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  list-style: none;
+}
+@media (min-width: 768px) {
+  .composer-files { width: clamp(min(100%, 460px), 70%, 100%); margin-inline: auto; }
+}
+.shared-files { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.shared-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+  min-height: 36px;
+  padding: 4px 10px 4px 6px;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.shared-file-mini { flex: none; width: 26px; height: 26px; object-fit: cover; border-radius: 4px; }
+.shared-file-glyph { flex: none; margin-left: 4px; color: var(--brass); }
+.shared-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shared-file-remove { display: inline-flex; flex: none; margin-right: -4px; padding: 4px; border: 0; border-radius: 999px; background: none; color: var(--ink-mute); cursor: pointer; }
+.shared-file-remove:hover { color: var(--ink); }
+.shared-file-photo { display: block; max-width: min(260px, 100%); max-height: 260px; border: 1px solid var(--rule); border-radius: 8px 8px 2px 8px; }
+.msg-user-said { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; }
 
 /* ---------- Messages ---------- */
 .msg { display: flex; gap: 18px; align-items: flex-start; max-width: 760px; }
@@ -1012,42 +1057,8 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 }
 .btn-ghost:hover { background: var(--paper-deep); }
 
-/* ---------- Focus Together: the session, pinned above the composer ----------
-   A ruled strip on the paper (what · first step · elapsed of planned · End),
-   and above it, only when it's time, the check-in as a small plate. Neither
-   counts down; the number is minutes in, not minutes left. */
-.session-bar {
-  flex: none;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 14px 6px 12px;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-}
-.session-goal { font-family: var(--font-display); font-size: 24px; line-height: 1.2; color: var(--ink); margin-top: 6px; }
-.session-step { font-size: 16px; line-height: 1.4; color: var(--ink-soft); margin-top: 4px; }
-.session-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-bottom: 2px; }
-.session-side .tool-link:disabled { opacity: 0.45; cursor: default; }
-.session-checkin {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
-  margin: 0 0 12px;
-  padding: 16px 20px;
-  background: var(--card);
-  border: 1px solid var(--rule-strong);
-  border-radius: 6px;
-  box-shadow: var(--shadow);
-  animation: bubble-in 160ms ease-out;
-}
-.session-question { font-family: var(--font-display); font-size: 22px; line-height: 1.3; color: var(--ink); margin-right: auto; }
-.session-checkin .chip:disabled { opacity: 0.5; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
-  .session-checkin, .chat-now > .msg, .circle.is-done svg path { animation: none; }
+  .chat-now > .msg, .circle.is-done svg path { animation: none; }
 }
 
 /* ---------- Ledger: what Lumi did, under her reply ---------- */
@@ -1121,11 +1132,12 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
   .msg p { font-size: 17px; }
   .send { width: 52px; height: 52px; }
   .opening-body { gap: 18px; }
+  /* The compact portrait on a phone too, so the title keeps to one line and the room gets height back
+     (UX review 1, finding 4). LumiAvatar sizes itself inline, hence !important. */
+  .opening:not(.is-compact) .opening-portrait { width: 44px !important; height: 44px !important; }
   .opening-head { margin-bottom: 28px; }
   .opening-title { font-size: 30px; }
   .opening-line { font-size: 22px; }
-  .session-goal { font-size: 20px; }
-  .session-question { font-size: 19px; }
 }
 
 /* ---------- Home: the room ----------
@@ -1134,7 +1146,7 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
    renders one fixed layer (`.home-scene`) behind the shell and the rest is
    the room's light on the same tokens: `.shell:has(.home-scene)` re-maps the
    palette to parchment on dark wood, so every class (labels, rules, chips,
-   the composer, the session bar) keeps its shape and takes the new light.
+   the composer) keeps its shape and takes the new light.
    Only Home (Today has its own painting, below; the rest stay ivory). The greeting is the exception
    inside the exception: it hangs on the wall as a parchment scroll, so its
    tokens go back to ink on paper. Nothing new for the user to keep. */
@@ -1170,9 +1182,70 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
     linear-gradient(to bottom, rgba(22, 14, 9, 0.33), rgba(22, 14, 9, 0.15) 22%, rgba(22, 14, 9, 0.05) 40%, rgba(22, 14, 9, 0.14) 68%, rgba(22, 14, 9, 0.39) 100%);
 }
 /* The page opens scrolled to the greeting; leave room above it for the scroll's top rod. */
-.shell:has(.home-scene) .chat-scroll { scroll-padding-top: 12px; }
+.shell:has(.home-scene) .chat-scroll {
+  scroll-padding-top: 26px;
+  /* Paper passes out of view instead of being cut: the top 18px fade (UX review 1, finding 3). The
+     scroll padding keeps the greeting's top rod just below the fade on a fresh open. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px);
+  mask-image: linear-gradient(to bottom, transparent, #000 18px);
+}
 body:has(.home-scene)::before { opacity: 0.16; } /* the grain stays; it reads as the paper of the painting */
 body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
+
+/* ---------- Home: the fire ----------
+   The stove's fire moves (`HomeFire`, `fire.ts`): the painting's own flames,
+   warped in a small canvas over the glass — swaying, licking upward, burning
+   taller and lower (art-direction §4, tier 1: motion from one drawing) — and
+   its light on the stove and hearth following how high they burn (`--fire`,
+   0–1, set each frame; `--fire-slow` lags it for the floor). Both are placed
+   in the painting's own pixels (--x, --y from `fire.ts`), mapped through the
+   cover fit (one painting pixel is --px), so they stay on the stove at any
+   window size. The canvas is transparent wherever nothing moves, so the
+   painting shows through with no seam. The light is two dark amber radial
+   gradients colour-dodged over the painting, so what the fire lights brightens
+   and the iron stays dark (screen lifted the stove into a grey haze); dodge
+   only brightens, so at its lowest the fire is the painting as painted. Under
+   the veil, so the dimming still applies. Shown with the painting (the same
+   fade and 3s fallback); off under reduced motion, leaving the painting still. */
+.home-scene { --px: max(calc(100vw / 1536), calc(100vh / 1024)); }
+.scene-flame,
+.scene-fire {
+  position: absolute;
+  left: calc(50% + (var(--x) - 768) * var(--px));
+  top: calc(50% + (var(--y) - 512) * var(--px));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.scene-flame { width: calc(var(--w) * var(--px)); height: calc(var(--h) * var(--px)); }
+.scene-fire { mix-blend-mode: color-dodge; }
+.scene-painting[data-shown] ~ :is(.scene-flame, .scene-fire) { opacity: 1; }
+.scene-painting[data-instant] ~ :is(.scene-flame, .scene-fire) { transition: none; }
+.scene-painting:not([data-shown]) ~ :is(.scene-flame, .scene-fire) { animation: scene-shown 0s 3s forwards; }
+.scene-fire-glow,
+.scene-fire-spill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+}
+.scene-fire-glow {
+  width: calc(120 * var(--px));
+  height: calc(96 * var(--px));
+  translate: -50% -55%;
+  transform-origin: 50% 85%;
+  background: radial-gradient(closest-side, rgb(140 70 10 / 0.8), rgb(110 50 5 / 0.4) 45%, rgb(110 50 5 / 0) 100%);
+  opacity: calc(0.42 + 0.46 * var(--fire, 0.5));
+  scale: 1 calc(0.94 + 0.16 * var(--fire, 0.5));
+}
+.scene-fire-spill {
+  width: calc(460 * var(--px));
+  height: calc(320 * var(--px));
+  translate: -50% -38%;
+  background: radial-gradient(closest-side, rgb(120 60 12 / 0.34), rgb(90 45 8 / 0.14) 50%, rgb(90 45 8 / 0) 100%);
+  opacity: calc(0.62 + 0.38 * var(--fire-slow, 0.5));
+}
+@media (prefers-reduced-motion: reduce) { .scene-flame, .scene-fire { display: none; } }
 
 .shell:has(.home-scene) {
   /* The palette by lantern light. Both the raw tokens and Tailwind's mapped
@@ -1217,6 +1290,10 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   position: relative;
   text-shadow: none;
   margin-top: 8px;
+  /* The rods reach 9px past the parchment (below); this keeps them inside
+     .chat-scroll, which otherwise overflows sideways and lets a finger drag
+     the greeting left and right on a phone. */
+  margin-inline: 9px;
   padding: 20px 34px 22px;
   background: linear-gradient(180deg, rgba(246, 234, 208, 0.74) 0%, rgba(240, 222, 188, 0.72) 55%, rgba(233, 211, 172, 0.74) 100%);
   border-radius: 14px;
@@ -1314,7 +1391,8 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
   box-shadow: var(--shadow);
 }
 .shell:has(.home-scene) .msg-lumi .msg-avatar { margin-top: 6px; }
-.shell:has(.home-scene) .msg-user p {
+.shell:has(.home-scene) .msg-user p,
+.shell:has(.home-scene) .shared-file {
   background: rgba(241, 230, 207, 0.12);
   backdrop-filter: blur(10px);
 }
@@ -1329,9 +1407,6 @@ body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 .shell:has(.home-scene) .composer-dock { background: none; }
 .shell:has(.home-scene) .send { background: var(--brass); color: #1f150c; }
 .shell:has(.home-scene) .send:hover { box-shadow: 0 0 0 3px rgba(26, 18, 12, 0.8), 0 0 0 4px var(--brass-soft), 0 0 24px rgba(217, 172, 95, 0.35); }
-.shell:has(.home-scene) .session-checkin {
-  backdrop-filter: blur(12px);
-}
 @media (max-width: 767px) {
   .shell:has(.home-scene) .opening { padding: 16px 18px 18px; }
   .shell:has(.home-scene) .opening-head { margin-bottom: 18px; }
@@ -1432,7 +1507,27 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 .today-now-title { font-size: 34px; line-height: 1.12; }
 .today-now .chip { font-size: 15px; padding: 9px 18px; }
-.today-now .btn-primary { font-size: 19px; padding: 10px 22px; }
+/* Everything the card does happens on it: Lumi's line after a Not this, the
+   pause while the path is re-cut, and Break it down's steps to pick from. */
+.today-now-note { margin-top: 8px; font-size: 18px; line-height: 1.35; color: var(--ink-soft); }
+.today-now-working { font-size: 20px; line-height: 1.3; color: var(--ink-mute); }
+.today-steps { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.today-step {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  text-align: left;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.today-step:hover { background: var(--paper-deep); border-color: var(--rule-strong); }
+.today-step:disabled { opacity: 0.5; cursor: default; }
+.today-trouble { margin-top: 10px; font-size: 15px; font-style: italic; color: var(--ink-mute); }
 
 /* The rest of the path, further off: paper the garden shows through, smaller
    type, no rules between rows, and the closing line as its last word. */
@@ -1463,22 +1558,32 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
    screen than anything she covers). The spot is in
    the painting's own pixels (--lumi-x/y), mapped through the cover fit (one
    painting pixel is --px on screen), so she stays on the same flagstone as
-   the window resizes. Only where that spot is clear of the nav and the
-   panel; elsewhere she keeps her corner. Standing this high, the bubble
-   usually opens beside her (CompanionBubble measures the room). */
+   the window resizes. Her height is in the painting's pixels too (--lumi-h,
+   2026-09-13), so she keeps her size against the room: at a fixed 150px she
+   was half again as big on a small window as on a large one. The feet
+   offsets (58px and 14px of her 150px box) scale with her. Only where that
+   spot is clear of the nav and the panel; elsewhere she keeps her corner, at
+   150px. Standing this high, the bubble usually opens beside her
+   (CompanionBubble measures the room). */
 @media (min-width: 1100px) and (min-aspect-ratio: 1/1) {
   body:has(.today-scene, .library-scene) {
     --px: max(calc(100vw / 1536), calc(100vh / 1024));
-    --lumi-right: calc(50vw - (var(--lumi-x) - 768) * var(--px) - 58px);
-    --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - 14px);
+    --lumi-right: calc(50vw - (var(--lumi-x) - var(--scene-cx, 768)) * var(--px) - var(--lumi-h) * 58 / 150);
+    --lumi-bottom: calc(50vh - (var(--lumi-y) - 512) * var(--px) - var(--lumi-h) * 14 / 150);
   }
-  body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; }
-  body:has(.library-scene) { --lumi-x: 1060; --lumi-y: 745; } /* see Library: the reading room */
+  /* 160 painting px is the 150px she was at 1440×900 */
+  body:has(.today-scene) { --lumi-x: 630; --lumi-y: 346; --lumi-h: calc(160 * var(--px)); }
+  /* the Library has its own fit (--library-px, --scene-cx): see Library: the reading room.
+     134 painting px is her 150px at 1440×900 (Chanté, 2026-09-13: "try 134") */
+  body:has(.library-scene) { --px: var(--library-px); --lumi-x: 1085; --lumi-y: 755; --lumi-h: calc(134 * var(--px)); }
   body:has(.today-scene, .library-scene) .companion { right: var(--lumi-right); bottom: var(--lumi-bottom); }
-  body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + 170px); }
+  body:has(.today-scene, .library-scene) .companion-debug { right: var(--lumi-right); bottom: calc(var(--lumi-bottom) + var(--lumi-h) + 20px); }
 }
 
 @media (max-width: 767px) {
+  /* The voice's shadow reaches 22px past its sides, and a phone's page has only 20px of padding:
+     at -22px it spilled 2px past .main, and the whole page dragged sideways under a finger. */
+  .today-voice::before { inset: -10px -20px -6px; }
   .today-now { padding: 22px 20px 20px; }
   .today-now-title { font-size: 28px; }
   .today-rest { padding: 14px 18px; }
@@ -1487,17 +1592,41 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 /* ---------- Library: the reading room ----------
    The Library (the Lists page until 2026-09-13) is set in a painted reading
    room (art/scenery/library/background.png → public/library-room.webp):
-   an isometric cutaway on a dark ground, like Home's and Today's rooms.
+   an isometric cutaway, like Home's and Today's rooms.
    For now the room is the whole page: nothing sits on the painting, and Lumi
    stands on the open floor to the right of the reading circle. The top bar,
    the grain and the way her spot is mapped are shared with Today (the
-   selectors above name both scenes). Nothing for the user to keep. */
+   selectors above name both scenes). Nothing for the user to keep.
+   Its fit is its own (Chanté, 2026-09-13: the walls reach the window's left
+   and right edges): the painting is scaled so the corner posts' outer edges
+   (painting x 128–1412) meet the window's sides, centred on them (x 770) and
+   on the painting's middle (y 512). A window narrower than the walls'
+   1284:1024 fills its height instead, as a cover fit would. The floor past
+   the walls and a little of the top and bottom are cropped; Lumi's spot and
+   the plaque stage use the same numbers. */
+body:has(.library-scene) {
+  --library-px: max(calc(100vw / 1284), calc(100vh / 1024));
+  --scene-cx: 770;
+}
 .library-scene {
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* the painting's own ground, and a 24×16 copy of it, so the fade-in has no seam (RoomScene; see .scene-painting) */
-  background: #231912 url("data:image/webp;base64,UklGRswAAABXRUJQVlA4IMAAAADQBACdASoYABAAPrVInkmnJCKhMAgA4BaJbACdMoRwAdAdFwOjX32wyEyE5gufAAD+8aZF4Lw9CrRKd1sclq0zmkgf5tuA7baxMYwOaLqxb8VmTm00C08mQ172zv07G6pz7rqzVoQwIWJVnUjroabjA/qpThJ2tcaSqaCmpFT++5tl18vK6T9gc3pvz/Xyom6lS7CxdUbHWSGNSd9LHZn7GCPtSAt/931dq6U7V/s/hrVeCE88iRM38KSRKtBJKAA=") center / cover no-repeat;
+  overflow: hidden;
+  /* the painting's own ground, and a 24×16 copy of it placed where the painting will be, so the fade-in has no seam (RoomScene; see .scene-painting) */
+  background: #332218 url("data:image/webp;base64,UklGRrIAAABXRUJQVlA4IKYAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoRwAdEM+33cudFQVWG1VYx1AAD+7p62j4VTzj3bS6de0i1/7uytd75E+nKxG2tRPOTmjKae2JBhni6ocaB3F04CtCvAEvp852tch61l76pe0VUTPfMckeCR0ztjR4weTqGNk1NLCdcOYIcRfE8eA0VY+obzeexu2eGmX1eWxiFGDDUm3QNWaAAA") no-repeat;
+  background-size: calc(1536 * var(--library-px)) calc(1024 * var(--library-px));
+  background-position: calc(50vw - var(--scene-cx) * var(--library-px)) calc(50vh - 512 * var(--library-px));
+}
+/* next/image's `fill` sets the painting's box inline, so the Library's fit overrides it;
+   and the base `img { max-width: 100% }` would hold it to the window's width */
+.library-scene .scene-painting {
+  max-width: none;
+  inset: auto !important;
+  left: calc(50vw - var(--scene-cx) * var(--library-px)) !important;
+  top: calc(50vh - 512 * var(--library-px)) !important;
+  width: calc(1536 * var(--library-px)) !important;
+  height: calc(1024 * var(--library-px)) !important;
 }
 /* The same warm veil as the garden: heaviest along the left and the
    top, clear over the room. */
@@ -1512,27 +1641,26 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .library-page { flex: 1 0 auto; }
 /* Lumi's spot (--lumi-x/y above) is on the open floor to the right of the
    reading circle (the round table with its armchairs, stools and cushions),
-   below the stair bookcase: she covers only floor and the rug's corner, both
-   further back than her feet, and stays clear of the nav and the crop at
-   every desktop window. */
+   in front of the stair bay: she covers only floor, the alcove's plant and
+   the stair bay's cabinet, all further back than her feet, and stays clear
+   of the nav and the crop at every desktop window. */
 
 /* ---------- Library: sections on the bookcases (components/library/LibraryRoom.tsx) ----------
    What the Library holds, drawn in code on the painting (2026-09-13). A thread
    with threads under it is a section: its name is set on a bookcase's blank
    plaque, in the order sections arrived — the centre bay, the ladder bay, the
-   stair bay (components/library/room-slots.ts, copied from
-   art/scenery/library/library-views.json). The stage is the painting's own
-   rectangle under the cover fit, so a plaque stays on its bookcase at any
-   window, and type is in the stage's units (100cqh is the painting's 1024px).
+   stair bay (components/library/room-slots.ts, measured on the painting). The
+   stage is the painting's own rectangle under the Library's fit (below), so a
+   plaque stays on its bookcase at any window, and type is in the stage's
+   units (100cqh is the painting's 1024px).
    A bookcase face is one link: invisible at rest, its plaque warming on hover
    or focus. Threads under nothing and holding nothing wait on the table, on a
    slip. Below 768px there is no room: a plain list, which is also there,
    visually hidden, for screen readers on a desktop. Nothing to arrange. */
 .library-stage {
-  --library-px: max(calc(100vw / 1536), calc(100vh / 1024));
   position: fixed;
   z-index: 1;
-  left: calc(50vw - 768 * var(--library-px));
+  left: calc(50vw - var(--scene-cx) * var(--library-px));
   top: calc(50vh - 512 * var(--library-px));
   width: calc(1536 * var(--library-px));
   height: calc(1024 * var(--library-px));
@@ -2230,4 +2358,30 @@ body:has(.lists-sheet) :is(.companion, .companion-debug) { display: none; }
   .lists-row,
   .lists-row.is-single { grid-template-columns: auto minmax(0, 1fr) auto 34px; gap: 10px; }
   .lists-row .lists-tag { display: none; }
+}
+
+/* More tabs past the edge: the strip fades out on its right while there is more to scroll
+   (ListsTabs sets data-more), so the quick views and Completed don't hide unannounced
+   (UX review 1, finding 2, 2026-09-13). */
+.lists-tabs[data-more] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+
+/* Phones: everything tapped in the day's loop is at least 44pt, Apple's minimum, without looking
+   any bigger (UX review 1, finding 1, 2026-09-13). A transparent ::after widens the hit area past
+   the drawn control — the ticks, Today's card and capacity words, a row's date and ⋯. The tabs sit
+   in a sideways scroller that would clip it, so they simply grow. */
+@media (max-width: 767px) {
+  .circle, .tool-link, .lists-due-btn, .lists-more { position: relative; }
+  .circle::after, .tool-link::after, .lists-due-btn::after, .lists-more::after { content: ""; position: absolute; }
+  .circle::after { inset: -11px; border-radius: 999px; }
+  .tool-link::after { inset: -12px -6px; }
+  .lists-due-btn::after { inset: -7px -4px; }
+  .lists-more::after { inset: -5px; border-radius: 999px; }
+  .lists-tab { min-height: 44px; }
+  /* The rows' ticks sit near the list's scrolling edge, which would clip their hit area on the left. */
+  .lists-row { padding-left: 12px; }
+  .lists-add { position: relative; }
+  .lists-close::after, .lists-add::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; }
 }

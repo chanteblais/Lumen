@@ -2,15 +2,16 @@
  * The day plan: Lumi proposes a path through today; code guards it.
  * See docs/today.md → How the plan is built.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
+import { describeScope, holdsOn } from "@/core/domain/priorities";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
-import type { DayPlanJson, Intention, MemoryNote } from "@/db/schema";
-import { cachedPrefixOptions, chatModel, effortOptions } from "./model";
-import { PERSONA } from "./persona";
+import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
+import type { DayPlanJson, Intention, MemoryNote, Priority } from "@/db/schema";
+import { capacityPhrase, localFormat } from "./format";
+import { proposeStructured } from "./structured";
 
 export type PlanInputs = {
   displayName: string;
@@ -20,11 +21,17 @@ export type PlanInputs = {
   capacity?: CapacityReport;
   openIntentions: Intention[];
   beliefs: MemoryNote[];
+  /** What they said matters (their word, scoped). Only those holding today reach the planner. */
+  priorities?: Priority[];
   /** "Not this" today, newest first. Reason is a key from core/declines.ts, free text, or null. */
   declined?: { intentionId: string; reason?: string | null }[];
   lastSeenAt?: Date;
   /** What they asked for in chat just now ("something easy"), and the thing Lumi already named for right now, if any. */
   ask?: PlanAsk;
+  /** They just tapped Not this on Today's card: the rest of the day is shaped around the reason. */
+  justDeclined?: { title: string; reason?: string | null };
+  /** Right now is already chosen (the card changed at once after a Not this): keep it, and cut the rest around it. */
+  keep?: { intentionId: string; firstStep: string };
 };
 
 /** A shape asked for in conversation. `rightNowId` is Lumi's pick from her reply: Today must show the same thing. */
@@ -47,12 +54,10 @@ You are choosing a path through the day for the person, from their open intentio
 - The dayLine names what is time-sensitive and says what can wait. Never a count ("you have eight things"). Never guilt. Never inspirational.
 - firstStep is a physical action ("Open the doc and read the last paragraph"), never "work on X".
 - Anything they declined today ("not this") is never rightNow again today. Read the reason: too big → something smaller now; the declined thing may sit in afterThat only if a tinier way in exists. Too tired → the easiest win, and a shorter path. Don't know how → something clearer now; the unclear one waits. Don't feel like it, or just nope → a different thing, no comment, and leave the declined one off the path. Something else is more important → the likely candidate, if one is obvious.
+- What they said matters (their word) outranks your default order: put it on the path, early. Something time-sensitive today still goes first, and then the dayLine can say so in a few words ("The paper's the big one this week, but the form is due today."). A priority held for a while is a lean, not a rule that fills every day.
 - If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
 - Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
-
-/** When the model gives no usable first step: small, and true of any intention. */
-const FALLBACK_FIRST_STEP = "The smallest first piece of it, nothing more.";
 
 export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
   const fixed = dueOn(inputs.openIntentions, inputs.localDate, inputs.timezone);
@@ -74,20 +79,19 @@ export async function buildDayPlan(inputs: PlanInputs): Promise<DayPlanJson> {
     return { dayLine: "Nothing left that you haven't set aside today. That's allowed.", rightNow: null, afterThat: [], later, restCanWait: false };
   }
 
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: PERSONA, providerOptions: cachedPrefixOptions },
-      { role: "system", content: PLANNER_RULES },
-      { role: "system", content: describeInputs(inputs, candidates, fixed) },
-    ],
+  const raw = await proposeStructured({
+    name: "day_plan",
+    kind: "plan",
+    persona: true,
+    rules: PLANNER_RULES,
+    inputs: describeInputs(inputs, candidates, fixed),
     prompt: "Choose today's path. Return only the structured plan.",
-    output: Output.object({ schema: PlanSchema, name: "day_plan" }),
-    providerOptions: effortOptions("medium"),
+    schema: PlanSchema,
+    effort: "medium",
   });
 
-  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : undefined;
-  return clampPlan(r.output ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
+  const pin = inputs.ask?.rightNowId ? { intentionId: inputs.ask.rightNowId, firstStep: inputs.ask.firstStep } : inputs.keep;
+  return clampPlan(raw ?? { dayLine: "", rightNow: null, afterThat: [] }, candidates, fixed, inputs.capacity?.level, declinedIds, pin);
 }
 
 /**
@@ -138,17 +142,17 @@ export function stripCounts(s: string): string {
 }
 
 function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Intention[]): string {
-  const local = new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, weekday: "long", hour: "numeric", minute: "2-digit", hour12: true }).format(inputs.now);
+  const local = localFormat(inputs.timezone, "weekdayTime").format(inputs.now);
   const away = inputs.lastSeenAt && ["week_plus", "long"].includes(gapBucket(inputs.lastSeenAt, inputs.now));
   const lines = [
     "## Inputs",
     `- Person: ${inputs.displayName}. Local time ${local} (${dayPart(inputs.now, inputs.timezone)}).`,
-    inputs.capacity ? `- Capacity today: ${inputs.capacity.level}${inputs.capacity.flags?.length ? ` (${inputs.capacity.flags.join(", ")})` : ""}.` : "- Capacity today: not stated; assume normal.",
+    inputs.capacity ? `- Capacity today: ${capacityPhrase(inputs.capacity)}.` : "- Capacity today: not stated; assume normal.",
     inputs.lastSeenAt ? `- Last here: ${describeGap(inputs.lastSeenAt, inputs.now)}.${away ? " Coming back after a while — keep it light." : ""}` : "",
   ].filter(Boolean);
   if (fixed.length) {
     lines.push("", "## Fixed today (already handled — do not include)");
-    for (const f of fixed) lines.push(`- "${f.title}" at ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, hour: "numeric", minute: "2-digit", hour12: true }).format(f.dueAt!)}`);
+    for (const f of fixed) lines.push(`- "${f.title}" at ${localFormat(inputs.timezone, "time").format(f.dueAt!)}`);
   }
   const declinedReason = new Map((inputs.declined ?? []).map((d) => [d.intentionId, declineLabel(d.reason) ?? d.reason ?? null] as const));
   lines.push("", "## Candidates (id · title · list · ~min · flags)");
@@ -161,7 +165,7 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     if (isStale(c, inputs.now)) flags.push("untouched for two weeks+");
     if (c.nextAction) flags.push(`next: ${c.nextAction}`);
     // A day-only date today stays a candidate (dueOn skips it) — say plainly that it's due today.
-    if (c.dueAt) flags.push(localDate(c.dueAt, inputs.timezone) === inputs.localDate ? "due today" : `due ${new Intl.DateTimeFormat("en-CA", { timeZone: inputs.timezone, month: "short", day: "numeric" }).format(c.dueAt)}`);
+    if (c.dueAt) flags.push(localDate(c.dueAt, inputs.timezone) === inputs.localDate ? "due today" : `due ${localFormat(inputs.timezone, "day").format(c.dueAt)}`);
     if (c.note) flags.push(`note: ${c.note.slice(0, 80)}`);
     lines.push(`- ${c.id} · "${c.title}" · ${c.list ?? "—"} · ${c.estimateMinutes ? `~${c.estimateMinutes}m` : "—"}${flags.length ? ` · ${flags.join("; ")}` : ""}`);
   }
@@ -169,6 +173,22 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     const named = inputs.ask.rightNowId ? candidates.find((c) => c.id === inputs.ask!.rightNowId) : undefined;
     lines.push("", "## What they asked for just now (in chat)", `- "${inputs.ask.text.slice(0, 120)}" — shape the path around this.`);
     if (named) lines.push(`- Lumi already answered with "${named.title}" for right now. Keep it there; choose After that to match the ask.`);
+  }
+  if (inputs.justDeclined) {
+    const why = declineLabel(inputs.justDeclined.reason) ?? inputs.justDeclined.reason;
+    lines.push("", "## They just turned one down (Not this, on Today)", `- "${inputs.justDeclined.title}"${why ? ` — ${why.toLowerCase()}` : ""}. Shape the rest of the day around the reason.`);
+  }
+  if (inputs.keep) {
+    const kept = candidates.find((c) => c.id === inputs.keep!.intentionId);
+    if (kept) lines.push("", "## Right now is already chosen", `- "${kept.title}" is on the card now. Keep it there; choose After that and the dayLine around it.`);
+  }
+  const holding = (inputs.priorities ?? []).filter((p) => holdsOn(p, inputs.localDate));
+  if (holding.length) {
+    lines.push("", "## What they said matters (their word)");
+    for (const p of holding.slice(0, 8)) {
+      const named = p.intentionId ? inputs.openIntentions.find((i) => i.id === p.intentionId) : undefined;
+      lines.push(`- ${describeScope(p, inputs.localDate)}: "${p.content}"${named ? ` → ${named.id} · "${named.title}"` : ""}`);
+    }
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");
   if (strategies.length) {

@@ -5,7 +5,7 @@ import { GMAIL_READONLY_SCOPE, type EmailReader } from "@/core/email/types";
 import type { User } from "@/db/schema";
 import { googleAccessToken } from "./auth";
 
-export type MailAccess =
+type MailAccess =
   | { status: "ready"; reader: EmailReader }
   /** No Google account on their Clerk user. */
   | { status: "not_connected" }

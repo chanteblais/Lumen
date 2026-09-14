@@ -38,7 +38,7 @@ flowchart TD
 | State | Where it lives | Who changes it |
 |---|---|---|
 | Intention open / done / dropped | `intentions.status` | Lumi via tools; user via Today |
-| Focus session active / ended / abandoned | `focus_sessions` | Lumi via tools; client timer; next-visit sweep |
+| Focus session active / ended / abandoned | `focus_sessions` | Nothing since 2026-09-13 (focus sessions removed from the product; the table and rows are kept) |
 | Today's capacity | latest `capacity.reported` event | Lumi via tool |
 | Beliefs | `memory_notes` (+ confidence, evidence) | Lumi via tools; reflection; user via "What Lumi knows" |
 | Visit gap | `users.last_seen_at` | every turn / page open |

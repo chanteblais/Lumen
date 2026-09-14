@@ -6,8 +6,11 @@
  * understanding layer.
  */
 import { createHash } from "node:crypto";
-import type { BeliefSource } from "@/db/schema";
+import type { BeliefKind, BeliefSource } from "@/db/schema";
 import { contentWords, normalizeText } from "@/core/words";
+
+/** Every kind of belief, in the order the tools' and reflection's schemas list them (that order is part of the cached prefix). */
+export const BELIEF_KINDS = ["fact", "project", "preference", "strategy", "pattern", "anti_pattern"] as const satisfies readonly BeliefKind[];
 
 export const CONTENT_MIN = 3;
 export const CONTENT_MAX = 240;
@@ -31,7 +34,7 @@ export function boundConfidence(source: BeliefSource, c: number): number {
 
 /* ------------------------------------------------------------ screens */
 
-export type ScreenReason = "secret" | "instruction";
+type ScreenReason = "secret" | "instruction";
 
 const SECRET_PATTERNS: RegExp[] = [
   // "my password is …", "PIN: 4821", "the door code is 1234"
@@ -108,29 +111,51 @@ export function screenMemory(content: string): ScreenReason | null {
 /** Something the user actually typed (or said by voice) this turn or lately. */
 export type Heard = { messageId: string; text: string };
 
-/** At least two words and eight characters: enough that a match means they said it. */
-export const QUOTE_MIN_CHARS = 8;
+/** At least two words and eight characters before a quote is looked for at all. */
+const QUOTE_MIN_CHARS = 8;
+/** A quote that stands on its own: this many content words (stopwords aside)… */
+const QUOTE_MIN_CONTENT_WORDS = 3;
+/** …or, when shorter, at least this share of the content words of the message it came from. */
+const QUOTE_MIN_SHARE = 0.5;
 
 /**
  * The message of theirs that contains these words — whole words, in order,
  * case and punctuation aside — newest first. Undefined when the quote is too
  * short to mean anything or isn't theirs. This is what makes `user_said` a
- * fact the code checked, not a label the model chose.
+ * fact the code checked, not a label the model chose, so a match has to carry
+ * what they meant, not only share a fragment with it: either three content
+ * words of its own ("thesis is due October 30"), or most of a short message
+ * ("forget that", "keep that for the book"). A couple of words lifted from a
+ * longer message ("the book" out of "I rewrote the book's opening") is not
+ * their word for anything.
  */
 export function findTheirWords(quote: string | undefined, heard: Heard[]): Heard | undefined {
   if (!quote) return undefined;
   const q = normalizeText(quote);
   if (q.length < QUOTE_MIN_CHARS || !q.includes(" ")) return undefined;
+  const quoted = meaningfulWords(q);
+  if (quoted === 0) return undefined;
   for (let i = heard.length - 1; i >= 0; i--) {
-    if (` ${normalizeText(heard[i].text)} `.includes(` ${q} `)) return heard[i];
+    const h = heard[i];
+    if (!h) continue;
+    const said = normalizeText(h.text);
+    if (!` ${said} `.includes(` ${q} `)) continue;
+    if (quoted >= QUOTE_MIN_CONTENT_WORDS || quoted / Math.max(1, meaningfulWords(said)) >= QUOTE_MIN_SHARE) return h;
   }
   return undefined;
+}
+
+/** Content words of two letters or more: the "s" left of "book's" once the apostrophe goes is not a word. */
+function meaningfulWords(normalized: string): number {
+  let n = 0;
+  for (const w of contentWords(normalized)) if (w.length > 1) n++;
+  return n;
 }
 
 /* --------------------------------------------------------- duplicates */
 
 /** Share of content words in common (Jaccard). */
-export function wordOverlap(a: string, b: string): { shared: number; ratio: number } {
+function wordOverlap(a: string, b: string): { shared: number; ratio: number } {
   const x = contentWords(a);
   const y = contentWords(b);
   let shared = 0;
@@ -139,7 +164,7 @@ export function wordOverlap(a: string, b: string): { shared: number; ratio: numb
   return { shared, ratio: union ? shared / union : 0 };
 }
 
-export const DUPLICATE_OVERLAP = 0.75;
+const DUPLICATE_OVERLAP = 0.75;
 
 /** The same thing said again: "Thesis due October 30." ≈ "My thesis is due October 30". */
 export function isNearDuplicate(a: string, b: string): boolean {

@@ -49,8 +49,8 @@ describe("selectLibrary", () => {
   it("opens a thread named in the message, with its summary and the current notes that bear on it first", () => {
     const view = pick("I had a new thought about the ending of the book");
     expect(view.open.map((o) => o.thread.id)).toEqual(["t-book"]);
-    expect(view.open[0].notes[0]).toBe(ending);
-    expect(view.open[0].notes).not.toContain(oldEnding);
+    expect(view.open[0]!.notes[0]).toBe(ending);
+    expect(view.open[0]!.notes).not.toContain(oldEnding);
     expect(view.index.map((x) => x.thread.id)).toEqual(["t-prac"]);
   });
 
@@ -69,7 +69,7 @@ describe("selectLibrary", () => {
     const view = selectLibrary([...many, practicum], [], [], signals("hello"), { now });
     expect(view.index).toHaveLength(INDEX_SIZE);
     expect(view.moreThreads).toBe(true);
-    expect(selectLibrary([practicum], [], [], signals("hi"), { now }).index[0].resting).toBe(true);
+    expect(selectLibrary([practicum], [], [], signals("hi"), { now }).index[0]!.resting).toBe(true);
   });
 
   it("carries only episodes that ended before the transcript window, from the last two weeks", () => {

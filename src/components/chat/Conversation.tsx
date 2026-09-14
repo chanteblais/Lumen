@@ -1,12 +1,9 @@
 "use client";
 
+import type { FileUIPart } from "ai";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { SessionBar } from "@/components/focus/SessionBar";
-import { declineMessageText, isDeclineReason, type DeclineReason } from "@/core/declines";
+import { useEffect, useRef, useState } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
-import type { SessionView } from "@/core/domain/sessions";
-import { sessionEventText, sessionFromMessages, type SessionEventResponse } from "@/core/focus";
 import { LUMI_LOST_THREAD, useHeldChat } from "./chat-client";
 import { Composer } from "./Composer";
 import { Greeting } from "./Greeting";
@@ -20,42 +17,20 @@ type Props = {
   kicker?: React.ReactNode;
   /** Whether the last message is from this sitting (computed on the server). */
   initialInSitting: boolean;
-  /** Titles for handoff messages (id → title), from the server. */
-  intentionTitles?: Record<string, string>;
-  /** The focus session running when the page opened, if any. */
-  initialSession?: SessionView | null;
 };
-
-export type Handoff = { text: string; kind: "start_intention" | "declined" | "break_down"; intentionId: string; reason?: DeclineReason };
-
-/**
- * What a link from Today/Library turns into: a visible message plus metadata.
- * `?decline=<id>&reason=<key>` carries one of the six quick answers; the
- * server records the decline and re-cuts the path. docs/today.md → Handoffs.
- */
-export function handoffMessage(params: URLSearchParams, titles: Record<string, string>): Handoff | null {
-  for (const key of ["start", "decline", "breakdown"] as const) {
-    const id = params.get(key);
-    if (!id) continue;
-    const title = titles[id] ?? "that";
-    if (key === "decline") {
-      const r = params.get("reason");
-      const reason = isDeclineReason(r) ? r : undefined;
-      return { text: declineMessageText(title, reason), kind: "declined", intentionId: id, reason };
-    }
-    if (key === "start") return { text: `Let's start: ${title}`, kind: "start_intention", intentionId: id };
-    return { text: `Help me break this down: ${title}`, kind: "break_down", intentionId: id };
-  }
-  return null;
-}
 
 /** Where the turn in flight began: its user message (the last one). */
 function lastUserIndex(messages: CoherenceUIMessage[]) {
-  for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i]?.role === "user") return i;
   return messages.length;
 }
 
-export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting, intentionTitles = {}, initialSession = null }: Props) {
+/**
+ * Home's conversation. Nothing on Today sends you here any more: Not this and
+ * Break it down happen on Today's card (2026-09-13). A link can still carry
+ * words to start from (`?prefill=…`), which land in the composer unsent.
+ */
+export function Conversation({ conversationId, initialMessages, greetingLines, kicker, initialInSitting }: Props) {
   const params = useSearchParams();
   const handled = useRef(false);
 
@@ -73,50 +48,27 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
   // that was there when the page opened, and what you say next goes below it.
   // Back mid-turn, the card goes before the turn still arriving, so it reads as this visit.
   const [cardAt] = useState(() => (resumed ? lastUserIndex(messages) : initialMessages.length));
-  // A link from Today/Library (?start=<id> …) becomes the first message of this sitting.
-  const initialHandoff = useMemo(() => handoffMessage(params, intentionTitles), [params, intentionTitles]);
   // Quick starts are for the moment of starting: shown until you've said
   // something this sitting, and again next time you come back.
-  const [inSitting, setInSitting] = useState(initialInSitting || resumed || Boolean(initialHandoff));
+  const [inSitting, setInSitting] = useState(initialInSitting || resumed);
 
-  const send = (text: string, extra?: Record<string, unknown>) => {
+  const send = (text: string, files?: FileUIPart[]) => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if ((!trimmed && !files?.length) || busy) return;
     setInSitting(true);
-    void sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString(), ...(extra ?? {}) } });
+    const metadata = { createdAt: new Date().toISOString() };
+    // A photo with nothing said is a whole message too.
+    void (trimmed ? sendMessage({ text: trimmed, files, metadata }) : sendMessage({ files: files ?? [], metadata }));
   };
 
-  // Focus Together: what the server said was running when the page opened,
-  // then Lumi's start/end tool calls and the user's own Done / End taps as
-  // they happen. `gone` covers the one case the transcript can't see — the
-  // server closing it while this page sat idle.
-  const [gone, setGone] = useState<string | null>(null);
-  const liveSession = useMemo(() => sessionFromMessages(initialSession, messages.slice(cardAt)), [initialSession, messages, cardAt]);
-  const session = liveSession && liveSession.id !== gone ? liveSession : null;
-  const sessionEvent = (response: Exclude<SessionEventResponse, "ok">, minute: number) => {
-    if (!session) return;
-    send(sessionEventText(response), { kind: "session_event", sessionId: session.id, response, minute });
-  };
-
-  // Send the handoff once, then clean the URL without a navigation (a router
-  // navigation would re-render the page and remount the chat mid-request).
-  // Arriving by a link while a turn you left is still arriving, it waits for that turn to land.
+  // Take the prefill into the composer, then clean the URL without a navigation
+  // (a router navigation would re-render the page and remount the chat).
   const prefill = params.get("prefill") ?? "";
   useEffect(() => {
-    if (handled.current || (!initialHandoff && !prefill) || busy) return;
-    // Deferred so React's dev double-mount settles first.
-    const t = setTimeout(() => {
-      handled.current = true;
-      if (initialHandoff) {
-        void sendMessage({
-          text: initialHandoff.text,
-          metadata: { createdAt: new Date().toISOString(), kind: initialHandoff.kind, intentionId: initialHandoff.intentionId, ...(initialHandoff.reason ? { reason: initialHandoff.reason } : {}) },
-        });
-      }
-      window.history.replaceState(null, "", "/");
-    }, 50);
-    return () => clearTimeout(t);
-  }, [initialHandoff, prefill, sendMessage, busy]);
+    if (handled.current || !prefill) return;
+    handled.current = true;
+    window.history.replaceState(null, "", "/");
+  }, [prefill]);
 
   return (
     <div className="chat-page">
@@ -131,7 +83,6 @@ export function Conversation({ conversationId, initialMessages, greetingLines, k
           error={error ? LUMI_LOST_THREAD : undefined}
         />
       </div>
-      {session && <SessionBar session={session} busy={busy} quietKey={messages.length} onEvent={sessionEvent} onGone={setGone} />}
       <Composer onSend={send} onStop={stop} busy={busy} initialValue={prefill} />
     </div>
   );

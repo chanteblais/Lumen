@@ -6,6 +6,139 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-13 (11) — Break it down's route, from the headless end-to-end sweep (`fix/steps-route-uuid`)
+
+A headless end-to-end sweep, signed in, sent `POST /api/intentions/not-a-uuid/steps` and got a 500 with an empty body. The server log showed `invalid input syntax for type uuid` from `getIntention`. The sibling routes had been fixed in code review B7; this one was missed.
+
+### Fixed
+- **The steps route checks its id and body.** A malformed id is a 400 (`isUuid`) before any query. A body that isn't JSON, or whose `smallerThan` isn't a list of at most five short strings, is a 400 (`readBody`) before any query or model call. Before this, both got a 200 and a paid model call, read as `{}`. An intention that isn't the user's or isn't open is still a 404. Tested in `src/app/api/validation.test.ts`.
+
+### Known and deliberate
+- An empty body is a 400 too: the one client (`RightNowActions`) always sends `{}` or `{ smallerThan }`.
+
+### Open
+- Nothing new.
+
+### Highest-value manual tests
+- On Today, *Break it down*, then *Smaller still*: both still bring back steps.
+
+---
+
+## Sweep 2026-09-13 (10) — the whole app on a phone (`fix/greeting-mobile-drag`, `chore/dev-test-user`, `fix/mobile-pass`)
+
+Chanté: "Lumi's opening chat message drags left/right on mobile", then "could you do a mobile pass on the whole app?" Mobile Safari on the iOS Simulator (iPhone 17, 402pt wide), signed out for the public pages and as the local test user (`COHERENCE_DEV_USER=1`, `src/lib/dev-user.ts`) for the rest: Home before and after a message, Today empty and with a path, the Lists sheet (tabs, a date, the ⋯ menu), the Library, Settings, sign-in, sign-up and privacy. Each signed-in page was measured by a temporary probe (not committed) that logged to the dev server through Next's browser-log forwarding: every element scrolling sideways, the child causing it (found by hiding children one at a time and re-measuring), and every tap target under 44pt.
+
+### Fixed
+- **Home's greeting dragged sideways.** The scroll's rods reach 9px past the parchment, so `.chat-scroll` was wider than its box (1078 vs 1069px, measured in Chrome) and a finger panned it. The scroll now sits 9px in from each side of the column (`margin-inline: 9px`). In Safari a swipe doesn't move it, and the probe reads none on a fresh open and with a conversation.
+- **Today dragged 2px sideways.** The feathered shadow behind Lumi's words reaches 22px past them and a phone's page has 20px of padding, so `.main` was 404px wide in a 402px screen. On phones the shadow reaches 20px. In Safari the probe reads none on the empty page and with a path, capacity question and slip, and a swipe leaves every line where it was.
+
+### Known and deliberate
+- The Lists tab strip (`.lists-tabs`) scrolls sideways on purpose (+519px on a phone, with the quick views joined to the tabs).
+- The probe reports the Library's `h1.sr-only` as overflowing: it is the screen-reader heading, clipped, not scrollable.
+- As the test user the header shows *Sign in · Sign up* (there's no Clerk session), so its 15px-tall links are not what a signed-in user sees.
+
+### Open
+- Tap targets under 44pt in the core loop and four smaller phone findings: `ux-review-log.md` → Review 1 (proposed).
+- Not covered: the on-screen keyboard (the Simulator used the Mac's keyboard, so only the accessory bar showed: the composer and the Lists date field with the keyboard up are unchecked); the Library with sections, shelves and books (a new user has none, and filing waits on consolidation); Settings → What Lumi knows with beliefs to edit or forget; Today's *Break it down* steps and *Not this* on a phone; a real device.
+
+### Highest-value manual tests
+- On a phone, on Home and Today: drag sideways with a finger. Nothing moves.
+- On a phone, open Lists, tap *Add date* and type with the on-screen keyboard up: the field stays in view.
+- On a phone, write to Lumi with the on-screen keyboard up: the composer and the newest line stay visible.
+
+---
+
+## Sweep 2026-09-13 (9) — the code review (`docs/code-review-2026-09-13`, `chore/hygiene`, `fix/data-integrity`, `fix/companion-chat`, `fix/ai-and-routes`, `chore/strictness`)
+
+Chanté: "review this project and see if anything needs to be refactored or can otherwise be improved", then "document everything and fix it". Every finding has an id and a status in `docs/code-review-2026-09-13.md`. The review doc landed first (3010037), then `chore/hygiene` (24d00d0), `fix/data-integrity` (7301a16), `fix/companion-chat` (e25489c), `fix/ai-and-routes` (90421dc) and `chore/strictness`. Every row is now `fixed` or `decided`.
+
+### Fixed
+- **Data integrity (A).** The main theme was read-then-write with no transaction or lock. Keeping a lead, completing or dropping an intention, parallel plan updates, evidence counters, reflection, focus sessions and the main conversation are now each one transaction, a row lock or a unique index (migration `0006`). Consolidation no longer holds up the next chat message; a failure backs off instead of retrying on every turn; a lease stops two instances paying for the same model call. Reflection's window ends with the session. Mail paging no longer skips older mail. Dead code went, and DB tests cover each fix.
+- **AI layer and routes (B).** Due dates from mail no longer land a day early west of UTC. Mail reaches the model as quoted data. "Their word" needs a real quote. Chat errors are logged with ids only. Bad request bodies get a 400 on every route. Re-cuts of Today run one at a time per user. The prompt now caches the conversation history, not only the persona. One structured-call helper replaces four copies. Found in the live click-through: consolidation kept re-reading its own watermark message, from millisecond against microsecond timestamps.
+- **Companion and UI (C).** Closing the bubble, pressing Escape or leaving Home mid-turn no longer cancels Lumi's tools. The mic can't stay on. A let-go row stays gone. The animation timers no longer grow without bound. Dialog focus is trapped and handed back. Reduced motion holds the dots and the mic still. The chat clients share one module.
+- **Tooling (D).** The preflight fails on an absolute `core.hooksPath` and checks nested packages. The route-auth audit is per handler and can't pass vacuously. Security headers are on. Server env is checked at startup. Node is pinned in `.nvmrc`.
+- **Strictness (E).** `noUncheckedIndexedAccess` is on, and its 202 errors are fixed. It turned up two real bugs: "constructor" typed as a date threw a `RangeError` (a 500 from the Lists date field), and a thread forgotten while being shelved still logged `library.shelved`. 131 exports used only in their own file are unexported, and four dead exports are gone. The canon now says Lumi sees roughly the last 30 to 40 messages. Production is pinned to Node 22 with `engines`.
+- `npm run check` passes on `chore/strictness` (typecheck, lint, 59 files / 362 tests, route-auth, CSS prefixes, the brief).
+
+### Known and deliberate
+- The pool still warms all 10 connections on a cold instance (A15): 510 → 90 ms on Today, and instances are reused.
+- No join table for `episodes.thread_ids`; the GIN index does the job at V1 scale (A22).
+- No foreign keys on history pointers whose target may be deleted first (A23; `domain.md` → Pointers without foreign keys).
+- No minimum stretch size for consolidation: a short visit is still its own episode (B18, `decisions.md`).
+- The nav stays usable over the Lists sheet, so it isn't `inert` (C7).
+- `@huggingface/transformers` stays despite 4 audit highs: the flagged packages are Node-side, and the library runs only in the browser worker (D5, `pre-prod.md`).
+- `core.hooksPath` turns absolute whenever Claude Code makes a worktree. That's its own setup step, outside the repo, and the preflight catches it (E4, `dev-hygiene.md`).
+- Preview deploys aren't set up and fail at startup by design (E7, Chanté: "Let's skip preview").
+- `core/domain/sessions.ts` and `core/focus.ts` keep their unused exports: they're kept for sessions coming back (E2).
+
+### Open
+- Checks that need a deploy: the security headers on the live URL (`pre-prod.md`), and a build log showing Node 22 once `engines` ships.
+- Re-cuts are serialised per process only (B8), so two instances can still race; revisit if that ever shows up.
+
+### Highest-value manual tests
+- Ask Lumi to add something, then close the bubble (or leave Home) before she answers. The item still appears.
+- In Lists, type "constructor" in a date field. It says the date wasn't understood, with no server error.
+- Two quick changes to Today in chat ("something easy", then "make today smaller"): Today shows the second.
+- After the next production deploy, Vercel's build log shows Node 22.x.
+- After starting a new Claude worktree, run `npm run preflight` in any checkout. It names the absolute `core.hooksPath` and the fix.
+
+---
+
+## Sweep 2026-09-13 (8) — Lumi knows the app and where you are (`feat/lumi-environment`)
+
+Chanté: "I'd like Lumi to be aware of her environment and the app's functionality."
+
+### Fixed
+- **She didn't know which page a turn came from.** The bubble on Today sent the same request as Home's composer. Now each client's transport adds `where: { path, via }`; the dev log line reads `where=today/bubble`. Checked live on port 3005: on Today, tap Lumi, "what can I do on this page?" → *Today shows one thing to do now — currently "Take out compost."* / Start with Lumi, Break it down, Not this, Done / *You can also tell me "make today smaller"…* — no tools called, nothing written but the two messages. (That was before merging `main`, when Today still had Start with Lumi.) After the merge, the same question from the same bubble (`where=today/bubble`): the card's Not this, Break it down and Done, "tell me here if you want something easier or a different plan", and on her own she corrected the earlier line: *I mentioned a "Start with Lumi" button earlier — that was incorrect. You can ask for company right here.*
+- **She didn't know what the app does or doesn't.** Eight single turns on `gpt-6-astra` (`voice-eval-log.md` → Run 7): Lists named for "where's all my stuff", a plain *not yet* for reminders, new lists and changing a name, with something close to do instead; no invented buttons.
+- `npm run check`: typecheck, lint, 43 files / 272 tests, route-auth, CSS prefixes and the brief all pass (the brief re-stamped after `lumi.md` §6 changed; its text unchanged). After merging `main`: 45 files / 280 tests, all pass.
+
+### Known and deliberate
+- The place isn't stored on the message: it describes the moment, and history doesn't need it. An old tab (a client from before this change) or a malformed body sends no place, and the context simply has no line.
+- She knows the page, not the screen: which tab of Lists is open, what's typed or scrolled isn't sent (`spaces.md` §31).
+- The map of the app lives in the cached persona, so it goes stale when a page changes: the docs audit's *a page or feature → features.md* step should now also ask whether *The app, and where they are* still reads true.
+
+### Open
+- Her Today reply ran three short paragraphs in the bubble; within the persona's shape, but the bubble is narrow. Watch for length there before tuning.
+- After the merge she answered with a dash list ("card: - Not this … - Break it down … - Done"), which the bubble renders run together on one line: the bubble (and Home) show paragraphs, not lists, and the persona allows a list only for a brain dump. Either the persona holds her to prose here or the reply renderer learns lists — Chanté's call if it recurs.
+- "I can't start." on Home went straight to the Right now instead of first telling unclear from can't-begin (Run 7, #8). Not caused by the place line; watch it.
+
+### Chanté's pass, and what changed
+- **"this one feels too big" read as instructions** (*Just go over to the compost container…*). She chose one question first; the persona now asks what makes it big before offering anything. Scenario rerun: *Is it the whole email to Priya, a particular part, or just too much for today?*
+- **Long waits before her replies.** Dev log: 5–11s per turn, with `cacheRead=0` at the start of every turn on 13–14k tokens; messages show 3–7s from her message saved to Lumi's reply saved. Cause: GPT-6 caches only at a breakpoint, and the implicit one sat at the end of the ever-changing context block, so nothing was read back across turns. Fix: an explicit breakpoint after the persona (`decisions.md`); probes now read 8,281 of ~8,400 tokens from turn 2 on, and the eight-turn eval through the app's own options (each turn from a different page) read 3,938–4,172 of ~4,180 from turn 2 on, where before most turns read nothing. The dev log now prints `ready`, `firstWord` and `done` per turn, so the live gain can be read directly. The first open of a page on the dev server also compiles it (e.g. `GET /lists` 7.5s); that's dev only.
+
+### Highest-value manual tests
+- On Today, tap Lumi: "this one feels too big" — one short question about what makes it big, no step yet.
+- Any two turns a minute apart: the second `[chat]` line should show a large `cacheRead` and a smaller `firstWord` than before.
+- In Lists, Add task: "oat milk" — filed, a few words back.
+- On Home: "can you remind me at 3 to call the dentist?" — a plain *not yet*, with something close to do instead; no invented reminder.
+- On Today: "stay with me while I do this" — company in words, no session, timer or Start with Lumi offered.
+- In the Library bubble: "it's nice in here" — one light line, no scenery speech.
+
+---
+
+## Sweep 2026-09-13 (7) — no way to sign in from an incognito window (`fix/sign-in-path`)
+
+Chanté: "The site doesn't give a log in option in incognito."
+
+### Fixed
+- **Signed out, `/sign-in` and `/sign-up` showed no form.** Production (www.burlyman.ca) was healthy from the outside: `/` redirected to `/sign-in`, Clerk's scripts and `/v1/environment` answered, every request was 200. In a fresh headless Chrome profile, though, the `SignIn` root box stayed empty and the URL kept gaining `?redirect_url=…/sign-in`. A trace of `Clerk.redirectToSignIn` showed the call coming from the sign-in UI's fallback route. The cause is the Lists sheet's `app/@sheet/[...catchAll]`, which adds `catchAll: ["sign-in"]` to `useParams()`. `@clerk/nextjs` infers the component's path by removing every catch-all param from the pathname, so it read `/` and treated `/sign-in` as an unknown step. Both pages now pass `routing="path"` and their own `path`. It has been broken signed out since `775002c` (the Lists sheet, this morning); a signed-in browser never sees the sign-in form, so nobody noticed.
+
+### Known and deliberate
+- `TimezoneCapture`'s first-visit refresh isn't involved (the loop was the same with the cookie already set).
+
+### Verified (live, port 3006, worktree on the branch)
+- Fresh profile, signed out: `/sign-in` and `/sign-up` each mount Clerk's card (2 inputs, Continue with Google) and the URL stays clean. `npm run check` passes; `client.db.test.ts` timed out once under the full run and passed on its own (5/5).
+- Production is only verifiable after deploy: re-run the fresh-profile probe against www.burlyman.ca/sign-in.
+
+### Open
+- Nothing from this sweep.
+
+### Highest-value manual tests
+- An incognito window on the deployed site: the sign-in card appears, and Continue with Google signs in and lands on Home.
+
+---
+
 ## Sweep 2026-09-13 (6) — a flash of white and things arriving one by one on first load (`ux/smooth-first-load`)
 
 Chanté: "It's a big flash of white and things loading faster than others. It doesn't feel very smooth."

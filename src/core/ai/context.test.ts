@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FocusSession, Intention } from "@/db/schema";
+import type { Intention, Priority } from "@/db/schema";
 import { buildContextBlock } from "./context";
 
 const now = new Date("2026-09-12T06:00:00Z"); // Fri 11pm Vancouver
@@ -72,46 +72,46 @@ describe("buildContextBlock", () => {
     expect(line("Practicum")).toMatch(/5:00/);
     expect(block).toContain('they changed the date on "Essay" in Lists');
   });
+  it("shows what they said matters with its id, scope, words and the intention it names", () => {
+    const paper = { id: "i1", title: "Discussion post", status: "open", lastTouchedAt: now, list: "School", estimateMinutes: null, dueAt: null, nextAction: null } as unknown as Intention;
+    const block = buildContextBlock({
+      displayName: "C",
+      timezone: "America/Vancouver", // Fri Sep 11 locally
+      now,
+      openIntentions: [paper],
+      priorities: [
+        { id: "p1", content: "The discussion post matters most this week", scope: "week", weekOf: "2026-09-07", intentionId: "i1", retiredAt: null } as unknown as Priority,
+        { id: "p2", content: "Evenings stay free for a while", scope: "while", weekOf: null, intentionId: null, retiredAt: null } as unknown as Priority,
+        { id: "p3", content: "Taxes first next week", scope: "week", weekOf: "2026-09-14", intentionId: null, retiredAt: null } as unknown as Priority,
+      ],
+    });
+    expect(block).toContain("## What they said matters");
+    expect(block).toMatch(/- p1 · this week · "The discussion post matters most this week" · i1 "Discussion post"/);
+    expect(block).toMatch(/- p2 · for a while · "Evenings stay free for a while" · —/);
+    expect(block).toMatch(/- p3 · next week · "Taxes first next week"/);
+  });
+  it("leaves the priorities section out when there are none", () => {
+    const block = buildContextBlock({ displayName: "C", timezone: "UTC", now });
+    expect(block).not.toContain("What they said matters");
+  });
   it("leaves the recent-changes section out when nothing changed", () => {
     const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, recentActivity: [] });
     expect(block).not.toContain("Recent changes");
   });
-  it("describes the running session as company, and the last one as a fact", () => {
-    const s = { id: "s1", goal: "Edit chapter 3", firstStep: "Open the doc", approach: "read the last paragraph first", plannedMinutes: 45, startedAt: new Date(now.getTime() - 12 * 60_000), endedAt: null, outcome: null } as unknown as FocusSession;
-    const running = buildContextBlock({ displayName: "C", timezone: "UTC", now, session: s });
-    expect(running).toMatch(/Focus session running: s1 · "Edit chapter 3" · first step: Open the doc · 12 of 45 min · approach: read the last paragraph first/);
-    expect(running).toContain("keeping them company");
-    const ended = { ...s, endedAt: new Date(now.getTime() - 30 * 60_000), outcome: "abandoned" } as unknown as FocusSession;
-    const after = buildContextBlock({ displayName: "C", timezone: "UTC", now, lastSession: ended });
-    expect(after).toMatch(/No focus session is running now.*"Edit chapter 3".*left open with no end signal, so the app closed it · ended 30 minutes ago\./);
-    expect(after).toContain("start_focus_session again with the same goal");
-  });
-  it("treats Start with Lumi as the start itself, with Today's first step", () => {
-    const base = { displayName: "C", timezone: "UTC", now };
-    const start = { intentionId: "i1", title: "Take out compost", firstStep: "Tie the compost bag", estimateMinutes: 5 };
-    const fresh = buildContextBlock({ ...base, startNow: start });
-    expect(fresh).toMatch(/## Just now\n- They tapped Start with Lumi on "Take out compost" \(i1\)/);
-    expect(fresh).toContain('first step Today gave them is "Tie the compost bag"');
-    expect(fresh).toContain("call start_focus_session now");
-    expect(fresh).toContain("5 min from the estimate");
-    const running = { id: "s1", goal: "Take out compost", firstStep: "Tie the compost bag", approach: null, plannedMinutes: 5, startedAt: new Date(now.getTime() - 60_000), endedAt: null, outcome: null, intentionId: "i1" } as unknown as FocusSession;
-    expect(buildContextBlock({ ...base, startNow: start, session: running })).toContain("again while its session is already running");
-    expect(buildContextBlock({ ...base, startNow: { ...start, intentionId: "i2", title: "Email Priya" }, session: running })).toContain('Switching is fine: start_focus_session for "Email Priya"');
-  });
-  it("tells Lumi what a check-in tap was, and that the closing already happened", () => {
-    const base = { displayName: "C", timezone: "UTC", now };
-    expect(buildContextBlock({ ...base, sessionEventNow: { response: "stuck", goal: "Edit chapter 3", minute: 15 } })).toMatch(/## Just now\n- They tapped Stuck.*smallest next physical action/);
-    expect(buildContextBlock({ ...base, sessionEventNow: { response: "distracted", goal: "Edit chapter 3", minute: 30 } })).toMatch(/Welcome back\. Where did we end up\?/);
-    const done = buildContextBlock({ ...base, sessionEventNow: { response: "done", goal: "Edit chapter 3", minute: 40, intentionId: "i1" } });
-    expect(done).toContain("already closed as completed");
-    expect(done).toContain("complete_intention (i1)");
-    expect(buildContextBlock({ ...base, sessionEventNow: { response: "end", goal: "Edit chapter 3", minute: 20 } })).toContain("closed as stopped early");
-  });
-  it("says why they declined, and marks it on the intention", () => {
+  it("marks what they declined today, with the reason, on the intention", () => {
     const i = { id: "i1", title: "Grant report", status: "open", lastTouchedAt: now, list: null, estimateMinutes: null, dueAt: null, nextAction: null } as unknown as Intention;
-    const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, openIntentions: [i], declinedNow: { title: "Grant report", reason: "too_big" }, declinedToday: [{ intentionId: "i1", reason: "too_big" }] });
-    expect(block).toContain("## Just now");
-    expect(block).toContain("said: too big");
+    const block = buildContextBlock({ displayName: "C", timezone: "UTC", now, openIntentions: [i], declinedToday: [{ intentionId: "i1", reason: "too_big" }] });
     expect(block).toMatch(/Grant report.*declined today \(too big\)/);
+  });
+  it("says where they are and which way in, right under the time", () => {
+    const base = { displayName: "C", timezone: "UTC", now };
+    const today = buildContextBlock({ ...base, where: { place: "today", via: "bubble" } }).split("\n");
+    expect(today[3]).toBe("- Where they are: Today, with today's path in front of them, talking to you through the bubble — the page stays in view and your reply shows in a small bubble beside you.");
+    expect(buildContextBlock({ ...base, where: { place: "home", via: "home" } })).toContain("- Where they are: Home, talking to you in the conversation.");
+    expect(buildContextBlock({ ...base, where: { place: "lists", via: "lists-add" } })).toContain("through Lists' Add task line — they want it filed");
+    expect(buildContextBlock({ ...base, where: { place: "library", via: "bubble", detail: "book" } })).toContain("the Library, reading a thread as a book");
+  });
+  it("says nothing about where when the client didn't", () => {
+    expect(buildContextBlock({ displayName: "C", timezone: "UTC", now })).not.toContain("Where they are");
   });
 });

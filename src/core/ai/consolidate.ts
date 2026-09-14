@@ -12,7 +12,6 @@
  * the stretch waits 10 minutes, then an hour, then six. The user never sees it
  * happen and never tidies anything. See docs/architecture.md → The Library.
  */
-import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Db } from "@/db/client";
 import type { Thread, ThreadNote, ThreadNoteKind, User } from "@/db/schema";
@@ -46,24 +45,25 @@ import {
 } from "@/core/domain/library";
 import { cleanContent, findTheirWords, isNearDuplicate, screenMemory, type Heard } from "@/core/domain/memory-rules";
 import { namedIn, rankThreads } from "./library-select";
-import { chatModel, effortOptions } from "./model";
+import { localFormat } from "./format";
+import { proposeStructured } from "./structured";
 
 /** A sitting this long is consolidated in parts, keeping its last few messages for the next part. */
 export const LONG_SITTING = 24;
 export const KEEP_TAIL = 8;
 export const MAX_BATCH = 80;
 /** Less than this said in a stretch: nothing to consolidate, the watermark just moves. */
-export const MIN_CHARS = 60;
-export const MAX_NEW_THREADS = 2;
+const MIN_CHARS = 60;
+const MAX_NEW_THREADS = 2;
 export const MAX_NOTES_PER_RUN = 14;
 /** A new thread needs its name in this many of their messages, or this many notes filed to it. */
-export const NEW_THREAD_MIN_MENTIONS = 2;
-export const NEW_THREAD_MIN_NOTES = 3;
-export const MAX_SHELVINGS = 4;
+const NEW_THREAD_MIN_MENTIONS = 2;
+const NEW_THREAD_MIN_NOTES = 3;
+const MAX_SHELVINGS = 4;
 /** A new thread proposed only to gather loose ones earns its place by gathering this many; one a run. */
-export const NEW_SECTION_MIN_THREADS = 2;
+const NEW_SECTION_MIN_THREADS = 2;
 export const EPISODE_MAX = 600;
-export const LEFT_OFF_MAX = 200;
+const LEFT_OFF_MAX = 200;
 const MESSAGE_CHARS = 1200;
 const PROMPT_THREADS = 40;
 const PROMPT_NOTE_THREADS = 6;
@@ -85,14 +85,17 @@ export function pickBatch(msgs: BatchMessage[], now: Date): BatchMessage[] {
   if (!msgs.length) return [];
   let end = msgs.length;
   for (let i = 1; i < msgs.length; i++) {
-    if (msgs[i].createdAt.getTime() - msgs[i - 1].createdAt.getTime() >= SITTING_GAP_MS) {
+    const prev = msgs[i - 1];
+    const cur = msgs[i];
+    if (prev && cur && cur.createdAt.getTime() - prev.createdAt.getTime() >= SITTING_GAP_MS) {
       end = i;
       break;
     }
   }
   const sitting = msgs.slice(0, end);
   if (sitting.length > MAX_BATCH) return sitting.slice(0, MAX_BATCH);
-  const over = end < msgs.length || now.getTime() - sitting[sitting.length - 1].createdAt.getTime() >= SITTING_GAP_MS;
+  const lastInSitting = sitting.at(-1); // never undefined: msgs isn't empty and end >= 1
+  const over = end < msgs.length || (lastInSitting !== undefined && now.getTime() - lastInSitting.createdAt.getTime() >= SITTING_GAP_MS);
   if (over) return sitting;
   return sitting.length >= LONG_SITTING ? sitting.slice(0, sitting.length - KEEP_TAIL) : [];
 }
@@ -176,8 +179,8 @@ export type ConsolidationInputs = {
 };
 
 /** The inputs block the model sees. */
-export function describeBatch(i: ConsolidationInputs): string {
-  const when = new Intl.DateTimeFormat("en-CA", { timeZone: i.timezone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+function describeBatch(i: ConsolidationInputs): string {
+  const when = localFormat(i.timezone, "stamp");
   const lines = ["## The conversation (oldest first)"];
   for (const m of i.batch) {
     if (!m.text) continue;
@@ -197,9 +200,9 @@ export function describeBatch(i: ConsolidationInputs): string {
 
 /* ------------------------------------------------------------- clamp */
 
-export type PlannedNote = { thread: string; kind: ThreadNoteKind; content: string; source: "user_said" | "lumi_inferred"; sourceMessageId?: string; supersedes?: string };
+type PlannedNote = { thread: string; kind: ThreadNoteKind; content: string; source: "user_said" | "lumi_inferred"; sourceMessageId?: string; supersedes?: string };
 
-export type ConsolidationPlan = {
+type ConsolidationPlan = {
   episode: { summary: string; leftOff: string | null } | null;
   newThreads: { key: string; title: string; aliases: string[]; summary: string | null }[];
   /** `thread` is an existing thread id or a new thread's key. */
@@ -336,23 +339,21 @@ type Deps = {
 };
 
 async function proposeWithModel(inputs: ConsolidationInputs): Promise<RawProposal | null> {
-  const r = await generateText({
-    model: chatModel(),
-    instructions: [
-      { role: "system", content: CONSOLIDATION_RULES },
-      { role: "system", content: describeBatch(inputs) },
-    ],
+  // Null stays null: an empty stand-in here would move the watermark past the stretch with nothing kept.
+  return proposeStructured({
+    name: "consolidation",
+    kind: "consolidate",
+    rules: CONSOLIDATION_RULES,
+    inputs: describeBatch(inputs),
     prompt: "Propose what to keep from this conversation. Return only the structured result.",
-    output: Output.object({ schema: ProposalSchema, name: "consolidation" }),
-    providerOptions: effortOptions("low"),
+    schema: ProposalSchema,
+    effort: "low",
   });
-  // An empty stand-in here would move the watermark past the stretch with nothing kept.
-  return r.output ?? null;
 }
 
 const live: Deps = { propose: proposeWithModel, now: () => new Date() };
 
-export type ConsolidationResult =
+type ConsolidationResult =
   | { status: "nothing" }
   /** The stretch failed recently; it's tried again from `until`. */
   | { status: "waiting"; until: Date }
@@ -361,7 +362,8 @@ export type ConsolidationResult =
   | { status: "failed" }
   /** Another run claimed the stretch while this one's model call ran; everything this run wrote rolled back. */
   | { status: "lost" }
-  | { status: "done"; messages: number; episodeId: string | null; threadsCreated: number; notesFiled: number; summaries: number; shelved: number };
+  /** `empty`: nothing in the stretch worth a model call; the watermark just moved past it. */
+  | { status: "done"; messages: number; episodeId: string | null; threadsCreated: number; notesFiled: number; summaries: number; shelved: number; empty?: true };
 
 /** Thrown from inside the transaction when the watermark claim is lost, so every write before it rolls back. */
 class LostClaim extends Error {}
@@ -377,14 +379,19 @@ export async function consolidate(db: Db, user: Pick<User, "id" | "timezone">, d
     rows.map((r) => ({ id: r.id, role: r.role, text: messageText({ parts: r.parts as CoherenceUIMessage["parts"] }), createdAt: r.createdAt })),
     now,
   );
-  if (!batch.length) return { status: "nothing" };
-  const through = batch[batch.length - 1];
+  const through = batch.at(-1);
+  if (!through) return { status: "nothing" };
+  // Never claim the watermark onto itself: that "moves" nothing and succeeds, so a run would repeat it forever.
+  if (through.id === from) {
+    console.error(`[consolidate] the stretch after the watermark ends on the watermark itself (conversation ${conversation.id}); not claiming it`);
+    return { status: "nothing" };
+  }
   const heard: Heard[] = batch.filter((m) => m.role === "user" && m.text).map((m) => ({ messageId: m.id, text: m.text }));
   const said = batch.reduce((n, m) => n + m.text.length, 0);
 
   if (!heard.length || said < MIN_CHARS) {
     // "hi", a tap on a check-in: nothing to keep, the stretch is done.
-    return (await claimWatermark(db, conversation.id, from, through.id)) ? { status: "done", messages: batch.length, episodeId: null, threadsCreated: 0, notesFiled: 0, summaries: 0, shelved: 0 } : { status: "lost" };
+    return (await claimWatermark(db, conversation.id, from, through.id)) ? { status: "done", messages: batch.length, episodeId: null, threadsCreated: 0, notesFiled: 0, summaries: 0, shelved: 0, empty: true } : { status: "lost" };
   }
 
   const retryAt = await consolidationRetryAt(db, user.id, from, now);
@@ -433,11 +440,13 @@ async function applyPlan(
   user: Pick<User, "id">,
   { plan, batch, conversationId, from, now }: { plan: ConsolidationPlan; batch: BatchMessage[]; conversationId: string; from: string | null; now: Date },
 ): Promise<ConsolidationResult> {
-  const through = batch[batch.length - 1];
+  const [first] = batch;
+  const through = batch.at(-1);
+  if (!first || !through) throw new Error("applyPlan: an empty batch");
   return db.transaction(async (txRaw) => {
     const tx = txRaw as unknown as Db;
     const episode = plan.episode
-      ? await insertEpisode(tx, { userId: user.id, conversationId, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: batch[0].createdAt, endedAt: through.createdAt, throughMessageId: through.id })
+      ? await insertEpisode(tx, { userId: user.id, conversationId, summary: plan.episode.summary, leftOff: plan.episode.leftOff, startedAt: first.createdAt, endedAt: through.createdAt, throughMessageId: through.id })
       : undefined;
 
     const created = new Map<string, string>();
@@ -491,24 +500,40 @@ async function applyPlan(
 
 const inflight = new Map<string, Promise<void>>();
 
+/** Stretches with nothing to keep that one run moves past before it stops, whatever `passes` says (each is a few queries, no model call). */
+const MAX_EMPTY_PER_RUN = 20;
+
 /**
- * Fire-and-forget for `after()`: catch up on up to `passes` ready stretches
- * (three by default; a chat turn needs one), one run per user per process at a
- * time. Never throws.
+ * Fire-and-forget for `after()`: up to `passes` stretches that need a model call
+ * (one by default — Home and a chat turn each take one, so a backlog catches up a
+ * stretch per visit rather than several back to back), moving past any with
+ * nothing to keep on the way, one run per user per process at a time. Never
+ * throws. Dev log: one line per model pass, one for what was moved past.
  */
 export function consolidateAfter(db: Db, user: Pick<User, "id" | "timezone">, opts: { passes?: number; deps?: Partial<Deps> } = {}): Promise<void> {
   const running = inflight.get(user.id);
   if (running) return running;
+  const log = process.env.NODE_ENV !== "production";
   const run = (async () => {
+    let modelPasses = 0;
+    let empty = 0;
+    let moved = 0;
     try {
-      for (let i = 0; i < (opts.passes ?? 3); i++) {
+      while (modelPasses < (opts.passes ?? 1)) {
         const r = await consolidate(db, user, opts.deps);
-        if (process.env.NODE_ENV !== "production" && r.status !== "nothing") console.log(`[consolidate] ${JSON.stringify(r)}`);
+        if (r.status === "done" && r.empty) {
+          moved += r.messages;
+          if (++empty >= MAX_EMPTY_PER_RUN) break;
+          continue;
+        }
+        if (log && r.status !== "nothing") console.log(`[consolidate] ${JSON.stringify(r)}`);
         if (r.status !== "done") break;
+        modelPasses++;
       }
     } catch (e) {
       console.error("[consolidate] failed", e);
     } finally {
+      if (log && moved) console.log(`[consolidate] moved past ${moved} message${moved === 1 ? "" : "s"} with nothing to keep`);
       inflight.delete(user.id);
     }
   })();

@@ -59,7 +59,7 @@ describe("persistence across visits", () => {
 
     const [row] = await listActiveBeliefs(db, u.id);
     expect(row).toMatchObject({ content: "Thesis is due October 30.", source: "user_said", sourceMessageId: firstId });
-    expect(row.createdAt).toBeInstanceOf(Date);
+    expect(row!.createdAt).toBeInstanceOf(Date);
     expect(await blockFor(u, "ok, where was I with the thesis?")).toContain('"Thesis is due October 30." · their word');
   });
 
@@ -74,8 +74,8 @@ describe("persistence across visits", () => {
     });
     expect(out).toMatchObject({ held_as: "your guess" });
     const [b] = await listActiveBeliefs(db, u.id);
-    expect(b.source).toBe("lumi_inferred");
-    expect(b.confidence).toBeLessThanOrEqual(0.6);
+    expect(b!.source).toBe("lumi_inferred");
+    expect(b!.confidence).toBeLessThanOrEqual(0.6);
   });
 });
 
@@ -113,7 +113,7 @@ describe("duplicates and contradictions", () => {
     expect(again).toMatchObject({ already_held: true });
     const active = await listActiveBeliefs(db, u.id);
     expect(active).toHaveLength(1);
-    expect(active[0].evidenceFor).toBe(1);
+    expect(active[0]!.evidenceFor).toBe(1);
   });
 
   it("lets their word replace Lumi's guess of the same thing", async () => {
@@ -151,7 +151,7 @@ describe("corrections", () => {
     expect(active.map((b) => b.content)).toEqual(["Writes best in the evenings."]);
     expect(active[0]).toMatchObject({ source: "user_said", supersedesId: old.id });
     const [previous] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, String(old.id)));
-    expect(previous.retiredReason).toBe("superseded");
+    expect(previous!.retiredReason).toBe("superseded");
 
     const block = await blockFor(u, "when should I write?");
     expect(block).toContain("Writes best in the evenings.");
@@ -237,21 +237,21 @@ describe("writes that race or chain", () => {
   it("counts two confirmations arriving at once as two", async () => {
     const u = await createTestUser(db, "Pim");
     const [b] = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "strategy", content: "A ten-minute timer gets me going.", source: "lumi_inferred", confidence: 0.4 }], "lumi")).created;
-    await Promise.all([applyBeliefOps(db, u.id, [{ op: "confirm", id: b.id }], "reflection"), applyBeliefOps(db, u.id, [{ op: "confirm", id: b.id }], "lumi")]);
-    const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, b.id));
-    expect(row.evidenceFor).toBe(2);
-    expect(row.confidence).toBeCloseTo(0.6);
+    await Promise.all([applyBeliefOps(db, u.id, [{ op: "confirm", id: b!.id }], "reflection"), applyBeliefOps(db, u.id, [{ op: "confirm", id: b!.id }], "lumi")]);
+    const [row] = await db.select().from(memoryNotes).where(eq(memoryNotes.id, b!.id));
+    expect(row!.evidenceFor).toBe(2);
+    expect(row!.confidence).toBeCloseTo(0.6);
   });
 
   it("forgets every wording of a belief in a chain of three, from the middle", async () => {
     const u = await createTestUser(db, "Quin");
     const [v1] = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "fact", content: "Works from the library on Mondays.", source: "lumi_inferred" }], "lumi")).created;
-    const [v2] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v1.id, content: "Works from the library on Mondays and Fridays." }], "lumi")).created;
-    const [v3] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v2.id, content: "Works from the library every weekday." }], "lumi")).created;
+    const [v2] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v1!.id, content: "Works from the library on Mondays and Fridays." }], "lumi")).created;
+    const [v3] = (await applyBeliefOps(db, u.id, [{ op: "revise", id: v2!.id, content: "Works from the library every weekday." }], "lumi")).created;
     const other = (await applyBeliefOps(db, u.id, [{ op: "create", kind: "preference", content: "Likes short replies.", source: "lumi_inferred" }], "lumi")).created[0];
-    const r = await applyBeliefOps(db, u.id, [{ op: "delete", id: v2.id }], "user");
-    expect(r.deleted.sort()).toEqual([v1.id, v2.id, v3.id].sort());
-    expect((await allRows(u)).map((b) => b.id)).toEqual([other.id]);
+    const r = await applyBeliefOps(db, u.id, [{ op: "delete", id: v2!.id }], "user");
+    expect(r.deleted.sort()).toEqual([v1!.id, v2!.id, v3!.id].sort());
+    expect((await allRows(u)).map((b) => b.id)).toEqual([other!.id]);
   });
 
   it("won't infer what they made Lumi forget from the Library", async () => {

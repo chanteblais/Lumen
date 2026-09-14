@@ -11,12 +11,15 @@
  *   means `openai:gpt-6-astra`) and must read `openai:<model>` or `anthropic:<model>`.
  * - The Clerk sign-in/up URL keys are optional: without them `auth.protect()`
  *   sends a visitor to Clerk's hosted page instead of `/sign-in` (docs/pre-prod.md).
+ * - `COHERENCE_DEV_USER` (the local test user, src/lib/dev-user.ts) must never
+ *   reach production: a production server with it set refuses to start.
  *
  * The lazy reads in client.ts and model.ts stay as they are; this only makes a
  * missing key show at startup rather than at the first request. The same list
  * is what the preflight asks `.env.local` for (from `.env.example`).
  */
 import { z } from "zod";
+import { DEV_TEST_USER_KEY } from "./dev-user";
 
 /** Unset and empty are the same thing to the code (`if (!url)`, `LUMI_MODEL || DEFAULT`). */
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -24,7 +27,7 @@ const optional = <T extends z.ZodType>(schema: T) =>
 
 const key = z.string().trim().min(1);
 
-export const serverEnvSchema = z
+const serverEnvSchema = z
   .object({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: key,
     CLERK_SECRET_KEY: key,
@@ -42,7 +45,7 @@ export const serverEnvSchema = z
     if (!env[modelKey]) ctx.addIssue({ code: "custom", path: [modelKey], message: "missing" });
   });
 
-export type EnvProblems = { missing: string[]; invalid: string[] };
+type EnvProblems = { missing: string[]; invalid: string[] };
 
 /** Which keys are missing and which are set but malformed. Names only. */
 export function envProblems(env: Record<string, string | undefined>): EnvProblems {
@@ -64,12 +67,18 @@ const FORMATS: Record<string, string> = {
 /**
  * Throws in production when a required key is missing or a key is malformed,
  * so a deploy without its keys fails loudly at startup. Elsewhere it warns: the
- * preflight already stops `npm run dev` on a missing key.
+ * preflight already stops `npm run dev` on a missing key. A production server
+ * with the local test user switched on always throws.
  */
 export function validateServerEnv(
   env: Record<string, string | undefined> = process.env,
   { production = process.env.NODE_ENV === "production", warn = console.warn } = {},
 ): EnvProblems {
+  if (production && env[DEV_TEST_USER_KEY]?.trim()) {
+    throw new Error(
+      `${DEV_TEST_USER_KEY} is set in production — the local test user signs every request in without a session, so it must never reach a deploy (src/lib/dev-user.ts). Remove the key from this environment.`,
+    );
+  }
   const problems = envProblems(env);
   const lines = [
     ...(problems.missing.length ? [`missing: ${problems.missing.join(", ")}`] : []),

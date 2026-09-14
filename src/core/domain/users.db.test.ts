@@ -28,7 +28,7 @@ describe("visit", () => {
     expect(r?.previous).toEqual(u.lastSeenAt);
     expect(r?.user).toMatchObject({ id: u.id, timezone: "America/Vancouver", lastSeenAt: u.lastSeenAt });
     const [row] = await db.select().from(users).where(eq(users.id, u.id));
-    expect(row.lastSeenAt).toEqual(soon);
+    expect(row!.lastSeenAt).toEqual(soon);
     expect(await opened(u.id)).toEqual([]);
   });
 
@@ -38,7 +38,7 @@ describe("visit", () => {
     const r = await visit(db, u.clerkUserId, "Mars/Olympus", later);
     expect(r?.user.timezone).toBe("UTC");
     const [e] = await opened(u.id);
-    expect(e.payload).toEqual({ gap_seconds: 7200 });
+    expect(e!.payload).toEqual({ gap_seconds: 7200 });
   });
 
   it("finds nobody for an id with no row yet", async () => {

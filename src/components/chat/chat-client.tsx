@@ -15,20 +15,30 @@ import type { CoherenceUIMessage } from "@/core/domain/conversations";
 export const LUMI_LOST_THREAD = "I lost the thread for a second. Say that again?";
 
 /** The tallest a message box grows before it scrolls, in px (the Home composer's; the bubble's was 168). */
-export const MESSAGE_BOX_MAX_PX = 160;
+const MESSAGE_BOX_MAX_PX = 160;
 
-/** Send only the new message; the server holds the transcript. */
-export function chatTransport() {
+/**
+ * Send only the new message; the server holds the transcript. With it, where
+ * you are as you send it — the page and which way in (`core/places.ts`) — so
+ * Lumi knows "this one" on Today is the card in front of you.
+ */
+function chatTransport(via?: HeldChatSlot) {
   return new DefaultChatTransport<CoherenceUIMessage>({
     api: "/api/chat",
-    prepareSendMessagesRequest: ({ messages, id }) => ({ body: { id, message: messages[messages.length - 1] } }),
+    prepareSendMessagesRequest: ({ messages, id }) => ({
+      body: {
+        id,
+        message: messages[messages.length - 1],
+        ...(via && typeof window !== "undefined" ? { where: { path: window.location.pathname, via } } : {}),
+      },
+    }),
   });
 }
 
 /** Message ids are UUIDs on both sides: `messages.id` is a uuid column. */
-export const newMessageId = () => crypto.randomUUID();
+const newMessageId = () => crypto.randomUUID();
 
-export const isBusy = (status: string) => status === "submitted" || status === "streaming";
+const isBusy = (status: string) => status === "submitted" || status === "streaming";
 
 /**
  * A message's words. One text part per block of speech — Lumi often says a
@@ -78,7 +88,7 @@ export function useAutoResize(max = MESSAGE_BOX_MAX_PX) {
  * you've gone. `@ai-sdk/react` leaves a chat passed in as `useChat({ chat })`
  * running when the component unmounts.
  */
-export type HeldChatSlot = "home" | "bubble" | "lists-add";
+type HeldChatSlot = "home" | "bubble" | "lists-add";
 type Held = { chat: Chat<CoherenceUIMessage>; seed: CoherenceUIMessage[] | undefined };
 const held = new Map<HeldChatSlot, Held>();
 
@@ -124,7 +134,7 @@ function holdChat(slot: HeldChatSlot, options: HoldOptions, refresh: () => void)
   if (current && current.seed === seed && current.chat.messages.length === (seed?.length ?? 0)) return { chat: current.chat, resumed: false };
   const chat = new Chat<CoherenceUIMessage>({
     ...(options.seed ? { id: options.seed.id, messages: options.seed.messages } : {}),
-    transport: chatTransport(),
+    transport: chatTransport(slot),
     generateId: newMessageId,
     // Called when the turn ends however it ends (landed, stopped, failed), even
     // with the component long gone: the page showing then reflects what she did.

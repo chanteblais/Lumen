@@ -8,9 +8,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import type { User } from "@/db/schema";
 import { ensureUser, touchLastSeen, updateTimezone, visit } from "@/core/domain/users";
+import { DEV_TEST_CLERK_USER_ID, DEV_TEST_DISPLAY_NAME, devTestUserEnabled } from "./dev-user";
 
 /** Cookie set by <TimezoneCapture /> with the browser's IANA timezone. */
-export const TIMEZONE_COOKIE = "coherence_tz";
+const TIMEZONE_COOKIE = "coherence_tz";
 
 /**
  * The signed-in user's internal row, or a redirect to sign-in.
@@ -22,13 +23,13 @@ export const TIMEZONE_COOKIE = "coherence_tz";
  * call) is fetched only when the row has to be created.
  */
 export async function requireUser(): Promise<User> {
-  const { userId: clerkUserId } = await auth();
+  const clerkUserId = await signedInClerkUserId();
   if (!clerkUserId) redirect("/sign-in");
 
   const tz = (await cookies()).get(TIMEZONE_COOKIE)?.value;
   const existing = await ensureUser(db(), {
     clerkUserId,
-    displayName: displayNameFromClerk,
+    displayName: devTestUserEnabled() ? DEV_TEST_DISPLAY_NAME : displayNameFromClerk,
     timezone: tz,
   });
   if (tz && tz !== existing.timezone) {
@@ -46,7 +47,7 @@ export async function requireUser(): Promise<User> {
  * only the very first request creates the row first.
  */
 export async function requireVisit(): Promise<{ user: User; previous: Date }> {
-  const { userId: clerkUserId } = await auth();
+  const clerkUserId = await signedInClerkUserId();
   if (!clerkUserId) redirect("/sign-in");
 
   const tz = (await cookies()).get(TIMEZONE_COOKIE)?.value;
@@ -71,6 +72,12 @@ export async function googleAccessToken(user: User): Promise<{ token: string; sc
   } catch {
     return undefined;
   }
+}
+
+/** This request's Clerk user id, or null when signed out. The local test user (lib/dev-user.ts) stands in under `npm run dev`. */
+async function signedInClerkUserId(): Promise<string | null> {
+  if (devTestUserEnabled()) return DEV_TEST_CLERK_USER_ID;
+  return (await auth()).userId;
 }
 
 async function displayNameFromClerk(): Promise<string> {

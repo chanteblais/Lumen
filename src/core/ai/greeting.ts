@@ -1,6 +1,6 @@
 import { gapBucket, localDayDiff } from "@/core/time";
 
-export type GreetingState = {
+type GreetingState = {
   /** First name if known; the greeting stays warm without it. */
   displayName?: string | null;
   /** Last time the user was here; undefined on first visit. */
@@ -9,8 +9,6 @@ export type GreetingState = {
   lastSaidAt?: Date;
   /** IANA timezone — "yesterday" and "today" are the user's days, not UTC's. */
   timezone?: string;
-  /** A focus session left open without an end signal. */
-  abandonedSessionGoal?: string;
   now?: Date;
 };
 
@@ -31,9 +29,6 @@ export function greeting(state: GreetingState): string[] {
   const name = state.displayName ? `, ${state.displayName}.` : ".";
   const hello = `Good to see you${name}`;
 
-  if (state.abandonedSessionGoal) {
-    return [hello, `Looks like we left a session open on “${state.abandonedSessionGoal}.” Pick it back up, or let it go?`];
-  }
   if (state.lastSeenAt && ["week_plus", "long"].includes(gapBucket(state.lastSeenAt, now))) {
     return [hello, REENTRY];
   }

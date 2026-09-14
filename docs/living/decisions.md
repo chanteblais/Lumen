@@ -6,6 +6,83 @@
 
 ---
 
+## 2026-09-13 · Lumi sees roughly the last 30 to 40 messages
+
+**Decision.** Each turn, Lumi sees roughly the last 30 to 40 messages of the conversation, not a fixed 30. What's older reaches her as recent memory and through the Library, as before.
+**Rationale.** From the code review (B9): a window that drops its oldest message every turn changes every request, so none of the conversation could be reused between turns and each reply waited on the whole history again. Letting the window move in steps keeps it the same for several turns, so replies come sooner and cost less. Chanté chose to update the canon to match (2026-09-13).
+**Implications.**
+- She never sees less than she did; sometimes up to nine messages more.
+- The canon states the window as a range (`philosophy/lumi.md` §6). The principle of *Coherence remembers; Lumi understands* stands: when a cap bites, add retrieval, never a bigger window.
+
+**Principle.** *Coherence remembers; Lumi understands* (below).
+**Replaces.** "The last 30 messages" in `philosophy/lumi.md` and in *Coherence remembers; Lumi understands*.
+
+## 2026-09-13 · Their word has to be theirs, and only their word brings back what was forgotten
+
+**Decision.** Lumi treats something as the person's own word only when what she quotes carries what they meant: a real phrase of theirs (three words that say something), or most of a short message ("forget that", "keep that for the book"). A couple of words lifted out of a longer message are her reading, not their word. Something they asked her to forget comes back only when they ask for it again in their own words; her inferences and the between-visits filing never bring it back.
+**Rationale.** From the code review (B4, 2026-09-13), not a new ask from Chanté. *(Claude's reading: "their word" is what lets a note outrank Lumi's guesses and lets a placement stand against later tidying. If two stray words can unlock it, explicit and inferred stop being distinguishable — the seam the AI & information architecture says to keep, §57 — and a forgotten thread could come back through a loose quote, which is worse for trust than asking once more.)*
+**Implications.**
+- More of what Lumi keeps from conversation is marked as her reading rather than their word; their corrections and forgetting still go through on a real quote.
+- A thread, note or belief they had forgotten can be recreated through Lumi when they ask again in words she can quote; a loose fragment, a guess of hers or consolidation can't. Their later word is the more recent decision, and it wins.
+- Where they tell her a thread belongs still counts as their placement, which she and consolidation won't move.
+
+**Principle.** AI & IA §57 (explicit information ≠ inference), §61 (can we understand where consequential information came from?).
+**Replaces.** The eight-character quote rule of Lumi's memory (engineering log, *Lumi's memory: their word checked in code*).
+
+## 2026-09-13 · Plan with Lumi is scrapped; what they say matters this week is remembered
+
+**Decision.** There is no Plan with Lumi on Today. When someone tells Lumi what matters more than the rest — this week, next week, or for a while — she holds it as a **stated priority**, and Today's path weighs it until the week ends or they say otherwise. A real deadline today can still come first, and Lumi says so.
+**Rationale.** Chanté: "Let's actually scrap plan with lumi", then "Keep priorities". Earlier, on the proposal, she said Lumi "should absolutely remember" what matters this week. *(Claude's reading:)* priorities need nothing on the page: they come from what's said, so they fit a Today that stands on its own (`today-garden.md` §143).
+**Implications.**
+- User-expressed priority is kept apart from Lumi's recommendation and from urgency (`shared-model.md` → Priority and temporal scope). It has a scope — this week, next week, for a while — and never an invented date; a week's priority stops holding on its own, with nothing to clear.
+- Nothing asks the user to set, rank or review priorities, and nothing shows or counts them. Changing or dropping one is saying so. How Lumi shows what she's holding stays open question 12.
+- *Today does its own organising* (below) stands whole: nothing on Today sends you to Home. The rejection of a Replan button stands too.
+- Settles part of open question 11: representation, expiry and supersession.
+
+**Principle.** V§4 and EP§1 (the system does the organising), V§5 and EP§5 (Lumi proposes; the user corrects), EP§3 (show less than you know).
+**Replaces.** Makes final "Plan with Lumi is not being built" in *Today does its own organising, and focus sessions are set aside for now* (below).
+
+---
+
+## 2026-09-13 · When something feels too big, Lumi asks before she hands over a step
+
+**Decision.** Told in words that something feels too big, Lumi asks one short question about what makes it big (all of it, one part, or just today) before offering anything, then answers that: a smaller piece, a different thing, or letting it wait.
+**Rationale.** Chanté, trying "this one feels too big" from the bubble on Today: "She gave me instructions on how to do it" (Lumi had said *Just go over to the compost container. You don't need to carry it out yet.*, the smallest piece). Asked what she'd have wanted, she chose one question first.
+**Implications.** Lumi's persona (*What you're for* → Starting) and `lumi.md` §5 and §14. Today's card is unchanged: *Not this → Too big* still swaps in the smallest thing at once, and *Break it down* still offers steps to pick from, because those are choices the user made by tapping. The *Break it down* quick start in chat still goes straight to a first action: asking for a breakdown is the answer to the question.
+**Principle.** Diagnose before prescribing (`lumi.md` §15, run 1); resistance changes the plan (EP§7); starting is its own problem (EP§10); one decision at a time (EP§3).
+**Replaces.** *Too big: the smallest piece* as the first reply in conversation (`lumi.md` §14, from the removed *Not this* persona section).
+
+---
+
+## 2026-09-13 · Files shared with Lumi are read, not kept
+
+**Decision.** On Home, a photo, a screenshot, a PDF or a text file can go with a message. Lumi reads it on that turn and does with it what she'd do with the same words: files what needs doing, answers what was asked. The file itself isn't kept. The conversation keeps a note that something was shared, by name, and later Lumi says she can't see it rather than guess.
+**Rationale.** Chanté's ask, and her three calls: photos, PDFs and text files; read, don't keep; Home's composer only. *(Claude's reading: a photo of a sticky note or a whiteboard is a brain dump without the typing. Keeping the files would start an archive of uploads nobody asked to manage. It is the mail rule, a line per thing and never the mail, applied to files.)*
+**Implications.**
+- No page shows past files: nothing to browse, name or delete.
+- The companion bubble and the Lists add-line stay words-only.
+- Asking about a file shared earlier means sharing it again.
+
+**Principle.** V§4, EP§1, EP§23.
+**Replaces.** The composer's *Add file* placeholder, hidden 2026-09-12 as a dead control.
+
+---
+
+## 2026-09-13 · Today does its own organising, and focus sessions are set aside for now
+
+**Decision.** Nothing on Today sends you to Home. *Not this* re-cuts the path on the card and shows what fits instead, with Lumi's one line on why; *Break it down* shows a few small steps on the card to pick the first from. *Start with Lumi* and focus sessions — the session bar, check-ins, the abandoned-session greeting and the *Body double* quick start — are removed from the product for now. Plan with Lumi is not being built.
+**Rationale.** Chanté: "Right now all the options on the today page just direct you to the home page chat. I'd really like to find a way to keep all that organizing on the Today page." Asked, she chose to "get rid of the start with lumi and focus sessions for now", and for *Not this* and *Break it down* to happen on the card without a conversation. On Plan with Lumi: "It was small and easy to miss. I wasn't a huge fan of the options either." *(Claude's reading:)* the Garden "should stand on its own as an immediately understandable surface" (`today-garden.md` §143), and leaving the page to change the plan was the opposite.
+**Implications.**
+- **This departs from the canon, and knowingly.** The Study (`focus-study.md`: accompaniment, containment, meaningful outcomes and leaving), Lumi's body-doubling role (`lumi.md`, V§7) and M5's outcome loop have no surface in the app now. The canon is unchanged — it is still the intended direction — and open question 2 now includes what a session is when it returns. Session reflection, the only automatic link between a way in and its outcome, is dormant; completions, declines and re-entry remain.
+- Lumi initiates nothing: check-ins were the one unprompted thing she did (open question 9).
+- Correction stays cheap (EP§6): a decline is one tap and a first step one more, and neither needs explaining.
+- The table, its rows and the domain code are kept so sessions can come back without a migration.
+
+**Principle.** EP§1 (the system does the organising), EP§2–4 (one decision at a time, on the surface you're on), EP§18 (one understanding across spaces: the decline and the step still reach Lumi), §143 of the Garden.
+**Replaces.** *Today's handoffs into chat* (2026-09-12, `today.md`) and the product surface of M5 *Focus Together*.
+
+---
+
 ## 2026-09-13 · Lumi may name time away when it helps someone get their bearings
 
 **Decision.** In conversation, Lumi may say how long someone has been away when that helps them orient, as in the model strategy's *"You disappeared for four days. We don't need to reconstruct the four days."* She never does it in a way that makes the absence feel like a debt. Counts of what's undone stay out, and so does any tally of what piled up. Pages show neither.
@@ -202,7 +279,7 @@ Chanté approved the conceptual comparison and consolidation structure. **Previo
 **Decision.** Coherence, not the language model, holds the user's life as durable structured context. Each turn assembles the subset Lumi needs, and Lumi's job is to interpret it and respond. ([model strategy](../product/lumi-model-strategy.md))
 **Rationale.** A model that "remembers" through long histories or huge context windows makes continuity depend on that model and its limits. Structured context survives a model change and can be retrieved on purpose.
 **Implications.**
-- Already the shape of the system: tables and events are the truth, a capped context block and the last 30 messages feed each turn, and a summary (M6) holds older conversation. When a cap bites, add retrieval or a read tool, never a bigger window.
+- Already the shape of the system: tables and events are the truth, a capped context block and the last 30 messages (since the same day, roughly 30 to 40: *Lumi sees roughly the last 30 to 40 messages*, above) feed each turn, and a summary (M6) holds older conversation. When a cap bites, add retrieval or a read tool, never a bigger window.
 - New features ask: *what does this allow Lumi to understand, and how does it help her help?*
 - The structured context the strategy names but Coherence doesn't yet hold (Library threads, Garden state, relationships between things, a clear record of what was moved without being chosen) is open question 22.
 
@@ -385,12 +462,16 @@ Distilled from the engineering log, [`product.md`](../product.md) and [`today.md
 
 ### Quiet by default · 2026-09-11
 
+*Partly superseded 2026-09-13: check-ins went with focus sessions (Today does its own organising, above), so Lumi currently speaks unprompted not at all; the greeting stays deterministic.*
+
 **Decision.** Lumi speaks unprompted only at check-ins the user agreed to. The greeting and the check-ins are deterministic.
 **Rationale.** Effective presence is often quiet (§7). An unprompted message is a small demand.
 **Implications.** Any future notification must clear this bar (open question 9).
 **Principle.** §7, §18.
 
 ### A session's end is a fact, not a request · 2026-09-12
+
+*Suspended 2026-09-13: focus sessions are removed from the product for now (Today does its own organising, above). This stays the design for when they return.*
 
 **Decision.** Focus sessions start only through Lumi. *Done* and *End* close a session in code, with no "did you finish?". A session left open is offered back once and never treated as a failure.
 **Rationale.** Three asks up front, none during: the body double doesn't interrogate.

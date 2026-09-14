@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDayOnly, parseDueDate, startOfLocalDay } from "./due-date";
+import { dueAtFromModel, isDayOnly, parseDueDate, startOfLocalDay } from "./due-date";
 
 const today = "2026-09-16"; // a Wednesday
 
@@ -56,6 +56,12 @@ describe("parseDueDate", () => {
       expect(parseDueDate(s, today)).toBeNull();
     }
   });
+  it("reads a word only from its own tables, never Object.prototype's", () => {
+    // `"constructor" in WEEKDAYS` was true, so these threw a RangeError (a 500 from the Lists date field).
+    for (const s of ["constructor", "this constructor", "in constructor days", "constructor 5", "5 constructor"]) {
+      expect(parseDueDate(s, today)).toBeNull();
+    }
+  });
 });
 
 describe("day-only due dates", () => {
@@ -70,5 +76,14 @@ describe("day-only due dates", () => {
   it("a time of day is not day-only", () => {
     expect(isDayOnly(new Date("2026-09-19T00:00:00Z"), "America/Vancouver")).toBe(false); // 5pm local
     expect(isDayOnly(new Date("2026-09-18T07:00:01Z"), "America/Vancouver")).toBe(false);
+  });
+});
+
+describe("dueAtFromModel", () => {
+  it("reads a bare day as that local day, a time as that instant, and nonsense as nothing", () => {
+    expect(dueAtFromModel("2026-09-20", "America/Vancouver")?.toISOString()).toBe("2026-09-20T07:00:00.000Z");
+    expect(dueAtFromModel("2026-09-20T09:00:00-07:00", "America/Vancouver")?.toISOString()).toBe("2026-09-20T16:00:00.000Z");
+    expect(dueAtFromModel("2026-02-30", "UTC")).toBeNull();
+    expect(dueAtFromModel("friday", "UTC")).toBeNull();
   });
 });

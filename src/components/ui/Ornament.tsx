@@ -37,7 +37,7 @@ export function Flourish({ className = "" }: { className?: string }) {
 }
 
 /** ❦ The hedera — the ivy leaf that has closed chapters since Rome. */
-export function Fleuron({ size = 18, className = "" }: GlyphProps) {
+function Fleuron({ size = 18, className = "" }: GlyphProps) {
   return (
     <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" className={`ornament ${className}`}>
       {/* leaf: two lobes, a long tip */}

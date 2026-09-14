@@ -10,16 +10,16 @@
  */
 import type { Episode, Thread, ThreadNote } from "@/db/schema";
 import { shelfPath } from "@/core/domain/library";
-import { contentWords, normalizeText } from "@/core/words";
-import { termWeights, type TurnSignals } from "./memory-select";
+import { normalizeText } from "@/core/words";
+import { overlapScore, termWeights, type TurnSignals } from "./memory-select";
 
-export const OPEN_THRESHOLD = 5;
-export const MAX_OPEN = 2;
-export const NOTES_PER_THREAD = 6;
+const OPEN_THRESHOLD = 5;
+const MAX_OPEN = 2;
+const NOTES_PER_THREAD = 6;
 export const INDEX_SIZE = 12;
-export const EPISODES_SHOWN = 3;
-export const EPISODE_DAYS = 14;
-export const RESTING_AFTER_DAYS = 30;
+const EPISODES_SHOWN = 3;
+const EPISODE_DAYS = 14;
+const RESTING_AFTER_DAYS = 30;
 
 const PHRASE = { message: 10, focus: 6, recent: 3 } as const;
 const BODY_WEIGHT = 0.5;
@@ -36,24 +36,20 @@ export function namedIn(name: string, text: string | null | undefined): boolean 
   return ` ${normalizeText(text)} `.includes(` ${n} `);
 }
 
-export function threadScore(t: SelectableThread, notes: SelectableNote[], signals: TurnSignals): number {
+/** `weights`: the turn's term weights, when the caller already has them (they're the same for every thread of a turn). */
+export function threadScore(t: SelectableThread, notes: SelectableNote[], signals: TurnSignals, weights: ReadonlyMap<string, number> = termWeights(signals)): number {
   const names = [t.title, ...t.aliases];
   const said = (text: string | null | undefined) => names.some((n) => namedIn(n, text));
-  let score = said(signals.message) ? PHRASE.message : (signals.focus ?? []).some(said) ? PHRASE.focus : (signals.recent ?? []).some(said) ? PHRASE.recent : 0;
-  const weights = termWeights(signals);
-  for (const w of contentWords(names.join(" "))) score += weights.get(w) ?? 0;
-  let body = 0;
-  for (const w of contentWords([t.summary ?? "", ...notes.map((n) => n.content)].join(" "))) body += (weights.get(w) ?? 0) * BODY_WEIGHT;
-  return score + Math.min(body, BODY_CAP);
+  const phrase = said(signals.message) ? PHRASE.message : (signals.focus ?? []).some(said) ? PHRASE.focus : (signals.recent ?? []).some(said) ? PHRASE.recent : 0;
+  const body = overlapScore([t.summary ?? "", ...notes.map((n) => n.content)].join(" "), weights) * BODY_WEIGHT;
+  return phrase + overlapScore(names.join(" "), weights) + Math.min(body, BODY_CAP);
 }
 
 /** A thread's current notes, the ones sharing the most with what's being said first, then the newest. */
-export function rankNotes<N extends SelectableNote>(notes: N[], signals: TurnSignals): N[] {
-  const weights = termWeights(signals);
-  const overlap = (n: N) => [...contentWords(n.content)].reduce((s, w) => s + (weights.get(w) ?? 0), 0);
+export function rankNotes<N extends SelectableNote>(notes: N[], signals: TurnSignals, weights: ReadonlyMap<string, number> = termWeights(signals)): N[] {
   return notes
     .filter((n) => !n.supersededById)
-    .map((n) => ({ n, s: overlap(n) }))
+    .map((n) => ({ n, s: overlapScore(n.content, weights) }))
     .sort((a, b) => b.s - a.s || b.n.createdAt.getTime() - a.n.createdAt.getTime())
     .map((x) => x.n);
 }
@@ -77,11 +73,11 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
   signals: TurnSignals,
   opts: { now: Date; windowStartsAt?: Date },
 ): LibraryView<T, N, E> {
-  const byThread = new Map<string, N[]>();
-  for (const n of notes) if (!n.supersededById) byThread.set(n.threadId, [...(byThread.get(n.threadId) ?? []), n]);
+  const byThread = notesByThread(notes.filter((n) => !n.supersededById));
+  const weights = termWeights(signals);
 
   const opened = threads
-    .map((t) => ({ t, s: threadScore(t, byThread.get(t.id) ?? [], signals) }))
+    .map((t) => ({ t, s: threadScore(t, byThread.get(t.id) ?? [], signals, weights) }))
     .filter((x) => x.s >= OPEN_THRESHOLD)
     .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .slice(0, MAX_OPEN);
@@ -92,7 +88,7 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
   const window = opts.windowStartsAt?.getTime();
   const shelf = (t: T) => shelfPath(threads, t.id).map((p) => p.title);
   return {
-    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals).slice(0, NOTES_PER_THREAD), shelf: shelf(x.t) })),
+    open: opened.map((x) => ({ thread: x.t, notes: rankNotes(byThread.get(x.t.id) ?? [], signals, weights).slice(0, NOTES_PER_THREAD), shelf: shelf(x.t) })),
     index: rest.slice(0, INDEX_SIZE).map((t) => ({ thread: t, resting: opts.now.getTime() - t.lastDiscussedAt.getTime() > RESTING_AFTER_DAYS * 86_400_000, shelf: shelf(t) })),
     moreThreads: rest.length > INDEX_SIZE,
     episodes:
@@ -108,8 +104,10 @@ export function selectLibrary<T extends SelectableThread, N extends SelectableNo
 /** Threads a stretch of text touches, strongest first — for consolidation's prompt and `search_library`. */
 export function rankThreads<T extends SelectableThread>(threads: T[], text: string, notes: SelectableNote[] = []): T[] {
   const signals = { message: text };
+  const weights = termWeights(signals);
+  const byThread = notesByThread(notes);
   return threads
-    .map((t) => ({ t, s: threadScore(t, notes.filter((n) => n.threadId === t.id), signals) }))
+    .map((t) => ({ t, s: threadScore(t, byThread.get(t.id) ?? [], signals, weights) }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s || byRecency(a.t, b.t))
     .map((x) => x.t);
@@ -120,9 +118,20 @@ export function matchNotes<N extends SelectableNote>(notes: N[], query: string, 
   const weights = termWeights({ message: query });
   return notes
     .filter((n) => !n.supersededById)
-    .map((n) => ({ n, s: [...contentWords(n.content)].reduce((s, w) => s + (weights.get(w) ?? 0), 0) }))
+    .map((n) => ({ n, s: overlapScore(n.content, weights) }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s || b.n.createdAt.getTime() - a.n.createdAt.getTime())
     .slice(0, limit)
     .map((x) => x.n);
+}
+
+/** Notes grouped by their thread, in the order given — one pass, so ranking threads doesn't filter every note per thread. */
+function notesByThread<N extends Pick<SelectableNote, "threadId">>(notes: N[]): Map<string, N[]> {
+  const out = new Map<string, N[]>();
+  for (const n of notes) {
+    const list = out.get(n.threadId);
+    if (list) list.push(n);
+    else out.set(n.threadId, [n]);
+  }
+  return out;
 }

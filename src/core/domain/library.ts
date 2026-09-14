@@ -6,34 +6,35 @@
  * (`memory-rules.ts`) and appends an event with no words in it. See
  * docs/architecture.md → The Library.
  */
-import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { conversations, episodes, events, messages, threadNotes, threads, type Episode, type NoteSource, type Thread, type ThreadNote, type ThreadNoteKind } from "@/db/schema";
 import { normalizeText } from "@/core/words";
 import { chainIds } from "./chains";
 import { appendEvent } from "./events";
 import { cleanContent, contentKey, isNearDuplicate, screenMemory } from "./memory-rules";
+import { returnedRow } from "./rows";
 import { atomic } from "./tx";
 
 export const NOTE_MIN = 3;
 export const NOTE_MAX = 280;
 export const SUMMARY_MAX = 900;
 export const TITLE_MAX = 80;
-export const ALIAS_MAX = 40;
-export const MAX_ALIASES = 8;
-export const THREAD_LIMIT = 100;
-export const NOTE_LIMIT = 600;
+const ALIAS_MAX = 40;
+const MAX_ALIASES = 8;
+const THREAD_LIMIT = 100;
+const NOTE_LIMIT = 600;
 /** Episodes older than this don't ride along; they stay in the table. */
-export const EPISODE_RECENT_DAYS = 14;
+const EPISODE_RECENT_DAYS = 14;
 
-export type LibraryActor = "user" | "lumi" | "consolidation";
+type LibraryActor = "user" | "lumi" | "consolidation";
 
 export const NOTE_KINDS = ["idea", "decision", "question", "progress", "detail"] as const satisfies readonly ThreadNoteKind[];
 
 /* -------------------------------------------------------------- pure */
 
 /** A title or alias as it's compared: "The Book!" ≈ "the book". */
-export function nameKey(s: string): string {
+function nameKey(s: string): string {
   return normalizeText(s);
 }
 
@@ -65,7 +66,7 @@ export function findThreadByName<T extends Pick<Thread, "title" | "aliases">>(he
  * A section, then a shelf in it, then a book: a thread sits at most this many
  * levels deep. Deeper nesting would ask the user to navigate a filing tree.
  */
-export const MAX_SHELF_DEPTH = 3;
+const MAX_SHELF_DEPTH = 3;
 
 type Shelvable = { id: string; parentId?: string | null };
 
@@ -103,7 +104,7 @@ export function whyNotShelve(held: Shelvable[], threadId: string, parentId: stri
 }
 
 export type ShelfBooks<T> = { shelf: T | null; books: T[] };
-export type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
+type LibrarySection<T> = { thread: T; shelves: ShelfBooks<T>[] };
 export type LibraryShelves<T> = { sections: LibrarySection<T>[]; loose: T[] };
 
 const byAge = <T extends Pick<Thread, "createdAt">>(a: T, b: T) => a.createdAt.getTime() - b.createdAt.getTime();
@@ -170,7 +171,7 @@ export async function listNoteHistory(db: Db, userId: string, threadId: string, 
     .limit(limit);
 }
 
-export async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
+async function listRecentEpisodes(db: Db, userId: string, now: Date, limit = 10): Promise<Episode[]> {
   const since = new Date(now.getTime() - EPISODE_RECENT_DAYS * 86_400_000);
   return db
     .select()
@@ -180,7 +181,7 @@ export async function listRecentEpisodes(db: Db, userId: string, now: Date, limi
     .limit(limit);
 }
 
-export type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
+type LibraryState = { threads: Thread[]; notes: ThreadNote[]; episodes: Episode[]; unavailable: boolean };
 
 /** Everything a turn chooses from — or nothing, and say so: the Library failing never takes the conversation down. */
 export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = new Date()): Promise<LibraryState> {
@@ -195,12 +196,13 @@ export async function loadLibraryOrNothing(db: Db, userId: string, now: Date = n
 
 /* ------------------------------------------------------------ writes */
 
-export type Skip = { skipped: string };
+type Skip = { skipped: string };
 
 export async function createThread(
   db: Db,
   userId: string,
-  input: { title: string; aliases?: string[]; summary?: string | null },
+  /** `theirWord`: Lumi makes it because they asked, in words the code found in their messages — their ask brings back even what they once had her forget. */
+  input: { title: string; aliases?: string[]; summary?: string | null; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ thread: Thread; existed: boolean } | Skip> {
@@ -210,24 +212,29 @@ export async function createThread(
   return atomic(db, (tx) => insertThread(tx, userId, title, input, actor, now));
 }
 
-async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
+async function insertThread(db: Db, userId: string, title: string, input: { aliases?: string[]; summary?: string | null; theirWord?: boolean }, actor: LibraryActor, now: Date): Promise<{ thread: Thread; existed: boolean } | Skip> {
   const held = await listThreads(db, userId);
   const same = findThreadByName(held, title) ?? (input.aliases ?? []).map((a) => findThreadByName(held, a)).find(Boolean);
   if (same) return { thread: same, existed: true };
-  if (actor !== "user" && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
+  // Only their own (checked) word brings back a forgotten thread; an inference or a consolidation run never does.
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, title))) return { skipped: "forgotten" };
   const summary = input.summary ? cleanSummary(input.summary) : null;
-  const [row] = await db
-    .insert(threads)
-    .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
-    .returning();
-  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor }, occurredAt: now });
+  const row = returnedRow(
+    await db
+      .insert(threads)
+      .values({ userId, title, aliases: mergeAliases(title, [], input.aliases ?? []), summary, summaryRevisedAt: summary ? now : null, lastDiscussedAt: now })
+      .returning(),
+    "createThread",
+  );
+  await appendEvent(db, { userId, type: "library.thread_created", subjectType: "thread", subjectId: row.id, payload: { by: actor, ...(input.theirWord ? { their_word: true } : {}) }, occurredAt: now });
   return { thread: row, existed: false };
 }
 
 export async function fileNote(
   db: Db,
   userId: string,
-  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  /** `theirWord`: filed because they asked, in words the code found in their messages — lifts the forgotten check, as for a thread. */
+  input: { threadId: string; kind: ThreadNoteKind; content: string; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date = new Date(),
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -243,7 +250,7 @@ async function insertNote(
   db: Db,
   userId: string,
   content: string,
-  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string },
+  input: { threadId: string; kind: ThreadNoteKind; source: NoteSource; sourceMessageId?: string; supersedes?: string; episodeId?: string; theirWord?: boolean },
   actor: LibraryActor,
   now: Date,
 ): Promise<{ note: ThreadNote; replaced?: ThreadNote } | (Skip & { existing?: ThreadNote })> {
@@ -252,13 +259,16 @@ async function insertNote(
   const current = await listCurrentNotes(db, userId, [thread.id]);
   const same = current.find((n) => isNearDuplicate(n.content, content));
   if (same) return { skipped: "already_held", existing: same };
-  if (actor !== "user" && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
+  if (actor !== "user" && !input.theirWord && (await isForgotten(db, userId, content))) return { skipped: "forgotten" };
   const replaced = input.supersedes ? current.find((n) => n.id === input.supersedes) : undefined;
   if (input.supersedes && !replaced) return { skipped: "supersedes a note that isn't current on this thread" };
-  const [note] = await db
-    .insert(threadNotes)
-    .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
-    .returning();
+  const note = returnedRow(
+    await db
+      .insert(threadNotes)
+      .values({ userId, threadId: thread.id, kind: input.kind, content, source: input.source, sourceMessageId: input.sourceMessageId ?? null, episodeId: input.episodeId ?? null, createdAt: now })
+      .returning(),
+    "fileNote",
+  );
   if (replaced) await db.update(threadNotes).set({ supersededById: note.id }).where(eq(threadNotes.id, replaced.id));
   await db.update(threads).set({ lastDiscussedAt: now }).where(eq(threads.id, thread.id));
   await appendEvent(db, {
@@ -266,7 +276,7 @@ async function insertNote(
     type: "library.noted",
     subjectType: "thread",
     subjectId: thread.id,
-    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor },
+    payload: { note: note.id, kind: input.kind, source: input.source, supersedes: replaced?.id ?? null, by: actor, ...(input.theirWord ? { their_word: true } : {}) },
     occurredAt: now,
   });
   return { note, replaced };
@@ -305,17 +315,21 @@ export async function insertEpisode(
   db: Db,
   input: { userId: string; conversationId: string; summary: string; leftOff: string | null; startedAt: Date; endedAt: Date; throughMessageId: string; threadIds?: string[] },
 ): Promise<Episode> {
-  const [row] = await db
-    .insert(episodes)
-    .values({ ...input, threadIds: input.threadIds ?? [] })
-    .returning();
-  return row;
+  return returnedRow(
+    await db
+      .insert(episodes)
+      .values({ ...input, threadIds: input.threadIds ?? [] })
+      .returning(),
+    "insertEpisode",
+  );
 }
 
 /**
  * Put a thread under another (or take it off its shelf, `parentId` null).
  * Checks ownership and depth; Lumi and consolidation never move a thread the
  * user placed. Appends `library.shelved` with where it was and who moved it.
+ * `theirWord`: Lumi moves it because they said where it goes, in words the code
+ * found in their messages — their placement, which she won't later undo.
  */
 export async function shelveThread(
   db: Db,
@@ -323,20 +337,24 @@ export async function shelveThread(
   threadId: string,
   parentId: string | null,
   actor: LibraryActor,
+  opts: { theirWord?: boolean } = {},
 ): Promise<{ thread: Thread } | Skip> {
+  const theirs = actor === "user" || opts.theirWord === true;
   return atomic(db, async (tx) => {
     const held = await tx.select().from(threads).where(eq(threads.userId, userId));
     const thread = held.find((t) => t.id === threadId);
     const why = whyNotShelve(held, threadId, parentId);
     if (!thread || why) return { skipped: why ?? "not found" };
     if (thread.parentId === parentId) return { thread };
-    if (actor !== "user" && thread.shelvedBy === "user") return { skipped: "placed by them" };
+    if (!theirs && thread.shelvedBy === "user") return { skipped: "placed by them" };
     const [row] = await tx
       .update(threads)
-      .set({ parentId, shelvedBy: parentId ? (actor === "user" ? "user" : "lumi") : actor === "user" ? "user" : null })
+      .set({ parentId, shelvedBy: parentId ? (theirs ? "user" : "lumi") : theirs ? "user" : null })
       .where(and(eq(threads.id, thread.id), eq(threads.userId, userId)))
       .returning();
-    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor } });
+    // Read without a lock, so it can be forgotten in between: then it's gone, not shelved.
+    if (!row) return { skipped: "not found" };
+    await appendEvent(tx, { userId, type: "library.shelved", subjectType: "thread", subjectId: thread.id, payload: { under: parentId, from: thread.parentId, by: actor, ...(opts.theirWord ? { their_word: true } : {}) } });
     return { thread: row };
   });
 }
@@ -424,27 +442,26 @@ export async function isForgotten(db: Db, userId: string, content: string): Prom
  * stands in for it, so a missing message never re-reads the whole conversation.
  */
 export async function unconsolidatedMessages(db: Db, conversationId: string, watermarkId: string | null, limit = 200) {
-  let after: Date | undefined;
-  if (watermarkId) {
-    const [w] = await db.select({ createdAt: messages.createdAt }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
-    after = w?.createdAt;
-    if (!after) {
-      const [e] = await db
-        .select({ endedAt: episodes.endedAt })
-        .from(episodes)
-        .where(eq(episodes.conversationId, conversationId))
-        .orderBy(desc(episodes.endedAt))
-        .limit(1);
-      after = e?.endedAt;
-      console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${after ? `the latest episode's end (${after.toISOString()})` : "the start (no episode either)"}`);
-    }
+  const inConversation = eq(messages.conversationId, conversationId);
+  const read = (after: SQL | undefined) => db.select().from(messages).where(and(inConversation, after)).orderBy(asc(messages.createdAt), asc(messages.id)).limit(limit);
+  if (!watermarkId) return read(undefined);
+  const [w] = await db.select({ id: messages.id }).from(messages).where(eq(messages.id, watermarkId)).limit(1);
+  if (w) {
+    // Compared inside Postgres, at its precision: `created_at` keeps microseconds and a Date read back keeps
+    // milliseconds, so `> watermark.createdAt` from JS would read the watermark message itself again — and when it
+    // ends its sitting, that one message is the whole stretch, claimed onto itself forever (live, 2026-09-13).
+    // The id breaks a tie between messages stored in the same microsecond.
+    return read(sql`(${messages.createdAt}, ${messages.id}) > (select w.created_at, w.id from ${messages} as w where w.id = ${watermarkId})`);
   }
-  return db
-    .select()
-    .from(messages)
-    .where(and(eq(messages.conversationId, conversationId), after ? gt(messages.createdAt, after) : undefined))
-    .orderBy(asc(messages.createdAt))
-    .limit(limit);
+  const [e] = await db
+    .select({ endedAt: episodes.endedAt })
+    .from(episodes)
+    .where(eq(episodes.conversationId, conversationId))
+    .orderBy(desc(episodes.endedAt))
+    .limit(1);
+  console.warn(`[consolidate] watermark message ${watermarkId} is gone; reading from ${e ? `the latest episode's end (${e.endedAt.toISOString()})` : "the start (no episode either)"}`);
+  // An episode's end was a message's time read into a Date (milliseconds): compare at that precision.
+  return read(e ? sql`date_trunc('milliseconds', ${messages.createdAt}) > ${e.endedAt}` : undefined);
 }
 
 /** The conversation, with its watermark still where a run found it. */
@@ -489,16 +506,18 @@ export async function releaseConsolidationLease(db: Db, conversationId: string, 
     .where(and(eq(conversations.id, conversationId), eq(conversations.consolidatingUntil, until)));
 }
 
-export const CONSOLIDATION_FAILED = "memory.consolidation_failed";
+const CONSOLIDATION_FAILED = "memory.consolidation_failed";
 /** After one failure of a stretch wait 10 minutes, after two an hour, after three or more six hours. */
-export const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
+const CONSOLIDATION_BACKOFF_MS = [10 * 60_000, 60 * 60_000, 6 * 3_600_000] as const;
 const FAILURE_WINDOW_MS = 7 * 86_400_000;
 
 /** Pure: when a stretch that failed at these times (newest first) may be tried again, or null when it never failed. */
 export function retryAfterFailures(failedAt: Date[]): Date | null {
-  if (!failedAt.length) return null;
-  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1];
-  return new Date(failedAt[0].getTime() + wait);
+  const [first] = failedAt;
+  if (!first) return null;
+  // In range: failedAt has at least one entry, so the index is 0 up to the last step.
+  const wait = CONSOLIDATION_BACKOFF_MS[Math.min(failedAt.length, CONSOLIDATION_BACKOFF_MS.length) - 1]!;
+  return new Date(first.getTime() + wait);
 }
 
 /** A run over the stretch starting after `from` failed: a fact, so the next runs back off (`consolidationRetryAt`). */

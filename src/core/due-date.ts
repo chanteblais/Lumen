@@ -33,8 +33,13 @@ const RECENT_PAST_DAYS = 30;
 type Ymd = { y: number; m: number; d: number };
 
 function toYmd(s: string): Ymd {
-  const [y, m, d] = s.split("-").map(Number);
+  const [y = NaN, m = NaN, d = NaN] = s.split("-").map(Number);
   return { y, m, d };
+}
+
+/** A word's value in one of the tables above; undefined for any other word, Object.prototype's ("constructor") included. */
+function lookup(table: Record<string, number>, word: string | undefined): number | undefined {
+  return word !== undefined && Object.hasOwn(table, word) ? table[word] : undefined;
 }
 
 function fmt({ y, m, d }: Ymd): string {
@@ -108,8 +113,9 @@ export function parseDueDate(input: string, today: string): string | null {
 
   // fri · this fri · next fri
   const wd = s.match(/^(?:(this|next)\s+)?([a-z]+)$/);
-  if (wd && wd[2] in WEEKDAYS) {
-    const ahead = (WEEKDAYS[wd[2]] - weekday(today) + 7) % 7; // 0 = today
+  const named = lookup(WEEKDAYS, wd?.[2]);
+  if (wd && named !== undefined) {
+    const ahead = (named - weekday(today) + 7) % 7; // 0 = today
     if (wd[1] !== "next") return addDays(today, ahead);
     // "next fri": the one in the coming week — past the Friday still ahead this week.
     const untilSunday = (7 - weekday(today)) % 7;
@@ -120,10 +126,11 @@ export function parseDueDate(input: string, today: string): string | null {
   // in 3 days · in two weeks · in a month
   const rel = s.match(/^in\s+(\d+|[a-z]+)\s+(day|days|week|weeks|month|months)$/);
   if (rel) {
-    const n = /^\d+$/.test(rel[1]) ? Number(rel[1]) : NUMBER_WORDS[rel[1]];
+    const [, count = "", unit = ""] = rel;
+    const n = /^\d+$/.test(count) ? Number(count) : lookup(NUMBER_WORDS, count);
     if (!n || n > 366) return null;
-    if (rel[2].startsWith("day")) return addDays(today, n);
-    if (rel[2].startsWith("week")) return addDays(today, n * 7);
+    if (unit.startsWith("day")) return addDays(today, n);
+    if (unit.startsWith("week")) return addDays(today, n * 7);
     return addMonths(today, n);
   }
 
@@ -133,15 +140,17 @@ export function parseDueDate(input: string, today: string): string | null {
 
   // sep 30 · september 30th · sep 30 2027
   const md = s.match(/^([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{2}|\d{4}))?$/);
-  if (md && md[1] in MONTHS) {
+  const mdMonth = lookup(MONTHS, md?.[1]);
+  if (md && mdMonth !== undefined) {
     const y = yearOf(md[3], today);
-    return y ? valid(y, MONTHS[md[1]], Number(md[2])) : nearestYear(MONTHS[md[1]], Number(md[2]), today);
+    return y ? valid(y, mdMonth, Number(md[2])) : nearestYear(mdMonth, Number(md[2]), today);
   }
   // 30 sep · 30th of september
   const dm = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]+)(?:\s+(\d{2}|\d{4}))?$/);
-  if (dm && dm[2] in MONTHS) {
+  const dmMonth = lookup(MONTHS, dm?.[2]);
+  if (dm && dmMonth !== undefined) {
     const y = yearOf(dm[3], today);
-    return y ? valid(y, MONTHS[dm[2]], Number(dm[1])) : nearestYear(MONTHS[dm[2]], Number(dm[1]), today);
+    return y ? valid(y, dmMonth, Number(dm[1])) : nearestYear(dmMonth, Number(dm[1]), today);
   }
 
   // 9/30 · 30/9 · 9/30/27 — a part over 12 is the day; otherwise month first.
@@ -184,6 +193,22 @@ export function startOfLocalDay(date: string, timeZone: string): Date {
     t = target - (asUtc - t);
   }
   return new Date(t);
+}
+
+/**
+ * A due date a model wrote (a tool's `due_at`, a mail lead's): a bare day
+ * (`2026-09-20`) is 00:00 that day in the user's timezone — `new Date` would read
+ * it as UTC midnight, the day before west of UTC — and anything with a time is
+ * that instant. Null when it doesn't parse. Tested.
+ */
+export function dueAtFromModel(text: string, timeZone: string): Date | null {
+  const s = text.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const { y, m, d } = toYmd(s);
+    return valid(y, m, d) ? startOfLocalDay(s, timeZone) : null;
+  }
+  const at = new Date(s);
+  return Number.isNaN(at.getTime()) ? null : at;
 }
 
 /** A due_at that is only a day — 00:00 local — rather than a fixed time. Tested. */

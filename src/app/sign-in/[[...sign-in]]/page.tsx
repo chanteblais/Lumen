@@ -13,7 +13,10 @@ export default function SignInPage() {
         <p className="label leading-[1.9]">Pick up where you left off.</p>
       </div>
       <div className="flex flex-1 items-start justify-center">
-        <SignIn />
+        {/* The path is given, not inferred: Clerk infers it by dropping every catch-all param from the
+            URL, and the @sheet slot's [...catchAll] matches "sign-in" too — so it read "/", took /sign-in
+            for an unknown step and redirected to itself forever, with no form (2026-09-13). */}
+        <SignIn routing="path" path="/sign-in" />
       </div>
       <p className="mt-10 pb-6 text-center">
         <Link href="/privacy" className="label label-mute underline-offset-4 hover:underline">

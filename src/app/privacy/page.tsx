@@ -37,7 +37,7 @@ export default function PrivacyPage() {
               <b className="font-medium text-ink">Your account:</b> your name and email address, and your profile picture if you sign in with Google. Sign-in is handled by Clerk, which keeps these (and your password, if you set one) for Coherence.
             </li>
             <li>
-              <b className="font-medium text-ink">What you tell Lumi:</b> your conversation with her; the things you&rsquo;ve said you want to do, with any notes, dates and estimates; your focus sessions; how much you said you had in you on a given day; and what Lumi has come to understand about how you work, including whether you said it or she inferred it.
+              <b className="font-medium text-ink">What you tell Lumi:</b> your conversation with her (a photo, PDF or text file you share in it is read when you send it and isn&rsquo;t kept: only its name stays); the things you&rsquo;ve said you want to do, with any notes, dates and estimates; your focus sessions; how much you said you had in you on a given day; and what Lumi has come to understand about how you work, including whether you said it or she inferred it.
             </li>
             <li>
               <b className="font-medium text-ink">Your time zone,</b> taken from your browser, so times and days make sense.
@@ -57,7 +57,7 @@ export default function PrivacyPage() {
         <Section title="The services involved">
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              <b className="font-medium text-ink">OpenAI.</b> When you talk to Lumi, and when she shapes your day or files away what mattered between visits, the parts she needs (your recent conversation, your lists, what she knows about you) are sent to OpenAI&rsquo;s API to produce her reply. Requests are sent with storage turned off. OpenAI says it doesn&rsquo;t train its models on API data, and it may keep requests for up to 30 days to monitor for abuse.
+              <b className="font-medium text-ink">OpenAI.</b> When you talk to Lumi, and when she shapes your day or files away what mattered between visits, the parts she needs (your recent conversation and any file you&rsquo;ve just shared in it, your lists, what she knows about you) are sent to OpenAI&rsquo;s API to produce her reply. Requests are sent with storage turned off. OpenAI says it doesn&rsquo;t train its models on API data, and it may keep requests for up to 30 days to monitor for abuse.
             </li>
             <li>
               <b className="font-medium text-ink">Clerk</b> handles sign-in and your account details.

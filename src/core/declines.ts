@@ -26,6 +26,24 @@ export function declineLabel(reason: string | null | undefined): string | undefi
   return isDeclineReason(reason) ? DECLINE_REASONS[reason] : undefined;
 }
 
+/**
+ * Lumi's line on the card under the new Right now, once an answer is tapped.
+ * Fixed per reason so the card can change at once, with no model call.
+ */
+const DECLINE_NOTES: Record<DeclineReason, string> = {
+  too_big: "Something smaller, then.",
+  too_tired: "An easier one instead.",
+  unclear: "This one’s clearer to start.",
+  not_feeling_it: "Fair. This one instead.",
+  something_else: "Next in line, then.",
+  nope: "Fair.",
+};
+
+/** The line for a stored reason; a plain one for none or free text. */
+export function declineNote(reason: string | null | undefined): string {
+  return isDeclineReason(reason) ? DECLINE_NOTES[reason] : "Something else, then.";
+}
+
 /** Lumi's line on the Today card once "Not this" is tapped. Deterministic — no model call. */
 export const DECLINE_PROMPT = "Fair. What's getting in the way?";
 

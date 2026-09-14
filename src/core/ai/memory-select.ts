@@ -7,16 +7,16 @@
  * is not forgetting. Lexical on purpose — no embeddings until words stop being
  * enough. Pure. See docs/architecture.md → The understanding layer → Retrieval.
  */
-import type { MemoryNote } from "@/db/schema";
+import type { MemoryNote, ThreadNote } from "@/db/schema";
 import { contentWords } from "@/core/words";
 
 export const MEMORY_BUDGET = 12;
-export const STANDING_PREFERENCES = 5;
-export const STANDING_STRATEGIES = 3;
-export const RECENT_FILL = 3;
-export const FADE_AFTER_DAYS = 60;
+const STANDING_PREFERENCES = 5;
+const STANDING_STRATEGIES = 3;
+const RECENT_FILL = 3;
+const FADE_AFTER_DAYS = 60;
 /** One word from the message clears it; words from earlier turns need company. */
-export const MIN_RELEVANCE = 2;
+const MIN_RELEVANCE = 2;
 
 const WEIGHT = { message: 3, focus: 2, recent: 1 } as const;
 
@@ -52,9 +52,15 @@ export function termWeights(signals: TurnSignals): Map<string, number> {
   return weights;
 }
 
-function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string, number>): number {
+/** How much a text shares with what a turn is about: the weights of its content words, summed. The one lexical score beliefs, threads and notes are ranked by. */
+export function overlapScore(text: string, weights: ReadonlyMap<string, number>): number {
   let score = 0;
-  for (const w of contentWords(b.content)) score += weights.get(w) ?? 0;
+  for (const w of contentWords(text)) score += weights.get(w) ?? 0;
+  return score;
+}
+
+function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string, number>): number {
+  let score = overlapScore(b.content, weights);
   // "what do you know about my projects / preferences" names the kind, not the content.
   for (const w of contentWords(b.kind.replace("_", " "))) score += weights.has(w) ? 1 : 0;
   return score;
@@ -63,7 +69,7 @@ function relevance(b: Pick<MemoryNote, "content" | "kind">, weights: Map<string,
 const freshness = (b: SelectableBelief) => Math.max(b.createdAt.getTime(), b.lastConfirmedAt?.getTime() ?? 0);
 
 /** A guess (not their word) below "fairly sure" that nothing has confirmed for 60 days. Derived at read time, never stored. */
-export function isFaded(b: SelectableBelief, now: Date): boolean {
+function isFaded(b: SelectableBelief, now: Date): boolean {
   if (b.source === "user_said" || b.confidence >= 0.5) return false;
   return now.getTime() - freshness(b) > FADE_AFTER_DAYS * 86_400_000;
 }
@@ -114,6 +120,11 @@ export function asQuoted(content: string): string {
 /** Whose word a belief rests on, as Lumi reads it in the context and in tool results. */
 export function heldAs(source: MemoryNote["source"]): "their word" | "your guess" | "from a session" {
   return source === "user_said" ? "their word" : source === "reflection" ? "from a session" : "your guess";
+}
+
+/** Whose word a Library note rests on, as Lumi reads it in the context and in tool results. */
+export function noteHeldAs(source: ThreadNote["source"]): "their word" | "your reading" {
+  return source === "user_said" ? "their word" : "your reading";
 }
 
 /** `recall_memory`: every active belief, faded ones included, ranked against what she's looking for. */
