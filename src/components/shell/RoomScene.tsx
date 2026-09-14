@@ -15,6 +15,15 @@ export function RoomScene({ room }: { room: Room }) {
     <div className={`${room}-scene`} aria-hidden>
       {/* The fade script sets data-shown / data-instant before React hydrates; the DOM wins. */}
       <Image src={`/${room}-room.webp`} alt="" fill preload unoptimized sizes="100vw" className="scene-painting" suppressHydrationWarning />
+      {/* Home's stove: its firelight flickers over the painting (globals.css → Home: the fire). */}
+      {room === "home" && (
+        <div className="scene-fire">
+          <div className="scene-fire-light">
+            <span className="scene-fire-spill" />
+            <span className="scene-fire-glow" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

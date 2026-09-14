@@ -1192,6 +1192,79 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 body:has(.home-scene)::before { opacity: 0.16; } /* the grain stays; it reads as the paper of the painting */
 body:has(.home-scene)::after { display: none; } /* no foxing on a dark ground */
 
+/* ---------- Home: the fire ----------
+   The stove's fire flickers: light only, over the painting, no new drawing
+   (art-direction §4, tier 0). The spot is the fire in the painting's own
+   pixels, mapped through the cover fit (one painting pixel is --px), so it
+   stays on the stove at any window size. Two dark amber radial lights
+   colour-dodged over the painting — a glow on the glass and a faint spill on
+   the hearth, wall and floor — so what the fire lights brightens and the iron
+   stays dark (screen lifted the stove into a grey haze). Each flickers on its
+   own period inside a slower breath (1.3s, 2.3s, 3.7s), so their product never
+   repeats in a way the eye catches. Dodge only brightens: at its dimmest the
+   fire is the painting as painted. Under the
+   veil, so the dimming still applies. Shown with the painting (the same fade
+   and 3s fallback); off under reduced motion, leaving the painting as painted. */
+.home-scene { --px: max(calc(100vw / 1536), calc(100vh / 1024)); }
+.scene-fire {
+  position: absolute;
+  left: calc(50% + (634 - 768) * var(--px));
+  top: calc(50% + (238 - 512) * var(--px));
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.scene-painting[data-shown] ~ .scene-fire { opacity: 1; }
+.scene-painting[data-instant] ~ .scene-fire { transition: none; }
+.scene-painting:not([data-shown]) ~ .scene-fire { animation: scene-shown 0s 3s forwards; }
+.scene-fire-light { animation: fire-breath 3.7s ease-in-out infinite; }
+.scene-fire-glow,
+.scene-fire-spill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+}
+.scene-fire-glow {
+  width: calc(120 * var(--px));
+  height: calc(96 * var(--px));
+  translate: -50% -55%;
+  transform-origin: 50% 85%;
+  background: radial-gradient(closest-side, rgb(140 70 10 / 0.8), rgb(110 50 5 / 0.4) 45%, rgb(110 50 5 / 0) 100%);
+  animation: fire-glow 1.3s ease-in-out infinite;
+}
+.scene-fire-spill {
+  width: calc(460 * var(--px));
+  height: calc(320 * var(--px));
+  translate: -50% -38%;
+  background: radial-gradient(closest-side, rgb(120 60 12 / 0.34), rgb(90 45 8 / 0.14) 50%, rgb(90 45 8 / 0) 100%);
+  animation: fire-spill 2.3s ease-in-out infinite;
+}
+@keyframes fire-breath {
+  0%, 100% { opacity: 0.82; }
+  35% { opacity: 1; }
+  60% { opacity: 0.88; }
+  80% { opacity: 0.97; }
+}
+@keyframes fire-glow {
+  0%, 100% { opacity: 0.55; scale: 1 1; }
+  13% { opacity: 0.8; scale: 1.02 1.08; }
+  27% { opacity: 0.42; scale: 0.98 0.94; }
+  41% { opacity: 0.72; scale: 1.01 1.04; }
+  58% { opacity: 0.5; scale: 1 0.97; }
+  72% { opacity: 0.88; scale: 1.03 1.1; }
+  86% { opacity: 0.6; scale: 0.99 1; }
+}
+@keyframes fire-spill {
+  0%, 100% { opacity: 0.7; }
+  22% { opacity: 1; }
+  45% { opacity: 0.62; }
+  63% { opacity: 0.9; }
+  81% { opacity: 0.74; }
+}
+@media (prefers-reduced-motion: reduce) { .scene-fire { display: none; } }
+
 .shell:has(.home-scene) {
   /* The palette by lantern light. Both the raw tokens and Tailwind's mapped
      colours: `--color-*` resolve on :root, so re-mapping `--ink` alone would
