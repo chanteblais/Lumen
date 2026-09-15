@@ -2,7 +2,7 @@
 
 Loaded automatically at the start of every Claude session in this repo (root `CLAUDE.md`; worktrees carry it too). Deliberately short; the detailed docs in `docs/` are read on demand. Same shape as the Glåüm and All Hands briefs, so sessions behave the same way across projects.
 
-**Coherence** (the product, formerly **Lumen**; the companion character is **Lumi**, she/her) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.**
+**Coherence** (the product, formerly **Lumen**; the companion character is **Lumi**, she/her) — an AI companion that helps the user see what matters (their goals and priorities) and move it forward: task initiation, momentum, re-entry and body doubling. **Not a task manager.**
 
 **Before substantial product/UX work** (features, navigation, AI or Lumi behaviour, prioritisation, notifications, rewards, visual design, motion, onboarding, memory), **read `PROJECT-CANON.md` and the canonical docs it points to for that work.** The canon is the intended product; code is the current one. When they disagree, surface it and don't silently pick one. Requirements come from the foundations, approved decisions and settled canonical direction, as scoped in `PROJECT-CANON.md`. Examples and future possibilities do not expand V1; ideas and open questions are not requirements. Shared definitions are in `docs/product/shared-model.md`.
 

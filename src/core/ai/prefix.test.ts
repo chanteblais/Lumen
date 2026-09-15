@@ -17,10 +17,11 @@ import type { Db } from "@/db/client";
 // app, "too big" asks first), then priorities (the persona's priorities line; hold_priority and let_go_priority).
 // Design partners (design-notebook branch) have a prefix of their own — the persona with its design section, and the
 // two notebook tools — pinned below; everyone else's is the one above, unchanged by it.
+// Then lumi-function: what she's for (the persona's opening line, What you're for → What matters, one brief sentence).
 const EXPECTED = {
-  persona: { mailOff: "e7a261a4d3b73ae44ac5795ab573e41fbd926990f4eaac78dddd2b254f1e5a05", mailOn: "48431b4dfbdfdc286cdcb10abcd5f330bd0b5c91288ac5fadb7e3f1d68e51321" },
-  prefix: { mailOff: "bc6254831a9943bcf2d6a50f9721b0f824df39eeb9a62fe50de2daef474ad155", mailOn: "d0551e8b14ffb846b5f2658eef44b0f50feadd6fcea092428f232f9b0bf66fbe" },
-  designPartner: { persona: "43bdcfc191b6c480292ececa7c3314d370ceb14122be182e9cba82f4baa4f1f3", prefix: "723047d85fe34338292752dd1c54a035b0eb81f96618c710144ab04c258582bd" },
+  persona: { mailOff: "1b9b2292433645462929981e5ce1eaad472e8656446aa83a3ddf09bd1983a825", mailOn: "400722ca49e1445f83e6333d024308b0cbbbf0ed4416d2d3652bb3eb713cd21f" },
+  prefix: { mailOff: "401b6c164b2af13b2cf433c2266309ec93457a1320758eacad36604216f3f9c2", mailOn: "87702e50a02fcecdbae51df31c9ba6930bf59abbb162646c334329261848be49" },
+  designPartner: { persona: "b8bad884431975cb2c71c7e91464cc5b7aa675c1241741db281dc1633afe19a2", prefix: "99ab24bf228ca9107197c76f2156dd24d4b3ac88042d23eb9ffd9dc433a7e6b7" },
 };
 
 async function hashes(mailOn: boolean, designPartner = false) {
