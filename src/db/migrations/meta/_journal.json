@@ -64,6 +64,13 @@
       "when": 1789414555327,
       "tag": "0008_design_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789509014551,
+      "tag": "0009_rls_all_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ Things to sort before anyone but Chanté uses Coherence.
 - [x] Pooler connection string (port 6543, transaction mode) in `DATABASE_URL` on Vercel (2026-09-12); `prepare: false` in the driver config.
 - [x] Node 22 in production (2026-09-13, Chanté): `"engines": { "node": "22.x" }` in `package.json` overrides the Vercel project's *Node.js Version* (24.x), so deploys run the major CI, `.nvmrc` and `@types/node` use. Moving to 24 is one change to all four.
 - [x] Functions in the database's region: `cle1` (Cleveland) for Supabase us-east-2, set in `vercel.json` (2026-09-13; was `iad1`). If the database ever moves, move this with it.
+- [x] Supabase's Data API reads nothing (2026-09-15, migration `0009`): RLS on every table with no policies, and no grants or default privileges in `public` for `anon` / `authenticated`. Clears the advisor's "RLS disabled in public" errors. `src/db/rls.db.test.ts` keeps new tables covered; a table made by hand in the dashboard isn't, so make tables only through migrations.
 - [ ] Backups enabled.
 
 ## OpenAI (Lumi's model since 2026-09-13)
