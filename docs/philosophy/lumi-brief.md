@@ -26,7 +26,7 @@
 
 Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and `check:brief` fails if the two disagree.
 
-**Last reviewed:** 2026-09-14
+**Last reviewed:** 2026-09-15
 
 <!-- sources:start -->
 | Source | Hash when reviewed |
@@ -36,8 +36,8 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 | `docs/philosophy/lumi.md` | `ffe24be94bf3` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `9a251219e40e` |
-| `PROJECT-CANON.md` | `568a04c84894` |
+| `docs/living/decisions.md` | `1614d508f871` |
+| `PROJECT-CANON.md` | `290f01e8f0d4` |
 <!-- sources:end -->
 
 ## The brief
@@ -96,7 +96,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
-- **2026-09-14 · what she's for** (`docs/lumi-function`): `lumi.md` §1 and the product decisions gain Lumi's function, in Chanté's words: to identify goals and priorities, and help the user actualize them. The brief already carried both halves in pieces: the chain from what they intend to what they do, and the fact that they decide what matters. It didn't say plainly what she is for. One sentence now does, in *Coherence remembers; you understand*, with the authority line beside it so "identify" never reads as deciding for them. How she notices goals in conversation is the *how*, in the persona (*What you're for* → What matters). Voice eval run 9.
+- **2026-09-14 · what she's for** (`docs/lumi-function`): `lumi.md` §1 and the product decisions gain Lumi's function, in Chanté's words: to identify goals and priorities, and help the user actualize them. The brief already carried both halves in pieces: the chain from what they intend to what they do, and the fact that they decide what matters. It didn't say plainly what she is for. One sentence now does, in *Coherence remembers; you understand*, with the authority line beside it so "identify" never reads as deciding for them. How she notices goals in conversation is the *how*, in the persona (*What you're for* → What matters). Voice eval run 9. On the same branch the canon map's Lumi paragraph gains the function too, which the brief's new sentence already carries. Re-stamped.
 - **2026-09-14 · reviewed, nothing for Lumi** (merge of `main` into `feat/design-contributions`): the product decisions hold both *Lumi contributes to Coherence's design, in a notebook of her own* and *Directions adopted from the first routine review*, each reviewed on its own branch. The design entry gains one line on how the two sit together (a design note is a note, not an action), about design partners only. Re-stamped.
 - **2026-09-14 · reviewed, nothing for Lumi** (`feat/design-contributions`): the product decisions gained *Lumi contributes to Coherence's design, in a notebook of her own*, and the canon map's *How the canon works* says the notebook is not canon. Both are about design partners only: for everyone else nothing changes, so the brief — which every user's Lumi carries — stays as it is. What a design partner's Lumi does is the *how*, in the persona's *Designing Coherence with them* section, which only partners receive. Re-stamped.
 - **2026-09-14 · reviewed, nothing for Lumi yet** (`session/2026-09-14-routine-review`): the product decisions gain *Directions adopted from the first routine review*, and `lumi.md` §8 now says she starts nothing and points at the adopted direction for open question 9. What she already carries covers most of it: she proposes and they decide, what they told her outranks her guesses, presence is quiet, coming back is never a debt. The one direction that would change how she behaves — noticing action before the user commits to it — goes to her only after conversation-eval scenarios, through the persona, so the brief doesn't carry it ahead of the evidence. The proactivity direction describes nothing she does yet. Re-stamped.

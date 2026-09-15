@@ -15,7 +15,7 @@
 - *Identify* means with the user, never for them. The user keeps authority over what matters (V§5), and her readings are offered as questions. There is no goals questionnaire or goals onboarding (Home §85–86), and values don't become fields (Home §41). A stated priority keeps the scope of its words (*Directions adopted from the first routine review* → Q11).
 - *Actualize* means appropriate forward movement, not maximum output (V§3). Letting something wait, or letting a goal go, can be the outcome.
 - Thinking about direction stays thinking until it lands somewhere, and isn't turned into tasks (the adopted direction on Q23).
-- No new tool, field or surface, and nothing for the user to keep. `CLAUDE.md`'s one-line description ("task initiation, momentum, re-entry and body doubling") and the Lumi paragraph in `PROJECT-CANON.md` still name only the second half. Chanté decides whether they change.
+- No new tool, field or surface, and nothing for the user to keep. `PROJECT-CANON.md`'s Lumi paragraph and `CLAUDE.md`'s one-line description of the product name both halves too (Chanté, same day).
 
 **Principle.** V§2, V§3, V§5, V§20; EP§5, EP§17.
 **Replaces.** "A companion for getting started, keeping going, and coming back" as the persona's statement of what Lumi is.
