@@ -6,6 +6,26 @@ Format per sweep: `## Sweep <date> — <scope> (branch)` → `### Fixed` · `###
 
 ---
 
+## Sweep 2026-09-14 — Voice text comes back after sending (`fix/voice-clear-on-send`)
+
+Chanté: "if you use the voice option for the chat it doesn't clear the generated text after you send."
+
+### Fixed
+- **Sending while voice is on no longer refills the box.** `Composer.submit` cleared the box and then called `voice.stop()`. Stop means "finish up and report": the speech engine's `onend` (and the local engine's final Whisper pass) came back a moment later through `onEnd`, which wrote the base text plus the transcript back into the box. Sending now calls a new `useVoiceInput().cancel()`, which `abort()`s the engine (neither engine calls back after that; the local engine's `take` counter also drops a final pass still in flight) and sets the hook idle itself. The Voice button's own stop tap still uses `stop()`, so nothing said is lost there.
+
+### Known and deliberate
+- Words still being recognised at the moment of sending (the speech engine's last interim guess that hadn't reached the box, or the local engine's pending pass) are dropped, not appended to a fresh draft. What was sent is what was on screen.
+
+### Open
+- Checked by reading both engines and by `npm run check`: typecheck, lint, routes, CSS and brief ok; in the full vitest run `shared-files.test.ts` timed out at 5 s once, and passed 9/9 in 0.8 s on its own (load, not this change). Not yet tried with a real microphone.
+
+### Highest-value manual tests
+- Chrome: tap Voice, say a sentence, press Enter while still *Listening…* → the message sends, the box stays empty, the button reads *Voice* again.
+- Brave (local engine): the same, and again while it says *Writing that down…* → box stays empty.
+- Tap Voice, talk, tap the Voice button to stop → text lands in the box as before.
+
+---
+
 ## Sweep 2026-09-13 (11) — Break it down's route, from the headless end-to-end sweep (`fix/steps-route-uuid`)
 
 A headless end-to-end sweep, signed in, sent `POST /api/intentions/not-a-uuid/steps` and got a 500 with an empty body. The server log showed `invalid input syntax for type uuid` from `getIntention`. The sibling routes had been fixed in code review B7; this one was missed.
