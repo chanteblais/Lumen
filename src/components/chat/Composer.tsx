@@ -67,7 +67,8 @@ export function Composer({ onSend, onStop, busy = false, initialValue = "" }: Pr
   const submit = () => {
     const text = value.trim();
     if ((!text && files.length === 0) || busy || reading) return;
-    if (voice.state !== "idle") voice.stop();
+    // Cancel, not stop: stop reports the transcript once more, which would refill the box just cleared.
+    if (voice.state !== "idle") voice.cancel();
     onSend?.(text, files.length > 0 ? files : undefined);
     setValue("");
     setFiles([]);
