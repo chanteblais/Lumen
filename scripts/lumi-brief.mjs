@@ -70,7 +70,9 @@ if (sources.length === 0) fail(`no sources found in ${DOC} (rows look like | \`p
 for (const s of sources) if (!existsSync(join(ROOT, s.path))) fail(`source ${s.path} no longer exists. Point the row at what replaced it, then review.`)
 
 if (mode === 'reviewed') {
-  const today = new Date().toISOString().slice(0, 10)
+  // The local day, not UTC: a review done after 5pm in Vancouver would otherwise be stamped tomorrow,
+  // a day ahead of the change-log line written beside it (2026-09-15 → "reviewed 2026-09-16").
+  const today = new Date().toLocaleDateString("en-CA")
   const rows = sources.map((s) => `| \`${s.path}\` | \`${blobHash(s.path)}\` |`).join('\n')
   doc = doc
     .replace(/<!-- sources:start -->\n[\s\S]*?\n<!-- sources:end -->/, `<!-- sources:start -->\n| Source | Hash when reviewed |\n|---|---|\n${rows}\n<!-- sources:end -->`)

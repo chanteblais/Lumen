@@ -7,7 +7,7 @@
 **How to read the markers.** Every section says where its content comes from:
 - **canon**: from Chanté's documents. A requirement.
 - **current**: what Lumi does today (`src/core/ai/persona.ts`, the context block, the tools). True of the product, not necessarily intended.
-- **proposed**: Claude's draft, extrapolated from canon and evidence. **Not canon** until Chanté agrees; argue with it.
+- **proposed**: Claude's draft, extrapolated from canon and evidence. **Not canon** until Chanté agrees; argue with it. Every proposed passage is gathered as a short claim in [`lumi-proposed-claims.md`](lumi-proposed-claims.md), which is where they are kept or struck — put to her on the [desk](../desk/README.md), round 2 (2026-09-14), at her own direction (*Go with that*: turn them into one page of claims rather than a document to read).
 
 **How this document evolves.** Lumi's behaviour belongs to Coherence, not to a model (decisions → *Lumi is a designed behaviour system*). This document says what she should do. `persona.ts` and the tool descriptions implement it for whichever model runs her. What she carries of the philosophy behind it is [her brief](lumi-brief.md), sent with every call she makes and reviewed whenever this document or its other sources change. [`voice-eval-log.md`](../voice-eval-log.md) records what she actually did. When an interaction works especially well or badly, add it to §15, name the behaviour behind it, and fold that behaviour back into the relevant section. Copy the behaviour, never the wording.
 

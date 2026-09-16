@@ -79,13 +79,13 @@ A plaque takes the top ~30% and left ~55% of its row. Overflow pages or scrolls 
 
 ## Questions for Chanté
 
-**Questions 1, 2, 4, 5, 6, 7 and 8 need your answer. Question 3 is answered by the painting;** say if that reading is wrong.
+**Answered 2026-09-14 on the [Coherence Desk](../../../../docs/desk/README.md)** (Chanté, round 1: *Go with that*, on all five recommendations put to her — questions 1, 2, 4, 5 and 8). Question 3 was answered by the painting, question 6 on 2026-09-13, question 7 partly. **Question 7's remainder is what is still open**; nothing else here waits on her. Close-ups may now be generated, one slot at a time, per *Asset generation* below.
 
-1. **How many collection slots?** Still three bookcases and the alcove; the window bay has no shelves. *Recommendation:* three bookcase slots, with the window bay an expansion.
-2. **The reading alcove: `collection_04`, or an expansion?** *Recommendation:* an expansion, a place to sit that takes surfaces when a domain needs room.
+1. **How many collection slots?** Still three bookcases and the alcove; the window bay has no shelves. *Recommendation:* three bookcase slots, with the window bay an expansion. **Accepted 2026-09-14.**
+2. **The reading alcove: `collection_04`, or an expansion?** *Recommendation:* an expansion, a place to sit that takes surfaces when a domain needs room. **Accepted 2026-09-14.**
 3. **Projection.** *Answered:* the Library is isometric like the other rooms, so bet 5 holds with no exception. The frontal paintings stay as history.
-4. **Full painted shelves when a new user has few Threads.** *Recommendation:* keep the painting, generate close-ups with mostly bare shelf spans, and judge the jump on the first close-up (`collection_02`).
-5. **Who names a slot, and when?** (open question 3) *Recommendation:* Lumi proposes a Collection's name once the context is sustained and the user corrects by saying so; a name is a label built into the furniture, not a motto. Logged as open in `ef-burden-log.md`.
+4. **Full painted shelves when a new user has few Threads.** *Recommendation:* keep the painting, generate close-ups with mostly bare shelf spans, and judge the jump on the first close-up (`collection_02`). **Accepted 2026-09-14** — so `collection_02` is the first close-up generated, and her look at it decides whether the jump from a full painted room to a bare shelf reads.
+5. **Who names a slot, and when?** (open question 3) *Recommendation:* Lumi proposes a Collection's name once the context is sustained and the user corrects by saying so; a name is a label built into the furniture, not a motto. **Accepted 2026-09-14** — nobody is ever asked to name a slot; the burden-log row moves from open to derived.
 6. **Lumi's size in the Library.** At her usual size (a 150px box) she is about 0.8 of the doorway under the stair and nearly twice an armchair: about 1.6 m in this room (`stills.png`). At 0.6 (a 90px box) she is about 1 m, a little taller than an armchair (`stills-60.png`). *Recommendation:* about 0.6 in the Library, which means the companion scales per room. *Answered 2026-09-13, on the re-rendered painting:* Chanté chose to try 134 painting px (her look at 1440×900), and the companion now scales with the room.
 7. **The presentation model.** Threads are confirmed and built. *Partly answered 2026-09-13* (Chanté: "Threads that become categories should gain their own section in the library"): a Collection is a **section**, a thread that holds threads; a Thread Group is a **shelf**, a thread holding threads inside a section; a Thread is a **book**. They are threads, not a separate presentation record, with one place each (`threads.parent_id`), and which slot a section fills is presentation only (fill order `collection_02`, `01`, `03` on `feat/library-sections`, not stored). *Earlier list, for what's still open:*
    - Collections and Thread Groups are Lumi's presentation of Threads, each with a stored name and where it came from.
@@ -93,7 +93,7 @@ A plaque takes the top ~30% and left ~55% of its row. Overflow pages or scrolls 
    - Which slot a Collection occupies is its own record, apart from the manifest's spatial IDs.
    - Every reorganisation is a proposed, explainable, reversible event.
    - No presentation schema until you confirm.
-8. **The stage.** The painting now sits on a flat dark ground. *Recommendation:*
+8. **The stage.** The painting now sits on a flat dark ground. *Recommendation:* **the contain fit is accepted (2026-09-14)** — that is what was put to her and what she agreed to. The parchment sub-question below was not on the desk: it is presentation detail, so it is **Claude's call** — a pinned parchment may cover `collection_01`'s edge on narrow windows, because the contain fit keeps the whole room in view behind it and no slot is ever unreachable. Listed under *Moving without you* for round 2.
    - A contain fit: the whole room always in view with the ground filling the rest, which guarantees every slot and expansion on any desktop window. The cost is a slightly smaller room on wide windows.
    - Decide whether a pinned parchment may cover `collection_01`'s edge on narrow windows.
    - Below 768px: no room, just Collections as headings, their Thread Groups, then Threads (`lists-library.md` §74).
