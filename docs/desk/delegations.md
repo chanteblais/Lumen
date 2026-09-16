@@ -4,6 +4,8 @@
 
 | Since | Claude decides | Her words | Where it stops |
 |---|---|---|---|
+| 2026-09-14 | Anything that doesn't pass the ask test: Claude decides it, records it where it belongs, and lists it under *Moving without you* for one round so she can stop it without having been asked | *Go with that*, on **Make this desk the only way questions reach you** (round 1) | Taste · direction · a one-way door · her accounts, keys, money or other people — those still come to her, each with a recommendation and what happens on silence |
+| 2026-09-14 | Removing **another session's** leftover worktree when its work is already on `main` and it holds nothing else: clean, nothing running in it, no commits off `main`, no ignored file worth keeping | *Go with that*, on **Clearing up after finished sessions** (round 1) | Anything in review or unlanded, and Codex's worktree, stay unless she says. What went is named in the session summary |
 | 2026-09-14 | Triage of the design routine's proposals against the canon and the code; adopting directions that follow from settled principles, recorded as Claude's calls | "Please use your best judgment and commit." | A proposal that adds a surface or changes the persona; anything whose premise the app removed. Every call stays revisable (`design/routine/review.md`) |
 | 2026-09-13 | Pushing `main`, including other sessions' landed merges, after a combined check with migrations applied first | "Typically if something gets merged to main it's because I approved the merge. I get asked every time." | A merge she hasn't confirmed; a destructive migration riding along; a failing check |
 | 2026-09-13 | Applying migrations to the shared database, SQL printed in the summary | "I'd like you to apply migrations from now on. Feel free to proceed with any migrations that need to be applied." | Anything destructive: her yes first (Claude's own guard; she can lift it) |
@@ -20,7 +22,7 @@ Kept beside the delegations so neither is read without the other.
 
 - A difference between the canon and the code (`PROJECT-CANON.md` → How the canon works).
 - UX review fixes: made only once she agrees (`ux-review-log.md`).
-- The Library: no close-up generated until she answers the spatial map's questions, then one at a time.
+- The Library: she answered the spatial map's questions on 2026-09-14, so close-ups may now be generated — **one at a time, `collection_02` first**, and her look at that one decides whether the rest follow.
 - A new behaviour for Lumi reaching production.
 - Her accounts, keys, money, Drive, and anything that reaches another person.
 - A change to how she works: what she runs, reviews or applies herself.

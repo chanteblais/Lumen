@@ -6,6 +6,41 @@
 
 ---
 
+## Round 2 · 2026-09-15 · swept to 384b1ea
+
+**What prompted it.** Chanté, reading the desk: *"I'm seeing this in the coherence dashboard, but I think this was already resolved. Is the coherence dashboard updating?"* She was right. The design-notebook ask still read as unlanded while the work had merged to `main` and been pushed the day before. The desk is a rendered page, not a live one: it only changes when a session runs the refresh, and nobody had. The reason it hadn't is worth naming — **the `desk` skill lived on an unlanded branch**, so no ordinary session had it. Landed as `384b1ea` before this round, which is the actual fix for the staleness she noticed.
+
+**The sweep.** `2cf5dc3..origin/main` — four merges: the design notebook (`e805937`), a voice fix, Lumi's function in the persona, and row level security on every table. Plus the canon round 1 admitted it hadn't grepped: `docs/product/*`, `docs/design/*`, `design-system.md`, `architecture.md`, `user-journey.md`. Nothing new for her came out of them; every open item in them points at `living/open-questions.md`, which round 1 had read. That debt is paid.
+
+**Her answers.** All six answered asks were **Go with that**, with no words added. What each became:
+- **The desk as the only way questions reach her** → the rule is a standing task in `CLAUDE.md`, with the ask test and the *Moving without you* default written out. The umbrella delegation is in `delegations.md`.
+- **What the animation work does next** → the app plays the walk rig before any second object. Recorded in `animation-pipeline.md` (*Next animation*) and `art-direction.md` bet 4.
+- **The Library map's five recommendations** → all five accepted in place in the spatial-map README, a product decision in `living/decisions.md`, open question 3 narrowed to the presentation model's remainder, and the naming row in `ef-burden-log.md` moved from *open* to *derived*. Close-ups may now start, `collection_02` first.
+- **Clearing finished sessions' leftovers** → a delegation, narrowing the *What goes to Chanté* line in `dev-hygiene.md`. One leftover removed the same round.
+- **Lumi's proposed behaviour as claims** → `docs/philosophy/lumi-proposed-claims.md`, thirteen claims, and this round's single ask.
+- **Refreshing the Drive briefing** → couldn't be carried out. See below.
+- **Lumi's design notebook** (unanswered) → retired, not carried forward: another session tried it with the real model (voice-eval run 2, three live turns on `gpt-6-astra`), landed it and pushed it on 2026-09-14. Everything the ask was waiting for happened.
+
+**Signals.**
+- *Go with that* on three `glance` asks (the working rule, the leftovers, the claims page) — two of them were proposed delegations and are now delegations, so that kind of decision stops coming to her. That is the intended path and it fired on the first round.
+- No *Something else*, no *Your call*, no *Not now*, no *Hold on*, and not one note. Nothing to learn from where a recommendation missed — the desk has no correction signal yet, which is itself worth watching: a round where everything is agreed to could mean the recommendations are good, or that tapping *Go with that* is simply the cheapest thing to do. Round 3 watches whether any *Something else* ever appears.
+- **One ask asked for permission Claude couldn't act on.** *Refresh the Drive briefing* was framed as though a yes unblocked it. It didn't: the Drive connector can't write these documents — `update_file` takes a title and a parent, nothing else — re-verified this round against the connector's own schema. Her yes is real and stands as standing permission; the missing piece is a write path. The item moves to *her hands* with the steps, and `context-package.md` records that the blocker was never her.
+- **An ask can go stale under her while she reads it.** The desk knows only what it has swept, so anything landing between rounds is invisible to it.
+
+**Measures.** 7 asks out in round 1 → **1 out in round 2** (1 `sit`). Answered: 6 of 7 (86%); of those answered, 6 *Go with that* (100%), 0 *Something else*, 0 *Your call*, 0 *Not now*, 0 *Don't bring me these*, 0 *Hold on*. Delegations: 5 → 7. Notes written: 0. Asks older than two rounds: none — the one unanswered ask was retired by events rather than carried. Hands: 4 → 5.
+
+**The desk changes.**
+- **It sweeps every merge since its last round before it renders**, so an ask whose subject has already landed is retired instead of shown to her. This round's trigger becomes the round's rule.
+- **An ask must be something Claude can carry out.** Before one is written, the question is now *whose hands does this need?* If it's a tool or a permission Claude doesn't have, it goes to *your hands* with the steps, not to her as a question she can only answer yes to.
+- **The refresh has to be reachable.** The skill living on an unlanded branch is what let a whole day pass with a stale page. Anything the desk depends on lands with the desk.
+- One judgement sharpened in passing: a worktree's `.env.local` is only *worth keeping* when it holds a key or value the shared checkout's doesn't. A byte comparison had been keeping a worktree alive over a copy that simply lagged by one key (`scripts/worktrees.mjs`).
+
+**Carried to Coherence.**
+- *Something answered elsewhere must stop being open here.* In the app: a thing the user settles in one conversation quietly closes wherever else it was waiting. They should never answer the same question twice because two parts of the system hadn't spoken — which is exactly what happened to her this round, in the tool built to prevent it.
+- *Never ask for permission you can't act on.* Lumi doesn't ask the user to approve something she has no way to do. She says what she needs, or asks for the one step only they can take.
+
+---
+
 ## Round 1 · 2026-09-14 · swept to 2cf5dc3
 
 **Why the desk exists.** Chanté, 2026-09-14: "I feel like I'm drowning a bit in information with all the different areas of this project. I'd like one central place where I can review the things that need my attention, and quickly give direction. Over time I would like for this project to be more self-directed, requiring fewer micro decisions from me."

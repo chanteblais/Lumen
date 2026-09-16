@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-14 · The Library's shape: three collections, two expansions, a room always in view, and nobody is asked to name a shelf
+
+**Decision.** The five recommendations the [spatial map](../../art/scenery/library/spatial-map/README.md) had been holding are adopted. **Three bookcase collections**, with the window bay kept as an expansion rather than a fourth. **The reading alcove is an expansion too** — a place to sit that takes on surfaces when an area of life needs the room — not `collection_04`. **A new user with few threads still sees the painted room as it is**, and the close-ups, not the wide view, carry the mostly bare shelf spans. **Lumi names a collection from what it holds, once that context has held for a while, and the user corrects the name by saying so** — nobody is ever asked to name a slot, and a name is a label built into the furniture, not a motto. **The stage is a contain fit:** the whole room always in view, the dark ground filling the rest, so every slot and expansion is reachable at any desktop window.
+**Rationale.** Chanté, on the [Coherence Desk](../desk/README.md), round 1 (2026-09-14): *Go with that*, on all five as put to her. *(Claude's reading:)* the through-line is that the room is a presentation of what the user already has, never a structure they are asked to fill in. Three slots and two expansions mean the Library grows by being given room, not by offering empty containers; bare shelves belong in the close-up where they read as space, not in the wide view where they would read as failure; and the naming rule is the one question of the five that could have become a taxonomy to design and keep, so answering it this way is what keeps the Library out of the EF ledger.
+**Implications.**
+- The spatial map's questions 1, 2, 4, 5 and 8 are answered in place; only question 7's remainder (the presentation model) is still hers. [Open question 3](open-questions.md#3-how-does-the-broad-library-become-navigable) is narrowed to that plus integrating the built sections into the room.
+- Close-ups may now be generated, one slot at a time, starting with `collection_02` — her look at the first one decides whether the jump from the full painted room to a bare shelf reads.
+- The naming rule moves the [burden log](../ef-burden-log.md) row from *open* to *derived*.
+- Not decided by her, and Claude's call: a pinned parchment may cover `collection_01`'s edge on narrow windows, since the contain fit keeps the room in view behind it.
+**Principle.** The system does the organising; correction beats configuration; show less than you know.
+**Replaces.** Nothing; it settles what the first-pass spatial map left proposed.
+
 ## 2026-09-14 · Lumi's function: to identify goals and priorities, and help the user actualize them
 
 **Decision.** Lumi's function is to help the user identify their goals and priorities, and help them act on those. Both halves are hers: seeing what matters, with the user and in their words, and moving it forward.
