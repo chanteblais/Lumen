@@ -10,7 +10,7 @@ Writes, next to this script:
   sprite.png   rows 0-2, cells 0-8 of public/lumi-idle.webp (the comparison stage)
   debug-split.png, debug-face.png   overlays to look at
 
-Method (adapted from scripts/cut-lumi-idle.py):
+Method (adapted from scripts/cut-lumi-idle.py, the lantern cut — retired 2026-09-15, in git history):
 - matte: flood fill of the grey-blue ground from outside, the contact shadow read by its
   blue cast and redrawn warm and translucent, the 2px edge band de-matted against the ground;
 - face: dark pixels opened (so the hood's thin outline can't close a ring round the hood),

@@ -3,35 +3,27 @@ import type { CSSProperties } from "react";
 /**
  * The single source of Lumi's drawings.
  *
- * Both are cut by `scripts/cut-lumi-idle.py`.
- * - `public/lumi-heads.png` — one row of 176px square cells, the six head
- *   expressions (neutral · blink · happy · curious · excited · sleepy), each
- *   from one of the cells of `art/lumi/lumi-lantern-idle.png` (the lantern
- *   character, 2026-09-12). Used inside the round avatar.
- * - `public/lumi-free.webp` — the hands-free Lumi (2026-09-13, cut by
- *   `scripts/cut-lumi-free.py`; `docs/art-direction.md` §4a): a 27×6 grid of
- *   176×208 cells. Rows 0–2 the nine-cell breath loop (the hands-free wave
- *   sheet's first cell stretched up to 2px at the hood top with the feet held)
- *   with open / half-shut / shut eyes; row 3 the 24-cell wave; row 4 the
- *   16-cell hands-together idle; row 5 the pick-up (three cells fading the
- *   book stack in, then 24 cells: reach, lift, both hands, holding). Those
- *   three have their eyes open only (`LUMI_LOOP_EYES`: a blink mid-loop shows
- *   the open cell). Every loop is held to the one rest drawing, so loops hand
- *   over at the rest cell without a swap. A loop is an order over its cells
- *   (`LUMI_LOOP_CELLS`), which is how the pick-up is also the set-down; every
- *   loop starts and ends at (or fading from) the rest cell. The lantern Lumi's
- *   body, `public/lumi-idle.webp` (`scripts/cut-lumi-idle.py`), is kept beside
- *   it for now (hands-free is settled, 2026-09-13).
+ * `public/lumi-free.webp` — the hands-free Lumi (2026-09-13, cut by
+ * `scripts/cut-lumi-free.py`; `docs/art-direction.md` §4a): a 27×6 grid of
+ * 176×208 cells. Rows 0–2 the nine-cell breath loop (the hands-free wave
+ * sheet's first cell stretched up to 2px at the hood top with the feet held)
+ * with open / half-shut / shut eyes; row 3 the 24-cell wave; row 4 the
+ * 16-cell hands-together idle; row 5 the pick-up (three cells fading the
+ * book stack in, then 24 cells: reach, lift, both hands, holding). Those
+ * three have their eyes open only (`LUMI_LOOP_EYES`: a blink mid-loop shows
+ * the open cell). Every loop is held to the one rest drawing, so loops hand
+ * over at the rest cell without a swap. A loop is an order over its cells
+ * (`LUMI_LOOP_CELLS`), which is how the pick-up is also the set-down; every
+ * loop starts and ends at (or fading from) the rest cell.
  *
- * A new state is a new cell in one of these lists, never a new component.
+ * A new state is a new cell in this list, never a new component. The avatar is
+ * not here: it is one drawing of its own (`LumiAvatar`).
  */
-export const LUMI_EXPRESSIONS = ["neutral", "blink", "happy", "curious", "excited", "sleepy"] as const;
 export const LUMI_EYES = ["open", "half", "closed"] as const;
 export const LUMI_LOOPS = ["breath", "wave", "hands", "pickup"] as const;
 /** Columns in the body sheet — the most cells in a loop. */
 export const LUMI_IDLE_FRAMES = 27;
 
-export type LumiExpression = (typeof LUMI_EXPRESSIONS)[number];
 export type LumiEyes = (typeof LUMI_EYES)[number];
 export type LumiLoop = (typeof LUMI_LOOPS)[number];
 
@@ -61,13 +53,11 @@ export const LUMI_LOOP_EYES: Record<LumiLoop, readonly LumiEyes[]> = {
 const eyeRows = (loops: readonly LumiLoop[]) => loops.reduce((n, loop) => n + LUMI_LOOP_EYES[loop].length, 0);
 
 const SHEETS = {
-  head: { src: "/lumi-heads.png", cols: LUMI_EXPRESSIONS.length, rows: 1, w: 176, h: 176 },
   body: { src: "/lumi-free.webp", cols: LUMI_IDLE_FRAMES, rows: eyeRows(LUMI_LOOPS), w: 176, h: 208 },
 } as const;
 
 export type LumiCell = { sheet: keyof typeof SHEETS; col: number; row: number };
 
-export const headCell = (expression: LumiExpression): LumiCell => ({ sheet: "head", col: LUMI_EXPRESSIONS.indexOf(expression), row: 0 });
 /** One frame of a loop (0 to `LUMI_LOOP_FRAMES[loop] - 1`) with the given eye state. */
 export const idleCell = (loop: LumiLoop, frame: number, eyes: LumiEyes): LumiCell => ({
   sheet: "body",
