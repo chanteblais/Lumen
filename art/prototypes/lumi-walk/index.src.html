@@ -119,6 +119,13 @@
         </div>
       </div>
       <div class="row">
+        <span class="label">Flame</span>
+        <div class="seg" id="flame" role="group" aria-label="The lantern's flame">
+          <button type="button" data-v="steady">Steady</button>
+          <button type="button" data-v="flicker" aria-pressed="true">Flicker</button>
+        </div>
+      </div>
+      <div class="row">
         <span class="label">Height</span>
         <div class="seg" id="size" role="group" aria-label="Her height in the painting">
           <button type="button" data-v="100">100 px</button>
@@ -172,6 +179,7 @@
         <li><b>Idle:</b> standing she blinks at uneven gaps, now and then glances or tilts her head, sways very slowly, and rarely looks curious or sleepy; walking, she only blinks and glances. Her eyes are drawn over the painted ones, so they can shut, shift and change shape. Try the cues: do the eyes read as hers, or as stickers? Does the tilt bend the collar or tear it?</li>
         <li>Turning away past side-on, her ribbon bow and medallions shrink to a sliver and go — a drawing just past side-on carries them — rather than fading out.</li>
         <li><b>Her lantern:</b> on the low table, lit. Once a tour she walks in behind the table, reaches up, closes her hand on its finial and lifts it — the same lantern, its light going with it — carries it high along the table’s back edge, and sets it down by the books. She carries it only that way: her drawings holding it all face toward you, so she can’t walk it back up the page. <b>Pick up</b> and <b>Set down</b> send her to the right place first.</li>
+        <li><b>Flame:</b> its light flickers like a candle — the pool on the tabletop, the glass, and the light that goes with her when she carries it — calmer than a fire, and a little livelier while she walks with it. Steady is the light as painted, for comparison. Does it read as a flame, and does anything pulse or dip as she lifts it or sets it down?</li>
         <li><b>Known:</b> she keeps the lantern in her left hand all the way round, but as she turns from facing the table to walking along it the hood washes pale for a moment, and the cloak and arm ghost faintly where one drawing dissolves into the next — as she reaches, as she lifts, and halfway round. She carries it one way only, from the back corner to the books, and behind the stack the books hide most of it. A fully rigged arm was tried and set aside: at this size the drawn poses read better.</li>
       </ul>
       <p class="small">Her height is in the painting’s own pixels; the table stands about 62. Heights, pace and the turn style here are for judging, not settings in the app.</p>
@@ -776,7 +784,7 @@
   // ---- state ----------------------------------------------------------------------------------------------
   // ?tour=0 keeps her standing where the tour starts (for idle grids); ?idle=0 schedules no idle (cues still fire)
   var ui = { pace: 1, size: parseInt(params.get('size') || '120', 10), view: 'room', plan: params.get('plan') === '1', tour: params.get('tour') !== '0',
-    morph: params.get('turn') !== 'swap' && CAN_MORPH, auto: params.get('idle') !== '0' };
+    morph: params.get('turn') !== 'swap' && CAN_MORPH, auto: params.get('idle') !== '0', flicker: params.get('flicker') !== '0' };
   function sizeMul() { return ui.size / 120; }
   var random = rng(7);
   var S;
@@ -1034,6 +1042,18 @@
     L.theta += L.thetaV * dt;
   }
   function swingAngle() { return SWING.max * Math.tanh(S.lamp.theta / SWING.max); }
+  // The flame's flicker (art-direction §4, tier 0: light on a still drawing). A candle's flutter, calmer than the stove's
+  // fire (src/components/shell/fire.ts) and on its own periods, so the two never pulse together: four incommensurate
+  // sines on the sim clock (grids see it; it never visibly repeats), ±`rest` standing, livelier as she walks with it.
+  // One level scales everything the flame lights — the tabletop pool, the carried light on the table and the floor, the
+  // lit glass — so the lift's crossfade and the carry carry it unchanged. Steady under reduced motion or Flame: Steady.
+  var FLICKER = { rest: 0.12, walking: 0.06, glass: 1.4, sines: [[2.3, 0, 0.55], [0.83, 1.1, 0.3], [0.41, 2.3, 0.2], [0.23, 0.7, 0.12]] };
+  function flameLevel() {
+    if (reduced || !ui.flicker) return 1;
+    var s = 0, n = 0;
+    FLICKER.sines.forEach(function (w) { s += w[2] * Math.sin(2 * Math.PI * S.time / w[0] + w[1]); n += w[2]; });
+    return 1 + (FLICKER.rest + (holding() ? FLICKER.walking * S.r : 0)) * s / n;
+  }
 
   function startWalk(path, rest) { S.path = path; S.legRest = rest; }
   // The next stop of the tour; a stop with no rest (a corner of the tour) joins the leg after it, so she rounds it. A
@@ -1928,15 +1948,49 @@
     }
     return { sh: sh, fig: fig, fig2: fig2, lamp: lamp };
   }
+  // The lit glass: the lantern's own bright, warm pixels (the flame and the glass round it), faded out before the brass
+  // frame. Drawn over the sprite with 'lighter' it brightens them by the flame's level; as a deep orange, source-atop, it dims
+  // them. Inside the lantern's own alpha, so the occluder buffer and the pixel counts are unchanged.
+  var glassBuf = null;
+  function glassCanvases() {
+    if (glassBuf) return glassBuf;
+    var im = images.lantern, w = im.width, h = im.height;
+    var c0 = document.createElement('canvas');
+    c0.width = w; c0.height = h;
+    var x0 = c0.getContext('2d');
+    x0.drawImage(im, 0, 0);
+    var px = x0.getImageData(0, 0, w, h).data;
+    var lit = document.createElement('canvas'), shade = document.createElement('canvas');
+    lit.width = shade.width = w; lit.height = shade.height = h;
+    var lx = lit.getContext('2d'), dx = shade.getContext('2d'), L = lx.createImageData(w, h), Dk = dx.createImageData(w, h);
+    var fx = LANTERN.base[0], fy = LANTERN.base[1] - LANTERN.glow.flame.height;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var q = (y * w + x) * 4, lum = 0.3 * px[q] + 0.59 * px[q + 1] + 0.11 * px[q + 2];
+      var warm = px[q] >= px[q + 2] ? 1 : 0, r = Math.hypot(x + 0.5 - fx, (y + 0.5 - fy) * 0.8);
+      var wt = smooth((lum - 110) / 120) * (1 - smooth((r - 8) / 8)) * warm * px[q + 3] / 255;
+      L.data[q] = px[q]; L.data[q + 1] = px[q + 1]; L.data[q + 2] = px[q + 2]; L.data[q + 3] = Math.round(255 * wt);
+      Dk.data[q] = 200; Dk.data[q + 1] = 80; Dk.data[q + 3] = Math.round(255 * wt);   // a lower flame burns redder, not grey
+    }
+    lx.putImageData(L, 0, 0); dx.putImageData(Dk, 0, 0);
+    glassBuf = { lit: lit, shade: shade };
+    return glassBuf;
+  }
   function drawLanternSprite(ctx, lamp) {
-    var im = images.lantern, k = LANTERN.scale;
+    var im = images.lantern, k = LANTERN.scale, fl = flameLevel(), x, y;
     ctx.save();
     if (lamp.held) {
       ctx.translate(lamp.grip.x, lamp.grip.y);
       ctx.rotate(lamp.theta);
-      ctx.drawImage(im, -LANTERN.grip[0] * k, -LANTERN.grip[1] * k, im.width * k, im.height * k);
+      x = -LANTERN.grip[0] * k; y = -LANTERN.grip[1] * k;
     } else {
-      ctx.drawImage(im, lamp.base.x - LANTERN.base[0] * k, lamp.base.y - LANTERN.base[1] * k, im.width * k, im.height * k);
+      x = lamp.base.x - LANTERN.base[0] * k; y = lamp.base.y - LANTERN.base[1] * k;
+    }
+    ctx.drawImage(im, x, y, im.width * k, im.height * k);
+    if (fl !== 1) {
+      var GB = glassCanvases();
+      ctx.globalAlpha = Math.min(1, Math.abs(fl - 1) * FLICKER.glass);
+      ctx.globalCompositeOperation = fl > 1 ? 'lighter' : 'source-atop';
+      ctx.drawImage(fl > 1 ? GB.lit : GB.shade, x, y, im.width * k, im.height * k);
     }
     ctx.restore();
   }
@@ -2099,10 +2153,14 @@
     gx.setTransform(D, 0, 0, D, -LB.ix, -LB.iy);
     gx.imageSmoothingEnabled = true; gx.imageSmoothingQuality = 'high';
     gx.globalCompositeOperation = 'lighter';
+    var fl = flameLevel();
     if (c < 1) {
-      var gi = images['lantern:glow'];
-      gx.globalAlpha = 1 - c;
-      gx.drawImage(gi, base.x - G.base[0] * k, base.y - G.base[1] * k, gi.width * k, gi.height * k);
+      // the painted pool at the flame's level: past 1 (alpha can't be), the rest of it drawn again on top
+      var gi = images['lantern:glow'], ga = (1 - c) * fl;
+      for (; ga > 0.001; ga -= 1) {
+        gx.globalAlpha = Math.min(1, ga);
+        gx.drawImage(gi, base.x - G.base[0] * k, base.y - G.base[1] * k, gi.width * k, gi.height * k);
+      }
       gx.globalAlpha = 1;
     }
     if (c > 0 && lamp.held) {
@@ -2110,7 +2168,7 @@
       if (hf > 0) {
         var ratio = Math.pow(k * F / hf, 2);
         radialProfile(gx, base.x + T0.centre[0] * k, base.y + over + T0.centre[1] * k, T0.h * hf / F, T0.n,
-          T0.peak.map(function (p) { return p * ratio * c; }));
+          T0.peak.map(function (p) { return p * ratio * c * fl; }));
       }
     }
     gx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2149,7 +2207,7 @@
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     radialProfile(ctx, lamp.rest.x, lamp.rest.y, T0.h * hf / F, Fl.n,
-      T0.gain.map(function (g, i) { return g * ratio * Fl.rug[i] * lamp.carry; }));
+      T0.gain.map(function (g, i) { return g * ratio * Fl.rug[i] * lamp.carry * flameLevel(); }));
     ctx.restore();
   }
 
@@ -2770,10 +2828,38 @@
     occC.width = occC.height = 90;
     var ocx = occC.getContext('2d', { willReadFrequently: true });
     var dist = function (p, q) { return Math.hypot(p.x - q.x, p.y - q.y); };
+    // The flame's light, summed each frame: the tabletop light and the carried light on the floor, over the table and the
+    // floor round it, at room scale. Its largest step from one frame to the next as a share of the light, while she
+    // handles it (the lift's crossfade, the set-down) and elsewhere. ?flicker=0 gives the crossfade alone as the baseline;
+    // with the flicker the handling step should be no larger than that plus the flicker's own step elsewhere.
+    var TX0 = 400, TY0 = 330, TW = 760, TH = 520, tc = document.createElement('canvas');
+    tc.width = TW; tc.height = TH;
+    var tcx = tc.getContext('2d', { willReadFrequently: true }), prevTot = null;
+    out.light = { flicker: ui.flicker && !reduced, flame: [Infinity, -Infinity], total: [Infinity, -Infinity],
+      step: { handling: { pct: 0, t: null }, elsewhere: { pct: 0, t: null } } };
+    var lightTotal = function (lamp) {
+      tcx.setTransform(1, 0, 0, 1, 0, 0);
+      tcx.globalCompositeOperation = 'source-over';
+      tcx.fillStyle = '#000'; tcx.fillRect(0, 0, TW, TH);
+      tcx.setTransform(1, 0, 0, 1, -TX0, -TY0);
+      drawFloorLight(tcx, lamp);
+      drawTableLight(tcx, 1, TX0, TY0, lamp);
+      var px = tcx.getImageData(0, 0, TW, TH).data, sum = 0;
+      for (var q = 0; q < px.length; q += 4) sum += px[q] + px[q + 1] + px[q + 2];
+      return sum;
+    };
     for (var fno = 0; fno < 60 * 90; fno++) {
       step(dt);
       out.frames++;
       var F1 = frameFigures(1), L1 = F1.lamp, L9 = frameFigures(D9).lamp, wh = S.lamp.where, show = ENT[F1.sh.under].id;
+      var tot = lightTotal(L1), flv = flameLevel(), LG = out.light;
+      LG.flame = [Math.min(LG.flame[0], r2(flv)), Math.max(LG.flame[1], r2(flv))];
+      LG.total = [Math.min(LG.total[0], tot), Math.max(LG.total[1], tot)];
+      if (prevTot !== null) {
+        var pct = 100 * Math.abs(tot - prevTot) / Math.max(1, Math.min(tot, prevTot)), sk = handling() ? 'handling' : 'elsewhere';
+        if (pct > LG.step[sk].pct) LG.step[sk] = { pct: r2(pct), t: r2(S.time), P: r2(S.lamp.P) };
+      }
+      prevTot = tot;
       if (wh !== prevWhere && prev1) {
         var kind = wh === 'hand' ? 'attach' : 'detach';
         out[kind] = { t: r2(S.time), P: S.lamp.P, shows: show, jumpPx: r2(dist(L1.base, prev1)), jumpPx9: r2(dist(L9.base, prev9)) };
@@ -3021,6 +3107,8 @@
     group('size', function (v) { ui.size = parseInt(v, 10); });
     group('view', function (v) { ui.view = v; S.cam = null; });
     press(document.getElementById('turnstyle'), ui.morph ? 'morph' : 'swap');
+    group('flame', function (v) { ui.flicker = v === 'flicker'; });
+    press(document.getElementById('flame'), ui.flicker ? 'flicker' : 'steady');
     var planEl = document.getElementById('plan');
     planEl.checked = ui.plan;
     planEl.addEventListener('change', function () { ui.plan = planEl.checked; });
