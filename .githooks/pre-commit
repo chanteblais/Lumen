@@ -6,8 +6,9 @@
 # its own branch's copy of this file. Keep it relative — an absolute path makes
 # every worktree run the shared checkout's copy (docs/dev-hygiene.md → Traps).
 
-# 1. Never commit .claude/ session/routine bookkeeping (launch.json excepted).
-staged_claude=$(git diff --cached --name-only --diff-filter=d | grep '^\.claude/' | grep -v '^\.claude/launch\.json$')
+# 1. Never commit .claude/ session/routine bookkeeping (launch.json and the
+#    project skills under .claude/skills/ excepted).
+staged_claude=$(git diff --cached --name-only --diff-filter=d | grep '^\.claude/' | grep -v -e '^\.claude/launch\.json$' -e '^\.claude/skills/')
 if [ -n "$staged_claude" ]; then
   echo "✗ Commit includes .claude/ session bookkeeping — almost certainly swept in by accident:" >&2
   echo "$staged_claude" | sed 's/^/    /' >&2

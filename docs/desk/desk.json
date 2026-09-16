@@ -1,0 +1,262 @@
+{
+  "round": 1,
+  "refreshedAt": "2026-09-14",
+  "sweptTo": "2cf5dc3",
+  "repoUrl": "https://github.com/chanteblais/Lumen/blob/main/",
+  "letter": "This first round, the desk read everything that was waiting on you: the docs, logs, branches and notes. A lot of it had already been answered somewhere else, or was Claude's to decide under things you've already said, so it's off your plate and listed below for one round. What's genuinely yours is short. The first one decides how the rest of this works.",
+
+  "asks": [
+    {
+      "id": "desk-working-rule",
+      "area": "How we work",
+      "kind": "how-you-work",
+      "effort": "glance",
+      "title": "Make this desk the only way questions reach you",
+      "context": "Questions for you are scattered across about twenty docs, logs and branch notes, and many had already been answered somewhere else. With this rule, every session brings a question here, and only if it passes the ask test: your eye, the product's direction, something that can't be undone, or your accounts and money. Anything else, Claude decides under what you've already said and shows under *Moving without you* for one round, so you can stop it.",
+      "recommendation": "Yes. Every ask comes with what I'd do and what happens if you never answer, so one tap is enough. I'll write the rule into `CLAUDE.md` so every session follows it.",
+      "ifSilent": "The desk keeps running, but sessions aren't told to use it until you say yes.",
+      "sources": [{ "label": "How the desk works", "path": "docs/desk/README.md" }]
+    },
+    {
+      "id": "animation-next",
+      "area": "Art & animation",
+      "kind": "direction",
+      "effort": "think",
+      "title": "What Lumi's animation work does next",
+      "context": "The lantern on Home's low table has landed. There are two ways on from here: the real app plays the walk rig, so Lumi moves on Home the way she does in the prototypes, or a second handled object tests how cheap a new carry has become. Either way, the lantern's way back and the ghosting in her turns are small follow-ups.",
+      "recommendation": "Have the app play the rig first. Every future object needs that path into the app, and this is the step that turns the prototypes into Coherence. The second object comes after.",
+      "ifSilent": "From Thursday, Sep 17, the next animation session starts the in-app rig on its own branch. You see it on a review server before anything ships.",
+      "sources": [
+        { "label": "Animation pipeline", "path": "docs/animation-pipeline.md:155" },
+        { "label": "Art direction, bet 4", "path": "docs/art-direction.md:219" }
+      ]
+    },
+    {
+      "id": "library-spatial-answers",
+      "area": "Library",
+      "kind": "taste",
+      "effort": "think",
+      "title": "The Library map: five recommendations to accept or change",
+      "context": "The Library's close-ups, and building the Library into the app properly, both wait on these. The projection and Lumi's size are already settled. Nothing gets generated until you answer.",
+      "recommendation": "Accept all five. If one is wrong, choose *Something else* and name it.",
+      "points": [
+        "Three bookcase collections, with the window bay as an expansion.",
+        "The alcove as an expansion: a place to sit that takes on surfaces when an area of life needs room.",
+        "For a new user, close-ups show mostly bare shelf spans and the painting stays as it is.",
+        "Lumi names a collection once its context has held for a while; the user corrects the name by saying so. Nobody is asked to name a slot.",
+        "The whole room always in view (a contain fit) on its dark ground."
+      ],
+      "ifSilent": "Waits. These are for your eye, so nothing is generated or built without your answer.",
+      "sources": [
+        { "label": "Spatial map questions", "path": "art/scenery/library/spatial-map/README.md:84" },
+        { "label": "Burden log row", "path": "docs/ef-burden-log.md:49" }
+      ]
+    },
+    {
+      "id": "design-notebook-branch",
+      "area": "Lumi",
+      "kind": "approval",
+      "effort": "sit",
+      "title": "Lumi's design notebook: try it, then land it",
+      "context": "`feat/design-contributions` is in review. When you talk design with Lumi, she keeps notes for Coherence's design docs without asking you to approve each one, and you get a daily digest. Its migration is already applied. It hasn't been tried with the real model yet, so nobody knows whether she takes notes unprompted or sticks to design talk.",
+      "recommendation": "Have one design conversation with Lumi on the branch's review server, localhost:3005. If the notes feel right, say so and Claude lands it. After it lands, set `COHERENCE_DESIGN_PARTNERS` on Vercel; only you can.",
+      "ifSilent": "It stays in review. A new behaviour for Lumi doesn't ship without your answer.",
+      "sources": []
+    },
+    {
+      "id": "lumi-proposed-sections",
+      "area": "Lumi",
+      "kind": "direction",
+      "effort": "glance",
+      "title": "Lumi's proposed behaviour, as one page of claims",
+      "context": "Eleven passages in `lumi.md` are marked *proposed* and aren't canon until you agree. They cover what Lumi is not, avoidance versus genuine reprioritising, reflection versus rumination, growing more direct as trust grows, how she names what she sees, and more. Reading them where they are takes a sitting. The 2026-09-14 directions already cover two of them.",
+      "recommendation": "Let Claude turn them into one page of short claims, each with *keep* or *strike*, and bring it as the next ask. That's quicker than reading the doc, and whatever you keep becomes canon.",
+      "ifSilent": "From Thursday, Sep 17, Claude prepares the page and puts it on the desk. Nothing becomes canon without your answer.",
+      "sources": [{ "label": "lumi.md", "path": "docs/philosophy/lumi.md:10" }]
+    },
+    {
+      "id": "context-package-refresh",
+      "area": "How we work",
+      "kind": "account",
+      "effort": "glance",
+      "title": "Refresh the Drive briefing the design routine reads",
+      "context": "The hourly design routine bases its proposals on the Coherence Context Package in your Google Drive, which is 261 commits behind. So it keeps proposing from things the app has since removed, and each of those costs a review.",
+      "recommendation": "Yes: refresh it in place now, and again after any landed change to what a place does. It writes to your Drive, which is why it asks.",
+      "ifSilent": "Waits, because it writes to your Drive.",
+      "sources": [
+        { "label": "Context package", "path": "docs/context-package.md" },
+        { "label": "Routine review", "path": "docs/design/routine/review.md:19" }
+      ]
+    },
+    {
+      "id": "leftover-worktrees",
+      "area": "How we work",
+      "kind": "how-you-work",
+      "effort": "glance",
+      "title": "Clearing up after finished sessions",
+      "context": "Some things belong to sessions that have ended. There's the locked `plan-rig-in-app` worktree, whose work landed. The shared checkout has uncommitted lines in `CLAUDE.md` and `docs/README.md` that are already on main. There's also a Codex audit worktree outside the repo. Today, anything another session owns comes to you.",
+      "recommendation": "Let Claude remove leftovers whose work is already on main and that hold nothing else, and tell you what went. Anything in review or unlanded, and Codex's worktree, stays unless you say.",
+      "ifSilent": "Waits: it's other sessions' work.",
+      "sources": [{ "label": "What goes to Chanté", "path": "docs/dev-hygiene.md:100" }]
+    }
+  ],
+
+  "hands": [
+    {
+      "id": "google-consent-screen",
+      "title": "Publish the Google consent screen",
+      "why": "So new accounts stop seeing Google's warning. Mail is switched off, so the restricted Gmail scope can go.",
+      "how": [
+        "Google Cloud, Data Access: remove `gmail.readonly`.",
+        "Branding: add the privacy link and authorise burlyman.ca.",
+        "Audience: Publish. Skip the logo; it triggers brand verification.",
+        "Check Clerk's Google scopes on both instances."
+      ],
+      "sources": [{ "label": "Pre-production", "path": "docs/pre-prod.md:56" }]
+    },
+    {
+      "id": "openai-spend-limit",
+      "title": "Set a spend limit on the OpenAI key",
+      "why": "Lumi runs on OpenAI now, and a limit is the only guard against a runaway bill.",
+      "how": [],
+      "sources": [{ "label": "Pre-production", "path": "docs/pre-prod.md:22" }]
+    },
+    {
+      "id": "supabase-backups",
+      "title": "Turn on Supabase backups",
+      "why": "Production has no backups on record.",
+      "how": [],
+      "sources": [{ "label": "Pre-production", "path": "docs/pre-prod.md:18" }]
+    },
+    {
+      "id": "m7-daily-week",
+      "title": "When you're ready: a week of using Coherence daily",
+      "why": "It's V1's last milestone. Nothing else blocks it.",
+      "how": ["Anything you had to remember or tidy along the way, tell the desk or Lumi. It goes in the burden log."],
+      "sources": [{ "label": "V1 plan, M7", "path": "docs/v1-plan.md:63" }]
+    }
+  ],
+
+  "moving": [
+    {
+      "id": "stale-rows",
+      "title": "Clearing asks that were already answered",
+      "detail": "Items that still read as open where they were written but were settled elsewhere: the pieces verdict, the burden log's rewards and session-defaults rows, the mobile findings still marked proposed, the preview key in pre-production, the routine README's first-pass lines, and the art-direction questions you settled on 2026-09-13. The docs audit covers this.",
+      "when": "This week"
+    },
+    {
+      "id": "eval-before-persona",
+      "title": "Conversation-eval scenarios before any change to Lumi's persona",
+      "detail": "Thinking aloud that must not become a task, and an obligation mentioned in passing that should be filed, as the 2026-09-14 directions require. Claude's grades stay provisional; you're asked only if a result would change Lumi.",
+      "when": "Next Lumi session"
+    },
+    {
+      "id": "preprod-claude-half",
+      "title": "Claude's half of the pre-production list",
+      "detail": "Checking that caching works in production, the live security headers and CSP, that no conversation text reaches the logs, and the export and delete path. On Vercel, Claude only reads settings and changes nothing.",
+      "when": "This week"
+    },
+    {
+      "id": "library-map-remeasure",
+      "title": "Re-measuring the Library map against the painting as served",
+      "detail": "The v3 map was drawn before the room's walls were fitted to the window.",
+      "when": "Before any close-up"
+    },
+    {
+      "id": "gap-plan-c",
+      "title": "Building *Not today* (gap plan C) on a branch",
+      "detail": "The last of the gap plan's three first changes. It changes Today, so you'll see it on a review server before it ships.",
+      "when": "After the desk lands"
+    }
+  ],
+
+  "parked": [
+    {
+      "area": "Product",
+      "items": [
+        { "id": "q7-lumis-world", "title": "Whether Lumi's World is a place of its own", "note": "No care and no rewards is settled. Where it would live waits on the growth work." },
+        { "id": "sessions-mail-return", "title": "When focus sessions and mail come back", "note": "Four routine proposals are waiting on it." },
+        { "id": "today-time-away", "title": "Whether Today's day line may mention time away", "note": "Lumi may; Today doesn't yet." },
+        { "id": "q21-model", "title": "How Lumi's model is chosen", "note": "OpenAI runs Lumi, and the comparison hasn't been graded. The Anthropic key goes once it's settled." },
+        { "id": "q27-mobile-lumi", "title": "How Lumi is present on a phone", "note": "Hidden below 768px for now." },
+        { "id": "library-reading-table", "title": "The reading table as the Library's one entry", "note": "A routine proposal Claude marked promising. It waits on the map above." }
+      ]
+    },
+    {
+      "area": "Art",
+      "items": [
+        { "id": "icon-sheet", "title": "The icon sheet", "note": "In progress in the shared checkout: painted or line icons, the wilt stage, hearts and sparkles." },
+        { "id": "bet-4-resident", "title": "Lumi as a resident, not only a companion (bet 4)", "note": "Moves once the rig is in the app." }
+      ]
+    },
+    {
+      "area": "Accounts and operations",
+      "items": [
+        { "id": "renames", "title": "Renames: Clerk app, Google consent screen, Vercel project, GitHub repo, folder", "note": "None of them blocks anything." },
+        { "id": "privacy-note-settings", "title": "A privacy note in Settings", "note": "Claude drafts it when pre-production comes round; you review it, as you did /privacy." },
+        { "id": "real-device-checks", "title": "Checks on a real phone, on-screen keyboard included", "note": "" },
+        { "id": "out-of-scope-revisit", "title": "Repo size, and the Library's debug mode in production", "note": "Out of scope by your call. Here only in case you ever want to revisit them." }
+      ]
+    }
+  ],
+
+  "decisions": [
+    { "date": "2026-09-14", "title": "Directions adopted from the first routine review", "path": "docs/living/decisions.md:9" },
+    { "date": "2026-09-13", "title": "Lumi sees roughly the last 30 to 40 messages", "path": "docs/living/decisions.md:36" },
+    { "date": "2026-09-13", "title": "Only their word brings back what was forgotten", "path": "docs/living/decisions.md:47" },
+    { "date": "2026-09-13", "title": "Plan with Lumi scrapped; what matters this week is remembered", "path": "docs/living/decisions.md:59" },
+    { "date": "2026-09-13", "title": "When something feels too big, Lumi asks first", "path": "docs/living/decisions.md:74" },
+    { "date": "2026-09-13", "title": "Files shared with Lumi are read, not kept", "path": "docs/living/decisions.md:84" }
+  ],
+
+  "delegations": [
+    { "scope": "The design routine's proposals", "words": "Please use your best judgment and commit.", "since": "2026-09-14" },
+    { "scope": "Pushing main, other sessions' landed merges included", "words": "Typically if something gets merged to main it's because I approved the merge. I get asked every time.", "since": "2026-09-13" },
+    { "scope": "Applying migrations (destructive ones still ask)", "words": "I'd like you to apply migrations from now on.", "since": "2026-09-13" },
+    { "scope": "Keeping development tidy", "words": "Developed by Claude's judgement and taken to me only when it has to be.", "since": "2026-09-13" },
+    { "scope": "Seeing a scoped review through to the end", "words": "Only stop for my input when absolutely necessary.", "since": "2026-09-13" }
+  ],
+
+  "compass": {
+    "question": "Does this reduce the user's executive-function burden, or accidentally create more of it?",
+    "principles": [
+      "The system does the organising",
+      "Lumi proposes, the user corrects, Lumi learns",
+      "Correction beats configuration",
+      "Show less than you know; one decision at a time",
+      "Starting is its own problem",
+      "Presence without interruption",
+      "Design for return",
+      "Resistance and capacity change the plan",
+      "Appropriate forward movement, not maximum output",
+      "Show inference for what it is",
+      "One understanding across spaces",
+      "No methodology to learn",
+      "Warmth through behaviour, not slogans",
+      "Help the user leave"
+    ]
+  },
+
+  "reflection": {
+    "learned": [
+      "Most of what looked like it was waiting on you had already been answered somewhere else. The noise is mostly stale open items, not live ones.",
+      "A question without a recommendation is a task for you. With one, it's a tap.",
+      "Much of the weight is not knowing whose call something is. The ask test settles that before anything reaches you."
+    ],
+    "changing": [
+      "The desk is an experiment that ends with your M7 week. What proves itself goes into Coherence as ideas; the desk itself doesn't.",
+      "Every ask now has a box for your own words, sent with any answer or on its own.",
+      "This round is the baseline. The desk aims for fewer asks each round, each one weightier.",
+      "Two of this round's asks, the working rule and the leftovers, are really proposed delegations. Say yes and they stop coming to you."
+    ],
+    "forCoherence": [
+      { "lesson": "Suggested answers are a floor, not a fence.", "inApp": "Wherever Lumi offers choices (*Not this*, the capacity question), plain words stay one step away, never hidden." },
+      { "lesson": "Close what's been answered.", "inApp": "Lumi reconciles, not only remembers: something settled in one conversation quietly stops being open everywhere else." },
+      { "lesson": "Offer a proposal, not a question.", "inApp": "When starting is hard, the first step comes as something to say yes to, never *What do you want to do?*" },
+      { "lesson": "Say what happens on silence.", "inApp": "Anything Lumi asks carries its default, so an unanswered question is never waiting for someone who comes back." },
+      { "lesson": "Let *you decide* teach, then confirm once.", "inApp": "A repeated *you pick* in one area becomes an offer of scoped authority, granted in conversation, never a setting." },
+      { "lesson": "Make ownership explicit.", "inApp": "*I'll hold this; you don't need to* is containment the user can trust." },
+      { "lesson": "Effort filters better than priority when tired.", "inApp": "Today's capacity answer could choose which kind of first step to offer, as well as how many." }
+    ]
+  }
+}
