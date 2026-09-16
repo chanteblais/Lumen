@@ -12,8 +12,8 @@
 //   - nothing happened in it for an hour (a session may be about to move in)
 //   - no uncommitted or untracked changes
 //   - its HEAD is already on main (removing it loses no commit)
-//   - its ignored files are all disposable: node_modules, .next, build output, a .env.local identical to
-//     the shared checkout's, session bookkeeping — not sheet candidates, keys or anything unrecognised
+//   - its ignored files are all disposable: node_modules, .next, build output, a .env.local holding nothing
+//     the shared checkout's doesn't, session bookkeeping — not sheet candidates, keys or anything unrecognised
 // Removal is plain `git worktree remove` (git refuses anything dirty on its own), then the branch goes with
 // `git branch -D` once its tip is proven on main — `-d` would judge against this checkout's HEAD instead.
 
@@ -58,6 +58,26 @@ for (const line of run("lsof", ["-a", "-d", "cwd", "-F", "pcn"]).out.split("\n")
   }
 }
 
+// A worktree's .env.local is worth keeping only when it holds something the shared checkout's doesn't:
+// a key the shared one lacks, or a different value for a key both define. A copy that merely lags behind
+// it — the usual case, since the preflight copies the shared file when the worktree is made — is disposable.
+// (2026-09-14: a byte comparison held `sharp-galileo-9f1ee9` back over a copy missing one newer key.)
+const envKeys = (text) => {
+  const map = new Map();
+  for (const line of (text ?? "").split("\n")) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/.exec(line);
+    if (m) map.set(m[1], m[2].trim());
+  }
+  return map;
+};
+const sharedEnvKeys = envKeys(sharedEnv);
+const envWorthKeeping = (text) => {
+  for (const [key, value] of envKeys(text)) {
+    if (!sharedEnvKeys.has(key) || sharedEnvKeys.get(key) !== value) return true;
+  }
+  return false;
+};
+
 // Ignored entries git would delete along with the worktree, and whether each is disposable.
 const DISPOSABLE = new Set(["node_modules/", ".next/", "out/", "build/", "coverage/", ".vercel/", ".claude/", "__pycache__/", "tsconfig.tsbuildinfo", "next-env.d.ts", ".DS_Store"]);
 const keepers = (t) =>
@@ -67,7 +87,7 @@ const keepers = (t) =>
     .filter((entry) => {
       const name = entry.split("/").filter(Boolean).pop() + (entry.endsWith("/") ? "/" : "");
       if (DISPOSABLE.has(entry) || DISPOSABLE.has(name) || /(^|\/)npm-debug\.log/.test(entry)) return false;
-      if (entry === ".env.local") return readFileSync(path.join(t.path, entry), "utf8") !== sharedEnv;
+      if (entry === ".env.local") return envWorthKeeping(readFileSync(path.join(t.path, entry), "utf8"));
       return true;
     });
 

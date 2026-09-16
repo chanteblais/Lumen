@@ -42,9 +42,13 @@ next-env.d.ts
 
 !.env.example
 
-# Claude session bookkeeping (launch.json is the one versioned file)
+# Claude session bookkeeping (launch.json and the project skills are versioned)
 .claude/*
 !.claude/launch.json
+!.claude/skills/
+
+# the desk's rendered page (scripts/desk/render.mjs); desk.json is the source
+/docs/desk/.out/
 __pycache__/
 
 # generated sheet candidates (scripts/gen-lumi-sheet.py); the kept one moves to art/lumi/

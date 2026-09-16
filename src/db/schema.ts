@@ -3,6 +3,10 @@
  * Nine tables. Everything is keyed by users.id (internal UUID), never by the
  * auth provider's id. Derived judgements (stale, avoided, gap, today's
  * capacity) are computed at read time and never stored.
+ *
+ * Every table ends in `.enableRLS()`, with no policies: the app connects as the
+ * owner, which RLS doesn't apply to, and Supabase's Data API reads nothing.
+ * `rls.db.test.ts` fails on a table without it. See docs/architecture.md → Database.
  */
 import { sql } from "drizzle-orm";
 import {
@@ -44,7 +48,7 @@ export const users = pgTable("users", {
   createdAt: ts("created_at").notNull().defaultNow(),
   lastSeenAt: ts("last_seen_at").notNull().defaultNow(),
   lastReflectedAt: ts("last_reflected_at"),
-});
+}).enableRLS();
 
 /* -------------------------------------------------------- conversations */
 
@@ -67,7 +71,7 @@ export const conversations = pgTable(
     // One main conversation per user: two first visits racing can't make a second.
     uniqueIndex("conversations_user_main_idx").on(t.userId).where(sql`${t.kind} = 'main'`),
   ],
-);
+).enableRLS();
 
 /* ------------------------------------------------------------- messages */
 
@@ -85,7 +89,7 @@ export const messages = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("messages_conversation_created_idx").on(t.conversationId, t.createdAt)],
-);
+).enableRLS();
 
 /* ----------------------------------------------------------- intentions */
 
@@ -118,7 +122,7 @@ export const intentions = pgTable(
     index("intentions_user_status_idx").on(t.userId, t.status),
     index("intentions_user_touched_idx").on(t.userId, t.lastTouchedAt),
   ],
-);
+).enableRLS();
 
 /* ------------------------------------------------------- focus_sessions */
 
@@ -145,7 +149,7 @@ export const focusSessions = pgTable(
     // One open session per user: two starts racing can't leave two running.
     uniqueIndex("focus_sessions_user_open_idx").on(t.userId).where(sql`${t.endedAt} is null`),
   ],
-);
+).enableRLS();
 
 /* --------------------------------------------- memory_notes (beliefs) */
 
@@ -174,7 +178,7 @@ export const memoryNotes = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("memory_notes_user_active_idx").on(t.userId, t.retiredAt)],
-);
+).enableRLS();
 
 /* ------------------------------------ the Library: episodes, threads, notes */
 
@@ -208,7 +212,7 @@ export const episodes = pgTable(
     // `thread_ids @> '["…"]'`: a thread's visits, and scrubbing a forgotten thread.
     index("episodes_thread_ids_idx").using("gin", t.threadIds),
   ],
-);
+).enableRLS();
 
 /**
  * A persistent subject of the user's life that Lumi keeps an archive for — a
@@ -240,7 +244,7 @@ export const threads = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("threads_user_discussed_idx").on(t.userId, t.lastDiscussedAt), index("threads_parent_idx").on(t.parentId)],
-);
+).enableRLS();
 
 export type ThreadNoteKind = "idea" | "decision" | "question" | "progress" | "detail";
 export type NoteSource = "user_said" | "lumi_inferred";
@@ -264,7 +268,7 @@ export const threadNotes = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("thread_notes_thread_idx").on(t.threadId, t.createdAt), index("thread_notes_user_idx").on(t.userId)],
-);
+).enableRLS();
 
 export type Episode = typeof episodes.$inferSelect;
 export type Thread = typeof threads.$inferSelect;
@@ -298,7 +302,7 @@ export const dayPlans = pgTable(
     generatedAt: ts("generated_at").notNull().defaultNow(),
   },
   (t) => [index("day_plans_user_date_idx").on(t.userId, t.localDate, t.generatedAt)],
-);
+).enableRLS();
 
 /* ----------------------------------------------------------- priorities */
 
@@ -331,7 +335,7 @@ export const priorities = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("priorities_user_active_idx").on(t.userId, t.retiredAt)],
-);
+).enableRLS();
 
 /* ---------------------------------------------------------------- leads */
 
@@ -375,7 +379,7 @@ export const leads = pgTable(
     // A message can yield several leads, but never the same one twice (two looks racing). Titles are whitespace-normalised in code.
     uniqueIndex("leads_user_ref_title_idx").on(t.userId, t.sourceRef, sql`lower(${t.title})`),
   ],
-);
+).enableRLS();
 
 /* ------------------------------------------------- design contributions */
 
@@ -431,7 +435,7 @@ export const designContributions = pgTable(
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("design_contributions_user_ref_idx").on(t.userId, t.ref), index("design_contributions_user_updated_idx").on(t.userId, t.updatedAt)],
-);
+).enableRLS();
 
 export type DesignChange = "created" | "revised" | "feedback" | "superseded" | "retracted";
 export type DesignVerdict = "endorse" | "reject" | "qualify" | "correct";
@@ -471,7 +475,7 @@ export const designContributionRevisions = pgTable(
     // Two writers can't both make version n of one note.
     uniqueIndex("design_revisions_version_idx").on(t.contributionId, t.version),
   ],
-);
+).enableRLS();
 
 /**
  * One design digest: what was new or changed in the notebook between two
@@ -495,7 +499,7 @@ export const designDigests = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("design_digests_user_from_idx").on(t.userId, t.fromRevisionId), index("design_digests_user_through_idx").on(t.userId, t.throughRevisionId)],
-);
+).enableRLS();
 
 export type DesignContribution = typeof designContributions.$inferSelect;
 export type DesignRevision = typeof designContributionRevisions.$inferSelect;
@@ -520,7 +524,7 @@ export const events = pgTable(
     // Reflection claims a session once (`reflection.claimed`, inserted on conflict do nothing).
     uniqueIndex("events_reflection_claim_idx").on(t.userId, t.subjectId).where(sql`${t.type} = 'reflection.claimed'`),
   ],
-);
+).enableRLS();
 
 export type User = typeof users.$inferSelect;
 export type Intention = typeof intentions.$inferSelect;

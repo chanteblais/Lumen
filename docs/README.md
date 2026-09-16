@@ -1,6 +1,6 @@
 # Coherence — Design Docs
 
-**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md) and the [Experience Principles](philosophy/experience-principles.md); Lumi's behaviour is [Lumi — Relational Intelligence & Behaviour](philosophy/lumi.md), and the philosophy she is sent with every call is [her brief](philosophy/lumi-brief.md), reviewed whenever its sources change. The places are [Spaces of Coherence](product/spaces.md), the Garden has its own document in [Today / Garden](product/today-garden.md) (with [`today.md`](today.md) the page as built), and the *why* behind the AI layer described in `architecture.md` is [AI & Information Architecture](product/ai-and-information-architecture.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
+**Start at [`PROJECT-CANON.md`](../PROJECT-CANON.md)**: what Coherence is trying to become, its principles, the places, and which canonical document to read for which work. The foundation is the [Product Vision](philosophy/product-vision.md) and the [Experience Principles](philosophy/experience-principles.md); Lumi's behaviour is [Lumi — Relational Intelligence & Behaviour](philosophy/lumi.md) — what is still *proposed* there is gathered as [claims to keep or strike](philosophy/lumi-proposed-claims.md), on the desk for Chanté's answer — and the philosophy she is sent with every call is [her brief](philosophy/lumi-brief.md), reviewed whenever its sources change. The places are [Spaces of Coherence](product/spaces.md), the Garden has its own document in [Today / Garden](product/today-garden.md) (with [`today.md`](today.md) the page as built), and the *why* behind the AI layer described in `architecture.md` is [AI & Information Architecture](product/ai-and-information-architecture.md). The living canon is in [`living/`](living/): [product decisions](living/decisions.md), [open questions](living/open-questions.md), [ideas](living/ideas.md). The docs below describe what the product does now and how to work on it.
 
 ## Product and design canon
 
@@ -11,6 +11,8 @@ The [reconciliation record](living/reconciliation.md) contains lineage, source c
 The [V1 canon-alignment gap plan](living/v1-gap-plan.md) ranks code-grounded gaps and proposes three bounded first changes; it is a plan, not a claim of implementation or new milestone commitments.
 
 ## Implementation, evidence and operations
+
+The [Coherence Desk](desk/README.md) is Chanté's one place for what needs her: one decision at a time, each with Claude's recommendation and what happens if she never answers, the standing [delegations](desk/delegations.md) that keep the rest off her plate, and the desk's own [journal](desk/journal.md) of what it learns, including what it carries back into Coherence.
 
 The [routine review inbox](design/routine/README.md) imports proposals from **Coherence App Mockups Routine** for Chanté and Claude. Read it when relevant to current design work; imported ideas remain unapproved until reviewed in its separate decision ledger.
 

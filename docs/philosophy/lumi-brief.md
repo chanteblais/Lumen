@@ -33,10 +33,10 @@ Edit only the doc: `npm run brief` rewrites `src/core/ai/brief.ts` from it, and 
 |---|---|
 | `docs/philosophy/product-vision.md` | `ea12e1d4dd65` |
 | `docs/philosophy/experience-principles.md` | `3821b1491aa6` |
-| `docs/philosophy/lumi.md` | `ffe24be94bf3` |
+| `docs/philosophy/lumi.md` | `efb0e70c6c2b` |
 | `docs/product/lumi-model-strategy.md` | `0da42562fe11` |
 | `docs/product/shared-model.md` | `ea8dd3087427` |
-| `docs/living/decisions.md` | `1614d508f871` |
+| `docs/living/decisions.md` | `01d3afab43fe` |
 | `PROJECT-CANON.md` | `290f01e8f0d4` |
 <!-- sources:end -->
 
@@ -96,6 +96,7 @@ This is why your other instructions exist, and where to turn when they run out. 
 
 ## Change log
 
+- **2026-09-15 · reviewed, nothing for Lumi** (`docs/desk-round-2`): the product decisions gained *The Library's shape: three collections, and nobody is asked to name a shelf*, and `lumi.md`'s marker legend now points at [`lumi-proposed-claims.md`](lumi-proposed-claims.md), where every *proposed* passage waits for Chanté as a claim to keep or strike. Neither belongs here. Collections aren't something a user can see yet — the sections built on `feat/library-sections` still show only in a hidden debug mode — so naming one would have her promising a room that isn't there, exactly as that branch's entry reasoned. The naming rule itself (she reads a name off what the slot holds, they correct it by saying so) is the *how*, and the brief already carries the why: she proposes and they correct, and nobody is asked to keep a taxonomy. The claims page is a working document about what isn't canon; what's proposed stays out of the brief until she answers, and any claim she keeps comes back here as its own review. Re-stamped.
 - **2026-09-14 · what she's for** (`docs/lumi-function`): `lumi.md` §1 and the product decisions gain Lumi's function, in Chanté's words: to identify goals and priorities, and help the user actualize them. The brief already carried both halves in pieces: the chain from what they intend to what they do, and the fact that they decide what matters. It didn't say plainly what she is for. One sentence now does, in *Coherence remembers; you understand*, with the authority line beside it so "identify" never reads as deciding for them. How she notices goals in conversation is the *how*, in the persona (*What you're for* → What matters). Voice eval run 9. On the same branch the canon map's Lumi paragraph gains the function too, which the brief's new sentence already carries. Re-stamped.
 - **2026-09-14 · reviewed, nothing for Lumi** (merge of `main` into `feat/design-contributions`): the product decisions hold both *Lumi contributes to Coherence's design, in a notebook of her own* and *Directions adopted from the first routine review*, each reviewed on its own branch. The design entry gains one line on how the two sit together (a design note is a note, not an action), about design partners only. Re-stamped.
 - **2026-09-14 · reviewed, nothing for Lumi** (`feat/design-contributions`): the product decisions gained *Lumi contributes to Coherence's design, in a notebook of her own*, and the canon map's *How the canon works* says the notebook is not canon. Both are about design partners only: for everyone else nothing changes, so the brief — which every user's Lumi carries — stays as it is. What a design partner's Lumi does is the *how*, in the persona's *Designing Coherence with them* section, which only partners receive. Re-stamped.
