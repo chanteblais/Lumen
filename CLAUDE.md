@@ -2,7 +2,7 @@
 
 Loaded automatically at the start of every Claude session in this repo (root `CLAUDE.md`; worktrees carry it too). Deliberately short; the detailed docs in `docs/` are read on demand. Same shape as the Glåüm and All Hands briefs, so sessions behave the same way across projects.
 
-**Coherence** (the product, formerly **Lumen**; the companion character is **Lumi**, she/her) — an AI companion for task initiation, momentum, re-entry and body doubling. **Not a task manager.**
+**Coherence** (the product, formerly **Lumen**; the companion character is **Lumi**, she/her) — an AI companion that helps the user see what matters (their goals and priorities) and move it forward: task initiation, momentum, re-entry and body doubling. **Not a task manager.**
 
 **Before substantial product/UX work** (features, navigation, AI or Lumi behaviour, prioritisation, notifications, rewards, visual design, motion, onboarding, memory), **read `PROJECT-CANON.md` and the canonical docs it points to for that work.** The canon is the intended product; code is the current one. When they disagree, surface it and don't silently pick one. Requirements come from the foundations, approved decisions and settled canonical direction, as scoped in `PROJECT-CANON.md`. Examples and future possibilities do not expand V1; ideas and open questions are not requirements. Shared definitions are in `docs/product/shared-model.md`.
 
@@ -24,6 +24,7 @@ Next.js 16 (App Router, React 19) · TypeScript · Vercel AI SDK v7 (`ai`, `@ai-
 - `docs/today.md` — the Today page spec · `docs/branching.md` — branch rules, parallel sessions, dev servers and ports, commit guards
 - `docs/dev-hygiene.md` — **Claude's evolving strategy for keeping development tidy:** session-start and session-end checks, the guards (the preflight), the traps ledger (symptom → cause → catch → fix), the ranked backlog, what goes to Chanté
 - `docs/animation-pipeline.md` — **Claude's own working doc for Lumi's animations:** session-start checklist, the measure gates, touch points, the cost ledger and the ranked efficiency backlog
+- **Lumi's design digest** — `npm run design:digest` (`-- --notebook` for every note and its history): Lumi's own notes from Chanté's design conversations. Skim the latest before substantial design or implementation work and weigh it alongside the canon, as reference only: not canon, not requirements, and an endorsed note is agreement with that one part, not a decision. `docs/architecture.md` → Lumi's design notebook
 - `docs/art-direction.md` — **the evolving art direction and animation strategy** (draft): the character's invariants, the book-or-world tension, the ladder of animation tiers, motion principles, the bets under test and the questions for Chanté
 
 ## Conventions

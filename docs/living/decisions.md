@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-09-14 · Lumi's function: to identify goals and priorities, and help the user actualize them
+
+**Decision.** Lumi's function is to help the user identify their goals and priorities, and help them act on those. Both halves are hers: seeing what matters, with the user and in their words, and moving it forward.
+**Rationale.** Chanté (2026-09-14): "I'd say it's to identify goals and priorities, and help the user actualize them." *(Claude's reading:)* the vision already held both halves: V§2's *intention → priority → capacity → attention → action*, and V§20's "understand what matters, begin when beginning is difficult…". The persona, though, described only the second half ("a companion for getting started, keeping going, and coming back"), so Lumi was built as a companion for execution.
+**Implications.**
+- `lumi.md` §1 states the function. The persona's opening line and *What you're for* carry it, with a new first item, *What matters*. Her brief carries the why in one sentence.
+- *Identify* means with the user, never for them. The user keeps authority over what matters (V§5), and her readings are offered as questions. There is no goals questionnaire or goals onboarding (Home §85–86), and values don't become fields (Home §41). A stated priority keeps the scope of its words (*Directions adopted from the first routine review* → Q11).
+- *Actualize* means appropriate forward movement, not maximum output (V§3). Letting something wait, or letting a goal go, can be the outcome.
+- Thinking about direction stays thinking until it lands somewhere, and isn't turned into tasks (the adopted direction on Q23).
+- No new tool, field or surface, and nothing for the user to keep. `PROJECT-CANON.md`'s Lumi paragraph and `CLAUDE.md`'s one-line description of the product name both halves too (Chanté, same day).
+
+**Principle.** V§2, V§3, V§5, V§20; EP§5, EP§17.
+**Replaces.** "A companion for getting started, keeping going, and coming back" as the persona's statement of what Lumi is.
+
+## 2026-09-14 · Lumi contributes to Coherence's design, in a notebook of her own
+
+**Decision.** In Chanté's conversations about designing Coherence, Lumi notices meaningful insights, tensions, assumptions worth questioning, possibilities and changes in thinking, and keeps them as design notes **without asking to save each one**. The notes feed a daily design digest considered during design and implementation work. What Chanté said, Lumi's reading, and any design possibility stay apart, and each part is endorsed, qualified, corrected or rejected only by Chanté's explicit word in conversation.
+**Rationale.** Chanté (2026-09-14): she would rather discard ideas that don't fit than carry the burden of noticing every worthwhile insight herself; Lumi should contribute thinking, not transcribe.
+**Implications.**
+- Scoped to design partners and to design conversations: nobody else's Lumi changes, and personal tasks are never design evidence.
+- Silence is not endorsement, inclusion in a digest is not endorsement, endorsing a problem is not endorsing a proposed solution, and one verdict is not a rule for related ideas.
+- The notebook is not canon. It never edits a canonical doc, never becomes a requirement and never implements anything; a note moves into the canon only when Chanté puts it there (`PROJECT-CANON.md` → How the canon works).
+- No review queue, page or count: feedback is optional and conversational (`ef-burden-log.md`, 2026-09-14).
+- Sits with *Directions adopted from the first routine review* (below): a design note is a note, not an action — it moves nothing in the app, plans nothing and speaks only as a ledger line — so design thinking stays with meaning (Q23), and Lumi still starts nothing unprompted (Q9). What she notices is recorded quietly, the lowest level that works.
+
+**Principle.** EP§17 (show inference for what it is), AI & IA §57 (explicit ≠ inferred), V§4 (automate administration, never agency).
+**Replaces.** Nothing.
+
 ## 2026-09-14 · Directions adopted from the first routine review
 
 **Decision.** From the first pass over the design-routine proposals ([`design/routine/review.md`](../design/routine/review.md), each line linked there to its proposal), these directions are adopted. Each narrows an open question; none adds a surface or changes the persona by itself.

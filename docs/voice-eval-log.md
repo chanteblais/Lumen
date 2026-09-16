@@ -54,8 +54,25 @@ Note why beside every ~ and ✗.
 | `not-the-call` | an insurance call put off for days; her guess that it keeps being put off | picks one and reshapes Today; takes a refusal without persuasion; names the obstacle once |
 | `body-double` | "Edit chapter 3" with its first step and 45 minutes | takes what's known; starts the session |
 | `low-day` | a three-hour rewrite, a five-minute reply, a small chore | capacity reported; the day made smaller |
+| `design-capture` | a design partner; nothing else | Lumi's design notebook: a note kept without asking, their words apart from her reading, nothing endorsed on her own, no to-do, a restatement not copied |
+| `design-feedback` | a design partner; the Today-paperwork note (her reading + a tappable-paragraph possibility) | agreeing with the problem endorses the reading only; the proposed interface rejected separately |
+| `design-personal` | a design partner; the same note | their own tasks go to intentions, never the notebook; a thanks is not feedback |
 
 ### Conversation runs
+
+#### Conversation run 2 — 2026-09-14 · Lumi's design notebook: three design scenarios, then again brief on and off after a fix, plus three live turns through `/api/chat` (`gpt-6-astra`, reasoning effort low, clock ~1:30pm Vancouver, `feat/design-contributions`)
+Chanté's ask: test the design notebook with a real design conversation before landing.
+
+**First pass (brief on): 9/10 musts.** Capture was proactive: a note kept on the first design turn with no "want me to save that?", their words quoted and checked, both parts unreviewed, no to-do filed, and later turns revised DC-1 instead of copying it. Agreeing with the tension and refusing the tappable paragraph split correctly. Their own tasks went to intentions and "thanks" wasn't feedback. **Missed:** in `design-capture`, turn 3 ("yeah. basically no paperwork before it's useful") was recorded as `design_feedback` **endorsing the possibility**. They had restated their own goal; she read it as agreement with her proposed design, the problem-vs-UI collapse the feature exists to prevent. Also, in `design-feedback`, one rejection was sent twice in a reply, writing two identical revisions.
+
+**What changed.** The persona's design section and the `design_feedback` description now say that agreeing with a goal, restating their own direction, or a "yeah" to something she just said is not endorsing a note's possibility, and that she records nothing when it's unclear which part they mean. `recordDesignFeedback` keeps an identical reaction once (same part, verdict and words as the note's last revision).
+
+**Second pass (brief on and off): 18/18 musts.** The restatement now revises DC-1 (brief on) or records nothing (off), with no endorsement either way. The double rejection recurred once (brief on) and was kept once. No sign showed: no asking to save, no copies, no narrating the note. Not graded blind: three scenarios, and the checks carry this run.
+
+**Live, through the review server's `/api/chat` as the local test user** (`COHERENCE_DEV_USER`, added to `COHERENCE_DESIGN_PARTNERS` for the test and removed after; its rows are real rows in the shared database):
+1. "…the Library… should never feel like something I have to tidy…" → a design reply with no mention of saving; `contribute_design` kept DC-1 (insight · Library), their words checked, a separate possibility ("no unsorted inbox or review queue"), both unreviewed. Log line `tools=contribute_design`, cacheRead 21,155 of 21,629.
+2. "Yes, that reading is right. But fixing things only when I happen to bump into them is not enough…" → reading **endorsed**; possibility **qualified**, with its new wording and the old kept in the history (checked in `/api/design-notes?view=notebook`).
+3. "…email the landlord… book a dentist appointment today. thanks for that by the way" → two intentions, no design note, no feedback on "thanks".
 
 #### Conversation run 1 — 2026-09-13 · all eight, brief on and off at one clock (`gpt-6-astra`, reasoning effort low, clock 1:54pm Vancouver, a Sunday)
 Every `must` held in all 16 conversations.
@@ -94,6 +111,30 @@ Every `must` held in all 16 conversations.
 ## Runs
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
+
+### Run 9 — 2026-09-14 · what she's for (`docs/lumi-function`; `gpt-6-astra`, context = ~4:40pm Vancouver, last seen 3h ago)
+The persona's opening line now says she helps someone see what matters and move it forward. *What you're for* gains a first item, *What matters*: goals and priorities noticed in passing, readings offered as questions, never a goals list, thinking about direction left as thinking. The brief gains one sentence (`living/decisions.md` → *Lumi's function*). The nine single replies, plus three conversations with tools (`brain-dump`, `stays-reflective`, `not-the-call`, brief on). Prefix 4,474 tokens, cached from the second call.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file. No writing yet." |
+| 2 | ✓ | ✓ | "What's competing for your attention? Put it here in whatever order it comes…" → the bigger pieces against the smaller ones, then "Is anything due today or tomorrow—including needing groceries for tonight?" |
+| 3 | ✓ | ✓ | "What's taking up space in your head right now? It doesn't need to sound like a task — loose ends and half-thoughts will do." |
+| 4 | ✓ | ~ | "What's the task — and do you know what you'd do first, or is that part unclear?" → "What do you need to get sorted with them?" |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" (no session in context, as in run 7) |
+| 6 | ✓ | ✓ | "We can start with what matters now, not reconstruct the last two weeks. / What's on your mind? You don't need to sort it first." |
+| 7 | ✓ | ✓ | "I'm here. I'll stay quiet while you work." → "Here with you while you edit." |
+| 8 | ✓ | ✓ | "Then let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+| 9 | ✓ | ~ | the dump reflected as four short lines without a count, then "Is that everything for now, or is there more to get out?" |
+
+**Conversations** (all musts held; no sign seen):
+- `stays-reflective`, ✓ ✓. "I've been wondering whether I even want to keep doing the PhD" → "What's been making you question whether you want to stay?" → "We don't need to turn it into a task or settle it now…" → on "what I miss is making things with my hands": "What do you miss making?" This is the new first item at work: she stays with what matters to them, files nothing, writes no memory, narrates no feeling.
+- `not-the-call`, ✓ ✓. She picks the call and reshapes Today, takes the refusal and picks Sam, then meets "I just hate phone calls" with "Is it something the insurance company could handle by email or chat instead?", the obstacle and not persuasion.
+- `brain-dump`, ✓ ~. All six filed silently, then "Anything else before we pick a place to start?", the wait-a-turn already marked ~ in the conversation grading above. On "what's first?" she picks Priya's email with a reason and reshapes Today.
+
+**Why:** the change is about noticing what matters, and the reflective conversation is where it shows: she asked about what they miss, not about next steps. **Watch:** scenario 4 and scenario 9 asked where run 7 moved. Scenario 4's second turn asks what they need from the insurer instead of offering a threshold (run 7: "Pull up their phone number"), and scenario 9 asks for more instead of picking (run 7 picked Priya with a reason). These are single samples and both are defensible (what they need decides the call's first step; the dump may not be finished), but they lean the same way: a little more asking. If real use shows her asking what matters when someone just needs to start, the persona's *Starting* wins. Its "just help me start" line comes second in the list now, not first.
 
 ### Run 8 — 2026-09-13 · the app and where they are (`gpt-6-astra`, reasoning effort low, `store: false`, context = ~2:50pm Vancouver, last seen 3h ago, two open intentions, a path with "Email Priya" as Right now)
 After *The app, and where they are* joined the persona and the context block gained *Where they are* (`decisions.md`). Eight single turns from an ad-hoc script (the persona and context block as production, a `where` per turn, no tools), not added to `voice-eval.mjs`. Prefix ≈ 4,630 tokens (cache reads 4,629–4,653).

@@ -3,10 +3,11 @@ import { after } from "next/server";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { buildContextBlock } from "@/core/ai/context";
 import { consolidateAfter } from "@/core/ai/consolidate";
+import { selectDesignNotebook } from "@/core/ai/design-select";
 import { selectLibrary } from "@/core/ai/library-select";
 import { selectBeliefs } from "@/core/ai/memory-select";
 import { cachedPrefixOptions, chatModel, chatProviderOptions } from "@/core/ai/model";
-import { PERSONA } from "@/core/ai/persona";
+import { personaFor } from "@/core/ai/persona";
 import { stableWindow, WINDOW_LOAD, withContext } from "@/core/ai/prompt";
 import { hasReply } from "@/core/ai/reply";
 import { needsFirstItems, primeTodaysPlan } from "@/core/ai/today-plan";
@@ -14,6 +15,8 @@ import { buildTools } from "@/core/ai/tools";
 import { contextInputFor, describeError, needsPrime, parseChatBody, turnSignalsFor, userMessageFrom, userWordsFrom, watchToolCalls, type TurnOutcome } from "@/core/ai/turn";
 import { listRecentActivity } from "@/core/domain/activity";
 import { countMessages, ensureMainConversation, loadRecentMessages, saveMessage, type CoherenceUIMessage } from "@/core/domain/conversations";
+import { isDesignPartner, loadDesignNotebookOrNothing } from "@/core/domain/design-contributions";
+import { designDigestAfter } from "@/core/domain/design-digest";
 import { TODAY_BOUND_MS } from "@/core/domain/events";
 import { loadLibraryOrNothing } from "@/core/domain/library";
 import { latestMailScan, listSuggestedLeads } from "@/core/domain/leads";
@@ -59,12 +62,16 @@ export async function POST(req: Request) {
   const turn: TurnOutcome = { called: new Set() };
   after(() => (needsPrime(turn) ? primeTodaysPlan(db(), user, turn.recut) : undefined));
   after(() => consolidateAfter(db(), user, { passes: 1 }));
+  // Someone designing Coherence (COHERENCE_DESIGN_PARTNERS): Lumi's design notebook rides along, and once
+  // their day has turned the next design digest is made (core/domain/design-digest.ts). Nobody else's turn changes.
+  const designPartner = isDesignPartner(user);
+  if (designPartner) after(() => designDigestAfter(db(), user));
 
   const conversation = await ensureMainConversation(db(), user.id);
 
   // Recent changes ride alongside the snapshot (chat-only: pages don't need them), so
   // a tick in the Library a minute ago is in Lumi's context before she reads the message.
-  const [history, total, snap, recentActivity, leads, mailScan, library] = await Promise.all([
+  const [history, total, snap, recentActivity, leads, mailScan, library, notebook] = await Promise.all([
     loadRecentMessages(db(), conversation.id, WINDOW_LOAD),
     countMessages(db(), conversation.id),
     loadSnapshot(db(), user),
@@ -73,6 +80,8 @@ export async function POST(req: Request) {
     MAIL_ON ? latestMailScan(db(), user.id) : undefined,
     // Never throws: the turn carries on without the Library if it can't be read.
     loadLibraryOrNothing(db(), user.id),
+    // Never throws either.
+    designPartner ? loadDesignNotebookOrNothing(db(), user.id) : undefined,
   ]);
   // Kept with a note in each shared file's place; the files themselves reach Lumi on this turn only (below).
   const kept = noteSharedFiles(userMessage);
@@ -94,6 +103,7 @@ export async function POST(req: Request) {
       },
       mail: MAIL_ON ? lazyMailReader(user) : undefined,
       userWords: userWordsFrom(all),
+      designPartner,
     }),
     (name) => turn.called.add(name),
   );
@@ -115,6 +125,8 @@ export async function POST(req: Request) {
       // Mail off: undefined leaves Their mail out of the context altogether.
       mail: MAIL_ON ? { scan: mailScan ?? null, leads } : undefined,
       where,
+      // Design partners: the notes this turn touches and the latest few, never the whole notebook.
+      design: notebook ? selectDesignNotebook(notebook.contributions, notebook.feedback, signals) : undefined,
     }),
   );
 
@@ -128,7 +140,7 @@ export async function POST(req: Request) {
     abortSignal: req.signal,
     // The persona (and the tools) are the cached prefix; the conversation follows, and the context block,
     // which changes every turn, rides last on the newest user message so the history before it caches too.
-    instructions: [{ role: "system", content: PERSONA, providerOptions: cachedPrefixOptions }],
+    instructions: [{ role: "system", content: personaFor({ designPartner }), providerOptions: cachedPrefixOptions }],
     // This turn's files as she reads them (a text file as its words); earlier ones are notes, read as shared and not kept.
     messages: withContext(
       await convertToModelMessages([...all.slice(0, -1), readSharedFiles(userMessage)], {

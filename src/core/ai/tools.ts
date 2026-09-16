@@ -20,6 +20,7 @@ import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { holdPriority, letGoPriority, PRIORITY_WHEN } from "@/core/domain/priorities";
 import { localDate } from "@/core/time";
 import { MAIL_ON, type EmailReader } from "@/core/email/types";
+import { designTools } from "./design-tools";
 import { heldAs, noteHeldAs, rankForRecall } from "./memory-select";
 import type { Recut } from "./today-plan";
 
@@ -39,6 +40,8 @@ export type ToolContext = {
    * in here. Absent: nothing can.
    */
   userWords?: Heard[];
+  /** Someone designing Coherence (`COHERENCE_DESIGN_PARTNERS`): Lumi's design notebook tools come too. Nobody else gets them. */
+  designPartner?: boolean;
 };
 
 const EFFORT = ["tiny", "small", "medium", "large"] as const;
@@ -69,7 +72,7 @@ function quoteMail(text: string, max: number): string {
   return `«${text.replace(/[«»]/g, '"').replace(/\s+/g, " ").trim().slice(0, max)}»`;
 }
 
-export function buildTools({ db, userId, timezone, reentry = false, onPlanChange, mail, userWords = [] }: ToolContext) {
+export function buildTools({ db, userId, timezone, reentry = false, onPlanChange, mail, userWords = [], designPartner = false }: ToolContext) {
   const me = { id: userId, timezone };
   return {
     create_intention: tool({
@@ -441,6 +444,9 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
     // Mail tools only while mail is on (core/email/types.ts → MAIL_ON). Typed as present either
     // way: past messages still carry their parts, and their types come from buildTools.
     ...(MAIL_ON ? mailTools(db, userId, mail) : ({} as ReturnType<typeof mailTools>)),
+
+    // The design notebook, for design partners only (core/ai/design-tools.ts). Typed as present either way, like mail.
+    ...(designPartner ? designTools(db, userId, userWords) : ({} as ReturnType<typeof designTools>)),
   };
 }
 
