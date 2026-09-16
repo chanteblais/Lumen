@@ -11,7 +11,7 @@ import { buildContextBlock } from "@/core/ai/context";
 import { selectLibrary } from "@/core/ai/library-select";
 import { buildTools } from "@/core/ai/tools";
 import type { Db } from "@/db/client";
-import { conversations, episodes, events, messages, type User } from "@/db/schema";
+import { conversations, episodes, events, messages, threadNotes, type User } from "@/db/schema";
 import { createTestUser, openTestDb } from "@/db/test-db";
 import { ensureMainConversation } from "./conversations";
 import { buildShelves, claimWatermark, getOwnedThread, insertEpisode, listCurrentNotes, listNoteHistory, listThreads, loadLibraryOrNothing, shelveThread, unconsolidatedMessages } from "./library";
@@ -297,6 +297,20 @@ describe("the Library in conversation", () => {
     expect(await call(tools.open_thread, { id: added.thread_id })).toMatchObject({ title: "Garden plan", notes: [{ content: "The garden gets raised beds.", held_as: "their word" }] });
     expect((await call(tools.search_library, { query: "raised beds" })).notes).toMatchObject([{ content: "The garden gets raised beds.", thread: "Garden plan" }]);
     expect(await call(tools.add_to_library, { thread_id: added.thread_id, kind: "decision", content: "the garden gets raised beds" })).toMatchObject({ already_held: true });
+  });
+
+  it("dates an opened thread's notes by their local day, so an evening note isn't tomorrow's", async () => {
+    const u = await createTestUser(db, "Yara");
+    const words = "start a thread for the recital, the second movement is the hard one";
+    const tools = buildTools({ db, userId: u.id, timezone: "America/Vancouver", userWords: [said(words)] });
+    const first = await call(tools.add_to_library, { new_thread: "Recital", kind: "idea", content: "The second movement is the hard one.", their_words: "the second movement is the hard one" });
+    const threadId = String(first.thread_id);
+    await call(tools.add_to_library, { thread_id: threadId, kind: "decision", content: "The third movement is the hard one after all.", supersedes: first.id });
+
+    // 21:30 on the 15th in Vancouver — the 16th in UTC. The day they'd name is the 15th.
+    await db.update(threadNotes).set({ createdAt: new Date("2026-09-16T04:30:00Z") }).where(eq(threadNotes.threadId, threadId));
+
+    expect(await call(tools.open_thread, { id: threadId })).toMatchObject({ notes: [{ when: "2026-09-15" }], earlier: [{ when: "2026-09-15" }] });
   });
 
   it("forgets a note for good: the conversation stays, and it isn't filed again from it", async () => {
