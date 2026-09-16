@@ -313,8 +313,8 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
             in: shelfPath(held, thread.id).map((t) => t.title),
             holds: held.filter((t) => t.parentId === thread.id).map((t) => ({ id: t.id, title: t.title })),
             summary: thread.summary,
-            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: noteHeldAs(n.source), when: n.createdAt.toISOString().slice(0, 10) })),
-            earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: n.createdAt.toISOString().slice(0, 10) })),
+            notes: notes.map((n) => ({ id: n.id, kind: n.kind, content: n.content, held_as: noteHeldAs(n.source), when: localDate(n.createdAt, timezone) })),
+            earlier: earlier.map((n) => ({ kind: n.kind, content: n.content, when: localDate(n.createdAt, timezone) })),
           };
         }),
     }),
