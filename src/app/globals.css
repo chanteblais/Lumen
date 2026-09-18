@@ -815,10 +815,6 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 .opening.is-compact .opening-title { font-size: 26px; line-height: 1.25; }
 .opening.is-compact .opening-line { font-size: 20px; margin-top: 6px; }
 
-/* Lumi's avatar as a medallion: a brass hairline ring set off the forest
-   by a gap of paper. */
-.medallion { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--brass-soft); }
-
 .chip {
   font-family: var(--font-body);
   font-size: 16px;

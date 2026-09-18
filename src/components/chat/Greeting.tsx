@@ -34,7 +34,7 @@ export function Greeting({ lines, onQuickStart, compact = false }: Props) {
             <i className="hair" />
           </div>
           <div className="opening-body">
-            <LumiAvatar className="medallion opening-portrait" size={compact ? 44 : 64} />
+            <LumiAvatar className="opening-portrait" size={compact ? 44 : 64} />
             <div className="min-w-0 flex-1">
               <p className="opening-title">{title}</p>
               {rest.map((line, i) => (
