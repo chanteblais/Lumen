@@ -37,7 +37,15 @@ function line(p: LedgerToolPart): string | null {
     case "tool-reshape_today":
       return `Reshaped Today · ${String(out.ask ?? inp.ask ?? "").slice(0, 60)}`;
     case "tool-remember":
-      return `Remembered · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+      if (out.already_held) return null;
+      return `${out.held_as === "your guess" ? "Noticed" : "Remembered"} · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+    case "tool-correct_belief":
+      return `Corrected · ${String(out.content ?? inp.content ?? "").slice(0, 90)}`;
+    case "tool-add_to_library":
+      if (out.already_held) return null;
+      return `Kept for ${String(out.thread ?? "the Library")} · ${String(out.content ?? inp.content ?? "").slice(0, 80)}`;
+    case "tool-forget_from_library":
+      return "Forgotten";
     case "tool-confirm_belief":
       return "Noted · that held up";
     case "tool-contradict_belief":
@@ -52,6 +60,15 @@ function line(p: LedgerToolPart): string | null {
       return `Noted · ${out.title ?? ""}`;
     case "tool-dismiss_lead":
       return `Let go · ${out.title ?? ""}`;
+    case "tool-contribute_design": {
+      if (out.already_held) return null;
+      const what = out.change === "withdrawn" ? "Design note withdrawn" : out.change === "revised" ? "Design note revised" : "Design note";
+      return `${what} · ${out.id ?? ""} · ${String(out.title ?? inp.title ?? "").slice(0, 70)}`;
+    }
+    case "tool-design_feedback": {
+      const verdict = { endorse: "endorsed", reject: "rejected", qualify: "qualified", correct: "corrected" }[String(out.verdict ?? inp.verdict)] ?? "noted";
+      return `Design feedback · ${out.id ?? ""} · ${(out.on ?? inp.on) === "possibility" ? "possibility" : "reading"} ${verdict}`;
+    }
     default:
       return null;
   }

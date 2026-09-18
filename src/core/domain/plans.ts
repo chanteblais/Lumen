@@ -6,6 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { dayPlans, type DayPlanJson, type DayPlanRow, type Intention, type PlanReason } from "@/db/schema";
 import { appendEvent } from "./events";
+import { returnedRow } from "./rows";
 
 export async function getPlanForDate(db: Db, userId: string, localDate: string): Promise<DayPlanRow | undefined> {
   const [row] = await db
@@ -19,10 +20,10 @@ export async function getPlanForDate(db: Db, userId: string, localDate: string):
 
 /** `ask`: what the user asked for in chat when the reason is `asked` — kept on the event, since asks are a learning signal ("easy", three days running). */
 export async function savePlan(db: Db, userId: string, localDate: string, plan: DayPlanJson, reason: PlanReason, capacity?: string, ask?: string): Promise<DayPlanRow> {
-  const [row] = await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning();
+  const row = returnedRow(await db.insert(dayPlans).values({ userId, localDate, plan, reason, capacity: capacity ?? null }).returning(), "savePlan");
   await appendEvent(db, {
     userId,
-    type: reason === "advanced" ? "plan.advanced" : "plan.generated",
+    type: reason === "advanced" ? "plan.advanced" : reason === "first_step" ? "plan.first_step" : "plan.generated",
     subjectType: "user",
     subjectId: userId,
     payload: { reason, localDate, rightNow: plan.rightNow?.intentionId ?? null, ...(ask ? { ask } : {}) },
@@ -39,12 +40,60 @@ export function advancePlan(plan: DayPlanJson, goneId: string, fallbackFirstStep
   const later = plan.later.filter((l) => l.intentionId !== goneId);
   if (plan.rightNow?.intentionId !== goneId) return { ...plan, afterThat, later };
   const next = afterThat.shift();
+  // Lumi's note answered the Right now that just left; it doesn't carry to the next one.
+  const { note: _gone, ...rest } = plan;
+  void _gone;
   return {
-    ...plan,
+    ...rest,
     rightNow: next ? { intentionId: next.intentionId, firstStep: fallbackFirstStep } : null,
     afterThat,
     later,
   };
+}
+
+/** When there is no usable first step: small, and true of any intention. */
+export const FALLBACK_FIRST_STEP = "The smallest first piece of it, nothing more.";
+
+type Queued = Pick<Intention, "id" | "nextAction" | "estimateMinutes">;
+
+/**
+ * Pure: the path the moment they turn Right now down on Today, without waiting
+ * on the model. The next thing comes from what's already queued in After that,
+ * fitted to the reason: too big or too tired → the smallest by estimate; don't
+ * know how → the first with a clear next step; anything else → the next in
+ * line. Null when nothing is queued — then the planner has to choose. Tested.
+ */
+export function planAfterDecline(plan: DayPlanJson, open: Queued[], declinedIds: ReadonlySet<string>, reason: string | null | undefined, note: string): DayPlanJson | null {
+  const byId = new Map(open.map((i) => [i.id, i]));
+  const gone = plan.rightNow?.intentionId;
+  const queued: Queued[] = [];
+  for (const a of plan.afterThat) {
+    const i = byId.get(a.intentionId);
+    if (i && i.id !== gone && !declinedIds.has(i.id)) queued.push(i);
+  }
+  const [first] = queued;
+  if (!first) return null;
+  let pick = first;
+  if (reason === "too_big" || reason === "too_tired") {
+    const size = (i: Queued) => i.estimateMinutes ?? Number.POSITIVE_INFINITY;
+    pick = queued.reduce((best, i) => (size(i) < size(best) ? i : best), first);
+  } else if (reason === "unclear") {
+    pick = queued.find((i) => i.nextAction) ?? first;
+  }
+  return {
+    ...plan,
+    rightNow: { intentionId: pick.id, firstStep: pick.nextAction ?? FALLBACK_FIRST_STEP },
+    afterThat: plan.afterThat.filter((a) => a.intentionId !== pick.id && a.intentionId !== gone),
+    // The one they turned down is still open, just not today's path.
+    restCanWait: plan.restCanWait || Boolean(gone),
+    note,
+  };
+}
+
+/** Pure: the path with the first step they chose for Right now (from Break it down). Anything else is unchanged. Tested. */
+export function withFirstStep(plan: DayPlanJson, intentionId: string, firstStep: string): DayPlanJson {
+  if (plan.rightNow?.intentionId !== intentionId) return plan;
+  return { ...plan, rightNow: { intentionId, firstStep } };
 }
 
 /** Pure: drop ids that are no longer open (completed elsewhere, dropped) so the page never shows a ghost. */

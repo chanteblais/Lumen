@@ -7,13 +7,13 @@
 import { type Db } from "@/db/client";
 import type { Event } from "@/db/schema";
 import { localDate } from "@/core/time";
-import { appendEvent, listEventsSince, TODAY_BOUND_MS } from "./events";
+import { appendEvent } from "./events";
 
 export type CapacityLevel = "low" | "normal" | "high";
-export type CapacityFlag = "overwhelmed" | "scattered" | "tired" | "focused";
+type CapacityFlag = "overwhelmed" | "scattered" | "tired" | "focused";
 export type CapacityReport = { level: CapacityLevel; flags?: CapacityFlag[]; note?: string; at: Date };
 
-export const CAPACITY_LEVELS: readonly CapacityLevel[] = ["low", "normal", "high"];
+const CAPACITY_LEVELS: readonly CapacityLevel[] = ["low", "normal", "high"];
 export function isCapacityLevel(s: unknown): s is CapacityLevel {
   return typeof s === "string" && (CAPACITY_LEVELS as readonly string[]).includes(s);
 }
@@ -21,7 +21,7 @@ export function isCapacityLevel(s: unknown): s is CapacityLevel {
 /** The event types that decide whether Today asks. */
 export const CAPACITY_EVENT_TYPES = ["capacity.reported", "capacity.asked"];
 
-export type CapacityState = {
+type CapacityState = {
   /** Today's latest report, if any. */
   report?: CapacityReport;
   /** The user skipped the prompt today — don't ask again. */
@@ -52,15 +52,6 @@ export function capacityStateFromEvents(rows: Pick<Event, "type" | "payload" | "
     }
   }
   return { report, skipped };
-}
-
-export async function todayCapacityState(db: Db, userId: string, timeZone: string, now: Date = new Date()): Promise<CapacityState> {
-  const rows = await listEventsSince(db, userId, CAPACITY_EVENT_TYPES, new Date(now.getTime() - TODAY_BOUND_MS), 10);
-  return capacityStateFromEvents(rows, timeZone, now);
-}
-
-export async function todayCapacity(db: Db, userId: string, timeZone: string, now: Date = new Date()): Promise<CapacityReport | undefined> {
-  return (await todayCapacityState(db, userId, timeZone, now)).report;
 }
 
 /**

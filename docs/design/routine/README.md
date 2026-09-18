@@ -1,6 +1,6 @@
 # Coherence routine — review inbox
 
-This is the incoming side of the Coherence context bridge: **Coherence App Mockups Routine** produces ideas; Codex imports them here for Chanté and Claude to review while developing the app.
+This is the incoming side of the Coherence context bridge: the hourly **Coherence App Mockups Routine** produces ideas; Codex imports them here for Chanté and Claude to review while developing the app.
 
 ## Authority
 
@@ -13,7 +13,7 @@ Read [PROJECT-CANON.md](../../../PROJECT-CANON.md) first for product work. These
 - A separate generated Drive document was not found; the routine's written messages are the imported source.
 - Full text is retained per message in `entries/`; original citation markers remain opaque, not independently verified citations.
 - The task reader exposed no downloadable image attachments. No generated visual is represented as imported or approved. One source message explicitly rejects its generated visual; retain that correction.
-- Source cadence update observed 2026-09-15: the source task records a user request and confirmation changing generation to every 12 hours (message `43685209-96ff-43bd-82ad-968a7298acb2`). Exact schedule minutes are unavailable. This importer continues polling hourly under its saved instructions and catches completed messages on the next check.
+- The source confirms an hourly cadence, but its exact schedule minute is unavailable. The importer polls hourly independently and catches completed messages on the next check.
 
 ## Review starting points
 
@@ -47,17 +47,6 @@ Oldest to newest in the source response. All proposals start unreviewed.
 - [Make check-ins a session-level relationship, not a repeating timer](entries/912491f3-bfe6-40e8-8560-1ef50361ddcc.md)
 - [Traces of continuity](entries/324bd4bd-308f-4dba-8fff-f43acc04c568.md)
 - [Insights becomes “Noticed,” a temporary Library lens rather than a permanent destination](entries/6eca7f28-22e6-4821-b208-c6e5b09fec2f.md)
-- [Action requires a hinge](entries/79aaff98-3cc4-453d-852d-6e8379eeb872.md)
-- [Scoped priority claims](entries/a29eb3bf-8b03-4ed3-8172-ca38fe197535.md)
-- [Re-entry checkpoints, not continuous recuration](entries/3b5a6736-bf17-4fd3-a15a-034b1d21389f.md)
-- [“What’s shaping this?” rather than a memory database](entries/ad88ebe2-b823-4761-8f4b-3f7ea8652b3f.md)
-- [Make Thread the first durable container of continuity](entries/1c17559a-8052-4633-8f65-6389ef88bb65.md)
-- [Separate the work trace from the support trace](entries/9459fa6b-bd90-48e7-ae2d-4bd9211067d8.md)
-- [Bounded mandates](entries/46f3f8e4-1b25-4ca0-be8b-79b84297efe9.md)
-- [Three levels of initiation](entries/f96472e4-6c60-446d-b88c-33aa5f26bc41.md)
-- [Elastic presence](entries/bf62eded-6851-46e0-97be-dbcd97948f81.md)
-- [The Hinge](entries/223459e0-a2e3-4dc4-ab57-2592a891639f.md)
-- [Context Capsules](entries/e1ab416e-4084-4379-86f3-07c73ef19bb7.md)
 
 ## Continuous sync contract
 

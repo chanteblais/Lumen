@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
+import { LibraryDebug } from "@/components/library/LibraryDebug";
 import { RoomScene } from "@/components/shell/RoomScene";
 import { PlanSection, planIsReady } from "@/components/today/PlanSection";
 import { Divider } from "@/components/ui/Ornament";
@@ -36,6 +37,7 @@ export default async function TodayPage() {
           viewport behind the shell, and three things sit on it, each quieter than the last —
           Lumi's words set on the painting, the one Right now card, and a slip with the rest. */}
       <RoomScene room="today" />
+      <LibraryDebug userId={user.id} />
       <header className="today-voice">
         <p className="label">Today</p>
         <div className="my-3">

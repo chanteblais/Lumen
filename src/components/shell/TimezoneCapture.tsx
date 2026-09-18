@@ -20,10 +20,15 @@ export function TimezoneCapture() {
       return;
     }
     if (!tz) return;
-    const current = document.cookie
+    const raw = document.cookie
       .split("; ")
       .find((c) => c.startsWith(`${COOKIE}=`))
       ?.slice(COOKIE.length + 1);
+    // Stored encoded ("America%2FVancouver"): compare what it says, not how it's spelled.
+    let current = raw;
+    try {
+      current = raw && decodeURIComponent(raw);
+    } catch {}
     if (current === tz) return;
     document.cookie = `${COOKIE}=${encodeURIComponent(tz)}; Path=/; Max-Age=31536000; SameSite=Lax`;
     if (!current) router.refresh();

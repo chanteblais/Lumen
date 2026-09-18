@@ -1,6 +1,6 @@
 "use client";
 
-import { QUICK_STARTS } from "@/core/ai/persona";
+import { QUICK_STARTS } from "@/core/ai/quick-starts";
 
 type Props = { onPick?: (text: string) => void };
 

@@ -2,10 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import type { CoherenceUIMessage } from "@/core/domain/conversations";
+import { sharedFilesIn } from "@/core/shared-files";
 import { describeGap, gapBucket } from "@/core/time";
 import { Diamond } from "@/components/ui/Ornament";
+import { ThinkingDots, hasReply, textOf } from "./chat-client";
 import { LumiAvatar } from "./LumiAvatar";
 import { Ledger } from "./Ledger";
+import { SharedFiles } from "./SharedFiles";
 
 type Props = {
   messages: CoherenceUIMessage[];
@@ -23,8 +26,11 @@ const SIX_HOURS = 6 * 3_600_000;
  * The transcript in two parts: everything from before this page open, then
  * the greeting card, then what is said now. The page opens on the card — the
  * chat feels fresh every time you come to it — and the earlier conversation
- * is one scroll up, untouched. From the first message onward it follows the
- * newest line, as any chat does.
+ * is one scroll up, untouched. From the first message onward the new lines
+ * start under the card where you're looking, and the view only moves once the
+ * newest line would fall out of it — then it follows, as any chat does. (It
+ * used to pin the newest line to the bottom straight away, which pulled the
+ * card and the earlier conversation down the view on the first message.)
  *
  * Below it, `.chat-scroll::after` leaves one view's height of nothing: it is
  * what lets the card sit at the top of the view when little follows it (and
@@ -37,9 +43,23 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
   const firstScroll = useRef(true);
   const fresh = messages.length <= cardAt && !thinking && !error;
   useEffect(() => {
-    if (fresh) cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
-    else endRef.current?.scrollIntoView({ block: "end", behavior: firstScroll.current ? "auto" : "smooth" });
+    const behavior = firstScroll.current ? "auto" : "smooth";
     firstScroll.current = false;
+    if (fresh) {
+      cardRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      return;
+    }
+    const end = endRef.current;
+    const view = end?.closest(".chat-scroll");
+    if (!end || !view) {
+      end?.scrollIntoView({ block: "end", behavior });
+      return;
+    }
+    // Follow only when the newest line is out of view: below the fold, or
+    // above it after the conversation was scrolled out of sight.
+    const at = end.getBoundingClientRect().bottom;
+    const { top, bottom } = view.getBoundingClientRect();
+    if (at > bottom || at < top) end.scrollIntoView({ block: "end", behavior });
   }, [messages, fresh]);
 
   const earlier = render(messages.slice(0, cardAt));
@@ -52,13 +72,14 @@ export function MessageList({ messages, cardAt, card, thinking, error }: Props) 
           {earlier}
         </div>
       )}
-      <div ref={cardRef}>{card}</div>
+      {/* data-opens-here: OPEN_ON_CARD_SCRIPT scrolls here before the first paint, ahead of the effect above. */}
+      <div ref={cardRef} data-opens-here="">{card}</div>
       <div className="chat-now mt-10 flex flex-col gap-7" aria-live="polite">
         {current}
         {thinking && (
           <div className="msg msg-lumi" aria-label="Lumi is thinking">
             <LumiAvatar size={36} className="msg-avatar" />
-            <div className="msg-body"><p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p></div>
+            <div className="msg-body"><ThinkingDots label={null} /></div>
           </div>
         )}
         {error && (
@@ -82,19 +103,19 @@ function render(messages: CoherenceUIMessage[]): React.ReactNode[] {
       items.push(<VisitRule key={`rule-${m.id}`} at={at} />);
     }
     if (at) prevAt = at;
-    // One text part per block of speech: Lumi often says a line, acts (a tool
-    // part), then says another. Each block is its own paragraph.
-    const text = m.parts
-      .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-      .map((p) => p.text.trim())
-      .filter(Boolean)
-      .join("\n\n");
-    const hasTools = m.role === "assistant" && m.parts.some((p) => p.type.startsWith("tool-"));
-    if (!text && !hasTools) continue;
+    // One paragraph per block of speech (`textOf`): Lumi often says a line, acts, then says another.
+    const text = textOf(m);
+    // What you shared with a message: the file itself this page open, a chip naming it after (it isn't kept).
+    const shared = m.role === "user" ? sharedFilesIn(m.parts) : [];
+    // A turn she stayed silent on (no words, no tools) shows nothing — no empty bubble.
+    if (m.role === "assistant" ? !hasReply(m) : !text && shared.length === 0) continue;
     items.push(
       m.role === "user" ? (
         <div key={m.id} className="msg msg-user">
-          <p>{text}</p>
+          <div className="msg-user-said">
+            {shared.length > 0 && <SharedFiles files={shared} />}
+            {text && <p>{text}</p>}
+          </div>
         </div>
       ) : (
         <div key={m.id} className="msg msg-lumi">

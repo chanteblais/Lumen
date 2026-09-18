@@ -12,19 +12,19 @@ Related: [Home](../product/home.md).
 
 ## 2. How does Focus move into the Study?
 
-**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Sessions still run on Home. The summary question is “What are we doing now?”; this is not mandated UI copy.
+**Status: Direction settled; transition design open.** Study is the mode for present work; not every start needs a session. Decide navigation, where the session bar lives and the transition from Today. Focus sessions were removed from the product on 2026-09-13 (Chanté: "for now"); the Study direction stands, and what a session is when it returns is part of this question. The summary question is “What are we doing now?”; this is not mandated UI copy. *Candidates for when sessions return (routine review, deferred 2026-09-14):* Study as a temporary state entered from chosen work through an explicit request for company, returning to where it began, with no Study nav item; not identical to a timed session ([review](../design/routine/review.md)).
 
 Related: [Study](../product/focus-study.md).
 
 ## 3. How does the broad Library become navigable?
 
-**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today, and since 2026-09-13 are browsed in the Lists sheet from the nav ([decision](decisions.md#2026-09-13--lists-is-in-the-nav-again-as-a-sheet-over-the-page-youre-on)) — whether that sheet later folds into the Library's navigation is part of this question. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques, redrawn on the served painting (v2), with eight questions for Chanté (slot count, the alcove, projection, painted books, naming, Lumi's scale, the data model, the stage). It remains a proposal, not approved interaction design.
+**Status: Role settled; spatial design open.** Library exposes active context, Threads, relationships and history. “Where have I been?” is one use, not its entire role. Decide collections, browsing/search, detail access and how the spatial proposal fits without forcing the data model into shelves. The current page is only its room; lists still feed Lumi and Today, and since 2026-09-13 are browsed in the Lists sheet from the nav ([decision](decisions.md#2026-09-13--lists-is-in-the-nav-again-as-a-sheet-over-the-page-youre-on)) — whether that sheet later folds into the Library's navigation is part of this question. Literal zoom and intellectual book presentations are candidates, not requirements. The [first-pass spatial map](../../art/scenery/library/spatial-map/README.md) now accompanies main: four collection slots, three expansions and names layered on blank plaques, redrawn as v3 on the isometric painting served since 2026-09-13, which answers its projection question; of the seven questions it put to Chanté, only the presentation model's remainder is still hers (see *Answered 2026-09-14* below). It remains a proposal, not approved interaction design. **Partly answered 2026-09-13** (Chanté: "Threads that become categories should gain their own section in the library… click on the different sections and see all the books"): sections are threads that hold threads, shelves inside them, books titled by their threads ([decision](decisions.md#2026-09-13--threads-that-become-categories-become-sections-of-the-library)). A section is like a category (yoga, cooking, the book they're writing, an area of focus: something they keep mentioning in various ways), and threads fall under it. Built on `feat/library-sections`, with names on the bookcases in fill order and a parchment view per section and book, and accepted as a working version. Until it's integrated properly, all of it shows only in a hidden debug mode. Proper integration into the room waits by her choice. **Answered 2026-09-14** on the [Coherence Desk](../desk/README.md) (Chanté, round 1: *Go with that* on all five): three bookcase collections with the window bay as an expansion; the alcove an expansion, not a fourth collection; close-ups show mostly bare shelf spans for a new user and the painting stays as it is; **Lumi names a collection once its context has held, and the user corrects by saying so — nobody is asked to name a slot**; and the stage is a contain fit, the whole room always in view on its dark ground. Lumi's size was settled 2026-09-13. What remains of this question is the presentation model's leftovers (question 7) and how the sections built on `feat/library-sections` are integrated into the room. *Under exploration (routine review, 2026-09-14):* the reading table as the Library's one entry — retrieval, not filing: find, browse a few lenses, my lists — with the plaques uncommitted; it leans against category names on the bookcases, so it waits on the questions above ([review](../design/routine/review.md)).
 
 Related: [Library](../product/lists-library.md).
 
 ## 4. Where does Insights belong?
 
-**Status: Open.** Insights remains its own page. Decide whether mail context is accessed through Library, Home or another appropriate projection without creating a processing obligation. Integrations feed the shared model; they must not flood Today.
+**Status: Boundary adopted 2026-09-14; placement open.** Insights remains its own page, out of the nav while mail is off (2026-09-13). Decide whether mail context is accessed through Library, Home or another appropriate projection without creating a processing obligation. Integrations feed the shared model; they must not flood Today. **Adopted** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): detection is not adoption — what is noticed stays tentative, with its source, until the user says it's theirs, and never reaches Today before that. Deferred until mail returns: *Noticed* as a Library lens rather than a place.
 
 Related: [Garden §99](../product/today-garden.md#99-connected-services-should-feed-context-not-dominate-the-garden).
 
@@ -36,7 +36,7 @@ Related: [Garden](../product/today-garden.md).
 
 ## 6. What can environmental growth respond to?
 
-**Status: Reward counting closed; continuity design open.** No earning balance, task-completion currency or unlock thresholds. Decide whether and how accumulated context changes a place without producing a hidden output score or making a hard month visible as failure.
+**Status: Reward counting closed; continuity design open.** No earning balance, task-completion currency or unlock thresholds. Decide whether and how accumulated context changes a place without producing a hidden output score or making a hard month visible as failure. **Direction adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): the world changes because Coherence knows the user better, not because they performed better — traces from continuity (something that persisted, was returned to, or was said to matter), never a count; absence never subtracts; more particular, not more crowded; rarely announced. Still open: whether a trace arises from Lumi offering one, from inferred continuity, or both, and what it looks like.
 
 Related: [Shared environment principles](../product/shared-model.md#environment-and-scope).
 
@@ -54,25 +54,27 @@ Related: [Garden](../product/today-garden.md).
 
 ## 9. What may Lumi initiate?
 
-**Status: Open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Define permitted triggers for reminders, notifications and unsolicited context. Current greetings/check-ins remain as built.
+**Status: Direction adopted 2026-09-14; mechanisms open.** Usefulness, restraint and consequence govern intervention; engagement is not a reason. Current greetings remain as built; check-ins were removed with focus sessions (2026-09-13), so Lumi currently initiates nothing. **Adopted** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): she may start something only when the situation changed since the user last had a fair chance to account for it, when they asked her to, or at a meaningful transition; at the lowest level that works (silently, next arrival, in-app, and an outside notification only for delegation or clear, consequential, time-sensitive change); always able to say why now; no notification centre. Still open: the concrete triggers, reminders and any notification channel.
 
 Related: [Lumi](../philosophy/lumi.md).
 
 ## 10. Where are the boundaries of autonomous action?
 
-**Status: Principle settled; operations open.** Confirmation follows uncertainty, consequence and reversibility. Separate interpretation, proposal and committed change. Decide rescheduling, deletion and mail-action boundaries; the reconciliation does not authorize external actions or change existing tools.
+**Status: Principle settled; operations open.** Confirmation follows uncertainty, consequence and reversibility. Separate interpretation, proposal and committed change. Decide rescheduling, deletion and mail-action boundaries; the reconciliation does not authorize external actions or change existing tools. **Adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): interpret the present freely, change the enduring model conservatively; authority is scoped to what was asked and granted or narrowed in conversation, never a global setting; a change of meaning needs the user's word; anything reaching another person or irreversible gets a concrete preview. Still open: standing delegations, and Undo beyond the Lists sheet.
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 
 ## 11. How are stated priorities represented over time?
 
-**Status: Semantics settled; representation open.** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. Decide representation, expiry and supersession of scoped priority signals. No universal priority score is implied.
+**Status: Semantics settled; representation first cut (2026-09-13, `feat/priorities`).** Keep user-expressed priority separate from urgency and Lumi’s attention recommendation. A Today-only override does not erase enduring importance. No universal priority score is implied.
+
+First cut ([decision](decisions.md)): a stated priority is a row of its own — the user's words, an optional intention, a scope of *a week* (this or next) or *for a while* — kept apart from beliefs and the day plan, and it comes only from what they say to Lumi. Expiry is derived (a week's priority stops holding when the week ends); supersession retires the old row as history. A Today-only ask stays `reshape_today` and writes no priority. Still open: whether priorities should attach to Threads once they exist, whether *for a while* needs a gentle re-check after long quiet, how Lumi shows what she's holding (question 12), and whether Library or direct manipulation can express one. **Adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): never held broader or longer than the words; it leans, never dictates; a contradicted old priority is offered back, never silently expired. Also open: conditional horizons ("until the taxes are done") beyond a week or *for a while*.
 
 Related: [Shared terminology](../product/shared-model.md#priority-and-temporal-scope).
 
 ## 12. How can the user inspect and correct memory?
 
-**Status: Principle settled; surface open.** Make meaningful explanations and correction available without a memory-curation obligation. Decide whether a dedicated page is useful, what it shows and how it relates to Library and conversation.
+**Status: Principle settled; surface open.** Make meaningful explanations and correction available without a memory-curation obligation. Decide whether a dedicated page is useful, what it shows and how it relates to Library and conversation. Settings → *What Lumi knows* lists beliefs with provenance, Correct and Forget (2026-09-13). **Direction adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): transparency follows consequence, not storage — provenance is easiest to see where a remembered thing shaped a recommendation, in words (*you told me* / *I noticed*), never a confidence number. How those receipts appear is open.
 
 Related: [Library](../product/lists-library.md).
 
@@ -90,7 +92,7 @@ Related: [Approved decision](decisions.md#2026-09-13--approved-documentation-rec
 
 ## 15. Which names does the user see?
 
-**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library, then Lists / Insights, then Settings is the current navigation — rooms, tools, utility, each group set apart (Lists added 2026-09-13 as a sheet over the page, not a rename of the Library). Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
+**Status: Partly resolved.** The existing Library navigation label remains deliberate. Home / Today / Library, then Lists, then Settings is the current navigation — rooms, tools, utility, each group set apart (Lists added 2026-09-13 as a sheet over the page, not a rename of the Library; Insights, the other tool, is out of the nav while mail is off). Functional names in the supplied docs are examples, not an instruction to rename Library back to Lists. Study access and remaining labels are open.
 
 Related: [Spaces](../product/spaces.md).
 
@@ -102,49 +104,55 @@ Related: [Garden](../product/today-garden.md).
 
 ## 17. When may Lumi mention a number?
 
-**Status: Open.** No burden-inducing tally of unfinished things. Whether a contextual count or elapsed gap usefully explains a pattern remains a behavioural choice. Do not silently loosen the current persona while adopting product examples.
+**Status: Decided for time away (2026-09-13); open for counts inside patterns.** No burden-inducing tally of unfinished things. **Time away:** in conversation, Lumi may name how long someone has been away when it helps them get their bearings, never so the absence sounds owed ([decision](decisions.md)). Pages still show neither the gap nor what piled up. **Still open:** whether a contextual count usefully explains a pattern ("you've moved this three times"). Don't loosen the persona for that while adopting product examples.
+
+**How the time-away half was settled.** The persona said never say how long it's been. The model strategy's own example names the gap: *"You disappeared for four days. We don't need to reconstruct the four days."* In voice eval run 5 Lumi echoed the user's "two weeks" while declining to reconstruct them, which read as the documents disagreeing rather than as a bad reply. Review feedback Chanté relayed recommended allowing elapsed time when it helps orient the user, while avoiding anything that makes absence feel like a debt, and judging a number, a time reference or an explanation by whether it adds burden or costs agency. Chanté adopted it the same day; the persona and the context block's re-entry line changed with the decision.
 
 Related: [Lumi](../philosophy/lumi.md).
 
 ## 18. What should check-in defaults be?
 
-**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Current timed check-ins remain as built; Study’s presence should not become supervision or engagement pressure.
+**Status: Open; explicit quiet instruction settled.** Check-in frequency and defaults remain undecided. User instructions such as “Don’t check on me unless I ask” are authoritative. Timed check-ins were removed with focus sessions on 2026-09-13; Study’s presence should not become supervision or engagement pressure. *Candidate for when sessions return (routine review, deferred 2026-09-14):* quiet by default, with a contact style read from how the session starts and said back in one line; one mid-point return for light touch; *Yep* backs off; an unanswered check-in never escalates; the planned end is orientation, not a report ([review](../design/routine/review.md)).
 
 Related: [Study](../product/focus-study.md).
 
 ## 19. How should consequential inference appear?
 
-**Status: Principle settled; UI/storage open.** Explicit, observed, inferred and derived information differ. Decide which guesses need visible provenance or confirmation and how quietly. Existing intention provenance and belief labels do not fully implement the four categories.
+**Status: Principle settled; UI/storage open.** Explicit, observed, inferred and derived information differ. Decide which guesses need visible provenance or confirmation and how quietly. Existing intention provenance and belief labels do not fully implement the four categories. The 2026-09-14 direction under question 12 applies: the more consequential the inference's use, the easier its provenance is to see.
 
 Related: [Shared terminology](../product/shared-model.md#objects-and-knowledge).
 
 ## 20. How does direct manipulation express scope?
 
-**Status: Optional correction approved; interaction/event design open.** Equivalent input methods should agree when operation and timescale agree. Not today is not a list move or a tomorrow date. Define event representation, Today reordering, durable organization, undo and non-drag/mobile alternatives. Do not infer a permanent preference from one rearrangement.
+**Status: Optional correction approved; interaction/event design open.** Equivalent input methods should agree when operation and timescale agree. Not today is not a list move or a tomorrow date. Define event representation, Today reordering, durable organization, undo and non-drag/mobile alternatives. Do not infer a permanent preference from one rearrangement. **Adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): the visible thing moved sets the default scope — reordering *After that* changes today; moving into *Right now* is a separate, stronger act; nothing is dragged into *Later*, which holds fixed times; a repeated pattern is offered back. Nothing is built.
 
 Related: [Motion & Interaction](../design/motion-and-interaction.md).
 
 ## 21. How do we evaluate Lumi’s model?
 
-**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. The new voice-evaluation run is ungraded. Runtime choices do not establish product philosophy.
+**Status: Provider switch recorded; comparative evaluation open.** Main runs gpt-6-astra for chat, day planning, leads and reflection, with the Anthropic implementation retained. Blind comparison, tool reliability, quality, latency and cost evaluation remain open. Voice-eval runs 4 and 5 carry Claude's provisional grades, not blind ([log](../voice-eval-log.md)). Runtime choices do not establish product philosophy.
+
+**Method, from review feedback Chanté relayed (2026-09-13); proposed until she settles it:** a grader who is involved grades blind on consistent criteria rather than abstaining, and every run records its grader. Voice and usefulness are graded separately. Rules about numbers, time and explaining herself serve burden and agency; they aren't prohibitions. The largest gap is judgement across short conversations with tools: does Lumi use what she knows, respond well to correction, leave reflection alone when appropriate, and make the next move easier? The nine single-reply scenarios can't show this, and a paired same-clock run is needed before any conclusion about the brief.
+
+**Conversations (2026-09-13).** `scripts/conversation-eval.mjs` runs short conversations with the real tools against a throwaway database, checks the actions in code, and can pair each scenario with and without the brief at one clock, with a blind packet ([log](../voice-eval-log.md) → Conversations). Still missing: a spiral, a framing worth challenging, and a pattern across days, which needs structure question 22 hasn't settled. Still open: who grades the blind packets, and how many runs a conclusion needs.
 
 Related: [Model strategy](../product/lumi-model-strategy.md).
 
 ## 22. Which richer concepts become structure first?
 
-**Status: Open.** Current intentions combine Intention and Action; lists, beliefs, sessions and events hold a smaller model. Decide minimal representation of Threads, relationships, commitments, scoped exclusions and outcomes. Preserve conceptual distinctions without prematurely building the entire ontology or expanding V1.
+**Status: Partly answered.** Threads come first (2026-09-13, confirmed by Chanté — [decisions](decisions.md): *Recent conversation lives on, and what mattered is filed in the Library*). Threads, their notes and short memories of each visit now exist as life-model objects, filled from conversation by consolidation; how the Library presents them is question 3. Since 2026-09-13 a thread can sit under a broader thread, and one that holds threads is a section (still one place per thread). Still open: cross-links between threads, relationships, commitments, scoped exclusions, outcomes, and how threads relate to intentions (still flat, combining Intention and Action). Preserve conceptual distinctions without prematurely building the entire ontology or expanding V1.
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 
 ## 23. How does Lumi balance reflection and action?
 
-**Status: Role clarified; behavioural evaluation open.** Home supports reflection without compulsory taskification; usefulness is not conversation length. Determine and evaluate when to stay with ambiguity, challenge gently or help the user return to action. Current action-weighted prompt remains unchanged.
+**Status: Role clarified; behavioural evaluation open.** Home supports reflection without compulsory taskification; usefulness is not conversation length. Determine and evaluate when to stay with ambiguity, challenge gently or help the user return to action. Current action-weighted prompt remains unchanged. **Rule adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): Lumi may notice action before the user commits to it; a thought stays with meaning, a request for clarity orients, a decision or clear commitment moves; when unsure, the least-committing reading that still helps; a clear obligation in passing may be filed without changing the subject. Before it reaches the persona it needs conversation-eval scenarios.
 
 Related: [Home](../product/home.md).
 
 ## 24. How does context selection evolve beyond one block?
 
-**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block; a 14-day stale heuristic does not prove avoidance or irrelevance.
+**Status: Open.** Define space-specific context, Study compression, retrieval beyond caps, observability, relevance decay and reconciliation between memory and current state. Current assembly remains one capped block, though since 2026-09-13 it selects beliefs for the turn (`core/ai/memory-select.ts`: standing preferences, then overlap with the conversation, then recency; unconfirmed guesses fade after 60 days and stay findable); a 14-day stale heuristic does not prove avoidance or irrelevance. **Principle adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): absence from attention is not absence from the life model — the shared model stays broad, each turn gets a selected brief, and time is one signal among several. Still to reconcile: AI & IA §25–26's wording of *relevance decay* with that. *(2026-09-13: each turn now says which page the user spoke from and which way in — the smallest form of space context, AI & IA §23 — but what the block selects doesn't change by space; this question stays open.)*
 
 Related: [AI & Information Architecture](../product/ai-and-information-architecture.md).
 
@@ -156,7 +164,7 @@ Related: [Architecture](../architecture.md).
 
 ## 26. When should Today adapt during the day?
 
-**Status: Open.** Stability and meaningful adaptation are compatible. Decide elapsed-time/re-entry triggers, how changing circumstances affect the plan and when a substantial change needs explanation. Current documented triggers remain as built; no background recuration was added.
+**Status: Open.** Stability and meaningful adaptation are compatible. Decide elapsed-time/re-entry triggers, how changing circumstances affect the plan and when a substantial change needs explanation. Current documented triggers remain as built; no background recuration was added. **Direction adopted 2026-09-14** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): the plan stays theirs until they come back to it; a fixed time passing is a fact, something left untouched is not a reason to change it. Still open: whether coming back shows a small *keep this path / reshape from here* cue, or Today simply stays still.
 
 Related: [Today as built](../today.md).
 
@@ -168,6 +176,6 @@ Related: [Visual Language](../design/visual-language.md).
 
 ## 28. What can session endings actually tell us?
 
-**Status: New implementation gap.** The session sweep can mark an open session abandoned, and deterministic reflection can contradict a strategy for abandonment. Study allows leaving the app while continuing work. Decide how unknown endings, explicit abandonment and richer outcomes affect learning without asking users to report more. Timeout or inactivity alone must not be treated as proof of an ineffective strategy. Code remains unchanged.
+**Status: Learning rule adopted and the gap closed 2026-09-14; richer outcomes open.** The session sweep can mark an open session abandoned. Study allows leaving the app while continuing work. Timeout or inactivity alone must not be treated as proof of an ineffective strategy. **Adopted** ([decision](decisions.md#2026-09-14--directions-adopted-from-the-first-routine-review)): when evidence runs out the ending is unknown, and an unknown ending teaches nothing; Lumi learns evaluatively only from what the user said or did. Reflection no longer contradicts a strategy for an abandoned session (dormant code, since sessions are set aside). Still open: how explicit endings (*done for now*, *stuck*, *switched*, *stopping here*) and later evidence ("I finished it last night") feed learning without asking users to report more.
 
 Related: [Architecture](../architecture.md).

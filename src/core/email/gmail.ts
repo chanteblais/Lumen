@@ -30,7 +30,9 @@ export function gmailReader(token: string, fetchImpl: typeof fetch = fetch): Ema
   return {
     async recent(q: RecentMailQuery): Promise<EmailMessage[]> {
       const max = q.max ?? DEFAULT_MAX;
-      const query = [BASE_QUERY, `after:${Math.floor(q.since.getTime() / 1000)}`, q.search?.trim()].filter(Boolean).join(" ");
+      // `before:` rounds up to the second, so a page boundary inside one second re-reads a message rather than skipping one.
+      const before = q.before ? `before:${Math.ceil(q.before.getTime() / 1000)}` : undefined;
+      const query = [BASE_QUERY, `after:${Math.floor(q.since.getTime() / 1000)}`, before, q.search?.trim()].filter(Boolean).join(" ");
       const list = (await get(`/messages?maxResults=${max}&q=${encodeURIComponent(query)}`)) as { messages?: { id: string }[] };
       const ids = (list.messages ?? []).map((m) => m.id);
       const out: EmailMessage[] = [];
@@ -49,7 +51,7 @@ export function gmailReader(token: string, fetchImpl: typeof fetch = fetch): Ema
 
 /* ------------------------------------------------------------- parsing */
 
-export type GmailRaw = {
+type GmailRaw = {
   id: string;
   threadId: string;
   internalDate?: string;
@@ -83,7 +85,10 @@ export function parseGmailMessage(raw: GmailRaw): EmailMessage | undefined {
 
 export function parseAddress(s: string): { name: string; address: string } {
   const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(s);
-  if (m) return { name: m[1].trim() || m[2].split("@")[0], address: m[2].trim() };
+  if (m) {
+    const [, name = "", address = ""] = m;
+    return { name: name.trim() || (address.split("@")[0] ?? ""), address: address.trim() };
+  }
   const address = s.trim();
   return { name: address.split("@")[0] || address, address };
 }

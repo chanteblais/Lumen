@@ -4,15 +4,15 @@
 
 art/lumi/lumi-avatar-head.png (2026-09-15, Chanté) → public/lumi-avatar.webp: the hooded head in the
 medallion costume — the sun-embroidered hood, the ribbon with its three brass medallions — drawn once,
-with real transparency and no ground. One drawing, not a sheet: the avatar never asked for an
-expression, and the six heads it used to draw (`public/lumi-heads.png`, cut from the lantern sheet)
-were a different hood from the Lumi standing in the corner (`docs/art-direction.md` §7).
+with real transparency and no ground. One drawing, not a sheet: the avatar has no expressions. It
+replaces Chanté's painted medallion (`art/lumi/avatar.png`, 2026-09-13 to 09-18) and before that the
+lantern sheet's heads, which were a different hood from the Lumi in the corner (`docs/art-direction.md` §7).
 
 **Just her head, no background** (2026-09-18, Chanté's ask, as in `art/mockups/chat-mockup.png`): the
 whole drawing — hood, ribbon and medallions — trimmed to its own extent and fitted inside a square cell
 (`FILL` of it on its longer side), centred, on transparency. `LumiAvatar` draws the cell at its size with
-nothing behind it, so the page (paper or a painted room) shows around her. (Until then the cut framed her
-for a forest disc that cropped the medallions; that framing is in git history.)
+nothing behind it, so the page (paper or a painted room) shows around her. (Until then this script cut the
+painted medallion to its circle; that version is in git history.)
 
 `--preview` writes the cut at the three sizes the app draws it (36 · 48 · 68) on the paper and on a dark
 room tone, so it can be judged on both before it ships.

@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { declinesFromEvents, intentionChanges } from "./intentions";
+import { startOfLocalDay } from "@/core/due-date";
+import type { Intention } from "@/db/schema";
+import { declinesFromEvents, dueOn, intentionChanges } from "./intentions";
+
+describe("dueOn", () => {
+  it("counts a time today as fixed, and leaves a day alone for the path", () => {
+    const tz = "America/Vancouver";
+    const rows = [
+      { id: "five-pm", dueAt: new Date("2026-09-13T00:00:00Z") }, // Sep 12, 5pm local
+      { id: "day-only", dueAt: startOfLocalDay("2026-09-12", tz) },
+      { id: "tomorrow", dueAt: startOfLocalDay("2026-09-13", tz) },
+      { id: "undated", dueAt: null },
+    ] as unknown as Intention[];
+    expect(dueOn(rows, "2026-09-12", tz).map((i) => i.id)).toEqual(["five-pm"]);
+  });
+});
 
 const now = new Date("2026-09-12T20:00:00Z"); // 1pm Vancouver
 const tz = "America/Vancouver";

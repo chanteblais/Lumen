@@ -19,7 +19,7 @@ export type VoiceEngine = {
   start: (cb: EngineCallbacks) => void;
   /** The user tapped stop: finish up and report the transcript. */
   stop: () => void;
-  /** The composer is going away: tear down silently. */
+  /** The composer is going away, or its message was sent: tear down silently, no more callbacks. */
   abort: () => void;
 };
 

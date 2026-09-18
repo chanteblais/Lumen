@@ -2,15 +2,18 @@
  * Intentions: things the user meant to do. Status is only open/done/dropped;
  * "stale" is derived. Every write appends an event.
  */
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { type Db } from "@/db/client";
-import { intentions, type EffortHint, type Event, type Intention } from "@/db/schema";
+import { intentions, type EffortHint, type Event, type Intention, type IntentionStatus } from "@/db/schema";
+import { isDayOnly } from "@/core/due-date";
 import { localDate } from "@/core/time";
 import { appendEvent, type ActionSource } from "./events";
+import { returnedRow } from "./rows";
+import { atomic } from "./tx";
 
-export const STALE_AFTER_MS = 14 * 86_400_000;
+const STALE_AFTER_MS = 14 * 86_400_000;
 
-export type CreateIntentionInput = {
+type CreateIntentionInput = {
   title: string;
   nextAction?: string | null;
   note?: string | null;
@@ -21,25 +24,28 @@ export type CreateIntentionInput = {
   sourceMessageId?: string | null;
 };
 
-export type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
+type IntentionPatch = Partial<Omit<CreateIntentionInput, "sourceMessageId">>;
 
 export async function createIntention(db: Db, userId: string, input: CreateIntentionInput): Promise<Intention> {
-  const [row] = await db
-    .insert(intentions)
-    .values({
-      userId,
-      title: input.title.trim(),
-      nextAction: input.nextAction?.trim() || null,
-      note: input.note?.trim() || null,
-      list: input.list?.trim() || null,
-      estimateMinutes: input.estimateMinutes ?? null,
-      effortHint: input.effortHint ?? null,
-      dueAt: input.dueAt ?? null,
-      sourceMessageId: input.sourceMessageId ?? null,
-    })
-    .returning();
-  await appendEvent(db, { userId, type: "intention.created", subjectType: "intention", subjectId: row.id, payload: { list: row.list, estimate: row.estimateMinutes } });
-  return row;
+  return atomic(db, async (tx) => {
+    const inserted = await tx
+      .insert(intentions)
+      .values({
+        userId,
+        title: input.title.trim(),
+        nextAction: input.nextAction?.trim() || null,
+        note: input.note?.trim() || null,
+        list: input.list?.trim() || null,
+        estimateMinutes: input.estimateMinutes ?? null,
+        effortHint: input.effortHint ?? null,
+        dueAt: input.dueAt ?? null,
+        sourceMessageId: input.sourceMessageId ?? null,
+      })
+      .returning();
+    const row = returnedRow(inserted, "createIntention");
+    await appendEvent(tx, { userId, type: "intention.created", subjectType: "intention", subjectId: row.id, payload: { list: row.list, estimate: row.estimateMinutes } });
+    return row;
+  });
 }
 
 export async function getIntention(db: Db, userId: string, id: string): Promise<Intention | undefined> {
@@ -69,53 +75,68 @@ export function intentionChanges(current: Intention, patch: IntentionPatch): Par
 
 /** `changed` names the columns that moved; empty when the patch said nothing new (no write, no event). `via`: a page's move (`"app"`) or Lumi's tool. */
 export async function updateIntention(db: Db, userId: string, id: string, patch: IntentionPatch, via: ActionSource = "chat"): Promise<{ row: Intention; changed: string[] } | undefined> {
-  const current = await getIntention(db, userId, id);
-  if (!current) return undefined;
-  const set = intentionChanges(current, patch);
-  const changed = Object.keys(set);
-  if (changed.length === 0) return { row: current, changed };
-  const [row] = await db
-    .update(intentions)
-    .set({ ...set, lastTouchedAt: new Date() })
-    .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
-    .returning();
-  if (!row) return undefined;
-  await appendEvent(db, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: changed, via } });
-  return { row, changed };
+  return atomic(db, async (tx) => {
+    // Locked, so two patches at once each see the other's result when they decide what changed.
+    const [current] = await tx.select().from(intentions).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).limit(1).for("update");
+    if (!current) return undefined;
+    const set = intentionChanges(current, patch);
+    const changed = Object.keys(set);
+    if (changed.length === 0) return { row: current, changed };
+    const row = returnedRow(
+      await tx
+        .update(intentions)
+        .set({ ...set, lastTouchedAt: new Date() })
+        .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
+        .returning(),
+      "updateIntention",
+    );
+    await appendEvent(tx, { userId, type: "intention.updated", subjectType: "intention", subjectId: id, payload: { fields: changed, via } });
+    return { row, changed };
+  });
+}
+
+/**
+ * Move an intention to `status` — only from another one. Already there, it
+ * comes back as it is with no write and no event: a second tick (a double tap,
+ * Lumi and a page at once) never records a second outcome or moves
+ * `completed_at`, and the caller answers as for the first, never "not found".
+ * Undefined only when it isn't theirs.
+ */
+async function moveTo(
+  db: Db,
+  userId: string,
+  id: string,
+  status: IntentionStatus,
+  set: Partial<Pick<Intention, "completedAt" | "droppedAt" | "lastTouchedAt">>,
+  event: { type: string; payload: Record<string, unknown> },
+): Promise<Intention | undefined> {
+  return atomic(db, async (tx) => {
+    const [row] = await tx
+      .update(intentions)
+      .set({ status, ...set })
+      .where(and(eq(intentions.id, id), eq(intentions.userId, userId), ne(intentions.status, status)))
+      .returning();
+    if (!row) return getIntention(tx, userId, id);
+    await appendEvent(tx, { userId, type: event.type, subjectType: "intention", subjectId: id, payload: event.payload });
+    return row;
+  });
 }
 
 /** `via` records whether the user ticked it on a page or Lumi did it in chat — the context block tells them apart. */
 export async function completeIntention(db: Db, userId: string, id: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const now = new Date();
-  const [row] = await db
-    .update(intentions)
-    .set({ status: "done", completedAt: now, lastTouchedAt: now })
-    .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
-    .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.completed", subjectType: "intention", subjectId: id, payload: { via } });
-  return row;
+  return moveTo(db, userId, id, "done", { completedAt: now, droppedAt: null, lastTouchedAt: now }, { type: "intention.completed", payload: { via } });
 }
 
 /** Back to open from done or dropped — a mistaken tick, or a change of mind. */
 export async function reopenIntention(db: Db, userId: string, id: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
-  const [row] = await db
-    .update(intentions)
-    .set({ status: "open", completedAt: null, droppedAt: null, lastTouchedAt: new Date() })
-    .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
-    .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.reopened", subjectType: "intention", subjectId: id, payload: { via } });
-  return row;
+  return moveTo(db, userId, id, "open", { completedAt: null, droppedAt: null, lastTouchedAt: new Date() }, { type: "intention.reopened", payload: { via } });
 }
 
+/** Let it go. A done thing let go is no longer done: `completed_at` is cleared. */
 export async function dropIntention(db: Db, userId: string, id: string, reason?: string, via: ActionSource = "chat"): Promise<Intention | undefined> {
   const now = new Date();
-  const [row] = await db
-    .update(intentions)
-    .set({ status: "dropped", droppedAt: now, lastTouchedAt: now })
-    .where(and(eq(intentions.id, id), eq(intentions.userId, userId)))
-    .returning();
-  if (row) await appendEvent(db, { userId, type: "intention.dropped", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null, via } });
-  return row;
+  return moveTo(db, userId, id, "dropped", { droppedAt: now, completedAt: null, lastTouchedAt: now }, { type: "intention.dropped", payload: { reason: reason ?? null, via } });
 }
 
 /**
@@ -124,12 +145,14 @@ export async function dropIntention(db: Db, userId: string, id: string, reason?:
  * signal. Returns the row, or undefined when it isn't theirs.
  */
 export async function declineIntention(db: Db, userId: string, id: string, reason?: string): Promise<Intention | undefined> {
-  const [row] = await db.update(intentions).set({ lastTouchedAt: new Date() }).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).returning();
-  if (row) await appendEvent(db, { userId, type: "intention.declined", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
-  return row;
+  return atomic(db, async (tx) => {
+    const [row] = await tx.update(intentions).set({ lastTouchedAt: new Date() }).where(and(eq(intentions.id, id), eq(intentions.userId, userId))).returning();
+    if (row) await appendEvent(tx, { userId, type: "intention.declined", subjectType: "intention", subjectId: id, payload: { reason: reason ?? null } });
+    return row;
+  });
 }
 
-export type Decline = { intentionId: string; reason: string | null; at: Date };
+type Decline = { intentionId: string; reason: string | null; at: Date };
 export const DECLINE_EVENT_TYPE = "intention.declined";
 
 /** Pure: today's declines from recent events (newest first). Feeds the plan (never Right now again today) and the context block. */
@@ -164,10 +187,13 @@ export function isStale(i: Pick<Intention, "status" | "lastTouchedAt">, now: Dat
   return i.status === "open" && now.getTime() - i.lastTouchedAt.getTime() > STALE_AFTER_MS;
 }
 
-/** Fixed-time intentions for a local date (things with a due_at that day). */
-export function dueOn(list: Intention[], localDate: string, timeZone: string): Intention[] {
-  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+/**
+ * Fixed-time intentions for a local date: a due_at at a time that day. A date
+ * alone (00:00 local, `core/due-date.ts`) is a day to get it done by, not an
+ * appointment, so it stays a candidate for the path.
+ */
+export function dueOn(list: Intention[], day: string, timeZone: string): Intention[] {
   return list
-    .filter((i) => i.dueAt && fmt.format(i.dueAt) === localDate)
+    .filter((i) => i.dueAt && localDate(i.dueAt, timeZone) === day && !isDayOnly(i.dueAt, timeZone))
     .sort((a, b) => a.dueAt!.getTime() - b.dueAt!.getTime());
 }

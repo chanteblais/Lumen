@@ -9,8 +9,8 @@ import { type Db } from "@/db/client";
 import { events, intentions, type IntentionStatus } from "@/db/schema";
 import type { ActionSource } from "./events";
 
-export const ACTIVITY_EVENT_TYPES = ["intention.created", "intention.updated", "intention.completed", "intention.reopened", "intention.dropped"] as const;
-export type ActivityType = (typeof ACTIVITY_EVENT_TYPES)[number];
+const ACTIVITY_EVENT_TYPES = ["intention.created", "intention.updated", "intention.completed", "intention.reopened", "intention.dropped"] as const;
+type ActivityType = (typeof ACTIVITY_EVENT_TYPES)[number];
 
 export type ActivityItem = {
   type: ActivityType;

@@ -22,6 +22,55 @@
       "when": 1789211354561,
       "tag": "0002_leads",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789313987211,
+      "tag": "0003_memory_source_message",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789316717091,
+      "tag": "0004_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789326406907,
+      "tag": "0005_thread_shelves",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789331597142,
+      "tag": "0006_data_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789336938985,
+      "tag": "0007_priorities",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789414555327,
+      "tag": "0008_design_contributions",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789509014551,
+      "tag": "0009_rls_all_tables",
+      "breakpoints": true
     }
   ]
 }

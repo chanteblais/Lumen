@@ -4,7 +4,7 @@
 
 Writes public/lumi-free.webp, the corner companion's body for the hands-free Lumi (docs/art-direction.md §4a,
 bet 8). The lantern Lumi's cut (scripts/cut-lumi-idle.py, public/lumi-idle.webp and the six avatar heads of
-public/lumi-heads.png) was retired on 2026-09-15, once nothing played it and the avatar became one drawing of
+public/lumi-heads.webp) was retired on 2026-09-18, once nothing played it and the avatar became one drawing of
 its own (scripts/cut-lumi-avatar.py).
 
 Every loop is held to one drawing, REST (the wave sheet's first cell), so loops hand over without a swap even

@@ -1,11 +1,21 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore, type CSSProperties, type Ref } from "react";
 import { CompanionBubble } from "./CompanionBubble";
 import { LUMI_LOOP_FRAMES, LumiSprite, cellSize, idleCell, type LumiEyes, type LumiLoop } from "@/components/chat/LumiSprite";
 
 const HEIGHT = 150;
+/**
+ * Her size as CSS: 150px in the corner; a room that stands her in its painting
+ * sets `--lumi-h` in its own pixels (globals.css → Today: the garden), so she
+ * keeps her size against its furniture at any window. The sprite's picture and
+ * her shadows are in percentages of the box, so only the box needs it.
+ */
+const SIZE = {
+  height: `var(--lumi-h, ${HEIGHT}px)`,
+  width: `calc(var(--lumi-h, ${HEIGHT}px) * ${cellSize("body", 1).width})`,
+} satisfies CSSProperties;
 /** Time per frame of each loop. */
 const FRAME_MS: Record<LumiLoop, number> = {
   breath: 320, // nine frames ≈ one breath every three seconds
@@ -61,6 +71,7 @@ const fadeMs = (a: LumiLoop, b: LumiLoop) => Math.min(260, Math.round(Math.min(F
 
 type Pose = { loop: LumiLoop; frame: number };
 const REST: Pose = { loop: "breath", frame: 0 };
+const AT_REST = { cur: REST, prev: REST };
 const key = (p: Pose) => `${p.loop}-${p.frame}`;
 
 /** Something the companion can be asked to do out of turn (dev only, from the debug strip). */
@@ -69,6 +80,15 @@ const CUE_EVENT = "lumi:cue";
 const cue = (what: Cue) => window.dispatchEvent(new CustomEvent<Cue>(CUE_EVENT, { detail: what }));
 const DEBUG = process.env.NODE_ENV === "development";
 
+/** `prefers-reduced-motion`, followed live: changing the setting stops or starts her without a reload. */
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+const subscribeReducedMotion = (onChange: () => void) => {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
+const readReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
+
 /**
  * Lumi in the corner of the screen, keeping you company. Full figure, standing
  * a little in from the bottom edge. Click her and a speech bubble opens so you
@@ -76,17 +96,8 @@ const DEBUG = process.env.NODE_ENV === "development";
  * leaving the page (`CompanionBubble`). On Home she just hands you the
  * composer. No state of her own to maintain.
  *
- * Life, all of it off under `prefers-reduced-motion`:
- * - the nine-frame breath loop, each frame fading in over the last (two frames
- *   mounted: the last one underneath, the new one fading in on top)
- * - a wave when you arrive — the page opened, or its tab shown again, after
- *   thirty minutes or more with no tab of the app visible (and on a first
- *   visit in this browser) — once, at the next rest frame, then back to breathing
- * - every so often one pass of a variation (her hands coming together; with
- *   more than one, never the same one twice running)
- * - a blink every few seconds, composited onto whichever frame is showing so
- *   the cycles run together
- * Every loop is one drawing and hands over at the same rest cell.
+ * Her life is `LumiFigure`, below: the loop's frames re-render only the figure,
+ * never the bubble beside it.
  */
 export function LumiCompanion() {
   const pathname = usePathname();
@@ -97,19 +108,97 @@ export function LumiCompanion() {
   const open = openedOn === pathname;
   const close = useCallback(() => setOpenedOn(null), []);
 
-  const [pose, setPose] = useState<{ cur: Pose; prev: Pose }>({ cur: REST, prev: REST });
+  // Her "got it" blink when you send from the bubble.
+  const figure = useRef<LumiFigureHandle>(null);
+  const acknowledge = useCallback(() => figure.current?.ack(), []);
+
+  const tap = () => {
+    if (onHome) {
+      document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
+      return;
+    }
+    setOpenedOn(open ? null : pathname);
+  };
+
+  return (
+    <>
+      <div className="companion">
+        {open && !onHome && <CompanionBubble onClose={close} onSend={acknowledge} />}
+        <button
+          type="button"
+          className="companion-btn"
+          onClick={tap}
+          aria-label={onHome ? "Message Lumi" : "Say something to Lumi"}
+          aria-expanded={onHome ? undefined : open}
+        >
+          {/* Out of sight under the Lists sheet (`body:has(.lists-sheet) .companion`), which is open exactly at /lists. */}
+          <LumiFigure ref={figure} outOfSight={pathname === "/lists"} />
+        </button>
+      </div>
+      {DEBUG && <DebugStrip />}
+    </>
+  );
+}
+
+type LumiFigureHandle = { ack: () => void };
+
+/**
+ * Her figure and its life, all of it off under `prefers-reduced-motion`:
+ * - the nine-frame breath loop, each frame fading in over the last (two frames
+ *   mounted: the last one underneath, the new one fading in on top)
+ * - a wave when you arrive — the page opened, or its tab shown again, after
+ *   thirty minutes or more with no tab of the app visible (and on a first
+ *   visit in this browser) — once, at the next rest frame, then back to breathing
+ * - every so often one pass of a variation (her hands coming together; with
+ *   more than one, never the same one twice running)
+ * - a blink every few seconds, composited onto whichever frame is showing so
+ *   the cycles run together
+ * Every loop is one drawing and hands over at the same rest cell.
+ *
+ * While nobody can see her — a hidden tab, or `outOfSight` — the frames and the
+ * blinks wait where they are and carry on when she's seen again, rather than
+ * rendering for no one.
+ */
+function LumiFigure({ ref, outOfSight }: { ref: Ref<LumiFigureHandle>; outOfSight: boolean }) {
+  const reduced = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
+  const [pose, setPose] = useState<{ cur: Pose; prev: Pose }>(AT_REST);
   const [eyes, setEyes] = useState<LumiEyes>("open");
-  // One blink on demand — her "got it" when you send from the bubble. Set up
-  // by the idle effect so it shares its timers (and is absent under reduced motion).
+  // Set up by the idle effect so they share its timers (and are absent under reduced motion).
   const ack = useRef<(() => void) | null>(null);
+  const hidden = useRef(outOfSight);
+  const resume = useRef<(() => void) | null>(null);
+  useImperativeHandle(ref, () => ({ ack: () => ack.current?.() }), []);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    hidden.current = outOfSight;
+    if (!outOfSight) resume.current?.();
+  }, [outOfSight]);
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const after = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+  useEffect(() => {
+    if (reduced || window.matchMedia(REDUCED_MOTION).matches) return;
+
+    // Each id leaves the set when its timer fires, so the set holds only what is still pending.
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const after = (ms: number, fn: () => void) => {
+      const id = setTimeout(() => {
+        timers.delete(id);
+        fn();
+      }, ms);
+      timers.add(id);
+    };
     const between = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
     const show = (loop: LumiLoop, frame: number) => setPose(({ cur }) => ({ cur: { loop, frame }, prev: cur }));
+
+    // Out of sight, what falls due waits here (a tick, a blink) and runs when she's seen again.
+    const unseen = () => hidden.current || document.visibilityState === "hidden";
+    const waiting = new Set<() => void>();
+    const whenSeen = (fn: () => void) => () => (unseen() ? waiting.add(fn) : fn());
+    resume.current = () => {
+      if (unseen()) return;
+      const due = [...waiting];
+      waiting.clear();
+      due.forEach((fn) => fn());
+    };
 
     // The loop: breath by default; another loop runs its frames once, then hands
     // back to breath at frame 0 (every loop starts from the same rest pose).
@@ -132,15 +221,18 @@ export function LumiCompanion() {
         }
       }
       show(current, f);
-      after(FRAME_MS[current], tick);
+      after(FRAME_MS[current], nextTick);
     };
+    const nextTick = whenSeen(tick);
     const scheduleVariation = () =>
       VARIATIONS.length &&
       after(between(20000, 45000), () => {
         if (pending) return; // a cue or a reaction is already waiting; it plays instead
         const choices = VARIATIONS.length > 1 ? VARIATIONS.filter((loop) => loop !== last) : VARIATIONS;
-        last = choices[Math.floor(Math.random() * choices.length)];
-        pending = last;
+        const next = choices[Math.floor(Math.random() * choices.length)];
+        if (!next) return;
+        last = next;
+        pending = next;
       });
 
     // Arriving: away long enough, and she waves.
@@ -149,7 +241,11 @@ export function LumiCompanion() {
       markSeen();
     };
     const visible = () => document.visibilityState === "visible";
-    const onVisibility = () => (visible() ? arrive() : markSeen());
+    const onVisibility = () => {
+      if (!visible()) return markSeen();
+      arrive();
+      resume.current?.();
+    };
     const onPageHide = () => visible() && markSeen();
     // While a tab is visible she counts as seen; a hidden tab doesn't keep the time fresh.
     const heartbeat = setInterval(() => visible() && markSeen(), 60_000);
@@ -168,7 +264,10 @@ export function LumiCompanion() {
       });
     };
     const scheduleBlink = () =>
-      after(between(2500, 6500), () => blink(Math.random() < 0.2 ? () => after(180, () => blink(scheduleBlink)) : scheduleBlink));
+      after(
+        between(2500, 6500),
+        whenSeen(() => blink(Math.random() < 0.2 ? () => after(180, () => blink(scheduleBlink)) : scheduleBlink)),
+      );
     ack.current = () => blink(() => {});
 
     // A cue from the debug strip: a loop plays at the next rest frame (the same
@@ -180,64 +279,50 @@ export function LumiCompanion() {
     };
     if (DEBUG) window.addEventListener(CUE_EVENT, onCue);
 
-    after(FRAME_MS.breath, tick);
+    after(FRAME_MS.breath, nextTick);
     scheduleBlink();
     scheduleVariation();
     return () => {
       ack.current = null;
+      resume.current = null;
       timers.forEach(clearTimeout);
       clearInterval(heartbeat);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
       if (DEBUG) window.removeEventListener(CUE_EVENT, onCue);
+      // Stopped (reduced motion turned on): she settles at rest, eyes open, and starts from there if it's turned off again.
+      setPose(AT_REST);
+      setEyes("open");
     };
-  }, []);
+  }, [reduced]);
 
+  // Under reduced motion she stands at rest, whatever frame the loop had reached.
+  const shown = reduced ? AT_REST : pose;
+  const shownEyes = reduced ? "open" : eyes;
   // The previous frame stays underneath while the current one fades in on top.
   // Keyed by loop and frame so the frame that was current keeps its element
   // (and finished fade) when it becomes the previous one.
-  const stack = key(pose.prev) === key(pose.cur) ? [pose.cur] : [pose.prev, pose.cur];
-
-  const tap = () => {
-    if (onHome) {
-      document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
-      return;
-    }
-    setOpenedOn(open ? null : pathname);
-  };
+  const stack = key(shown.prev) === key(shown.cur) ? [shown.cur] : [shown.prev, shown.cur];
 
   return (
-    <>
-      <div className="companion">
-        {open && !onHome && <CompanionBubble onClose={close} onSend={() => ack.current?.()} />}
-        <button
-          type="button"
-          className="companion-btn"
-          onClick={tap}
-          aria-label={onHome ? "Message Lumi" : "Say something to Lumi"}
-          aria-expanded={onHome ? undefined : open}
-        >
-          <span className="companion-figure" style={{ ...cellSize("body", HEIGHT), "--fade": `${fadeMs(pose.cur.loop, pose.prev.loop)}ms` } as CSSProperties} aria-hidden>
-            {/* Her shadow is drawn here, not in the sprite, so it takes the ground she stands on: a
-                cast shadow (her current frame's silhouette laid on the floor, away from the room's
-                light) and a contact shadow under her feet. */}
-            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, "open")} height={HEIGHT} mask className="companion-cast" />
-            <span className="companion-shadow" />
-            {stack.map((p, i) => (
-              <LumiSprite
-                key={key(p)}
-                cell={idleCell(p.loop, p.frame, eyes)}
-                height={HEIGHT}
-                className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
-              />
-            ))}
-            {/* The room's light on her: a colour multiplied over her silhouette (none on the paper). */}
-            <LumiSprite cell={idleCell(pose.cur.loop, pose.cur.frame, eyes)} height={HEIGHT} mask className="companion-light" />
-          </span>
-        </button>
-      </div>
-      {DEBUG && <DebugStrip />}
-    </>
+    <span className="companion-figure" style={{ ...SIZE, "--fade": `${fadeMs(shown.cur.loop, shown.prev.loop)}ms` } as CSSProperties} aria-hidden>
+      {/* Her shadow is drawn here, not in the sprite, so it takes the ground she stands on: a
+          cast shadow (her current frame's silhouette laid on the floor, away from the room's
+          light) and a contact shadow under her feet. */}
+      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, "open")} height={HEIGHT} style={SIZE} mask className="companion-cast" />
+      <span className="companion-shadow" />
+      {stack.map((p, i) => (
+        <LumiSprite
+          key={key(p)}
+          cell={idleCell(p.loop, p.frame, shownEyes)}
+          height={HEIGHT}
+          style={SIZE}
+          className={`companion-frame ${i === stack.length - 1 ? "on" : ""}`}
+        />
+      ))}
+      {/* The room's light on her: a colour multiplied over her silhouette (none on the paper). */}
+      <LumiSprite cell={idleCell(shown.cur.loop, shown.cur.frame, shownEyes)} height={HEIGHT} style={SIZE} mask className="companion-light" />
+    </span>
   );
 }
 

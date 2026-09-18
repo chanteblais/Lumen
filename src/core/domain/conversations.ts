@@ -2,31 +2,37 @@
  * The one continuous conversation per user, and its messages stored as
  * AI SDK UIMessage parts. Load a window; the rest is summarised later (M6).
  */
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { type Db } from "@/db/client";
 import { conversations, messages, type MessageRole } from "@/db/schema";
+import type { SharedFileNote } from "@/core/shared-files";
 
 /**
  * `kind`/`intentionId`/`reason` mark structured handoffs from Today (start · declined · break_down);
  * `kind: "session_event"` with `sessionId`/`response` is a tap on the session bar or a check-in.
  */
-export type CoherenceMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
-export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata>;
+type CoherenceMessageMetadata = { createdAt?: string; kind?: string; intentionId?: string; reason?: string; sessionId?: string; response?: string; minute?: number };
+/** `data-shared-file`: the note kept in place of a file shared with a message (`core/shared-files.ts`). */
+type CoherenceDataParts = { "shared-file": SharedFileNote };
+export type CoherenceUIMessage = UIMessage<CoherenceMessageMetadata, CoherenceDataParts>;
 
 export const MESSAGE_WINDOW = 30;
 
-/** The user's main conversation: the oldest, should a race on a first visit ever have made two (nothing in the schema prevents it). */
+/** The user's main conversation. One per user, held by the unique index `conversations_user_main_idx`. */
 const mainConversationOf = (userId: string) => and(eq(conversations.userId, userId), eq(conversations.kind, "main"));
 
+const findMain = (db: Db, userId: string) => db.query.conversations.findFirst({ where: mainConversationOf(userId), orderBy: asc(conversations.createdAt) });
+
+/** Find or create it. Two first visits racing: the second insert does nothing and reads the first's. */
 export async function ensureMainConversation(db: Db, userId: string) {
-  const existing = await db.query.conversations.findFirst({
-    where: mainConversationOf(userId),
-    orderBy: asc(conversations.createdAt),
-  });
+  const existing = await findMain(db, userId);
   if (existing) return existing;
-  const [created] = await db.insert(conversations).values({ userId, kind: "main" }).returning();
-  return created;
+  const [created] = await db.insert(conversations).values({ userId, kind: "main" }).onConflictDoNothing().returning();
+  if (created) return created;
+  const winner = await findMain(db, userId);
+  if (!winner) throw new Error("ensureMainConversation: the insert conflicted, but no main conversation was found");
+  return winner;
 }
 
 /** Most recent `limit` messages, oldest first, as UIMessages with createdAt metadata. */
@@ -38,6 +44,12 @@ export async function loadRecentMessages(db: Db, conversationId: string, limit =
     .orderBy(desc(messages.createdAt))
     .limit(limit);
   return toUIMessages(rows);
+}
+
+/** How many messages the conversation holds: the chat route's window starts at a step counted from its first (`core/ai/prompt.ts → stableWindow`). */
+export async function countMessages(db: Db, conversationId: string): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(messages).where(eq(messages.conversationId, conversationId));
+  return Number(row?.n ?? 0);
 }
 
 /**
@@ -66,18 +78,22 @@ function toUIMessages(rows: (typeof messages.$inferSelect)[]): CoherenceUIMessag
   }));
 }
 
-/** Insert-or-replace by id (the same message can be finalised after streaming). */
+/**
+ * Insert-or-replace by id (the same message can be finalised after streaming)
+ * — only within this conversation. An id already used in another one (a resent
+ * or forged id) is left alone and logged; it never overwrites that row.
+ */
 export async function saveMessage(db: Db, conversationId: string, m: CoherenceUIMessage): Promise<void> {
-  await db
+  const saved = await db
     .insert(messages)
     .values({ id: m.id, conversationId, role: m.role as MessageRole, parts: m.parts })
-    .onConflictDoUpdate({ target: messages.id, set: { parts: m.parts } });
+    .onConflictDoUpdate({ target: messages.id, set: { parts: m.parts }, setWhere: eq(messages.conversationId, conversationId) })
+    .returning({ id: messages.id });
+  if (!saved.length) {
+    console.warn(`[conversations] message ${m.id} belongs to another conversation; not saved`);
+    return;
+  }
   await db.update(conversations).set({ updatedAt: new Date() }).where(eq(conversations.id, conversationId));
-}
-
-export async function messageCount(db: Db, conversationId: string): Promise<number> {
-  const rows = await db.select({ id: messages.id }).from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.createdAt));
-  return rows.length;
 }
 
 /**
@@ -93,4 +109,13 @@ export function isInSitting(messages: CoherenceUIMessage[], now = Date.now()): b
   const last = messages[messages.length - 1];
   const at = last?.metadata?.createdAt ? new Date(last.metadata.createdAt).getTime() : undefined;
   return at !== undefined && now - at < SITTING_GAP_MS;
+}
+
+/** The words of a message — its text parts joined — without tool calls or metadata. */
+export function messageText(m: Pick<CoherenceUIMessage, "parts">): string {
+  return m.parts
+    .filter((p): p is Extract<CoherenceUIMessage["parts"][number], { type: "text" }> => p.type === "text")
+    .map((p) => p.text.trim())
+    .filter(Boolean)
+    .join(" ");
 }

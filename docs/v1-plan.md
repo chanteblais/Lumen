@@ -25,7 +25,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** a returning user sees their history and a state-aware greeting, and Lumi's replies pass the voice eval.
 - **EF check:** Lumi asks one thing at a time; the first reply to "I can't start" is a step, not a plan.
 
-> **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions.
+> **Re-cut 2026-09-12** around the Today brief (`today.md`): M3 adds Lists (minimum) and Today v1 (the generated path); M4 adds capacity and *Not this* regeneration; M5's *Start with Lumi* opens sessions. *(2026-09-13: Start with Lumi and focus sessions removed from the product, and Today's Not this and Break it down moved onto the card — the M3–M5 lines below are the record of what was built.)*
 
 ## M3 — Intentions, beliefs, Lists (minimum), Today v1 (2 days) — **done 2026-09-12 (`feat/m3-intentions`), merged; migration `0001` applied; QA'd 2026-09-13; latency pass PR #3**
 - Tools: `create_intention`, `update_intention`, `complete_intention`, `drop_intention`; every call writes an `events` row.
@@ -45,7 +45,7 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** returning after a simulated 14-day gap yields the re-entry greeting and a two-minute cleanup, ending with one suggested next step.
 - **EF check:** re-entry never shows a number of overdue things.
 
-## M5 — Focus Together + outcome loop (1–1½ days) — **built 2026-09-12 (`feat/m5-focus-together`, worktree)**; no migration
+## M5 — Focus Together + outcome loop (1–1½ days) — **built 2026-09-12 (`feat/m5-focus-together`, worktree)**; no migration — **removed from the product 2026-09-13** (Chanté's call; table and domain code kept, unused)
 - Tools `start_focus_session` (with `approach`) / `end_focus_session`; `SessionBar` (goal, first step, elapsed/planned, end) pinned above the composer while active.
 - **Reflection v1** (`core/ai/reflect.ts`): runs in `after()` when a session ends; structured-output ops applied with guardrails; `reflection.ran` event. A completed session whose `approach` matches a `strategy` belief confirms it; an abandoned one contradicts it.
 - Client timer fires check-ins at `check_in_minutes`: *Still with it?* → Yep (event only) / Stuck / Got distracted / Done (structured `session_event` user message; Lumi replies).
@@ -55,8 +55,8 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 
 ## M6 — Reflection daily + "What Lumi knows" (1 day)
 - Lazy daily reflection: on the first turn of a new local day, reflect over events and messages since `last_reflected_at` (in `after()`). Covers patterns (time of day, capacity rhythm) and anti-patterns (intentions touched repeatedly, never started).
-- `/knows`: beliefs grouped by kind, confidence shown as words (sure / fairly sure / guessing), correct or delete inline. Corrections supersede at 0.95.
-- Rolling summary: when the window exceeds 30 messages, summarise the overflow into `conversations.summary` and inject it.
+- ~~`/knows`: beliefs grouped by kind, confidence shown as words (sure / fairly sure / guessing), correct or delete inline. Corrections supersede at 0.95.~~ **Built 2026-09-13 (`feat/lumi-memory`) as Settings → *What Lumi knows*** (no page or nav item of its own; open question 12), with the memory brief around it: their word checked in code, per-turn selection instead of all beliefs, `correct_belief` / `forget_belief` / `recall_memory`, forgetting deletes. The "deleting a belief removes it from the next turn's context" check below is covered by `memory.db.test.ts`.
+- ~~Rolling summary: when the window exceeds 30 messages, summarise the overflow into `conversations.summary` and inject it.~~ **Replaced 2026-09-13 (`feat/lumi-library`)** by consolidation: an episode per visit (recent memory that rides along once its messages leave the window) and notes filed under Library threads, with their summaries rewritten (`architecture.md` → The Library).
 - **Done when:** after three simulated days, Lumi holds at least one correct pattern belief nobody typed in; deleting a belief removes it from the next turn's context; a project named on day 1 is known on day 3 after 60+ messages.
 - **EF check:** the user never sets up, tags, or rates anything; learning is invisible until they look.
 
@@ -67,4 +67,4 @@ Small milestones, each shippable to Vercel. Every milestone ends with the questi
 - **Done when:** the deployed app is used daily for a week without opening the code.
 
 ## After V1 (not now)
-Embeddings + `recall` tool once beliefs exceed the cap · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · ~~Insights (only if it can be framed without scores)~~ — landed 2026-09-12 as one question over what Lumi noticed in the mail, no scores, no counts (`features.md` → Insights).
+Embeddings once lexical belief selection stops being enough (the `recall_memory` tool landed 2026-09-13) · richer pattern features from events (cohorts of sessions by hour, capacity × outcome) · Lumi avatar states · notifications/nudges · mobile (Expo, reusing `src/core`) · Library (saved strategies) · ~~Insights (only if it can be framed without scores)~~ — landed 2026-09-12 as one question over what Lumi noticed in the mail, no scores, no counts (`features.md` → Insights).
