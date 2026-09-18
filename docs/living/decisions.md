@@ -6,6 +6,29 @@
 
 ---
 
+## 2026-09-18 · Rhythms: the routines they're building are held in their words, and Today shows when each happened
+
+**Decision.** A **rhythm** is a first-class thing: a routine the user says they're building ("go to the gym more", "meditate every morning"), held in their words, with how often in their words if they said, kept apart from tasks, beliefs and priorities. Lumi holds one when they say it (`hold_rhythm`), never files it as a task, records the day it happened when they tell her (`practiced_rhythm`), and lets it go when they're done. Today shows each rhythm as its name, the week as seven marks with a fill on the days it happened, their words, and one quiet word for today, *Did it*, that records or takes back today. The day planner may say there's room for one ("There's room for the gym before practicum") and never more. **Never a target, a streak, a tally, or a missed day.**
+**Rationale.** Chanté (2026-09-18): "I've been talking to lumi about wanting to go to the gym more and start a meditation routine, but these things don't seem to have any effect in the app. Can you make it so these kinds of conversations shape the Today section? I'm thinking it would be nice to have a rhythms section, that gives a visual of the routines you're implementing." *(Claude's reading:)* the database showed why nothing happened: she had said both, and Lumi kept them as beliefs (*wants to establish a daily 20-minute meditation practice*) and filed each once as a task, which was ticked and gone. Nothing in the model could recur, so nothing could show. The canon forbids the obvious fix — a habit tracker with streaks (V§12, EP§14, the growth decision) — so the shape of this is the line just drawn: state and shape yes, judgement no. The week strip shows *when it happened*, which is a fact; a streak or a "3 of 5" would be a verdict, and neither is computed anywhere.
+**Implications.**
+- Two tables (`rhythms`, `rhythm_practices`, migration `0010`), three tools, a context-block section, a planner input, a Today section and one API route for the tap ([`domain.md`](../domain.md), [`architecture.md`](../architecture.md), [`features.md`](../features.md)).
+- The *Did it* tap is the one thing asked of the user, and only because nobody can derive a gym visit. It is logged in the [burden log](../ef-burden-log.md) with the guards that keep it from becoming a tracker: nothing happens if it's never tapped, and Lumi never asks.
+- What stays out, deliberately: a target ("3× a week" as a number to compare against), reminders, a "you missed Tuesday", any total, and any effect on the path's order — a rhythm is never Right now.
+- Her earlier beliefs about the gym and meditation stay as beliefs; the rhythms themselves are hers to say again to Lumi (or Claude can seed them from her words — on the desk as *Moving without you*).
+**Principle.** The system does the organising; correction beats configuration; accountability without punishment (V§12); growth is continuity, not rewards.
+**Replaces.** Nothing; before this a routine had no home. Refines *Today lays the rest of the day along itself* (rhythms join the sheet).
+
+## 2026-09-18 · State and shape at a glance are allowed; counts and scores are not
+
+**Decision.** Today may show the state of the day at a glance — where each area stands, how full the rest of the day is, when a rhythm happened — and may not show counts, scores, streaks, percentages or anything the user has to interpret into a judgement. Principle 4 now says this in place of "never build a dashboard"; EP§4's *watch for*, the Garden's §156 and the canon's drift list are narrowed to match. *How full the day is* is shown as a shape: a thin band under Today's title, each window as wide as it is long, filled by what's placed in it, with a tick where a fixed time falls — no labels, no numbers.
+**Rationale.** Chanté (2026-09-18): "I'm not actually sure about the 'never a dashboard'. I'm starting to feel like it should be a bit of a dashboard." Offered five candidates on the desk, she chose the first (how full the day is, as a shape, never a percentage) and the last (draw the line, and reword the canon to it): "I think 1 and 5 is good." *(Claude's reading:)* the canon's objection was always to two things — metrics that judge, and handing the reading back to the user through many equal widgets — not to orientation. Drawing the line there keeps V§11–12 and EP§4 intact and lets the page say how the day stands.
+**Implications.**
+- The line, for anything built on Today from now on: *state and shape yes; counts, scores and interpretation no.* A count of undone things stays forbidden (*Never a count*, 2026-09-13).
+- Candidates 2–4 from the desk (the week, things resting a while, a number she'd want) stay in [open question 29](open-questions.md#29-how-much-of-a-dashboard-should-today-be).
+- The band is derived from the same `shapeDay` as the spine; nothing new is stored.
+**Principle.** Show less than you know (still: nothing past the path is listed); design for return (the day reads at once).
+**Replaces.** Principle 4's "never build a dashboard" (V§11 as summarised in the canon map, 2026-09-13), narrowed rather than dropped.
+
 ## 2026-09-18 · "One thing should dominate" is retired; where to start should be clear
 
 **Decision.** The Garden's §4 no longer asks Today to give one thing visual and cognitive dominance over the page. Its replacement asks that, whatever the page shows, where to start is clear without anything having to be chosen. The core experience test (§157) changes its second question to match. Principle 4's "never build a dashboard" is **not** changed by this decision; it is now [open question 29](open-questions.md#29-how-much-of-a-dashboard-should-today-be).

@@ -12,7 +12,7 @@ export type ShapeItem = { id: string; estimateMinutes: number | null };
 export type Landmark = { id: string; title: string; at: Date; estimateMinutes: number | null };
 
 export type DaySegment<T extends ShapeItem> =
-  | { kind: "window"; label: string; span: string | null; items: T[] }
+  | { kind: "window"; label: string; span: string | null; items: T[]; /** Minutes the window holds; Infinity for a late "tonight". */ minutes: number; /** Minutes left after what's placed. */ free: number }
   | { kind: "landmark"; id: string; title: string; at: Date };
 
 export type DayShape<T extends ShapeItem> = {
@@ -94,13 +94,11 @@ export function shapeDay<T extends ShapeItem>(path: T[], landmarks: Landmark[], 
     remaining[n]! -= size;
   }
 
-  // Weave windows and landmarks; a window with nothing in it and nothing to say is left out.
+  // Weave windows and landmarks. An empty window still counts (its room is real — a rhythm may fit there); the page decides what to draw.
   const segments: DaySegment<T>[] = [];
   windows.forEach((w, n) => {
-    if (w.items.length || n === windows.length - 1 || ahead[n]) {
-      // The span is said only before a fixed time — "the rest of the afternoon" already says how long it is.
-      if (w.items.length) segments.push({ kind: "window", label: w.label, span: ahead[n] ? spanWords(w.minutes) : null, items: w.items });
-    }
+    // The span is said only before a fixed time — "the rest of the afternoon" already says how long it is.
+    segments.push({ kind: "window", label: w.label, span: ahead[n] ? spanWords(w.minutes) : null, items: w.items, minutes: w.minutes, free: remaining[n]! });
     const l = ahead[n];
     if (l) segments.push({ kind: "landmark", id: l.id, title: l.title, at: l.at });
   });

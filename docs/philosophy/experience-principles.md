@@ -114,7 +114,7 @@ The rest remains available without demanding immediate attention.
 
 **Watch for**
 
-- dashboards
+- dashboards of metrics — counts, progress, scores, streaks. *(Narrowed 2026-09-18, Chanté's [decision](../living/decisions.md): state and shape at a glance — where things stand, how full the day is, when a rhythm happened — are allowed; judgement is not. It read "dashboards".)*
 - widget accumulation
 - badge counts
 - dense metadata

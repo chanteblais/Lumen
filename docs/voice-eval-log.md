@@ -112,6 +112,25 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 12 — 2026-09-18 · rhythms in the persona, state-never-score in the brief (`feat/rhythms`; `gpt-6-astra`, context = ~4pm Vancouver, last seen 3h ago)
+The persona gains a *Keeping track* item (a routine is a rhythm, not a task: hold_rhythm / practiced_rhythm / let_go_rhythm; never keep score, never name a missed day, never ask whether they did it) and its Today line names the rhythms; three tool descriptions join the prefix. The brief's places line now says what Today shows and that it shows state, never a score. The nine single replies. Prefix ~4,700 tokens.
+
+**Graded by Claude (Fable 5.1), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file—or a blank document if there isn't one yet. Nothing to write yet." |
+| 2 | ✓ | ✓ | "Tell me what's on your plate — messy is fine…" → the big against the everyday, then "Does anything here need to happen today, or is someone waiting on you before they can move?" |
+| 3 | ✓ | ✓ | "What's on your mind — things to do, loose ends, anything asking for attention? / No need to sort it before you tell me." |
+| 4 | ✓ | ~ | "What's the task — and do you know what you'd need to do first?" → "What do you need to sort out with them?" (as in run 9: asks what they need rather than diagnosing or offering a threshold; run 10 did better) |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" (no session in context) |
+| 6 | ✓ | ✓ | "We can start with what's happening now, not reconstruct the last two weeks. / What's on your mind? It doesn't need to come out in order." |
+| 7 | ✓ | ✓ | "I'm here. Go ahead — no need to report back until you want to." → "I'm here while you edit. I'll stay quiet until you need me." |
+| 8 | ✓ | ✓ | "We'll keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+| 9 | ✓ | ✓ | the dump reflected in one line, then "I'd start with Priya's email, so the extension question is moving while you tackle the rest. What do you need to ask her for?" — picks, with a reason, and moves to the first step |
+
+**Why:** none of the nine reaches a rhythm, so this run checks the additions moved nothing else; her register held throughout, and scenario 9 picked with a reason (the ~ of runs 9–10 gone this time). **Watch:** scenario 4's second turn is the same lean as run 9. What the rhythm rules actually change — "I want to go to the gym more" held as a rhythm and not filed as a task; "went this morning" marked without praise; "how am I doing with the gym?" answered as days, not a tally — needs a conversation-harness scenario with the tools; none exists yet, and it is the next eval to write.
+
 ### Run 11 — 2026-09-18 · the persona's Today line, after the spine (`docs/dominance-retired`; `gpt-6-astra`, context = ~4pm Vancouver, last seen 3h ago)
 The persona's *where they are* line for Today said "One thing Right now — Not this and Break it down work right on its card" — stale since the page became the rest of the day laid along itself, and missed at that merge. It now describes the spine (what's done, Now, the suggested things in the windows between fixed times, Start here, a line per area; a row opens to Not this and Break it down). Only scenario 8 run: none of the nine reaches the page, and the full nine ran as run 10 an hour earlier on the same persona otherwise.
 

@@ -18,6 +18,8 @@ import { BELIEF_KINDS, findTheirWords, MAX_INFERRED_CONFIDENCE, type Heard } fro
 import { dueAtFromModel } from "@/core/due-date";
 import { reflectClosedInPlan } from "@/core/domain/plan-sync";
 import { holdPriority, letGoPriority, PRIORITY_WHEN } from "@/core/domain/priorities";
+import { addDays } from "@/core/domain/priorities";
+import { holdRhythm, letGoRhythm, practiceRhythm } from "@/core/domain/rhythms";
 import { localDate } from "@/core/time";
 import { MAIL_ON, type EmailReader } from "@/core/email/types";
 import { designTools } from "./design-tools";
@@ -437,6 +439,50 @@ export function buildTools({ db, userId, timezone, reentry = false, onPlanChange
           const row = await letGoPriority(db, userId, input.id);
           if (!row) return { error: "not found" };
           onPlanChange?.({ reason: "priority" });
+          return { id: row.id, let_go: true };
+        }),
+    }),
+
+    hold_rhythm: tool({
+      description:
+        "Hold a routine they say they're building — 'I want to go to the gym more', 'start meditating every morning'. A rhythm, not a task: never create_intention for it. name: short, as it shows on Today ('Gym', 'Meditation'). content: their words. cadence: how often, in their words, only if they said ('most days', 'a couple of times a week') — never a number you'd count against. typical_minutes if it's clear. replaces: the id in Rhythms they're building that this changes. Don't narrate it.",
+      inputSchema: z.object({
+        name: z.string().min(2).max(40),
+        content: z.string().min(3).max(200).describe("One sentence, close to their words"),
+        cadence: z.string().max(80).optional(),
+        typical_minutes: z.number().int().min(5).max(480).optional(),
+        replaces: z.string().uuid().optional(),
+      }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await holdRhythm(db, userId, { name: input.name, content: input.content, cadence: input.cadence, typicalMinutes: input.typical_minutes, replacesId: input.replaces });
+          if ("error" in row) return row;
+          return { id: row.id, name: row.name };
+        }),
+    }),
+
+    practiced_rhythm: tool({
+      description:
+        "They told you a rhythm happened — 'went to the gym this morning', 'meditated yesterday'. id from Rhythms they're building. when: today (default), yesterday, or a local date (YYYY-MM-DD). Once per day; saying it twice changes nothing. One plain line back, never praise, never a tally.",
+      inputSchema: z.object({ id: z.string().uuid(), when: z.string().max(10).optional() }),
+      execute: (input) =>
+        safe(async () => {
+          const today = localDate(new Date(), timezone);
+          const when = !input.when || input.when === "today" ? today : input.when === "yesterday" ? addDays(today, -1) : input.when;
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(when) || when > today) return { error: "when must be today, yesterday or a past local date" };
+          const r = await practiceRhythm(db, userId, input.id, when, "chat");
+          if (!r) return { error: "not found" };
+          return { id: r.rhythm.id, name: r.rhythm.name, practiced_on: when, already: r.already };
+        }),
+    }),
+
+    let_go_rhythm: tool({
+      description: "They're done building a rhythm, or it's changed into something else (then hold_rhythm the new one with replaces instead). id from Rhythms they're building. Kept as history, gone from Today.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: (input) =>
+        safe(async () => {
+          const row = await letGoRhythm(db, userId, input.id);
+          if (!row) return { error: "not found" };
           return { id: row.id, let_go: true };
         }),
     }),

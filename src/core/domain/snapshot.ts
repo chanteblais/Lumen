@@ -10,16 +10,18 @@ import { DECLINE_EVENT_TYPE, declinesFromEvents, listOpenIntentions, listRecentl
 import { loadBeliefsOrNothing } from "./memory";
 import { getPlanForDate, prunePlan } from "./plans";
 import { listCurrentPriorities } from "./priorities";
+import { listRhythms } from "./rhythms";
 import { currentSitting } from "./users";
 
 export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
   const today = localDate(now, user.timezone);
-  const [openIntentions, recentlyDone, memory, priorities, todayEvents, planRow, sitting] = await Promise.all([
+  const [openIntentions, recentlyDone, memory, priorities, rhythms, todayEvents, planRow, sitting] = await Promise.all([
     listOpenIntentions(db, user.id),
     listRecentlyDone(db, user.id, 5),
     // Never throws: a turn or a page carries on without beliefs if they can't be read.
     loadBeliefsOrNothing(db, user.id),
     listCurrentPriorities(db, user.id, today),
+    listRhythms(db, user.id, today),
     // One query for everything "today" is derived from: capacity + declines.
     listEventsSince(db, user.id, [...CAPACITY_EVENT_TYPES, DECLINE_EVENT_TYPE], new Date(now.getTime() - TODAY_BOUND_MS), 40),
     getPlanForDate(db, user.id, today),
@@ -38,6 +40,8 @@ export async function loadSnapshot(db: Db, user: User, now: Date = new Date()) {
     memoryUnavailable: memory.unavailable,
     /** What they said matters — holding today, or said for a week still ahead. Their word, not Lumi's ranking. */
     priorities,
+    /** The routines they're building, with the days each was practiced (this week and last). Their word; never a target. */
+    rhythms,
     capacity: capacityState.report,
     /** The capacity prompt was skipped today — Today doesn't ask again. */
     capacitySkipped: capacityState.skipped,

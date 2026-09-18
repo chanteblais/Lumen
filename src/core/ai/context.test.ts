@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Intention, Priority } from "@/db/schema";
+import type { RhythmView } from "@/core/domain/rhythms";
 import { buildContextBlock } from "./context";
 
 const now = new Date("2026-09-12T06:00:00Z"); // Fri 11pm Vancouver
@@ -89,6 +90,21 @@ describe("buildContextBlock", () => {
     expect(block).toMatch(/- p1 · this week · "The discussion post matters most this week" · i1 "Discussion post"/);
     expect(block).toMatch(/- p2 · for a while · "Evenings stay free for a while" · —/);
     expect(block).toMatch(/- p3 · next week · "Taxes first next week"/);
+  });
+  it("shows the rhythms they're building with when each happened, never a count", () => {
+    const block = buildContextBlock({
+      displayName: "C",
+      timezone: "America/Vancouver", // Fri Sep 11 locally
+      now,
+      rhythms: [
+        { id: "r1", name: "Gym", content: "go to the gym more", cadence: "a few times a week", typicalMinutes: 60, practicedOn: ["2026-09-09", "2026-09-07"] } as unknown as RhythmView,
+        { id: "r2", name: "Meditation", content: "meditate every morning", cadence: null, typicalMinutes: 20, practicedOn: [] } as unknown as RhythmView,
+      ],
+    });
+    expect(block).toContain("## Rhythms they're building");
+    expect(block).toMatch(/- r1 · Gym · "go to the gym more" · a few times a week · this week: Mon, Wed/);
+    expect(block).toMatch(/- r2 · Meditation · "meditate every morning" · — · not yet/);
+    expect(block).not.toContain("Rhythms they're building (id · name · their words · how often, their words · when it happened)\n- r1 · 2");
   });
   it("leaves the priorities section out when there are none", () => {
     const block = buildContextBlock({ displayName: "C", timezone: "UTC", now });
