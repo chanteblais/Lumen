@@ -1496,55 +1496,75 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-capacity-answers .tool-link + .tool-link::before { content: "·"; margin: 0 0.7em; color: var(--ink-mute); }
 .today-capacity-answers .today-capacity-skip { color: var(--ink-mute); }
 
-/* The board: the glance sheet, and Up next beside it on a wide window (below it otherwise). */
-.today-board { display: grid; gap: 16px; align-items: start; }
-
-/* The paper both sit on. */
-.today-day,
-.today-upnext {
+/* The sheet: the only full paper on the page. */
+.today-day {
   background: rgba(248, 245, 239, 0.95);
   border: 1px solid rgba(27, 26, 23, 0.1);
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(27, 26, 23, 0.08), 0 14px 36px rgba(27, 26, 23, 0.22);
   backdrop-filter: blur(18px);
+  padding: 20px 24px 18px;
 }
-.today-day { padding: 20px 24px 18px; }
 .today-day-title { font-size: 24px; line-height: 1.2; }
 .today-part + .today-part,
-.today-part + .today-closing { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.today-part + .today-closing,
+.today-spine + .today-part,
+.today-spine + .today-closing { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
 
-/* A card per area of life (a list): its name by its tint's dot, one headline,
-   one italic line. Read off what's stored; no counts (core/domain/day-glance.ts). */
-.today-areas { margin: 14px 0 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
-.today-area {
-  --dot: var(--ink-mute);
-  padding: 11px 12px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: rgba(255, 252, 245, 0.55);
-  text-align: center;
-}
-.today-area[data-tint="0"] { --dot: #7e74a6; background: rgba(150, 140, 182, 0.1); }
-.today-area[data-tint="1"] { --dot: #b07a4f; background: rgba(214, 160, 118, 0.12); }
-.today-area[data-tint="2"] { --dot: #8a8446; background: rgba(168, 162, 100, 0.13); }
-.today-area[data-tint="3"] { --dot: #947050; background: rgba(172, 136, 90, 0.1); }
-.today-area-name { display: inline-flex; align-items: center; gap: 7px; font-size: 16px; line-height: 1.25; color: var(--ink); }
-.today-area-name::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); flex: none; }
-.today-area-label { margin-top: 3px; font-size: 14px; line-height: 1.3; color: var(--ink-soft); }
+/* The spine: the rest of today, top to bottom — what's done above a Now mark,
+   then the windows between now and each fixed time, with the fixed times as
+   landmarks on the line. A hairline runs down the left with a dot per mark;
+   the rows hang off it. Coarse by design (core/domain/day-shape.ts). */
+.today-spine { position: relative; margin-top: 12px; padding-left: 22px; }
+.today-spine::before { content: ""; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: var(--rule-strong); }
+.today-spine > li { position: relative; }
+.today-spine > li::before { content: ""; position: absolute; left: -22px; top: 8px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--rule-strong); background: #f8f5ef; }
+/* The past of the day, receded above Now: a hollow mark and one faint line. */
+.today-past { padding-bottom: 10px; }
+.today-past .today-done-list { margin: 0; }
+/* Now: a brass dot, the word, the part of the day. Where the eye lands. */
+.today-nowmark { display: flex; align-items: baseline; gap: 10px; padding: 2px 0 6px; }
+.today-nowmark::before { background: var(--brass) !important; border-color: var(--brass) !important; box-shadow: 0 0 0 3px rgba(156, 126, 78, 0.18); }
+.today-nowmark .label { color: var(--ink); }
+.today-nowmark-part { font-size: 14px; color: var(--ink-mute); }
+/* A window: "Before practicum · about two hours", then the rows that fit it. */
+.today-window { padding: 4px 0 8px; }
+.today-window::before { display: none; }
+.today-window-label { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.today-window-span { font-size: 13px; font-style: italic; color: var(--ink-mute); }
+.today-spill .today-rows { opacity: 0.8; }
+/* A landmark: the fixed time, on the line. */
+.today-landmark { display: flex; align-items: baseline; gap: 10px; padding: 8px 0 8px; }
+.today-landmark::before { background: var(--ink-mute) !important; border-color: var(--ink-mute) !important; }
+.today-landmark-time { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.today-landmark-title { font-size: 16px; color: var(--ink); }
+
+/* How things stand: one quiet line per area of life, under the spine, each in
+   its list's tint. Containment said per area; no counts (core/domain/day-glance.ts). */
+.today-areas { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.today-area { --dot: var(--ink-mute); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 4px 0; font-size: 14px; line-height: 1.35; }
+.today-area::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); flex: none; align-self: center; }
+.today-area[data-tint="0"] { --dot: #7e74a6; }
+.today-area[data-tint="1"] { --dot: #b07a4f; }
+.today-area[data-tint="2"] { --dot: #8a8446; }
+.today-area[data-tint="3"] { --dot: #947050; }
+.today-area-name { color: var(--ink); min-width: 72px; }
+.today-area-label { color: var(--ink-soft); }
 .today-area[data-status="can_wait"] .today-area-label { color: var(--ink-mute); }
-.today-area-detail {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.3;
-  color: var(--ink-mute);
-  overflow-wrap: anywhere;
-}
+.today-area-detail { color: var(--ink-mute); overflow-wrap: anywhere; }
 
-/* Suggested for today: the path as one list, in Lumi's order — no Right now card.
-   Circle · title · list tag · estimate · chevron; the chevron opens the row in place. */
-.today-rows { margin-top: 6px; display: flex; flex-direction: column; }
+/* Rows: the suggested things, all alike — circle · title · list tag · estimate ·
+   chevron; the chevron opens the row in place. The first thing on the whole
+   spine is Start here, with its first step already showing. */
+.today-rows { margin-top: 2px; display: flex; flex-direction: column; }
 .today-row + .today-row { border-top: 1px solid var(--rule); }
 .today-row-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 58px auto; align-items: center; gap: 12px; padding: 9px 0; }
+.today-row[data-start] { margin: 0 -10px; padding: 0 10px; border-radius: 8px; background: rgba(156, 126, 78, 0.07); }
+.today-row[data-start] + .today-row { border-top: 0; }
+.today-start { margin-bottom: 1px; color: var(--brass); }
+.today-row[data-start] .today-row-title { font-size: 17px; }
+.today-row[data-start] .today-first { margin-top: 4px; }
+.today-quick { margin-left: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); vertical-align: middle; }
 .today-row-title { font-size: 16px; line-height: 1.3; color: var(--ink); }
 .today-row-why { margin-top: 2px; font-size: 14px; line-height: 1.3; color: var(--ink-soft); }
 .today-row-tag { padding: 2px 10px; font-size: 13px; }
@@ -1591,25 +1611,11 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-done-list { margin-top: 4px; font-size: 14px; line-height: 1.45; color: var(--ink-mute); }
 .today-closing { font-size: 16px; line-height: 1.35; color: var(--ink-mute); }
 
-/* Up next: the fixed times today, as a thin line of dots — landmarks, not tasks. */
-.today-upnext { padding: 18px 20px 16px; }
-.today-times { margin-top: 10px; display: flex; flex-direction: column; }
-.today-times li { position: relative; display: flex; flex-direction: column; padding: 0 0 14px 20px; }
-.today-times li:last-child { padding-bottom: 0; }
-.today-times li::before { content: ""; position: absolute; left: 0; top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--brass); }
-.today-times li:not(:last-child)::after { content: ""; position: absolute; left: 4px; top: 16px; bottom: 2px; width: 1px; background: var(--rule-strong); }
-.today-time { font-size: 13px; color: var(--ink-mute); }
-.today-time-title { font-size: 16px; line-height: 1.3; color: var(--ink); }
-
-/* Wide: the board moves to the right edge and the room opens up to its left. */
+/* Wide: the column moves to the right edge and the room opens up to its left. */
 @media (min-width: 1100px) {
   .today-page { max-width: none; margin: 0; align-items: flex-end; }
-  .today-voice { width: clamp(420px, 36vw, 560px); max-width: none; }
-  .today-board { width: clamp(420px, 36vw, 560px); }
-}
-/* Wider still: Up next stands beside the sheet, as in the mockup. */
-@media (min-width: 1400px) {
-  .today-board:has(.today-upnext) { width: auto; grid-template-columns: clamp(460px, 36vw, 580px) 220px; }
+  .today-voice,
+  .today-day { width: clamp(420px, 36vw, 560px); max-width: none; }
 }
 
 /* Lumi stands in the room, on the flagstones behind the raised bed, between
@@ -1645,8 +1651,9 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
      at -22px it spilled 2px past .main, and the whole page dragged sideways under a finger. */
   .today-voice::before { inset: -10px -20px -6px; }
   .today-day { padding: 16px 16px 14px; }
-  .today-areas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* the list tag goes, as on the Lists sheet; the area cards carry the colour */
+  .today-spine { padding-left: 18px; }
+  .today-spine > li::before { left: -18px; }
+  /* the list tag goes, as on the Lists sheet; How things stand carries the colour */
   .today-row-head { grid-template-columns: auto minmax(0, 1fr) 52px auto; gap: 10px; }
   .today-row-tag { display: none; }
   .today-row-body { padding: 0 8px 12px 30px; }

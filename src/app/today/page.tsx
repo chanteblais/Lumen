@@ -10,7 +10,7 @@ import { requireVisit } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Today" };
 
-/** What does today hold? The day at a glance, with Right now leading it. docs/today.md */
+/** What does the rest of today hold, and where do I start? docs/today.md */
 export default async function TodayPage() {
   // A page open is a visit too: the sitting (and any gap it began after) starts here if Today is opened first.
   const { user } = await requireVisit();
@@ -35,7 +35,7 @@ export default async function TodayPage() {
     <div className="today-page">
       {/* Today is set in the garden (globals.css → Today: the garden): the painting fills the
           viewport behind the shell, and two things sit on it — Lumi's words set on the painting,
-          and the day at a glance on one sheet, Right now leading it (2026-09-18). */}
+          and one sheet with the rest of today laid along itself (2026-09-18). */}
       <RoomScene room="today" />
       <LibraryDebug userId={user.id} />
       <header className="today-voice">
@@ -57,7 +57,7 @@ export default async function TodayPage() {
 /** While the path is being cut: the sheet with Lumi's three slow dots — the same pause as in the chat, not grey bars. */
 function PlanSkeleton() {
   return (
-    <section className="today-day" aria-label="Today at a glance" aria-busy>
+    <section className="today-day" aria-label="The rest of today" aria-busy>
       <p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p>
     </section>
   );

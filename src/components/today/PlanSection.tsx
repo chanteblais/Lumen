@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { ensureTodaysPlan, needsFirstItems } from "@/core/ai/today-plan";
 import { glanceAreas } from "@/core/domain/day-glance";
+import { shapeDay } from "@/core/domain/day-shape";
 import { doneOn } from "@/core/domain/intentions";
 import { db } from "@/db/client";
 import type { DayPlanJson, Intention, User } from "@/db/schema";
@@ -31,12 +32,16 @@ export async function planIsReady(user: User): Promise<boolean> {
   return Boolean(snap.plan && !needsFirstItems(snap, user.timezone));
 }
 
+/** Ten minutes or less: a quick one, worth knowing on a low day. */
+const QUICK_MINUTES = 10;
+
 /**
  * The page's two layers: `voice` (Lumi's day line and, once a day, the capacity
- * question — set on the painting) and `day`, Today at a glance (2026-09-18,
- * after Chanté's mockup): a sheet with a card per area of life, Suggested for
- * today (the path as one list — no Right now card), what's done, and the
- * closing line; and Up next beside it with the fixed times. docs/today.md → Anatomy.
+ * question — set on the painting) and `day`, the rest of today laid along
+ * itself (2026-09-18, third cut): what's done above a Now mark, then the
+ * suggested path in the windows between now and each fixed time, the first
+ * thing marked Start here with its step already open, and under the spine
+ * one quiet line per area of life. docs/today.md → Anatomy.
  */
 export async function PlanSection({ user, part }: { user: User; part: "voice" | "day" }) {
   const { snap, plan, byId } = await getTodaysPlan(user);
@@ -57,76 +62,103 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
     );
   }
 
-  const areas = glanceAreas(snap.lists, snap.openIntentions, path.map((i) => i.id), snap.priorities, snap.today, user.timezone);
+  const now = new Date();
+  const shape = shapeDay(
+    path,
+    later.map((i) => ({ id: i.id, title: i.title, at: i.dueAt!, estimateMinutes: i.estimateMinutes })),
+    now,
+    user.timezone,
+  );
+  const areas = glanceAreas(snap.lists, snap.openIntentions, path.map((i) => i.id), snap.priorities, snap.today, user.timezone, now);
   const tintOf = (list: string | null) => (list && snap.lists.includes(list) ? snap.lists.indexOf(list) % 4 : null);
   const done = doneOn(snap.recentlyDone, snap.today, user.timezone);
   const closing = plan.restCanWait ? (plan.closingLine ?? "Everything else can wait.") : null;
   const firstId = plan.rightNow?.intentionId;
 
-  return (
-    <div className="today-board">
-      <section className="today-day" aria-label="Today at a glance">
-        <h2 className="today-day-title font-display text-ink">Today at a glance</h2>
+  const row = (i: Intention) => (
+    <TodayRow
+      key={i.id}
+      id={i.id}
+      title={i.title}
+      list={i.list}
+      tint={tintOf(i.list)}
+      estimateMinutes={i.estimateMinutes}
+      quick={Boolean(i.estimateMinutes && i.estimateMinutes <= QUICK_MINUTES)}
+      firstStep={i.id === firstId ? plan.rightNow!.firstStep : i.nextAction}
+      startHere={i.id === firstId}
+      note={i.id === firstId ? plan.note : undefined}
+    />
+  );
 
-        {areas.length > 0 && (
-          <ul className="today-areas" aria-label="Areas">
+  return (
+    <section className="today-day" aria-label="The rest of today">
+      <h2 className="today-day-title font-display text-ink">The rest of today</h2>
+
+      <ol className="today-spine">
+        {/* The day so far: what's done, receded above the Now mark. Titles only, never a count. */}
+        {done.length > 0 && (
+          <li className="today-past" aria-label="Done today">
+            <p className="today-done-list">{done.map((i) => i.title).join(" · ")}</p>
+          </li>
+        )}
+
+        <li className="today-nowmark" aria-label="Now">
+          <span className="label">Now</span>
+          <span className="today-nowmark-part">{shape.nowPart}</span>
+        </li>
+
+        {path.length === 0 && (
+          <li className="today-window">
+            <p className="today-empty font-display text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
+          </li>
+        )}
+
+        {shape.segments.map((s) =>
+          s.kind === "landmark" ? (
+            <li key={s.id} className="today-landmark">
+              <span className="today-landmark-time">{fmtTime(s.at, user.timezone)}</span>
+              <span className="today-landmark-title">{s.title}</span>
+            </li>
+          ) : (
+            <li key={s.label} className="today-window">
+              <p className="today-window-label">
+                <span className="label label-mute">{s.label}</span>
+                {s.span && <span className="today-window-span">{s.span}</span>}
+              </p>
+              <ul className="today-rows">{s.items.map(row)}</ul>
+            </li>
+          ),
+        )}
+
+        {shape.spill.length > 0 && (
+          <li className="today-window today-spill">
+            <p className="today-window-label">
+              <span className="label label-mute">If there’s room</span>
+            </p>
+            <ul className="today-rows">{shape.spill.map(row)}</ul>
+          </li>
+        )}
+      </ol>
+
+      {/* One line per area of life, under the spine: containment, said per area. No numbers. */}
+      {areas.length > 0 && (
+        <section className="today-part today-standing" aria-label="How things stand">
+          <p className="label label-mute">How things stand</p>
+          <ul className="today-areas">
             {areas.map((a) => (
               <li key={a.list} className="today-area" data-tint={a.tint} data-status={a.status}>
-                <p className="today-area-name">{a.list}</p>
-                <p className="today-area-label">{a.label}</p>
-                <p className="today-area-detail font-display italic">{a.detail}</p>
+                <span className="today-area-name">{a.list}</span>
+                <span className="today-area-label">{a.label}</span>
+                {/* The title only when it says something the spine doesn't: what matters, or a date. */}
+                {(a.status === "matters" || a.status === "due_today" || a.status === "due_tomorrow") && <span className="today-area-detail">· {a.detail}</span>}
               </li>
             ))}
           </ul>
-        )}
-
-        <section className="today-part today-suggested" aria-label="Suggested for today">
-          <p className="label">Suggested for today</p>
-          {path.length > 0 ? (
-            <ul className="today-rows">
-              {path.map((i) => (
-                <TodayRow
-                  key={i.id}
-                  id={i.id}
-                  title={i.title}
-                  list={i.list}
-                  tint={tintOf(i.list)}
-                  estimateMinutes={i.estimateMinutes}
-                  firstStep={i.id === firstId ? plan.rightNow!.firstStep : i.nextAction}
-                  note={i.id === firstId ? plan.note : undefined}
-                />
-              ))}
-            </ul>
-          ) : (
-            <p className="today-empty font-display text-ink-soft">Nothing queued. {later.length ? "Just what's on the clock." : "Say what's on your mind in the chat, or enjoy the quiet."}</p>
-          )}
         </section>
-
-        {/* What's already off the plate today, receded: titles only, oldest first, never a count. */}
-        {done.length > 0 && (
-          <section className="today-part today-done" aria-label="Done today">
-            <p className="label label-mute">Done today</p>
-            <p className="today-done-list">{done.map((i) => i.title).join(" · ")}</p>
-          </section>
-        )}
-
-        {closing && <p className="today-closing font-display italic">{closing}</p>}
-      </section>
-
-      {later.length > 0 && (
-        <aside className="today-upnext" aria-label="Up next">
-          <p className="label">Up next</p>
-          <ol className="today-times">
-            {later.map((i) => (
-              <li key={i.id}>
-                <span className="today-time">{fmtTime(i.dueAt!, user.timezone)}</span>
-                <span className="today-time-title">{i.title}</span>
-              </li>
-            ))}
-          </ol>
-        </aside>
       )}
-    </div>
+
+      {closing && <p className="today-closing font-display italic">{closing}</p>}
+    </section>
   );
 }
 

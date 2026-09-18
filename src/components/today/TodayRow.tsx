@@ -14,6 +14,10 @@ type Props = {
   estimateMinutes: number | null;
   /** The first step, when there is one: the path's for its first thing, otherwise the thing's own next action. */
   firstStep: string | null;
+  /** The path's first thing: marked Start here, its first step already open. */
+  startHere?: boolean;
+  /** Ten minutes or less — a quiet mark, worth knowing on a low day. */
+  quick?: boolean;
   /** After a Not this: Lumi's one line on why this fits instead. */
   note?: string;
 };
@@ -35,7 +39,7 @@ type View = "closed" | "open" | "decline" | "reshaping" | "steps";
  *   Smaller still breaks them down again.
  * Nothing sends you to Home. docs/today.md → Anatomy.
  */
-export function TodayRow({ id, title, list, tint, estimateMinutes, firstStep, note }: Props) {
+export function TodayRow({ id, title, list, tint, estimateMinutes, firstStep, startHere = false, quick = false, note }: Props) {
   const router = useRouter();
   const [view, setView] = useState<View>("closed");
   const [steps, setSteps] = useState<string[] | null>(null);
@@ -101,12 +105,23 @@ export function TodayRow({ id, title, list, tint, estimateMinutes, firstStep, no
   const isOpen = view !== "closed";
 
   return (
-    <li className="today-row" data-open={isOpen || undefined}>
+    <li className="today-row" data-open={isOpen || undefined} data-start={startHere || undefined}>
       <div className="today-row-head">
         <CompleteCircle id={id} label={title} size={20} />
         <div className="today-row-main">
-          <p className="today-row-title">{title}</p>
+          {startHere && <p className="label today-start">Start here</p>}
+          <p className="today-row-title">
+            {title}
+            {quick && <span className="today-quick">quick</span>}
+          </p>
           {note && <p className="today-row-why font-display italic">{note}</p>}
+          {/* The first thing's step is open before any tap: the threshold, already in view. */}
+          {startHere && !isOpen && firstStep && (
+            <p className="today-first">
+              <span className="label label-mute mr-2">First</span>
+              {firstStep}
+            </p>
+          )}
         </div>
         {list ? (
           <span className="lists-tag today-row-tag" data-tint={tint ?? undefined}>

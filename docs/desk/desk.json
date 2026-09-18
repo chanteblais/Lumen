@@ -45,14 +45,14 @@
       "area": "Today",
       "kind": "direction",
       "effort": "think",
-      "title": "Today at a glance: rewrite the Garden's \"one thing should dominate\"?",
-      "context": "You asked for Today at a glance, and then for the Right now card to go, with your mockup (2026-09-18). It's built on `ux/today-at-a-glance`: a card per area of life, Suggested for today as one even list, Done today, and Up next. The Garden canon still says one thing should dominate (§4), with a strict one-second test (§5), and the canon's principle 4 says never build a dashboard. The page and the canon now disagree.",
+      "title": "Today's new shape: does the Garden's \"one thing should dominate\" become \"one thing leads\"?",
+      "context": "You asked for Today at a glance, for the Right now card to go, and then for creative license toward someone with ADHD-like traits (2026-09-18). It's built on `ux/today-at-a-glance`: the rest of the day as a spine — what's done above Now, the suggested things in the windows between now and each fixed time, the first marked Start here with its step open, and one line per area of life underneath. The Garden canon still says one thing should dominate (§4). On the spine one thing leads but doesn't take the page. The page and the canon disagree by that much.",
       "points": [
-        "Rewrite §4–5 around the glance: orientation first (where each area stands, what's suggested, what's fixed), with the suggested list kept short and in Lumi's order.",
-        "Keep §4 as the Garden's aim and treat the glance as an experiment you'll judge after living with it.",
-        "Area cards and \"never a dashboard\": say where the line is, e.g. a line per area with no numbers and nothing to manage is allowed; counts, charts and rhythms are not."
+        "Soften §4 to \"one thing leads\": Now, then Start here, is the one-second read; the rest of the day is context, quieter.",
+        "Keep §4 as the Garden's aim and treat the spine as an experiment you'll judge after living with it.",
+        "\"Never a dashboard\" (canon principle 4): say where the line is — a line per area with no numbers and nothing to manage is allowed; boxes, counts, charts and rhythms are not."
       ],
-      "recommendation": "Rewrite §4–5 around the glance, and add the dashboard line from the third point. The curation still does the work (a short path, and each area told it can wait), so the burden stays with Lumi. I'd make the edits to `today-garden.md` for you to read before anything else changes.",
+      "recommendation": "Soften §4 to \"one thing leads\" and add the dashboard line from the third point. The curation still does the work (Lumi's short path, time in words, each area told it can wait), so the burden stays with her. I'd make the edits to `today-garden.md` for you to read before anything else changes.",
       "ifSilent": "The page stays as built, the canon stays as written, and the disagreement stays recorded in the product decisions. Nothing regresses by waiting.",
       "sources": [
         {
