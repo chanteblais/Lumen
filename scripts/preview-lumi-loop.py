@@ -1,13 +1,13 @@
 """Preview a companion loop without a browser, and check its held parts.
 
-    python3 scripts/preview-lumi-loop.py [--sheet public/lumi-idle.webp] [--w 160] [--row 0] [--eye-rows 3]
+    python3 scripts/preview-lumi-loop.py [--sheet public/lumi-free.webp] [--w 176] [--row 0] [--eye-rows 3]
         [--cells 0,1,2,...] [--ms 320] [--blink 4] [--held-from 0] [--out art/preview] [--name loop-0]
 
-Reads a body sheet (public/lumi-idle.webp by default; public/lumi-free.webp is the hands-free Lumi, --w 176) and
+Reads a body sheet (public/lumi-free.webp, the hands-free Lumi and the only one that ships) and
 renders one loop the way LumiCompanion plays it: the cells in play order at `ms` a frame, each frame fading in
 over the last for 80% of the frame time (capped at 260 ms), on the app's paper. `--row` is the loop's row among
-loops and `--eye-rows` how many eye rows each loop has (3 on lumi-idle.webp; on lumi-free.webp the breath has 3
-and every other loop 1, so pass its sheet row with --eye-rows 1). Writes <out>/<name>.gif (looping, the fade in
+loops and `--eye-rows` how many eye rows each loop has (the breath has 3, every other loop 1 — so pass a
+gesture's sheet row with --eye-rows 1). Writes <out>/<name>.gif (looping, the fade in
 four steps a frame) and <out>/<name>-strip.png (the cells in play order). `--blink N` composites one blink
 (half · shut · half) starting at frame N, from the sheet's eye rows.
 
@@ -31,8 +31,8 @@ def arg(name, default):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
 
 
-SHEET = os.path.join(ROOT, arg('--sheet', os.path.join('public', 'lumi-idle.webp')))
-W, H = int(arg('--w', 160)), 208   # a body cell, as in LumiSprite
+SHEET = os.path.join(ROOT, arg('--sheet', os.path.join('public', 'lumi-free.webp')))
+W, H = int(arg('--w', 176)), 208   # a body cell, as in LumiSprite
 EYE_ROWS = int(arg('--eye-rows', 3))
 PAPER = (246, 241, 232)
 SUBSTEPS = 4          # GIF frames per animation frame (the fade drawn in steps)

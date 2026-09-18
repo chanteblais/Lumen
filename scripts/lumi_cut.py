@@ -1,7 +1,7 @@
 """Shared pieces of Lumi's cut: matte a figure off a generated sheet, scale, place, align, breathe, draw lids.
 
-Imported by scripts/cut-lumi-free.py. scripts/cut-lumi-idle.py (the lantern Lumi) still carries its own
-copies of these; it moves onto this module if the lantern cut is kept (docs/animation-pipeline.md → backlog).
+Imported by scripts/cut-lumi-free.py, the one cut that ships a sheet. The lantern Lumi's cut carried its own
+copies of these and was retired with its sprites on 2026-09-15 (docs/animation-pipeline.md → backlog 2).
 """
 import numpy as np
 from PIL import Image

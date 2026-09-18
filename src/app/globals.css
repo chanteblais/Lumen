@@ -830,7 +830,6 @@ body:has(.today-scene, .library-scene, .home-scene) .companion-light { display: 
 .opening.is-compact .opening-title { font-size: 26px; line-height: 1.25; }
 .opening.is-compact .opening-line { font-size: 20px; margin-top: 6px; }
 
-
 .chip {
   font-family: var(--font-body);
   font-size: 16px;
