@@ -50,7 +50,7 @@ function roomWords(label: string): string {
  * question — set on the painting) and `day`, the rest of today laid along
  * itself (2026-09-18): how full it is, as a shape; what's done above a Now
  * mark; the suggested path in the windows between now and each fixed time,
- * the first thing marked Start here with its step already open; the rhythms
+ * the first thing marked Start here; the rhythms
  * they're building, with the days each happened this week; and one quiet line
  * per area of life. docs/today.md → Anatomy.
  */
@@ -102,7 +102,6 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
       tint={tintOf(i.list)}
       estimateMinutes={i.estimateMinutes}
       quick={Boolean(i.estimateMinutes && i.estimateMinutes <= QUICK_MINUTES)}
-      firstStep={i.id === firstId ? plan.rightNow!.firstStep : i.nextAction}
       startHere={i.id === firstId}
       note={i.id === firstId ? plan.note : undefined}
     />

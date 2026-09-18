@@ -7,7 +7,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { type Db } from "@/db/client";
 import { dayPlans, type User } from "@/db/schema";
 import { localDate } from "@/core/time";
-import { advancePlan, getPlanForDate, savePlan, withFirstStep } from "./plans";
+import { advancePlan, getPlanForDate, savePlan } from "./plans";
 import { atomic } from "./tx";
 
 /** Lock the day's first plan row: plan rows are only ever added, so every writer that day queues on the same row. */
@@ -39,20 +39,5 @@ export async function reflectClosedInPlan(db: Db, user: Pick<User, "id" | "timez
     const inPath = p.rightNow?.intentionId === intentionId || p.afterThat.some((a) => a.intentionId === intentionId) || p.later.some((l) => l.intentionId === intentionId);
     if (!inPath) return;
     await savePlan(tx, user.id, today, advancePlan(p, intentionId), "advanced", row.capacity ?? undefined);
-  });
-}
-
-/**
- * A step picked from Break it down: if the intention is Right now, the card
- * shows it as the first step at once — no re-cut. Under the same lock as a
- * close, so a Done landing at the same moment can't be overwritten by it.
- */
-export async function setFirstStepInPlan(db: Db, user: Pick<User, "id" | "timezone">, intentionId: string, firstStep: string, now: Date = new Date()): Promise<void> {
-  const today = localDate(now, user.timezone);
-  await atomic(db, async (tx) => {
-    if (!(await lockDay(tx, user.id, today))) return;
-    const row = await getPlanForDate(tx, user.id, today);
-    if (!row || row.plan.rightNow?.intentionId !== intentionId) return;
-    await savePlan(tx, user.id, today, withFirstStep(row.plan, intentionId, firstStep), "first_step", row.capacity ?? undefined);
   });
 }

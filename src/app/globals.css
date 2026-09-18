@@ -1569,8 +1569,9 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-rhythm-list { margin-top: 4px; display: flex; flex-direction: column; }
 .today-rhythm + .today-rhythm { border-top: 1px solid var(--rule); }
 .today-rhythm { padding: 8px 0; }
-.today-rhythm-head { display: flex; align-items: center; gap: 14px; }
-.today-rhythm-name { flex: 1 1 auto; min-width: 0; font-size: 16px; line-height: 1.3; color: var(--ink); }
+.today-rhythm-head { display: flex; align-items: center; gap: 12px; }
+.today-rhythm-main { flex: 1 1 auto; min-width: 0; }
+.today-rhythm-name { font-size: 16px; line-height: 1.3; color: var(--ink); }
 .today-week { display: flex; gap: 5px; }
 .today-week-day {
   display: grid;
@@ -1587,63 +1588,32 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-week-day[data-state="happened"] { background: var(--brass); border-color: var(--brass); color: #fff8ea; }
 .today-week-day[data-state="today"] { border-color: var(--brass); color: var(--brass); }
 .today-week-day[data-state="ahead"] { border-color: rgba(27, 26, 23, 0.07); color: rgba(27, 26, 23, 0.28); }
-.today-rhythm-did { flex: none; }
-.today-rhythm-did[aria-pressed="true"] { color: var(--ink-mute); }
-.today-rhythm-words { margin-top: 3px; font-size: 14px; line-height: 1.35; color: var(--ink-mute); }
+.today-rhythm-words { margin-top: 2px; font-size: 14px; line-height: 1.35; color: var(--ink-mute); }
 .today-rhythm-room { color: var(--ink-soft); }
 
 /* Rows: the suggested things, all alike — circle · title · list tag · estimate ·
-   chevron; the chevron opens the row in place. The first thing on the whole
-   spine is Start here, with its first step already showing. */
+   Not this, a quiet word that opens its chips under the row. The first thing
+   on the whole spine is Start here. (Break it down and the First line left
+   Today on 2026-09-18.) */
 .today-rows { margin-top: 2px; display: flex; flex-direction: column; }
 .today-row + .today-row { border-top: 1px solid var(--rule); }
 .today-row-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 58px auto; align-items: center; gap: 12px; padding: 9px 0; }
+.today-row-not { font-size: 14px; color: var(--ink-mute); white-space: nowrap; }
+.today-row-not:hover, .today-row-not[aria-expanded="true"] { color: var(--ink); }
 .today-row[data-start] { margin: 0 -10px; padding: 0 10px; border-radius: 8px; background: rgba(156, 126, 78, 0.07); }
 .today-row[data-start] + .today-row { border-top: 0; }
 .today-start { margin-bottom: 1px; color: var(--brass); }
 .today-row[data-start] .today-row-title { font-size: 17px; }
-.today-row[data-start] .today-first { margin-top: 4px; }
 .today-quick { margin-left: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); vertical-align: middle; }
 .today-row-title { font-size: 16px; line-height: 1.3; color: var(--ink); }
 .today-row-why { margin-top: 2px; font-size: 14px; line-height: 1.3; color: var(--ink-soft); }
 .today-row-tag { padding: 2px 10px; font-size: 13px; }
 .today-row-est { font-size: 13px; color: var(--ink-mute); text-align: right; white-space: nowrap; }
-.today-row-toggle {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: var(--ink-mute);
-  cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
-}
-.today-row-toggle svg { transition: transform 160ms ease; }
-.today-row-toggle:hover { background: var(--paper-deep); color: var(--ink); }
-.today-row[data-open] .today-row-toggle svg { transform: rotate(90deg); }
-@media (prefers-reduced-motion: reduce) { .today-row-toggle svg { transition: none; } }
-/* The row, opened: its first step, then Not this and Break it down, all in place. */
-.today-row-body { padding: 0 40px 12px 32px; }
+/* Under the row, after Not this: Lumi's question and the chips, then the pause while the path re-cuts. */
+.today-row-body { padding: 0 0 12px 32px; }
 .today-row-body .chip { font-size: 14px; padding: 7px 14px; }
-.today-first { font-size: 15px; line-height: 1.4; color: var(--ink-soft); }
 .today-empty { margin-top: 6px; font-size: 18px; line-height: 1.3; }
 .today-now-working { font-size: 16px; line-height: 1.3; color: var(--ink-mute); }
-.today-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-.today-step {
-  display: block;
-  width: 100%;
-  padding: 7px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  text-align: left;
-  font-size: 15px;
-  line-height: 1.35;
-  color: var(--ink);
-  cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease;
-}
-.today-step:hover { background: var(--paper-deep); border-color: var(--rule-strong); }
-.today-step:disabled { opacity: 0.5; cursor: default; }
 .today-trouble { margin-top: 10px; font-size: 15px; font-style: italic; color: var(--ink-mute); }
 
 /* What's done today, receded: one faint line of titles, no ticks, no count. */

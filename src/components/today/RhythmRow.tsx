@@ -20,30 +20,31 @@ type Props = {
 };
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 /**
- * One rhythm on Today (2026-09-18): its name, the week as seven small marks
- * — filled on the days it happened, today outlined, nothing for the days it
- * didn't — their words under it, and one quiet word, *Did it*, for today.
- * A tap records today (`PATCH /api/rhythms/[id]`); tapping again takes it
- * back. State and shape, never a count: no target, no streak, no misses.
+ * One rhythm on Today (2026-09-18): the same circle every row on the page has,
+ * for today — tick it and today's mark fills; tick again and it clears — then
+ * the name, the week as seven small marks (filled on the days it happened,
+ * today outlined, nothing for the days it didn't) and their words under it.
+ * State and shape, never a count: no target, no streak, no misses.
  * docs/today.md → Anatomy → Rhythms.
  */
 export function RhythmRow({ id, name, content, cadence, week, practicedOn, today, room }: Props) {
   const router = useRouter();
-  const [doneToday, setDoneToday] = useState(practicedOn.includes(today));
-  const [given, setGiven] = useState(practicedOn.includes(today));
-  if (given !== practicedOn.includes(today)) {
-    setGiven(practicedOn.includes(today));
-    setDoneToday(practicedOn.includes(today));
+  const given = practicedOn.includes(today);
+  const [doneToday, setDoneToday] = useState(given);
+  const [seen, setSeen] = useState(given);
+  // A fresh answer from the server replaces the local one (adjusted during render, no effect).
+  if (seen !== given) {
+    setSeen(given);
+    setDoneToday(given);
   }
   const [busy, setBusy] = useState(false);
-  const [trouble, setTrouble] = useState(false);
 
   const toggle = async () => {
     if (busy) return;
     setBusy(true);
-    setTrouble(false);
     const next = !doneToday;
     setDoneToday(next);
     try {
@@ -52,7 +53,6 @@ export function RhythmRow({ id, name, content, cadence, week, practicedOn, today
       router.refresh();
     } catch {
       setDoneToday(!next);
-      setTrouble(true);
     } finally {
       setBusy(false);
     }
@@ -61,7 +61,29 @@ export function RhythmRow({ id, name, content, cadence, week, practicedOn, today
   return (
     <li className="today-rhythm">
       <div className="today-rhythm-head">
-        <p className="today-rhythm-name">{name}</p>
+        <button
+          type="button"
+          onClick={() => void toggle()}
+          className={`circle ${doneToday ? "is-done" : ""}`}
+          style={{ width: 20, height: 20 }}
+          aria-pressed={doneToday}
+          aria-label={doneToday ? `Not today after all: ${name}` : `${name} today`}
+          disabled={busy}
+        >
+          {doneToday && (
+            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} />
+            </svg>
+          )}
+        </button>
+        <div className="today-rhythm-main">
+          <p className="today-rhythm-name">{name}</p>
+          <p className="today-rhythm-words font-display italic">
+            {content}
+            {cadence ? ` · ${cadence}` : ""}
+            {room && !doneToday ? <span className="today-rhythm-room"> · room {room}</span> : null}
+          </p>
+        </div>
         <ol className="today-week" aria-label={`${name} this week`}>
           {week.map((d, n) => {
             const happened = d === today ? doneToday : practicedOn.includes(d);
@@ -73,17 +95,7 @@ export function RhythmRow({ id, name, content, cadence, week, practicedOn, today
             );
           })}
         </ol>
-        <button type="button" className="tool-link today-rhythm-did" disabled={busy} onClick={() => void toggle()} aria-pressed={doneToday}>
-          {doneToday ? "Did it" : trouble ? "Did it? Once more" : "Did it"}
-        </button>
       </div>
-      <p className="today-rhythm-words font-display italic">
-        {content}
-        {cadence ? ` · ${cadence}` : ""}
-        {room && !doneToday ? <span className="today-rhythm-room"> · room {room}</span> : null}
-      </p>
     </li>
   );
 }
-
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
