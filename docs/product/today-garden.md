@@ -89,28 +89,26 @@ What comes next?
 
 The user should not repeatedly reprioritize the entire day.
 
-## 4. One thing should dominate
+## 4. Where to start should be clear
 
-At most moments, one thing should have clear visual and cognitive dominance.
+*Retired 2026-09-18 (Chanté: "Let's get rid of one thing should dominate"), after Today became the rest of the day laid along itself. The section used to read: "At most moments, one thing should have clear visual and cognitive dominance … Everything else should be visually quieter … The user should be able to open Today while overwhelmed and understand almost immediately: this is the thing we're considering right now." What it was for stays; what it prescribed does not.*
+
+Today no longer gives one thing visual dominance over the page. It gives the user the shape of the rest of the day, and within it makes one thing clear: where to start.
 
 For example:
 
-Right now\
-Finish discussion post\
-School · \~40 min
+Now · afternoon\
+Before practicum · about an hour\
+**Start here** — Finish discussion post · First: open the doc\
+Send invoice
 
-Start with Lumi\
-Not this
+Practicum · 5:00 pm
 
-Everything else should be visually quieter.
+The interface has still performed the prioritization work. Lumi's order is the order shown; the first thing is marked, with its first physical step already in view; nothing else on the page asks to be chosen among.
 
-This is not merely aesthetic minimalism. It is executive-function support.
+This is executive-function support of a different shape. The earlier rule assumed the overwhelmed user needed everything but one thing taken away. The revised aim is that they should be able to open Today and, without deciding anything, see how much day there is, what's fixed in it, what's suggested, and where to begin.
 
-The interface has already performed some of the prioritization work.
-
-The user should be able to open Today while overwhelmed and understand almost immediately:
-
-This is the thing we're considering right now.
+Related: [decision, 2026-09-18](../living/decisions.md).
 
 ## 5. The one-second test
 
@@ -1988,7 +1986,7 @@ When reviewing Today, ask:
 
 Can an overwhelmed user understand what matters within roughly one second?
 
-Is one thing clearly more important than everything else on the screen?
+Is it clear where to start, without anything having to be chosen? *(Until 2026-09-18: "Is one thing clearly more important than everything else on the screen?" — retired with §4.)*
 
 Is the system showing information because it is relevant now, or merely because it knows it?
 

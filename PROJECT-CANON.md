@@ -17,7 +17,7 @@
 1. **The system does the organising.** Lumi carries the organisational burden and the user keeps authority. Automate administration, never agency. (V§4, EP§1)
 2. **Lumi proposes. The user corrects. Lumi learns.** Say "here's how I'd order these", never "this is the correct priority". Recommendations stay easy to override. (V§5, EP§5)
 3. **Correction beats configuration,** and a manual move teaches Lumi something. (EP§6, EP§16)
-4. **Show less than you know; one decision at a time.** Disclose progressively; never build a dashboard. Empty space is part of prioritisation. (V§11, EP§2–4, EP§12)
+4. **Show less than you know; one decision at a time.** Disclose progressively; never build a dashboard. Empty space is part of prioritisation. (V§11, EP§2–4, EP§12) *"Never a dashboard" is under question since 2026-09-18 — Chanté: "I'm starting to feel like it should be a bit of a dashboard" — [open question 29](docs/living/open-questions.md); the Garden's "one thing should dominate" was retired the same day ([decision](docs/living/decisions.md)).*
 5. **Starting is its own problem.** Cross the smallest meaningful threshold instead of producing a plan. (V§6, EP§10)
 6. **Presence without interruption.** Lumi intervenes when useful, not on an engagement timer. (V§7, EP§11)
 7. **Design for return.** Every workflow assumes the user may disappear. Coming back is cheap and restores the present instead of exposing failure. "Where were we?" works at every scale. (V§8, V§17, EP§8)

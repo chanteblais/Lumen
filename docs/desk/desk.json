@@ -41,26 +41,32 @@
       ]
     },
     {
-      "id": "today-at-a-glance-canon",
+      "id": "today-dashboard",
       "area": "Today",
       "kind": "direction",
       "effort": "think",
-      "title": "Today's new shape: does the Garden's \"one thing should dominate\" become \"one thing leads\"?",
-      "context": "You asked for Today at a glance, for the Right now card to go, and then for creative license toward someone with ADHD-like traits (2026-09-18). It's built on `ux/today-at-a-glance`: the rest of the day as a spine — what's done above Now, the suggested things in the windows between now and each fixed time, the first marked Start here with its step open, and one line per area of life underneath. The Garden canon still says one thing should dominate (§4). On the spine one thing leads but doesn't take the page. The page and the canon disagree by that much.",
+      "title": "How much of a dashboard should Today be?",
+      "context": "You retired \"one thing should dominate\" (done: Garden §4 now says where to start should be clear) and said you're starting to feel Today should be \"a bit of a dashboard\". The canon says never a dashboard in four places (principle 4, the experience principles' watch-for list, Garden §156, the drift list). My reading: what it was against was metrics that judge (counts, progress, streaks) and handing the reading back to you (many equal widgets). The page already shows state at a glance without either. So the question is what a bit more would be.",
       "points": [
-        "Soften §4 to \"one thing leads\": Now, then Start here, is the one-second read; the rest of the day is context, quieter.",
-        "Keep §4 as the Garden's aim and treat the spine as an experiment you'll judge after living with it.",
-        "\"Never a dashboard\" (canon principle 4): say where the line is — a line per area with no numbers and nothing to manage is allowed; boxes, counts, charts and rhythms are not."
+        "How full the day is — a shape (the spine getting denser), never a percentage.",
+        "How the week stands, not only today: what's fixed and what matters, a few days out.",
+        "What's been resting a while — named, as a signal to reconsider, never as overdue or a count.",
+        "A number you'd actually want to see. If there is one, say which; I'd rather hear it than guess.",
+        "None of these: the line is state and shape yes, counts and scores no — and the canon's four passages get reworded to say exactly that."
       ],
-      "recommendation": "Soften §4 to \"one thing leads\" and add the dashboard line from the third point. The curation still does the work (Lumi's short path, time in words, each area told it can wait), so the burden stays with her. I'd make the edits to `today-garden.md` for you to read before anything else changes.",
-      "ifSilent": "The page stays as built, the canon stays as written, and the disagreement stays recorded in the product decisions. Nothing regresses by waiting.",
+      "recommendation": "The first and the last: let the spine carry how full the day is, and reword the canon to allow state and shape while still forbidding counts, scores and anything you'd have to interpret. The week and resting things are worth trying only once the day view has settled. If you pick a number (the fourth), I'd build it and watch the burden log.",
+      "ifSilent": "The canon stays as written (never a dashboard) and the page stays as built. Nothing is added; open question 29 holds your words until you come back to it.",
       "sources": [
         {
-          "label": "The decision and the tension",
+          "label": "Open question 29, with your words and my reading",
+          "path": "docs/living/open-questions.md"
+        },
+        {
+          "label": "The decision retiring §4",
           "path": "docs/living/decisions.md"
         },
         {
-          "label": "Garden §4",
+          "label": "Garden §4 (rewritten) and §156",
           "path": "docs/product/today-garden.md"
         }
       ]

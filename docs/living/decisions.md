@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-18 · "One thing should dominate" is retired; where to start should be clear
+
+**Decision.** The Garden's §4 no longer asks Today to give one thing visual and cognitive dominance over the page. Its replacement asks that, whatever the page shows, where to start is clear without anything having to be chosen. The core experience test (§157) changes its second question to match. Principle 4's "never build a dashboard" is **not** changed by this decision; it is now [open question 29](open-questions.md#29-how-much-of-a-dashboard-should-today-be).
+**Rationale.** Chanté (2026-09-18), after landing Today's new shape: "Let's get rid of one thing should dominate. I'm not actually sure about the 'never a dashboard'. I'm starting to feel like it should be a bit of a dashboard." *(Claude's reading:)* the first sentence is a decision and the second is a direction still forming, so they are handled apart: the retirement is written into the canon; the dashboard question is recorded in her words and left open, with what it would change if decided. The purpose §4 served — that an overwhelmed user opens Today and doesn't have to decide anything — survives in the rewrite; the prescription (one big thing, everything else quiet) does not.
+**Implications.**
+- The page as built (the spine, *Start here*) now agrees with the canon on this point. The desk ask on §4 is answered; its dashboard half becomes the new ask.
+- `today.md` principle 2 is marked retired; EP§3's *Right now* example and EP§4's "Today might reveal: Right Now, then …" are illustrations, not specs (EP, Purpose), and stand as history.
+- Lumi's persona line for Today ("One thing Right now … on its card") was already stale after the page change and is corrected with this entry; her brief needs no change.
+**Principle.** The system does the organising; show less than you know (still: nothing past the path is listed); starting is its own problem.
+**Replaces.** Garden §4 as written on 2026-09-13 ("One thing should dominate") and the matching line of §157. The three earlier cuts of the page on 2026-09-18 were built under the old rule and recorded the tension; this closes it.
+
 ## 2026-09-18 · Today lays the rest of the day along itself; there is no Right now card
 
 **Decision.** Today shows the rest of the day as a spine: what's done so far above a *Now* mark; then the suggested things (Lumi's path, in her order) placed in the windows between now and each fixed time — *Before practicum · about an hour*, *After practicum*, *The rest of the afternoon* — with the fixed times as landmarks on the line; the first thing marked *Start here* with its first step already open; under the spine, one quiet line per area of life saying how it stands today (*What matters this week*, *Due tomorrow*, *On today's path*, *Can wait*); and *Everything else can wait*. There is no Right now card. Spans are words, never minutes; nothing is given a clock time; nothing is counted. Turning something down and breaking it into steps happen on any row, opened in place; turning down a thing further down just takes it off today.
