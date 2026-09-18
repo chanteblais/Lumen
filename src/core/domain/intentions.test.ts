@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { startOfLocalDay } from "@/core/due-date";
 import type { Intention } from "@/db/schema";
-import { declinesFromEvents, dueOn, intentionChanges } from "./intentions";
+import { declinesFromEvents, doneOn, dueOn, intentionChanges } from "./intentions";
+
+describe("doneOn", () => {
+  it("keeps what was finished that local day, oldest first", () => {
+    const tz = "America/Vancouver";
+    const rows = [
+      { id: "evening", completedAt: new Date("2026-09-13T02:00:00Z") }, // Sep 12, 7pm local
+      { id: "morning", completedAt: new Date("2026-09-12T16:00:00Z") }, // Sep 12, 9am local
+      { id: "yesterday", completedAt: new Date("2026-09-12T05:00:00Z") }, // Sep 11, 10pm local
+      { id: "never", completedAt: null },
+    ] as unknown as Intention[];
+    expect(doneOn(rows, "2026-09-12", tz).map((i) => i.id)).toEqual(["morning", "evening"]);
+  });
+});
 
 describe("dueOn", () => {
   it("counts a time today as fixed, and leaves a day alone for the path", () => {

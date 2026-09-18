@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-09-18 · Today gives the day at a glance; Right now leads it instead of taking the page
+
+**Decision.** Today shows the whole day on one sheet: Right now first, then After that, Later (fixed times), what's done today, and *Everything else can wait*. Right now still leads — first, a size up, on a faint wash — but it is no longer a large card that owns the page, and *Break it down* is the last, quietest word under it, there when asked for. What was finished today recedes into one faint line of titles, with no count.
+**Rationale.** Chanté (2026-09-18): "Could you update today to focus less on breaking down a single task, and more to give you today at a glance?" *(Claude's reading:)* the page had become a workspace for one task — a big card, its first step and its breakdown — when what she wants from it is orientation: what today holds, and where she is in it. The path's order and its omissions stay, so the page is still a path, not a pile: nothing past After that is shown, and the planner is unchanged.
+**Implications.**
+- **Tension with the Garden canon, not settled:** [`today-garden.md`](../product/today-garden.md) §4 says *one thing should dominate*, and [`today.md`](../today.md) principle 2 the same. The built page now has one thing **leading** rather than dominating. Whether §4 softens to "one thing leads", or the canon stands and the page later moves back toward it, is Chanté's call — on the [desk](../desk/README.md). Until she answers, the page stays as built here.
+- §22 (completion recedes into the day's history) is now visible as *Done today*: titles only, oldest first, never a count and never ticks; it is a record of the day, not a score ([burden log](../ef-burden-log.md): nothing asked of the user).
+- The one-second test (§5) still holds on this page's terms: the first thing on the sheet is Right now, under its own kicker.
+**Principle.** Show less than you know (the path is still curated); design for return (the day reads at once, whenever it is opened).
+**Replaces.** The three layers of 2026-09-13 (Lumi's words · the one Right now card · a faint slip with the rest).
+
 ## 2026-09-14 · The Library's shape: three collections, two expansions, a room always in view, and nobody is asked to name a shelf
 
 **Decision.** The five recommendations the [spatial map](../../art/scenery/library/spatial-map/README.md) had been holding are adopted. **Three bookcase collections**, with the window bay kept as an expansion rather than a fourth. **The reading alcove is an expansion too** — a place to sit that takes on surfaces when an area of life needs the room — not `collection_04`. **A new user with few threads still sees the painted room as it is**, and the close-ups, not the wide view, carry the mostly bare shelf spans. **Lumi names a collection from what it holds, once that context has held for a while, and the user corrects the name by saying so** — nobody is ever asked to name a slot, and a name is a label built into the furniture, not a motto. **The stage is a contain fit:** the whole room always in view, the dark ground filling the rest, so every slot and expansion is reachable at any desktop window.

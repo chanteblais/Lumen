@@ -183,6 +183,16 @@ export async function listRecentlyDone(db: Db, userId: string, limit = 10): Prom
     .limit(limit);
 }
 
+/**
+ * What was finished on a local date, oldest first — the day's history, read off
+ * completion times (Today → Done today). Titles only on the page; never a count.
+ */
+export function doneOn<T extends Pick<Intention, "completedAt">>(done: T[], date: string, timeZone: string): T[] {
+  return done
+    .filter((i) => i.completedAt && localDate(i.completedAt, timeZone) === date)
+    .sort((a, b) => a.completedAt!.getTime() - b.completedAt!.getTime());
+}
+
 export function isStale(i: Pick<Intention, "status" | "lastTouchedAt">, now: Date = new Date()): boolean {
   return i.status === "open" && now.getTime() - i.lastTouchedAt.getTime() > STALE_AFTER_MS;
 }

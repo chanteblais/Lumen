@@ -13,14 +13,15 @@ const DIDNT_TAKE = "That didn’t take. Once more?";
 type View = "actions" | "decline" | "reshaping" | "steps";
 
 /**
- * The Right now card's controls — all of it happens on the card; nothing sends
- * you to Home (2026-09-13).
- * - Not this: the six quick answers in place. The one tapped is recorded, the
- *   path is re-cut around it, and the card comes back with what fits instead,
- *   with Lumi's line on why. Resistance adapts the plan; it is never a failure.
- * - Break it down: Lumi's few small steps on the card; the one tapped becomes
- *   the first step. Smaller still breaks them down again.
+ * Right now's controls — all of it happens on the day sheet; nothing sends you
+ * to Home (2026-09-13). Small words under the first row, not the page's centre
+ * (2026-09-18: Today is the day at a glance).
  * - Done: ticks it off, and the path moves on.
+ * - Not this: the six quick answers in place. The one tapped is recorded, the
+ *   path is re-cut around it, and Right now comes back with what fits instead,
+ *   with Lumi's line on why. Resistance adapts the plan; it is never a failure.
+ * - Break it down: only when asked, Lumi's few small steps in place; the one
+ *   tapped becomes the first step. Smaller still breaks them down again.
  * docs/today.md → Anatomy.
  */
 export function RightNowActions({ id, title }: Props) {
@@ -100,7 +101,7 @@ export function RightNowActions({ id, title }: Props) {
 
   if (view === "reshaping") {
     return (
-      <p className="today-now-working mt-8 font-display italic" role="status">
+      <p className="today-now-working mt-4 font-display italic" role="status">
         Finding something that fits…
       </p>
     );
@@ -108,9 +109,9 @@ export function RightNowActions({ id, title }: Props) {
 
   if (view === "decline") {
     return (
-      <div className="mt-8" role="group" aria-label={`Not this: ${title}`}>
-        <p className="font-display text-[22px] leading-[1.3] text-ink">{DECLINE_PROMPT}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4" role="group" aria-label={`Not this: ${title}`}>
+        <p className="font-display text-[19px] leading-[1.3] text-ink">{DECLINE_PROMPT}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {(Object.entries(DECLINE_REASONS) as [DeclineReason, string][]).map(([key, label]) => (
             <button key={key} type="button" className="chip" onClick={() => void decline(key)}>
               {label}
@@ -128,7 +129,7 @@ export function RightNowActions({ id, title }: Props) {
   if (view === "steps") {
     if (steps === null) {
       return (
-        <div className="mt-7" aria-busy>
+        <div className="mt-4" aria-busy>
           <p className="thinking-dots" aria-label="Lumi is breaking it down">
             <span>·</span>
             <span>·</span>
@@ -138,10 +139,10 @@ export function RightNowActions({ id, title }: Props) {
       );
     }
     return (
-      <div className="mt-7" role="group" aria-label={`Break it down: ${title}`}>
+      <div className="mt-4" role="group" aria-label={`Break it down: ${title}`}>
         {steps.length > 0 && (
           <>
-            <p className="font-display text-[20px] leading-[1.3] text-ink">{STEPS_PROMPT}</p>
+            <p className="font-display text-[18px] leading-[1.3] text-ink">{STEPS_PROMPT}</p>
             <ul className="today-steps">
               {steps.map((s) => (
                 <li key={s}>
@@ -173,15 +174,15 @@ export function RightNowActions({ id, title }: Props) {
   }
 
   return (
-    <div className="today-actions mt-7 flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div className="today-actions mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+      <button type="button" className="tool-link" disabled={done === "busy"} onClick={() => void complete()} aria-label={`Done: ${title}`}>
+        {done === "failed" ? "Done? Once more" : "Done"}
+      </button>
       <button type="button" className="tool-link" onClick={() => setView("decline")}>
         Not this
       </button>
-      <button type="button" className="tool-link" onClick={() => void breakDown()}>
+      <button type="button" className="tool-link today-quiet" onClick={() => void breakDown()}>
         Break it down
-      </button>
-      <button type="button" className="tool-link" disabled={done === "busy"} onClick={() => void complete()} aria-label={`Done: ${title}`}>
-        {done === "failed" ? "Done? Once more" : "Done"}
       </button>
     </div>
   );

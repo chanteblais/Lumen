@@ -39,6 +39,30 @@
           "path": "docs/philosophy/lumi.md"
         }
       ]
+    },
+    {
+      "id": "today-one-thing-leads",
+      "area": "Today",
+      "kind": "direction",
+      "effort": "glance",
+      "title": "Today at a glance: does the Garden's \"one thing should dominate\" become \"one thing leads\"?",
+      "context": "You asked for Today to focus less on breaking down one task and more on the day at a glance (2026-09-18). It's built on `ux/today-at-a-glance`: one sheet with Right now, After that, Later, Done today and the closing line. Right now is first and a size up, but it no longer takes the page. The Garden canon (§4) still says one thing should dominate, so the page and the canon now disagree.",
+      "points": [
+        "Soften §4 to \"one thing leads\": the day reads at a glance, and the first thing on it is still the one to start with.",
+        "Keep §4 as written: the page comes back toward one dominant thing once you've lived with the glance."
+      ],
+      "recommendation": "Soften §4 to \"one thing leads\", with the one-second test kept: Right now stays first under its own kicker, and nothing past After that is shown. The path's curation still does the executive-function work; only the weight between its parts changes.",
+      "ifSilent": "The page stays as built and §4 stays as written, with the disagreement recorded in the product decisions. Nothing regresses by waiting.",
+      "sources": [
+        {
+          "label": "The decision and the tension",
+          "path": "docs/living/decisions.md"
+        },
+        {
+          "label": "Garden §4",
+          "path": "docs/product/today-garden.md"
+        }
+      ]
     }
   ],
   "hands": [
