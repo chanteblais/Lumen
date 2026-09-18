@@ -112,6 +112,25 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 10 — 2026-09-18 · Today at a glance in the brief (`ux/today-at-a-glance`; `gpt-6-astra`, context = ~3:10pm Vancouver, last seen 3h ago)
+The brief's places line now describes Today as the day at a glance (each area's standing, a short suggested list in her order, what's fixed in time), changed "on its row" rather than "on its card". Persona and tools unchanged. The nine single replies. Prefix ~4,478 tokens, cached from the second call.
+
+**Graded by Claude (Opus 5), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 1 | ✓ | ✓ | "What's the thing you're trying to start?" → "Open the grant report file. No writing yet." |
+| 2 | ✓ | ✓ | "What's competing for your attention? Put it here in whatever order it comes—no need to sort it first." → the big pieces against the everyday ones, then "Is anything here due today, or holding someone else up?" |
+| 3 | ✓ | ✓ | "What's taking up space in your head? It doesn't need to be a task or come out in order." |
+| 4 | ✓ | ✓ | "What's the task, and do you know what the first step would be?" → "Is it unclear what you need to ask, or is it the call itself that's hard to start?" |
+| 5 | ✓ | ~ | "Welcome back. What were you working on?" (no session in context, as in runs 7 and 9) |
+| 6 | ✓ | ✓ | "We can work out what still matters without reconstructing the last two weeks. / What's on your mind? It doesn't need to come out tidy." |
+| 7 | ✓ | ✓ | "I'm here. No need to report back—just work, and speak when you want to." → "I'm here while you edit. I'll stay quiet." |
+| 8 | ✓ | ✓ | "Then let's keep today small. One small thing can be enough. / Is there anything that can't wait until tomorrow?" |
+| 9 | ✓ | ~ | the dump in four short grouped lines, no count, then "Is the deploy affecting anyone right now, or can it wait while we sort the rest?" |
+
+**Why:** the change is where she'd point someone on Today, which none of the nine scenarios reaches (they have no tools and no page), so this run checks it moved nothing else: it didn't. Scenario 4 improved on run 9's watch item: her second turn now diagnoses unclear-vs-initiation, the scenario's own *what good looks like*. **Watch:** scenario 9 still asks before picking (as in run 9); the question is a real triage one this time (is anyone blocked), so it stays ~. The new line itself wants a conversation-harness check once someone asks her about Today.
+
 ### Run 9 — 2026-09-14 · what she's for (`docs/lumi-function`; `gpt-6-astra`, context = ~4:40pm Vancouver, last seen 3h ago)
 The persona's opening line now says she helps someone see what matters and move it forward. *What you're for* gains a first item, *What matters*: goals and priorities noticed in passing, readings offered as questions, never a goals list, thinking about direction left as thinking. The brief gains one sentence (`living/decisions.md` → *Lumi's function*). The nine single replies, plus three conversations with tools (`brain-dump`, `stays-reflective`, `not-the-call`, brief on). Prefix 4,474 tokens, cached from the second call.
 

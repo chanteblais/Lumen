@@ -39,6 +39,31 @@
           "path": "docs/philosophy/lumi.md"
         }
       ]
+    },
+    {
+      "id": "today-at-a-glance-canon",
+      "area": "Today",
+      "kind": "direction",
+      "effort": "think",
+      "title": "Today's new shape: does the Garden's \"one thing should dominate\" become \"one thing leads\"?",
+      "context": "You asked for Today at a glance, for the Right now card to go, and then for creative license toward someone with ADHD-like traits (2026-09-18). It's built on `ux/today-at-a-glance`: the rest of the day as a spine — what's done above Now, the suggested things in the windows between now and each fixed time, the first marked Start here with its step open, and one line per area of life underneath. The Garden canon still says one thing should dominate (§4). On the spine one thing leads but doesn't take the page. The page and the canon disagree by that much.",
+      "points": [
+        "Soften §4 to \"one thing leads\": Now, then Start here, is the one-second read; the rest of the day is context, quieter.",
+        "Keep §4 as the Garden's aim and treat the spine as an experiment you'll judge after living with it.",
+        "\"Never a dashboard\" (canon principle 4): say where the line is — a line per area with no numbers and nothing to manage is allowed; boxes, counts, charts and rhythms are not."
+      ],
+      "recommendation": "Soften §4 to \"one thing leads\" and add the dashboard line from the third point. The curation still does the work (Lumi's short path, time in words, each area told it can wait), so the burden stays with her. I'd make the edits to `today-garden.md` for you to read before anything else changes.",
+      "ifSilent": "The page stays as built, the canon stays as written, and the disagreement stays recorded in the product decisions. Nothing regresses by waiting.",
+      "sources": [
+        {
+          "label": "The decision and the tension",
+          "path": "docs/living/decisions.md"
+        },
+        {
+          "label": "Garden §4",
+          "path": "docs/product/today-garden.md"
+        }
+      ]
     }
   ],
   "hands": [

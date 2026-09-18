@@ -56,6 +56,20 @@ describe("recutAfterDecline", () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
+  it("takes a thing further down off today's path, and moves nothing else", async () => {
+    const save = vi.fn(async () => ({ id: "r2" }) as DayPlanRow);
+    const build = vi.fn(async () => plan);
+    const declinedB = { ...snap("r1"), declinedToday: [{ intentionId: "b", reason: "nope" }] } as unknown as Snapshot;
+    const deps = { load: vi.fn(async () => declinedB), build, save, latest: vi.fn(), now };
+    const { plan: p, refine } = await recutAfterDecline(db, user, "nope", deps);
+    expect(build).not.toHaveBeenCalled();
+    expect(refine).toBeUndefined();
+    expect(p.rightNow).toEqual(plan.rightNow);
+    expect(p.afterThat).toEqual([{ intentionId: "c" }]);
+    expect(p.restCanWait).toBe(true);
+    expect(p.note).toBeUndefined();
+  });
+
   it("asks the planner straight away when nothing is queued", async () => {
     const save = vi.fn(async () => ({ id: "r2" }) as DayPlanRow);
     const build = vi.fn(async () => ({ ...plan, rightNow: { intentionId: "c", firstStep: "Go." }, afterThat: [] }) as DayPlanJson);

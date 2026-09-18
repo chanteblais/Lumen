@@ -1452,9 +1452,10 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 }
 .shell:has(.today-scene, .library-scene) .main > header .rule-double { width: 240px; margin-left: auto; }
 
-/* Three things on the painting, each quieter than the last (2026-09-13):
-   Lumi's words set straight on it, the one Right now card, and a faint slip
-   with the rest of the path. Distance from now is less weight. */
+/* Today at a glance (2026-09-18, after Chanté's mockup; was Lumi's words, one
+   big Right now card and a faint slip): Lumi's words set straight on the
+   painting, then the board — the glance sheet (a card per area, Suggested for
+   today as one list, what's done) and, beside it, Up next with the fixed times. */
 .today-page {
   flex: 1 0 auto;
   display: flex;
@@ -1495,30 +1496,108 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-capacity-answers .tool-link + .tool-link::before { content: "·"; margin: 0 0.7em; color: var(--ink-mute); }
 .today-capacity-answers .today-capacity-skip { color: var(--ink-mute); }
 
-/* The one card: the only full paper on the page. */
-.today-now {
-  background: rgba(248, 245, 239, 0.97);
+/* The sheet: the only full paper on the page. */
+.today-day {
+  background: rgba(248, 245, 239, 0.95);
   border: 1px solid rgba(27, 26, 23, 0.1);
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(27, 26, 23, 0.08), 0 14px 36px rgba(27, 26, 23, 0.24);
-  backdrop-filter: blur(20px);
-  padding: 28px 30px 24px;
+  box-shadow: 0 1px 2px rgba(27, 26, 23, 0.08), 0 14px 36px rgba(27, 26, 23, 0.22);
+  backdrop-filter: blur(18px);
+  padding: 20px 24px 18px;
 }
-.today-now-title { font-size: 34px; line-height: 1.12; }
-.today-now .chip { font-size: 15px; padding: 9px 18px; }
-/* Everything the card does happens on it: Lumi's line after a Not this, the
-   pause while the path is re-cut, and Break it down's steps to pick from. */
-.today-now-note { margin-top: 8px; font-size: 18px; line-height: 1.35; color: var(--ink-soft); }
-.today-now-working { font-size: 20px; line-height: 1.3; color: var(--ink-mute); }
-.today-steps { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.today-day-title { font-size: 24px; line-height: 1.2; }
+.today-part + .today-part,
+.today-part + .today-closing,
+.today-spine + .today-part,
+.today-spine + .today-closing { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+
+/* The spine: the rest of today, top to bottom — what's done above a Now mark,
+   then the windows between now and each fixed time, with the fixed times as
+   landmarks on the line. A hairline runs down the left with a dot per mark;
+   the rows hang off it. Coarse by design (core/domain/day-shape.ts). */
+.today-spine { position: relative; margin-top: 12px; padding-left: 22px; }
+.today-spine::before { content: ""; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: var(--rule-strong); }
+.today-spine > li { position: relative; }
+.today-spine > li::before { content: ""; position: absolute; left: -22px; top: 8px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--rule-strong); background: #f8f5ef; }
+/* The past of the day, receded above Now: a hollow mark and one faint line. */
+.today-past { padding-bottom: 10px; }
+.today-past .today-done-list { margin: 0; }
+/* Now: a brass dot, the word, the part of the day. Where the eye lands. */
+.today-nowmark { display: flex; align-items: baseline; gap: 10px; padding: 2px 0 6px; }
+.today-nowmark::before { background: var(--brass) !important; border-color: var(--brass) !important; box-shadow: 0 0 0 3px rgba(156, 126, 78, 0.18); }
+.today-nowmark .label { color: var(--ink); }
+.today-nowmark-part { font-size: 14px; color: var(--ink-mute); }
+/* A window: "Before practicum · about two hours", then the rows that fit it. */
+.today-window { padding: 4px 0 8px; }
+.today-window::before { display: none; }
+.today-window-label { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.today-window-span { font-size: 13px; font-style: italic; color: var(--ink-mute); }
+.today-spill .today-rows { opacity: 0.8; }
+/* A landmark: the fixed time, on the line. */
+.today-landmark { display: flex; align-items: baseline; gap: 10px; padding: 8px 0 8px; }
+.today-landmark::before { background: var(--ink-mute) !important; border-color: var(--ink-mute) !important; }
+.today-landmark-time { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.today-landmark-title { font-size: 16px; color: var(--ink); }
+
+/* How things stand: one quiet line per area of life, under the spine, each in
+   its list's tint. Containment said per area; no counts (core/domain/day-glance.ts). */
+.today-areas { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.today-area { --dot: var(--ink-mute); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 4px 0; font-size: 14px; line-height: 1.35; }
+.today-area::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); flex: none; align-self: center; }
+.today-area[data-tint="0"] { --dot: #7e74a6; }
+.today-area[data-tint="1"] { --dot: #b07a4f; }
+.today-area[data-tint="2"] { --dot: #8a8446; }
+.today-area[data-tint="3"] { --dot: #947050; }
+.today-area-name { color: var(--ink); min-width: 72px; }
+.today-area-label { color: var(--ink-soft); }
+.today-area[data-status="can_wait"] .today-area-label { color: var(--ink-mute); }
+.today-area-detail { color: var(--ink-mute); overflow-wrap: anywhere; }
+
+/* Rows: the suggested things, all alike — circle · title · list tag · estimate ·
+   chevron; the chevron opens the row in place. The first thing on the whole
+   spine is Start here, with its first step already showing. */
+.today-rows { margin-top: 2px; display: flex; flex-direction: column; }
+.today-row + .today-row { border-top: 1px solid var(--rule); }
+.today-row-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 58px auto; align-items: center; gap: 12px; padding: 9px 0; }
+.today-row[data-start] { margin: 0 -10px; padding: 0 10px; border-radius: 8px; background: rgba(156, 126, 78, 0.07); }
+.today-row[data-start] + .today-row { border-top: 0; }
+.today-start { margin-bottom: 1px; color: var(--brass); }
+.today-row[data-start] .today-row-title { font-size: 17px; }
+.today-row[data-start] .today-first { margin-top: 4px; }
+.today-quick { margin-left: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); vertical-align: middle; }
+.today-row-title { font-size: 16px; line-height: 1.3; color: var(--ink); }
+.today-row-why { margin-top: 2px; font-size: 14px; line-height: 1.3; color: var(--ink-soft); }
+.today-row-tag { padding: 2px 10px; font-size: 13px; }
+.today-row-est { font-size: 13px; color: var(--ink-mute); text-align: right; white-space: nowrap; }
+.today-row-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--ink-mute);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.today-row-toggle svg { transition: transform 160ms ease; }
+.today-row-toggle:hover { background: var(--paper-deep); color: var(--ink); }
+.today-row[data-open] .today-row-toggle svg { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .today-row-toggle svg { transition: none; } }
+/* The row, opened: its first step, then Not this and Break it down, all in place. */
+.today-row-body { padding: 0 40px 12px 32px; }
+.today-row-body .chip { font-size: 14px; padding: 7px 14px; }
+.today-first { font-size: 15px; line-height: 1.4; color: var(--ink-soft); }
+.today-empty { margin-top: 6px; font-size: 18px; line-height: 1.3; }
+.today-now-working { font-size: 16px; line-height: 1.3; color: var(--ink-mute); }
+.today-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
 .today-step {
   display: block;
   width: 100%;
-  padding: 9px 14px;
+  padding: 7px 12px;
   border: 1px solid var(--rule);
   border-radius: 8px;
   text-align: left;
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.35;
   color: var(--ink);
   cursor: pointer;
@@ -1528,27 +1607,15 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
 .today-step:disabled { opacity: 0.5; cursor: default; }
 .today-trouble { margin-top: 10px; font-size: 15px; font-style: italic; color: var(--ink-mute); }
 
-/* The rest of the path, further off: paper the garden shows through, smaller
-   type, no rules between rows, and the closing line as its last word. */
-.today-rest {
-  background: rgba(248, 245, 239, 0.8);
-  border: 1px solid rgba(27, 26, 23, 0.08);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(27, 26, 23, 0.16);
-  backdrop-filter: blur(14px);
-  padding: 16px 26px 16px;
-}
-.today-rest .row { padding: 7px 2px; gap: 14px; border-bottom: 0; }
-.today-part + .today-part,
-.today-part + .today-closing { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--rule); }
-.today-closing { font-size: 17px; line-height: 1.35; color: var(--ink-mute); }
+/* What's done today, receded: one faint line of titles, no ticks, no count. */
+.today-done-list { margin-top: 4px; font-size: 14px; line-height: 1.45; color: var(--ink-mute); }
+.today-closing { font-size: 16px; line-height: 1.35; color: var(--ink-mute); }
 
 /* Wide: the column moves to the right edge and the room opens up to its left. */
 @media (min-width: 1100px) {
   .today-page { max-width: none; margin: 0; align-items: flex-end; }
   .today-voice,
-  .today-now,
-  .today-rest { width: clamp(400px, 31vw, 470px); max-width: none; }
+  .today-day { width: clamp(420px, 36vw, 560px); max-width: none; }
 }
 
 /* Lumi stands in the room, on the flagstones behind the raised bed, between
@@ -1583,9 +1650,13 @@ body:has(.today-scene, .library-scene)::after { display: none; } /* no foxing on
   /* The voice's shadow reaches 22px past its sides, and a phone's page has only 20px of padding:
      at -22px it spilled 2px past .main, and the whole page dragged sideways under a finger. */
   .today-voice::before { inset: -10px -20px -6px; }
-  .today-now { padding: 22px 20px 20px; }
-  .today-now-title { font-size: 28px; }
-  .today-rest { padding: 14px 18px; }
+  .today-day { padding: 16px 16px 14px; }
+  .today-spine { padding-left: 18px; }
+  .today-spine > li::before { left: -18px; }
+  /* the list tag goes, as on the Lists sheet; How things stand carries the colour */
+  .today-row-head { grid-template-columns: auto minmax(0, 1fr) 52px auto; gap: 10px; }
+  .today-row-tag { display: none; }
+  .today-row-body { padding: 0 8px 12px 30px; }
 }
 
 /* ---------- Library: the reading room ----------

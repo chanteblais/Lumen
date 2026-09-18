@@ -10,7 +10,7 @@ import { requireVisit } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Today" };
 
-/** What should I be doing right now? One thing, then a short path. docs/today.md */
+/** What does the rest of today hold, and where do I start? docs/today.md */
 export default async function TodayPage() {
   // A page open is a visit too: the sitting (and any gap it began after) starts here if Today is opened first.
   const { user } = await requireVisit();
@@ -22,7 +22,7 @@ export default async function TodayPage() {
   // late (React holds a swap for at least 300ms). Only a path still to be cut by
   // the model (seconds) streams in behind placeholders.
   const ready = await planIsReady(user);
-  const plan = (section: "voice" | "now" | "rest", fallback: ReactNode) =>
+  const plan = (section: "voice" | "day", fallback: ReactNode) =>
     ready ? (
       <PlanSection user={user} part={section} />
     ) : (
@@ -34,8 +34,8 @@ export default async function TodayPage() {
   return (
     <div className="today-page">
       {/* Today is set in the garden (globals.css → Today: the garden): the painting fills the
-          viewport behind the shell, and three things sit on it, each quieter than the last —
-          Lumi's words set on the painting, the one Right now card, and a slip with the rest. */}
+          viewport behind the shell, and two things sit on it — Lumi's words set on the painting,
+          and one sheet with the rest of today laid along itself (2026-09-18). */}
       <RoomScene room="today" />
       <LibraryDebug userId={user.id} />
       <header className="today-voice">
@@ -49,17 +49,15 @@ export default async function TodayPage() {
         {plan("voice", <p className="today-dayline mt-2 font-display text-ink-mute">Working out the shape of today…</p>)}
       </header>
 
-      {plan("now", <PlanSkeleton />)}
-
-      {plan("rest", null)}
+      {plan("day", <PlanSkeleton />)}
     </div>
   );
 }
 
-/** While the path is being cut: the card with Lumi's three slow dots — the same pause as in the chat, not grey bars. */
+/** While the path is being cut: the sheet with Lumi's three slow dots — the same pause as in the chat, not grey bars. */
 function PlanSkeleton() {
   return (
-    <section className="today-now" aria-label="Right now" aria-busy>
+    <section className="today-day" aria-label="The rest of today" aria-busy>
       <p className="thinking-dots"><span>·</span><span>·</span><span>·</span></p>
     </section>
   );
