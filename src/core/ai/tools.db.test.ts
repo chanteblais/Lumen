@@ -97,6 +97,27 @@ describe("capacity and reshape", () => {
   });
 });
 
+describe("rhythm tools", () => {
+  it("holds a rhythm in their words, marks a day once, and lets it go", async () => {
+    const user = await createTestUser(db, "Rhythm");
+    const tools = toolsFor(user);
+    const held = await call(tools.hold_rhythm, { name: "Gym", content: "I want to go to the gym more", cadence: "a few times a week", typical_minutes: 60 });
+    expect(held).toMatchObject({ name: "Gym" });
+    const id = held.id as string;
+
+    expect(await call(tools.practiced_rhythm, { id, when: "yesterday" })).toMatchObject({ already: false });
+    expect(await call(tools.practiced_rhythm, { id, when: "yesterday" })).toMatchObject({ already: true });
+    expect(await call(tools.practiced_rhythm, { id, when: "2099-01-01" })).toMatchObject({ error: expect.stringContaining("when") });
+    expect(await call(tools.practiced_rhythm, { id })).toMatchObject({ already: false });
+
+    const written = await db.select({ type: events.type }).from(events).where(and(eq(events.userId, user.id), eq(events.type, "rhythm.practiced")));
+    expect(written).toHaveLength(2);
+
+    expect(await call(tools.let_go_rhythm, { id })).toEqual({ id, let_go: true });
+    expect(await call(tools.let_go_rhythm, { id })).toEqual({ error: "not found" });
+  });
+});
+
 describe("refusals", () => {
   it("a belief op on an id it can't use comes back as words Lumi can act on", async () => {
     const u = await createTestUser(db, "Err");

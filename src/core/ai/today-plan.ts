@@ -174,6 +174,7 @@ export function planInputs(user: User, snap: Snapshot, now: Date, ask?: PlanAsk,
     openIntentions: snap.openIntentions,
     beliefs: snap.beliefs,
     priorities: snap.priorities,
+    rhythms: snap.rhythms,
     declined: snap.declinedToday,
     // The gap this sitting began after, not the seconds since the last request.
     lastSeenAt: snap.sitting ? visitBeforeSitting(snap.sitting) : user.lastSeenAt,

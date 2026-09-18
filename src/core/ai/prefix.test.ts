@@ -19,9 +19,9 @@ import type { Db } from "@/db/client";
 // two notebook tools — pinned below; everyone else's is the one above, unchanged by it.
 // Then lumi-function: what she's for (the persona's opening line, What you're for → What matters, one brief sentence).
 const EXPECTED = {
-  persona: { mailOff: "57f4bf1e54eaf1e0083bac898e53c4d0ad109a7f38ed1bd2ca089884e2049dcf", mailOn: "e87f16b571020669771b3e3fa179d17c784063f4d5264e12c53871f09f04ffca" },
-  prefix: { mailOff: "6e5b2c6022c1db78a714d2c6307692bca55fe916429d660150453198162ebae6", mailOn: "ab702d17c3ba3c5e21330049364f20639dbf7942276104131fae698f603ef801" },
-  designPartner: { persona: "defeb08e7f824b0e221b2930e778ed1313806f34f5b2eca2e06c61db8cc81efe", prefix: "504058850e15d36dbad880042c018e7659ff727c58c54c366906be53f35816ce" },
+  persona: { mailOff: "da4e04439c9482063eb259a0e86760e430679e7c7e3a8af8dcb04a5d9d204710", mailOn: "a0381285cba83ae6bd92cf1003562847745a543da3ec9d6c246eb2f8ddb72653" },
+  prefix: { mailOff: "f2e0f7fac0ae08eada4f508601dd805675f818a8f6c8d3348fca0ec48d30e42c", mailOn: "98b200cf57c5dc7a95e06b5c2754a6a771da97e5b1a7b99438d0eef33ed68e4c" },
+  designPartner: { persona: "601bf5c030cd2951c9cfed85095ac1fd42b840ce8e3ae0aa49bbdff12a7208a4", prefix: "73b8c0bb47e85548ebeefb147185e556aa2ae24bd874ec1464b2a7772067269b" },
 };
 
 async function hashes(mailOn: boolean, designPartner = false) {

@@ -42,7 +42,7 @@ describe("proposeStructured", () => {
   });
 
   it("gives every kind of call its own key", () => {
-    const keys = (["chat", "plan", "breakdown", "leads", "consolidate", "reflect"] as const).map(promptCacheKey);
+    const keys = (["chat", "plan", "leads", "consolidate", "reflect"] as const).map(promptCacheKey);
     expect(new Set(keys).size).toBe(keys.length);
   });
 });

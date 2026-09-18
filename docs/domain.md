@@ -312,6 +312,41 @@ Index `(user_id, id)`.
 
 Index `(user_id, through_revision_id)`. Events added: `design.contributed`, `design.revised`, `design.retracted`, `design.feedback`, `design.digested` (catalogue above).
 
+## Added 2026-09-18 (migration `0010`) — rhythms
+
+### `rhythms`
+A routine the user is building — "go to the gym more", "meditate every morning" — in their words. Kept apart from intentions (a rhythm recurs; it is never a task ticked off and lost — which is what happened to "Make it to the gym" before this table), from beliefs (`memory_notes`: their word, never inferred) and from priorities (not a ranking). **Nothing here is a target:** `cadence` is their words, shown back and never counted against. [Product decision](living/decisions.md), 2026-09-18.
+
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | fk | cascade |
+| name | text | short, as Today shows it: "Gym", "Meditation" (≤ 40) |
+| content | text | their words: "I want to go to the gym more" (≤ 200) |
+| cadence | text null | how often, in their words ("most days"); never a number the code compares against |
+| typical_minutes | int null | about how long one practice takes, so Today can see where it fits |
+| supersedes_id | uuid null | the rhythm this one replaced ("hot yoga, not the gym") |
+| retired_at / retired_reason | timestamptz / text null | `let_go` \| `superseded` |
+| created_at | timestamptz | |
+
+Index `(user_id, retired_at)`. Written only by `hold_rhythm` / `let_go_rhythm`; read into the snapshot (`listRhythms`, with each rhythm's practice days from last Monday on), the context block (*Rhythms they're building*), the day planner (as words, never candidates for the path) and Today's *Rhythms*.
+
+### `rhythm_practices`
+One row per local day a rhythm happened: a fact, never a score.
+
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| rhythm_id | fk | cascade |
+| user_id | fk | cascade |
+| practiced_on | text | the local date (`YYYY-MM-DD`) |
+| via | text | `chat` (told to Lumi: `practiced_rhythm`) \| `app` (*Did it* on Today) |
+| created_at | timestamptz | |
+
+Unique `(rhythm_id, practiced_on)` — saying it twice, or tapping after telling Lumi, inserts nothing (`already: true`); index `(user_id, practiced_on)`. *Did it* tapped again the same day deletes the row (`unpracticeRhythm`, app only: Lumi never unsays what they told her). What Today shows is derived at read time: the week's seven days with a mark where a row exists; "this week: Mon, Wed" / "last: Fri last week" / "not yet" for Lumi (`describePractice`). No streak, no total, no missed-day count is computed anywhere.
+
+Events added: `rhythm.held {supersedes, typical_minutes}`, `rhythm.let_go`, `rhythm.practiced {practiced_on, via}`, `rhythm.unpracticed {practiced_on}` (subject: the rhythm).
+
 ## Deliberately absent
 Projects table (use `memory_notes.kind='project'`; add `intentions.parent_id` if ever needed) · a priority field or score on intentions (stated priorities are scoped rows of their own, `priorities`, never a number) · tags · recurrence · subtasks · streak counters · per-intention time tracking · calendar events (post-V1 integration) · mail bodies or a mail cache (read at look time, sent to the model once, never stored) · OAuth tokens (Clerk holds the Google connection).
 
@@ -324,6 +359,7 @@ Drizzle-generated SQL in `src/db/migrations/` (`npm run db:generate` → rename 
 
 | File | What it adds | Destructive? | Applied to prod |
 |---|---|---|---|
+| `0010_rhythms.sql` | `rhythms` and `rhythm_practices` (the routines the user is building, and the days each happened) with RLS enabled, FKs (user cascade; practice → rhythm cascade), unique `(rhythm_id, practiced_on)` and indexes `(user_id, retired_at)`, `(user_id, practiced_on)` | No (create-only) | **Yes** — 2026-09-18, applied by Claude with `npm run db:migrate` from `feat/rhythms` while in review (create-only, so safe under `main`'s code; the journal held `0000`–`0009`; neither table existed) |
 | `0009_rls_all_tables.sql` | `ENABLE ROW LEVEL SECURITY` on all 16 tables (no policies; the app's `postgres` owner isn't subject to it); where Supabase's `anon` and `authenticated` roles exist, revokes their privileges on every table and sequence in `public` and the default privileges `postgres` gives them on future ones (see `architecture.md` → Database) | No: permissions only, no data touched. On the 11 tables that already had RLS on, enabling it again changes nothing | **Yes** — 2026-09-15, applied by Claude with `npm run db:migrate` from `fix/rls-all-tables` while in review (permissions only, so safe under `main`'s code; the journal held `0000`–`0008`). Checked afterwards: RLS on for all 16 tables, no table or sequence grants for `anon` / `authenticated` in `public`, and the app's `postgres` reads unchanged. Supabase's own `supabase_admin` default privileges still name the two roles; they apply only to objects `supabase_admin` creates, and our migrations run as `postgres` |
 | `0008_design_contributions.sql` | `design_contributions`, `design_contribution_revisions`, `design_digests` (Lumi's design notebook and its digests) + FKs (user cascade; revision → note cascade; supersedes / superseded_by → note set null) + unique `(user_id, ref)`, `(contribution_id, version)`, `(user_id, from_revision_id)` and indexes `(user_id, updated_at)`, `(user_id, id)`, `(user_id, through_revision_id)` | No (create-only) | **Yes** — 2026-09-14, applied by Claude with `npm run db:migrate` from `feat/design-contributions` while in review (create-only, so safe under `main`'s code; the journal held `0000`–`0007` with `0007`'s hash matching its file). Postgres truncates two generated FK names to 63 characters (`design_contribution_revisions_contribution_id_design_contributi`, `design_contributions_superseded_by_id_design_contributions_id_f`): a later migration that drops either must use the truncated name |
 | `0007_priorities.sql` | `priorities` table (stated priorities: content, `intention_id`, `scope`, `week_of`, `supersedes_id`, retired) + FKs (user cascade, intention set null) + index `(user_id, retired_at)` | No (create-only) | **Yes** — 2026-09-13. Written on `feat/plan-together` (as `0003`), renumbered to `0007` on `land/plan-together`, and landed byte-identical with `feat/priorities`. The table was already in the database from an earlier attempt with no journal row and matched the file exactly (columns, types, nullability, defaults, both FKs, the index; no rows), so only its `drizzle.__drizzle_migrations` row was inserted (Claude, one transaction: row 8, `created_at` = the journal's `when`); `npm run db:migrate` is a no-op |

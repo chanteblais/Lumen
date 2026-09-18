@@ -337,6 +337,54 @@ export const priorities = pgTable(
   (t) => [index("priorities_user_active_idx").on(t.userId, t.retiredAt)],
 ).enableRLS();
 
+/* ---------------------------------------------------------------- rhythms */
+/**
+ * A rhythm: a routine the user is building — "go to the gym more", "meditate
+ * daily" — in their words (2026-09-18, migration 0010). Kept apart from
+ * intentions (a rhythm recurs; it is never a task to tick off and lose), from
+ * beliefs (their word, never inferred) and from priorities (it is not a
+ * ranking). How often is kept as their words only, never as a target to
+ * count against. docs/domain.md → rhythms; product decision 2026-09-18.
+ */
+type RhythmRetiredReason = "let_go" | "superseded";
+
+export const rhythms = pgTable(
+  "rhythms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** Short, as it shows on Today: "Gym", "Meditation". */
+    name: text("name").notNull(),
+    /** Their words: "I want to go to the gym more." */
+    content: text("content").notNull(),
+    /** How often, in their words ("most days", "a couple of times a week"); never computed against. */
+    cadence: text("cadence"),
+    /** About how long one practice takes, so Today can see where it fits. */
+    typicalMinutes: integer("typical_minutes"),
+    supersedesId: uuid("supersedes_id"),
+    retiredAt: ts("retired_at"),
+    retiredReason: text("retired_reason").$type<RhythmRetiredReason>(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("rhythms_user_active_idx").on(t.userId, t.retiredAt)],
+).enableRLS();
+
+/** One day a rhythm was practiced. A fact, once per local day; never a score. */
+export const rhythmPractices = pgTable(
+  "rhythm_practices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rhythmId: uuid("rhythm_id").notNull().references(() => rhythms.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** The local date (YYYY-MM-DD) it happened on. */
+    practicedOn: text("practiced_on").notNull(),
+    /** Told to Lumi in chat, or tapped on Today. */
+    via: text("via").$type<"chat" | "app">().notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("rhythm_practices_day_idx").on(t.rhythmId, t.practicedOn), index("rhythm_practices_user_idx").on(t.userId, t.practicedOn)],
+).enableRLS();
+
 /* ---------------------------------------------------------------- leads */
 
 /**
@@ -534,3 +582,5 @@ export type Event = typeof events.$inferSelect;
 export type DayPlanRow = typeof dayPlans.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type Priority = typeof priorities.$inferSelect;
+export type Rhythm = typeof rhythms.$inferSelect;
+export type RhythmPractice = typeof rhythmPractices.$inferSelect;

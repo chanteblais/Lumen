@@ -1,12 +1,14 @@
 import { cache } from "react";
 import { ensureTodaysPlan, needsFirstItems } from "@/core/ai/today-plan";
 import { glanceAreas } from "@/core/domain/day-glance";
-import { shapeDay } from "@/core/domain/day-shape";
+import { type DaySegment, shapeDay } from "@/core/domain/day-shape";
 import { doneOn } from "@/core/domain/intentions";
+import { weekDays } from "@/core/domain/rhythms";
 import { db } from "@/db/client";
 import type { DayPlanJson, Intention, User } from "@/db/schema";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { CapacityPrompt } from "./CapacityPrompt";
+import { RhythmRow } from "./RhythmRow";
 import { TodayRow } from "./TodayRow";
 
 /** One snapshot per request, shared by the page's readiness check and its parts. */
@@ -34,14 +36,23 @@ export async function planIsReady(user: User): Promise<boolean> {
 
 /** Ten minutes or less: a quick one, worth knowing on a low day. */
 const QUICK_MINUTES = 10;
+/** A rhythm with no estimate is taken to want about half an hour when looking for room. */
+const RHYTHM_MINUTES = 30;
+
+/** "Before Practicum" → "before practicum"; "The rest of the afternoon" → "this afternoon". */
+function roomWords(label: string): string {
+  if (label.startsWith("The rest of the ")) return `this ${label.slice("The rest of the ".length)}`;
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
 
 /**
  * The page's two layers: `voice` (Lumi's day line and, once a day, the capacity
  * question — set on the painting) and `day`, the rest of today laid along
- * itself (2026-09-18, third cut): what's done above a Now mark, then the
- * suggested path in the windows between now and each fixed time, the first
- * thing marked Start here with its step already open, and under the spine
- * one quiet line per area of life. docs/today.md → Anatomy.
+ * itself (2026-09-18): how full it is, as a shape; what's done above a Now
+ * mark; the suggested path in the windows between now and each fixed time,
+ * the first thing marked Start here; the rhythms
+ * they're building, with the days each happened this week; and one quiet line
+ * per area of life. docs/today.md → Anatomy.
  */
 export async function PlanSection({ user, part }: { user: User; part: "voice" | "day" }) {
   const { snap, plan, byId } = await getTodaysPlan(user);
@@ -74,6 +85,13 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
   const done = doneOn(snap.recentlyDone, snap.today, user.timezone);
   const closing = plan.restCanWait ? (plan.closingLine ?? "Everything else can wait.") : null;
   const firstId = plan.rightNow?.intentionId;
+  const week = weekDays(snap.today);
+  const windows = shape.segments.filter((s): s is Extract<DaySegment<Intention>, { kind: "window" }> => s.kind === "window");
+  /** The first window today with room for a rhythm of `minutes`, in words — or null. */
+  const roomFor = (minutes: number | null) => {
+    const w = windows.find((s) => s.free >= (minutes ?? RHYTHM_MINUTES));
+    return w ? roomWords(w.label) : null;
+  };
 
   const row = (i: Intention) => (
     <TodayRow
@@ -84,15 +102,32 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
       tint={tintOf(i.list)}
       estimateMinutes={i.estimateMinutes}
       quick={Boolean(i.estimateMinutes && i.estimateMinutes <= QUICK_MINUTES)}
-      firstStep={i.id === firstId ? plan.rightNow!.firstStep : i.nextAction}
       startHere={i.id === firstId}
       note={i.id === firstId ? plan.note : undefined}
     />
   );
 
+  // How full the rest of today is, as a shape: each window as wide as it is long, filled by what's placed in it; fixed times as ticks. No numbers.
+  const shapeable = shape.segments.filter((s) => s.kind === "landmark" || Number.isFinite(s.minutes));
+  const showShape = shapeable.some((s) => s.kind === "window" && s.minutes >= 15) && (path.length > 0 || later.length > 0);
+
   return (
     <section className="today-day" aria-label="The rest of today">
       <h2 className="today-day-title font-display text-ink">The rest of today</h2>
+
+      {showShape && (
+        <div className="today-shape" role="img" aria-label="How full the rest of today is">
+          {shapeable.map((s) =>
+            s.kind === "landmark" ? (
+              <span key={s.id} className="today-shape-tick" title={s.title} />
+            ) : (
+              <span key={s.label} className="today-shape-window" style={{ flexGrow: Math.max(s.minutes, 8) }}>
+                {s.minutes > 0 && s.free < s.minutes && <span className="today-shape-fill" style={{ width: `${Math.min(100, ((s.minutes - s.free) / s.minutes) * 100)}%` }} />}
+              </span>
+            ),
+          )}
+        </div>
+      )}
 
       <ol className="today-spine">
         {/* The day so far: what's done, receded above the Now mark. Titles only, never a count. */}
@@ -119,7 +154,7 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
               <span className="today-landmark-time">{fmtTime(s.at, user.timezone)}</span>
               <span className="today-landmark-title">{s.title}</span>
             </li>
-          ) : (
+          ) : s.items.length > 0 ? (
             <li key={s.label} className="today-window">
               <p className="today-window-label">
                 <span className="label label-mute">{s.label}</span>
@@ -127,7 +162,7 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
               </p>
               <ul className="today-rows">{s.items.map(row)}</ul>
             </li>
-          ),
+          ) : null,
         )}
 
         {shape.spill.length > 0 && (
@@ -139,6 +174,28 @@ export async function PlanSection({ user, part }: { user: User; part: "voice" | 
           </li>
         )}
       </ol>
+
+      {/* The routines they're building: the week as marks on the days each happened. State and shape; never a count. */}
+      {snap.rhythms.length > 0 && (
+        <section className="today-part today-rhythms" aria-label="Rhythms">
+          <p className="label label-mute">Rhythms</p>
+          <ul className="today-rhythm-list">
+            {snap.rhythms.map((r) => (
+              <RhythmRow
+                key={r.id}
+                id={r.id}
+                name={r.name}
+                content={r.content}
+                cadence={r.cadence}
+                week={week}
+                practicedOn={r.practicedOn}
+                today={snap.today}
+                room={r.practicedOn.includes(snap.today) ? null : roomFor(r.typicalMinutes)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* One line per area of life, under the spine: containment, said per area. No numbers. */}
       {areas.length > 0 && (

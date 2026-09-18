@@ -71,6 +71,13 @@
       "when": 1789509014551,
       "tag": "0009_rls_all_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789771919256,
+      "tag": "0010_rhythms",
+      "breakpoints": true
     }
   ]
 }

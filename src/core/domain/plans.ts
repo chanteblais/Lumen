@@ -90,12 +90,6 @@ export function planAfterDecline(plan: DayPlanJson, open: Queued[], declinedIds:
   };
 }
 
-/** Pure: the path with the first step they chose for Right now (from Break it down). Anything else is unchanged. Tested. */
-export function withFirstStep(plan: DayPlanJson, intentionId: string, firstStep: string): DayPlanJson {
-  if (plan.rightNow?.intentionId !== intentionId) return plan;
-  return { ...plan, rightNow: { intentionId, firstStep } };
-}
-
 /** Pure: drop ids that are no longer open (completed elsewhere, dropped) so the page never shows a ghost. */
 export function prunePlan(plan: DayPlanJson, open: Pick<Intention, "id">[]): DayPlanJson {
   const ids = new Set(open.map((i) => i.id));

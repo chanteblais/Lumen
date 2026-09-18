@@ -7,6 +7,7 @@ import { declineLabel } from "@/core/declines";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { dueOn, isStale } from "@/core/domain/intentions";
 import { describeScope, holdsOn } from "@/core/domain/priorities";
+import { describePractice, type RhythmView } from "@/core/domain/rhythms";
 import { dayPart, describeGap, gapBucket, localDate } from "@/core/time";
 import { FALLBACK_FIRST_STEP } from "@/core/domain/plans";
 import type { DayPlanJson, Intention, MemoryNote, Priority } from "@/db/schema";
@@ -23,6 +24,8 @@ export type PlanInputs = {
   beliefs: MemoryNote[];
   /** What they said matters (their word, scoped). Only those holding today reach the planner. */
   priorities?: Priority[];
+  /** The routines they're building, with the days practiced. Not candidates for the path; the day line may make room for one. */
+  rhythms?: RhythmView[];
   /** "Not this" today, newest first. Reason is a key from core/declines.ts, free text, or null. */
   declined?: { intentionId: string; reason?: string | null }[];
   lastSeenAt?: Date;
@@ -55,6 +58,7 @@ You are choosing a path through the day for the person, from their open intentio
 - firstStep is a physical action ("Open the doc and read the last paragraph"), never "work on X".
 - Anything they declined today ("not this") is never rightNow again today. Read the reason: too big → something smaller now; the declined thing may sit in afterThat only if a tinier way in exists. Too tired → the easiest win, and a shorter path. Don't know how → something clearer now; the unclear one waits. Don't feel like it, or just nope → a different thing, no comment, and leave the declined one off the path. Something else is more important → the likely candidate, if one is obvious.
 - What they said matters (their word) outranks your default order: put it on the path, early. Something time-sensitive today still goes first, and then the dayLine can say so in a few words ("The paper's the big one this week, but the form is due today."). A priority held for a while is a lean, not a rule that fills every day.
+- Rhythms they're building (gym, meditation) are not intentions and never go in rightNow or afterThat. When the day plainly has room for one — a free stretch, a light day — the dayLine may say so in a few words ("There's room for the gym before practicum."). Never mention days it didn't happen, never a tally, never a nudge on a full or low day.
 - If they asked in chat for a shape ("something easy", "quick wins", "what should I do now", a fresh plan), that ask outranks the default order: rightNow and afterThat match it, and the dayLine may answer it in a few words. If a thing is already named for right now, keep it there.
 - If they've been away a week or more: keep the path short and light — something small and fresh for right now. The dayLine may acknowledge the return in a few words; never the length of the gap or what piled up.
 - Even late at night or on a low day, still pick one thing — the smallest — with a first step that fits it; the dayLine can say it keeps until morning. rightNow is null only when nothing is open, and then the dayLine says the day is clear.`;
@@ -188,6 +192,12 @@ function describeInputs(inputs: PlanInputs, candidates: Intention[], fixed: Inte
     for (const p of holding.slice(0, 8)) {
       const named = p.intentionId ? inputs.openIntentions.find((i) => i.id === p.intentionId) : undefined;
       lines.push(`- ${describeScope(p, inputs.localDate)}: "${p.content}"${named ? ` → ${named.id} · "${named.title}"` : ""}`);
+    }
+  }
+  if (inputs.rhythms?.length) {
+    lines.push("", "## Rhythms they're building (not intentions; their words)");
+    for (const r of inputs.rhythms.slice(0, 6)) {
+      lines.push(`- ${r.name}: "${r.content}"${r.cadence ? ` · ${r.cadence}` : ""}${r.typicalMinutes ? ` · ~${r.typicalMinutes}m` : ""} · ${describePractice(r, inputs.localDate)}`);
     }
   }
   const strategies = inputs.beliefs.filter((b) => b.kind === "strategy" || b.kind === "pattern" || b.kind === "anti_pattern" || b.kind === "preference");

@@ -1965,7 +1965,7 @@ The broader complexity of the user's life is compressed into a manageable, revis
 The Garden is not:
 
 A daily to-do list with flowers around it.\
-A dashboard.\
+A dashboard of metrics — counts, progress, scores. *(Narrowed 2026-09-18: state and shape at a glance are allowed; see the [decision](../living/decisions.md). It read "A dashboard.")*\
 A calendar replacement.\
 A productivity scorecard.\
 A gamified task garden.\

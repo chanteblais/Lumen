@@ -5,6 +5,7 @@ import type { ActivityItem } from "@/core/domain/activity";
 import type { CapacityReport } from "@/core/domain/capacity";
 import { isStale } from "@/core/domain/intentions";
 import { describeScope } from "@/core/domain/priorities";
+import { describePractice, type RhythmView } from "@/core/domain/rhythms";
 import { isReentry, type Sitting } from "@/core/domain/users";
 import type { Where } from "@/core/places";
 import type { DayPlanJson, Episode, Intention, Lead, MemoryNote, Priority, Thread, ThreadNote } from "@/db/schema";
@@ -48,6 +49,8 @@ export type ContextInput = {
   leads?: Lead[];
   /** What they said matters, holding now or said for a week ahead (`listCurrentPriorities`). */
   priorities?: Priority[];
+  /** The routines they're building, with the days practiced this week (`listRhythms`). */
+  rhythms?: RhythmView[];
   /** Design partners only: the notes from Lumi's design notebook chosen for this turn (`core/ai/design-select.ts`). */
   design?: DesignNotebookView;
 };
@@ -117,6 +120,17 @@ export function buildContextBlock(input: ContextInput): string {
       const named = p.intentionId ? open.find((i) => i.id === p.intentionId) : undefined;
       lines.push(`- ${p.id} · ${describeScope(p, today)} · "${p.content}" · ${named ? `${named.id} "${named.title}"` : "—"}`);
     }
+  }
+
+  const rhythms = input.rhythms ?? [];
+  if (rhythms.length) {
+    const today = localDate(now, input.timezone);
+    lines.push(
+      "",
+      "## Rhythms they're building (id · name · their words · how often, their words · when it happened)",
+      "Routines, not tasks: never file one as an intention. When they say it happened ('went to the gym this morning'), practiced_rhythm. Days it didn't happen are not yours to raise; a tally is never yours to give.",
+    );
+    for (const r of rhythms) lines.push(`- ${r.id} · ${r.name} · "${r.content}" · ${r.cadence ?? "—"} · ${describePractice(r, today)}`);
   }
 
   const declined = new Map((input.declinedToday ?? []).map((d) => [d.intentionId, declineLabel(d.reason) ?? d.reason] as const));

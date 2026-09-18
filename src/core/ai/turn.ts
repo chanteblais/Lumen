@@ -143,6 +143,7 @@ export function contextInputFor(t: {
     declinedToday: snap.declinedToday,
     // What they said matters: their word, in the trailing context block like everything else here.
     priorities: snap.priorities,
+    rhythms: snap.rhythms,
     mailScan: t.mail ? (t.mail.scan ? { at: t.mail.scan.at } : null) : undefined,
     leads: t.mail?.leads,
     design: t.design,

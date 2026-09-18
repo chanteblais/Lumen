@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { advancePlan, FALLBACK_FIRST_STEP, planAfterDecline, prunePlan, withFirstStep } from "./plans";
+import { advancePlan, FALLBACK_FIRST_STEP, planAfterDecline, prunePlan } from "./plans";
 
 const plan = {
   dayLine: "Practicum at 5. Nothing else is time-sensitive.",
@@ -45,10 +45,6 @@ describe("Lumi's note and the chosen first step", () => {
     const noted = { ...plan, note: "Smaller one instead." };
     expect(advancePlan(noted, "a").note).toBeUndefined();
     expect(advancePlan(noted, "b").note).toBe("Smaller one instead.");
-  });
-  it("sets the first step only for the intention that is Right now", () => {
-    expect(withFirstStep(plan, "a", "Tie the bag").rightNow).toEqual({ intentionId: "a", firstStep: "Tie the bag" });
-    expect(withFirstStep(plan, "b", "Tie the bag")).toBe(plan);
   });
 });
 
