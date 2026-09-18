@@ -11,7 +11,7 @@ import type { DayPlanJson, User } from "@/db/schema";
 import { capacityChangesPlan } from "@/core/domain/capacity";
 import { dueOn } from "@/core/domain/intentions";
 import { declineNote } from "@/core/declines";
-import { getPlanForDate, planAfterDecline, savePlan } from "@/core/domain/plans";
+import { advancePlan, getPlanForDate, planAfterDecline, savePlan } from "@/core/domain/plans";
 import { loadSnapshot, type Snapshot } from "@/core/domain/snapshot";
 import { visitBeforeSitting } from "@/core/domain/users";
 import { buildDayPlan, type PlanAsk, type PlanInputs } from "./plan";
@@ -105,6 +105,9 @@ export async function primeTodaysPlan(db: Db, user: User, recut?: RecutReason | 
  * path meanwhile (a Done, another Not this, a step chosen) — the caller runs it
  * off the response. With nothing queued, the model has to choose now (seconds).
  * 2026-09-13: waiting on the full re-cut took 13s on the card.
+ * 2026-09-18: Not this works on any row of Today's list. A thing further down
+ * than the first just leaves today's path — nothing else moves, no model call,
+ * no line from Lumi (the declined one is the newest in `declinedToday`).
  */
 export async function recutAfterDecline(db: Db, user: User, reason: string | null | undefined, deps: Partial<Deps> = {}): Promise<{ plan: DayPlanJson; refine?: () => Promise<void> }> {
   const d = { ...live, ...deps };
@@ -112,6 +115,13 @@ export async function recutAfterDecline(db: Db, user: User, reason: string | nul
   return serially(planKey(user), async () => {
   const now = d.now();
   const snap = await d.load(db, user, now);
+  const declined = snap.declinedToday[0]?.intentionId;
+  if (snap.plan && declined && snap.plan.rightNow?.intentionId !== declined) {
+    // The one they turned down is still open, just not today's.
+    const plan = { ...advancePlan(snap.plan, declined), restCanWait: true };
+    await d.save(db, user.id, snap.today, plan, "declined", snap.capacity?.level);
+    return { plan };
+  }
   const note = declineNote(reason);
   const declinedIds = new Set(snap.declinedToday.map((x) => x.intentionId));
   const quick = snap.plan ? planAfterDecline(snap.plan, snap.openIntentions, declinedIds, reason, note) : null;
