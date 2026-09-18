@@ -112,6 +112,17 @@ Every `must` held in all 16 conversations.
 
 Run with `node --env-file=.env.local --import tsx scripts/voice-eval.mjs [n]` — real model, same persona + context block as production, no database. Paste the transcript highlights and the grade per scenario below, newest first.
 
+### Run 11 — 2026-09-18 · the persona's Today line, after the spine (`docs/dominance-retired`; `gpt-6-astra`, context = ~4pm Vancouver, last seen 3h ago)
+The persona's *where they are* line for Today said "One thing Right now — Not this and Break it down work right on its card" — stale since the page became the rest of the day laid along itself, and missed at that merge. It now describes the spine (what's done, Now, the suggested things in the windows between fixed times, Start here, a line per area; a row opens to Not this and Break it down). Only scenario 8 run: none of the nine reaches the page, and the full nine ran as run 10 an hour earlier on the same persona otherwise.
+
+**Graded by Claude (Fable 5.1), provisionally; not blind** (Claude made the change).
+
+| # | Voice | Use | Lumi said |
+|---|---|---|---|
+| 8 | ✓ | ✓ | "Let's keep today small. One small thing can be enough. / Is there anything that genuinely needs your attention today?" |
+
+**Why:** a smoke check that the prefix still assembles and she still sounds like herself; it does. **Watch:** what the line actually changes is where she sends someone who asks about Today ("look at the top of the spine, under Now") — that wants a conversation-harness scenario once one exists.
+
 ### Run 10 — 2026-09-18 · Today at a glance in the brief (`ux/today-at-a-glance`; `gpt-6-astra`, context = ~3:10pm Vancouver, last seen 3h ago)
 The brief's places line now describes Today as the day at a glance (each area's standing, a short suggested list in her order, what's fixed in time), changed "on its row" rather than "on its card". Persona and tools unchanged. The nine single replies. Prefix ~4,478 tokens, cached from the second call.
 
